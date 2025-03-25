@@ -1,19 +1,31 @@
 <?php
-/*
-Always check for the constant WP_UNINSTALL_PLUGIN in uninstall.php before doing anything. This protects against direct access.
-The constant will be defined by WordPress during the uninstall.php invocation.
-The constant is NOT defined when uninstall is performed by `register_uninstall_hook`.
-Reference: https://developer.wordpress.org/plugins/plugin-basics/uninstall-methods/#method-2-uninstall-php
-*/
-defined( 'WP_UNINSTALL_PLUGIN' ) || exit( 1 );
 
-global $wpdb;
+/**
+ * Fired when the plugin is uninstalled.
+ *
+ * When populating this file, consider the following flow
+ * of control:
+ *
+ * - This method should be static
+ * - Check if the $_REQUEST content actually is the plugin name
+ * - Run an admin referrer check to make sure it goes through authentication
+ * - Verify the output of $_GET makes sense
+ * - Repeat with other user roles. Best directly by using the links/query string parameters.
+ * - Repeat things for multisite. Once for a single site in the network, once sitewide.
+ *
+ * This file may be updated more in future version of the Boilerplate; however, this is the
+ * general skeleton and outline for how the file should work.
+ *
+ * For more information, see the following discussion:
+ * https://github.com/tommcfarlin/WordPress-Plugin-Boilerplate/pull/123#issuecomment-28541913
+ *
+ * @link       https://linknacional.com.br
+ * @since      1.0.0
+ *
+ * @package    WcBetterShippingCalculatorForBrazil
+ */
 
-$config = require_once __DIR__ . '/config.php';
-
-$prefix = $config['PREFIX'];
-$options_query = $wpdb->prepare(
-    "DELETE FROM {$wpdb->prefix}options WHERE option_name LIKE %s",
-    $prefix . '%'
-);
-$wpdb->query( $options_query );
+// If uninstall not called from WordPress, then exit.
+if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+	exit;
+}

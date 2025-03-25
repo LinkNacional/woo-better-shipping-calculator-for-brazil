@@ -1,0 +1,99 @@
+name: Encode and generate new release for plugin
+
+on:
+  pull_request:
+    types: [ closed ]
+    branches: [ main ]
+
+env:
+  PLUGIN_NAME: wc-better-shipping-calculator-for-brazil
+  PLUGIN_FILE_NAME: woo-better-shipping-calculator-for-brazil
+  PHP_VERSION: "7.4"
+
+jobs:
+  encode-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v3
+
+    # Run composer install and generate vendor
+    - name: Run composer install
+      uses: php-actions/composer@v6
+      with:
+        php_version: ${{ env.PHP_VERSION }}
+        working_dir: "."
+        args: --ignore-platform-reqs
+        command: install
+        dev: no
+
+    # Add plugin files to a root directory
+    - name: Make plugin root directory
+      run: "mkdir $PLUGIN_NAME && mv -t ./$PLUGIN_NAME ./Admin ./Includes ./Public *.php *.txt && cp -r ./vendor ./${{env.PLUGIN_NAME}}/vendor && ls -lah"
+
+    # Compact plugin as .zip
+    - name: Archive Release
+      uses: thedoctor0/zip-release@master
+      with:
+        type: 'zip'
+        path: '${{ env.PLUGIN_NAME }}'
+        directory: '.'
+        filename: '${{ env.PLUGIN_NAME }}.zip'
+        exclusions: '*.git* /*node_modules/* .editorconfig'
+
+    # File upload to server
+    - name: Upload .zip to server
+      uses: easingthemes/ssh-deploy@main
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        ARGS: "-lptgoDz"
+        SOURCE: ./${{ env.PLUGIN_NAME }}.zip
+        EXLUDE: "/.git, /.github, LICENSE.txt, README.md, README.txt, /${{ env.PLUGIN_NAME }}"
+        REMOTE_HOST: ${{ secrets.SSH_HOST }}
+        REMOTE_USER: ${{ secrets.SSH_USER }}
+        TARGET: ./${{ env.PLUGIN_NAME }}.zip
+
+    # Encode plugin files
+    - name: Encode plugin files
+      uses: fifsky/ssh-action@master
+      with:
+        command: |
+          unzip ${{ env.PLUGIN_NAME }}.zip
+          rm -rf ${{ env.PLUGIN_NAME }}.zip
+          /home/ioncube/ioncube_encoder.sh -72 -B ${{ env.PLUGIN_NAME }}/ --ignore ${{ env.PLUGIN_NAME }}/.git/ --add-comments=EULA.txt --copy ${{ env.PLUGIN_NAME }}/${{ env.PLUGIN_FILE_NAME }}.php -o criptado/${{ env.PLUGIN_NAME }}
+          /home/ioncube/ioncube_encoder.sh -81 --add-to-bundle ${{ env.PLUGIN_NAME }}/ --ignore ${{ env.PLUGIN_NAME }}/.git/ --add-comments=EULA.txt --copy ${{ env.PLUGIN_NAME }}/${{ env.PLUGIN_FILE_NAME }}.php -o criptado/${{ env.PLUGIN_NAME }}
+          /home/ioncube/ioncube_encoder.sh -82 --add-to-bundle ${{ env.PLUGIN_NAME }}/ --ignore ${{ env.PLUGIN_NAME }}/.git/ --add-comments=EULA.txt --copy ${{ env.PLUGIN_NAME }}/${{ env.PLUGIN_FILE_NAME }}.php -o criptado/${{ env.PLUGIN_NAME }}
+          rm -rf ${{ env.PLUGIN_NAME }}
+          cd criptado
+          find ./${{ env.PLUGIN_NAME }} -type f -exec chmod 0644 {} +
+          find ./${{ env.PLUGIN_NAME }} -type d -exec chmod 0755 {} +
+          zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}/*
+          rm -rf ${{ env.PLUGIN_NAME }}
+          mv -f ${{ env.PLUGIN_NAME }}.zip ../../${{ env.PLUGIN_NAME }}.zip
+        host: ${{ secrets.SSH_HOST }}
+        user: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY}}
+
+    # Download encoded plugin
+    - name: Download file
+      run: "rm ${{ env.PLUGIN_NAME }}.zip && curl -o ${{ env.PLUGIN_NAME }}.zip -H \"Accept: application/zip\" '${{ secrets.DOWNLOAD_URL }}'"
+
+    # Update version tag
+    - name: Bump version and push tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.0
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        custom_tag: "3.2.2" # // TODO caso necessário definir a tag da release manualmente
+
+    # Generate new release
+    - name: Generate new Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "${{ env.PLUGIN_NAME }}.zip"
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit: "main"
+        draft: "true"
+        tag: ${{ steps.tag_version.outputs.new_tag }}
+        name: Release ${{ steps.tag_version.outputs.new_tag }}
