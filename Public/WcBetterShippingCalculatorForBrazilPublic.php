@@ -2,6 +2,8 @@
 
 namespace Lkn\WcBetterShippingCalculatorForBrazil\PublicView;
 
+use Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazilHelpers as h;
+
 /**
  * The public-facing functionality of the plugin.
  *
@@ -105,4 +107,30 @@ class WcBetterShippingCalculatorForBrazilPublic
 
     }
 
+    public function add_extra_js()
+    {
+        if (! is_cart()) {
+            return;
+        }
+
+        wp_enqueue_script(
+            $this->plugin_name . '-frontend',
+            plugin_dir_url(__FILE__) . "js/WcBetterShippingCalculatorForBrazilPublicCEPField.js",
+            [ 'jquery', 'wc-cart' ],
+            WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+            true
+        );
+
+        wp_localize_script(
+            $this->plugin_name . '-frontend',
+            'wc_better_shipping_calculator_for_brazil_params',
+            [
+                'postcode_placeholder' => esc_attr__('Type your postcode', $this->plugin_name),
+                'postcode_input_type' => 'tel',
+                'selectors' => [
+                    'postcode' => '#calc_shipping_postcode',
+                ],
+            ]
+        );
+    }
 }

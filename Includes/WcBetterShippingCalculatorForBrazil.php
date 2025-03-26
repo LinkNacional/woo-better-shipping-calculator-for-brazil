@@ -141,6 +141,31 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
         $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
 
+        // Notice
+        $this->loader->add_filter('plugin_row_meta', $plugin_admin, 'plugin_meta', 10, 2);
+
+        // force shipping cart settings
+        $this->loader->add_filter('option_woocommerce_enable_shipping_calc', $this, 'activate_fields', 20);
+        $this->loader->add_filter('option_woocommerce_shipping_cost_requires_address', $this, 'activate_fields', 20);
+
+        // hide shipping calculator country, state and city fields
+        $this->loader->add_filter('woocommerce_shipping_calculator_enable_country', $this, 'woo_fields', 20);
+        $this->loader->add_filter('woocommerce_shipping_calculator_enable_state', $this, 'woo_fields', 20);
+        $this->loader->add_filter('woocommerce_shipping_calculator_enable_city', $this, 'woo_fields', 20);
+
+        // detect state from postcode
+        $this->loader->add_action('woocommerce_before_shipping_calculator', $plugin_admin, 'add_extra_css');
+        $this->loader->add_filter('woocommerce_cart_calculate_shipping_address', $plugin_admin, 'prepare_address', 5);
+    }
+
+    public function woo_fields()
+    {
+        return false;
+    }
+
+    public function activate_fields()
+    {
+        return 'yes';
     }
 
     /**
@@ -157,6 +182,9 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts');
+
+        // frontend scripts
+        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'add_extra_js');
 
     }
 
@@ -203,5 +231,4 @@ class WcBetterShippingCalculatorForBrazil
     {
         return $this->version;
     }
-
 }
