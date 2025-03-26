@@ -63,7 +63,7 @@ Você pode também personalizar sua nova página conforme desejar.
 
 <img src="Includes/assets/images/newPage.png" alt="Nova página" width="800" />
 
-Após criar a seguida, defina a mesma nas configurações do carrinho do `Woocommerce`.
+Após criar a página, defina a mesma nas configurações do carrinho do `Woocommerce`.
 
 Caminho: **WooCommerce** > **Configurações** > **Avançado** > **Página de instalação**
 
