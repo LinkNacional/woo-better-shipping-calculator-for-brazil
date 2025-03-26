@@ -33,14 +33,14 @@ If you find any bugs or have suggestions, open an issue in our [GitHub repositor
 == Installation ==  
 
 1. Access your WordPress admin and go to **Plugins > Add New**.  
-1. Search for "Improved Shipping Calculator for Brazilian Stores".  
-1. Find the plugin, click "Install Now", and then "Activate".  
-1. Done! No further configuration needed.  
+2. Search for "Improved Shipping Calculator for Brazilian Stores".
+3. Find the plugin, click "Install Now", and then "Activate".
+4. Done! No further configuration needed.
 
 == Screenshots ==  
 
 1. Comparison before and after installing the plugin.  
-1. Final result.  
+2. Final result.
 
 == Frequently Asked Questions ==  
 
