@@ -3,14 +3,16 @@
 </div>
 
 # Calculadora de frete melhorada para lojas brasileiras
-* Contributors: LinkNacional
-* Donate link: [LinkNacional](https://www.linknacional.com.br/)
-* Tags: woocommerce, brazil, shipping calculator, postcode
-* Tested up to: 6.7
-* Requires PHP: 7.3
-* Stable tag: 4.0.0
-* License: GPLv2 or later
-* License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
+
+* Contribuidores: LinkNacional
+* Link para doações: [LinkNacional](https://www.linknacional.com.br/)
+* Tags: woocommerce, brasil, calculadora de frete, CEP
+* Testado até: 6.7
+* Requer PHP: 7.3
+* Tag estável: 4.0.0
+* Licença: GPLv2 ou posterior
+* URI da licença: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
+
 
 ## Versão mais recente no Wordpress
 
