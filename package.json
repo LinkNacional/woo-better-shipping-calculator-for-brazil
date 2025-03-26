@@ -1,6 +1,6 @@
 {
   "name": "docker-php-dev-container",
-  "version": "3.2.2",
+  "version": "4.0.0",
   "description": "This repository provides a development environment for WordPress",
   "repository": {
     "type": "git",
