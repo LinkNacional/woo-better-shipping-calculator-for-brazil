@@ -24,7 +24,7 @@
 
 ## Descrição
 
-Calculadora de frete do WooCommerce otimizada para lojas brasileiras:
+Calculadora de frete melhorada para lojas brasileiras:
 
 * Remove os campos de país, estado e cidade.
 * Mantém o campo de CEP sempre visível.
@@ -35,7 +35,7 @@ Calculadora de frete do WooCommerce otimizada para lojas brasileiras:
 ## Como instalar?
 
 1. Acesse o painel de administração do WordPress e vá para **Plugins > Adicionar Novo**.
-2. Pesquise por "Calculadora de Frete Aprimorada para Lojas Brasileiras".
+2. Pesquise por "Calculadora de frete melhorada para lojas brasileiras".
 3. Encontre o plugin, clique em **Instalar Agora** e depois em **Ativar**.
 4. Pronto! Nenhuma configuração adicional é necessária.
 

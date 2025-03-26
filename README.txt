@@ -70,6 +70,9 @@ add_filter(
 
 == Changelog ==
 
+= 4.0.0 - 2025/03/26 =
+* Adjustment: Change of the plugin to the Object-Oriented (OO) model.
+
 = 3.2.2 =
 * Tested up to WordPress 6.6
 

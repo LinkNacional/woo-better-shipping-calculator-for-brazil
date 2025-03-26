@@ -1,5 +1,5 @@
 # 4.0.0 26/03/25
-* Ajuste: Mudança do plugin para o novo em OO(Orientação ao objeto)
+* Ajuste: Alteração do plugin para o modelo de Orientação a Objetos (OO).
 
 # 3.2.2  
 * Testado até o WordPress 6.6  
