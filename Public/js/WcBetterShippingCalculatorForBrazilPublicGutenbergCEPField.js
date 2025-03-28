@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 1000);
     };
 
-    function removeUnnecessaryFields(shippingAddressComponent) {
+    async function removeUnnecessaryFields(shippingAddressComponent) {
         const country = shippingAddressComponent.querySelector('.wc-block-components-address-form__country');
         const city = shippingAddressComponent.querySelector('.wc-block-components-address-form__city');
         const state = shippingAddressComponent.querySelector('.wc-block-components-address-form__state');
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (cityInput && cityInput.getAttribute('value') === '') {
                 cityInput.focus();
 
-                simulateTyping(cityInput, 'SP').then(() => {
+                await simulateTyping(cityInput, 'SP').then(() => {
                     cityInput.blur();
                     if (postcodeDiv) {
                         if (postcodeInput) {
@@ -62,10 +62,16 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     }
                 });
-            }
-            if (cityInput) {
-                previousCep = postcodeInput.value;
-                cityInput.remove();
+
+                if (cityInput) {
+                    previousCep = postcodeInput.value;
+                    cityInput.remove();
+                }
+            } else {
+                if (cityInput) {
+                    previousCep = postcodeInput.value;
+                    cityInput.remove();
+                }
             }
         }
         if (state) {
