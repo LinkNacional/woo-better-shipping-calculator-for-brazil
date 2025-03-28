@@ -156,6 +156,113 @@ class WcBetterShippingCalculatorForBrazil
         // detect state from postcode
         $this->loader->add_action('woocommerce_before_shipping_calculator', $plugin_admin, 'add_extra_css');
         $this->loader->add_filter('woocommerce_cart_calculate_shipping_address', $plugin_admin, 'prepare_address', 5);
+
+        $this->loader->add_action('rest_api_init', $this, 'lkn_register_custom_cep_route');
+    }
+
+    public function lkn_register_custom_cep_route()
+    {
+        register_rest_route('lknwcbettershipping/v1', '/cep/', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'lkn_get_cep_info'),
+            'args' => array(
+                'postcode' => array(
+                    'required' => true,
+                ),
+                'country' => array(
+                    'required' => true,
+                ),
+            ),
+        ));
+    }
+
+    public function lkn_get_cep_info(\WP_REST_Request $request)
+    {
+        // Pega o parâmetro cep da requisição
+        $cep = $request->get_param('postcode');
+
+        $country = $request->get_param('country');
+
+        // Verifica se o país é o Brasil (BR)
+        if (strtolower($country) !== 'br') {
+            return new \WP_REST_Response(
+                array(
+                    'status' => false,
+                    'message' => 'Somente CEPs do Brasil são aceitos.',
+                ),
+                400 // Erro de solicitação inválida
+            );
+        }
+
+        // Verifica se o CEP tem exatamente 8 dígitos numéricos, com ou sem hífen
+        if (!preg_match('/^\d{8}$/', $cep) && !preg_match('/^\d{5}-\d{3}$/', $cep)) {
+            return new \WP_REST_Response(
+                array(
+                    'status' => false,
+                    'message' => 'CEP inválido. O formato correto é XXXXX-XXX ou XXXXXXXX.',
+                ),
+                400 // Erro de solicitação inválida
+            );
+        }
+
+        // Se o formato for XXXXXXXX (sem o hífen), adiciona o hífen no formato XXXXX-XXX
+        if (preg_match('/^\d{8}$/', $cep)) {
+            $cep = substr($cep, 0, 5) . '-' . substr($cep, 5);
+        }
+
+        // Realiza a requisição à BrasilAPI
+        $response = wp_remote_get("https://brasilapi.com.br/api/cep/v2/{$cep}");
+
+        // Verifica se houve erro na requisição
+        if (is_wp_error($response)) {
+            return new \WP_REST_Response(
+                array(
+                    'status' => false,
+                    'message' => 'CEP inválido.',
+                ),
+                500
+            );
+        }
+
+        // Pega o corpo da resposta e converte em um array
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        // Verifica se o CEP foi encontrado na resposta
+        if (isset($data['cep'])) {
+            $state = $this->lkn_get_state_name_from_sigla($data['state']);
+            return new \WP_REST_Response(
+                array(
+                    'status' => true,
+                    'city' => $data['city'],
+                    'state_sigla' => $data['state'],
+                    'state' => $state,
+                    'address' => $data['street']
+                ),
+                200
+            );
+        }
+
+        // Caso a resposta seja um erro, como no caso de CEP inválido
+        if (isset($data['errors']) && !empty($data['errors'])) {
+            $error_message = $data['errors'][0]['message'];
+            return new \WP_REST_Response(
+                array(
+                    'status' => false,
+                    'message' => $error_message,
+                ),
+                404 // Erro de validação de CEP
+            );
+        }
+
+        // Caso o CEP não seja encontrado
+        return new \WP_REST_Response(
+            array(
+                'status' => false,
+                'message' => 'CEP não encontrado.',
+            ),
+            404 // Erro de não encontrado
+        );
     }
 
     public function woo_fields()
@@ -185,7 +292,6 @@ class WcBetterShippingCalculatorForBrazil
 
         // frontend scripts
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'add_extra_js');
-
     }
 
     /**
@@ -230,5 +336,45 @@ class WcBetterShippingCalculatorForBrazil
     public function get_version()
     {
         return $this->version;
+    }
+
+    public function lkn_get_state_name_from_sigla($sigla)
+    {
+        $estados = array(
+            'AC' => 'Acre',
+            'AL' => 'Alagoas',
+            'AP' => 'Amapá',
+            'AM' => 'Amazonas',
+            'BA' => 'Bahia',
+            'CE' => 'Ceará',
+            'DF' => 'Distrito Federal',
+            'ES' => 'Espírito Santo',
+            'GO' => 'Goiás',
+            'MA' => 'Maranhão',
+            'MT' => 'Mato Grosso',
+            'MS' => 'Mato Grosso do Sul',
+            'MG' => 'Minas Gerais',
+            'PA' => 'Pará',
+            'PB' => 'Paraíba',
+            'PR' => 'Paraná',
+            'PE' => 'Pernambuco',
+            'PI' => 'Piauí',
+            'RJ' => 'Rio de Janeiro',
+            'RN' => 'Rio Grande do Norte',
+            'RS' => 'Rio Grande do Sul',
+            'RO' => 'Rondônia',
+            'RR' => 'Roraima',
+            'SC' => 'Santa Catarina',
+            'SP' => 'São Paulo',
+            'SE' => 'Sergipe',
+            'TO' => 'Tocantins',
+        );
+
+        // Verifica se a sigla existe no array
+        if (array_key_exists($sigla, $estados)) {
+            return $estados[$sigla];
+        } else {
+            return $sigla;
+        }
     }
 }

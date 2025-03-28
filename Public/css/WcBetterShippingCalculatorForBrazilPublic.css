@@ -1,4 +1,30 @@
-/**
- * All of the CSS for your public-facing functionality should be
- * included in this file.
- */
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ccc;
+    border-top-color: #0073aa;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-left: 5px;
+    vertical-align: middle;
+    position: absolute;
+    top: 25%;
+    left: 45%;
+    transform: translate(-50%, -50%);
+}
+
+.lkn-wc-shipping-address-summary {
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Preto com 50% de opacidade */
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

@@ -103,11 +103,11 @@ class WcBetterShippingCalculatorForBrazilAdmin
          * between the defined hooks and the functions defined in this
          * class.
          */
-
         wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilAdmin.js', array( 'jquery' ), $this->version, false);
 
     }
 
+    // TODO remove?
     public function plugin_meta($plugin_meta, $plugin_file)
     {
         if (plugin_basename(h::config_get('FILE')) === $plugin_file) {
