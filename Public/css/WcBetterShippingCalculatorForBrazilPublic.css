@@ -15,8 +15,7 @@
 }
 
 .lkn-wc-shipping-address-summary {
-    background-color: rgba(0, 0, 0, 0.5);
-    /* Preto com 50% de opacidade */
+    background-color: rgba(0, 0, 0, 0.205);
 }
 
 @keyframes spin {

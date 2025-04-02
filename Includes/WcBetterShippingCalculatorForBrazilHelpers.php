@@ -61,11 +61,12 @@ abstract class WcBetterShippingCalculatorForBrazilHelpers
     public static function config_class_get($key, $default = null)
     {
         $key = \mb_strtoupper($key);
-        $value = isset(self::$values[ $key ]) ? self::$values[ $key ] : $default;
-        if (null === $value) {
-            throw new \Error(__METHOD__ . ": Undefined key $key");
+
+        if (!isset(self::$values[$key])) {
+            return $default;
         }
-        return $value;
+
+        return self::$values[$key];
     }
 
     // PLUGIN SLUG AND PREFIX

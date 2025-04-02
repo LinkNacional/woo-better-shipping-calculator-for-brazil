@@ -220,7 +220,7 @@ class WcBetterShippingCalculatorForBrazil
                     'status' => false,
                     'message' => 'CEP inválido.',
                 ),
-                500
+                400
             );
         }
 
