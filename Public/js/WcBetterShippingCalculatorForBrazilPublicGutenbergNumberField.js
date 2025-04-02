@@ -175,6 +175,16 @@ document.addEventListener("DOMContentLoaded", function () {
                             const shippingNumberInput = document.getElementById('shipping-number');
                             const shippingNumber = shippingNumberInput ? shippingNumberInput.value.trim() : '';
 
+                            const billingCheck = document.getElementById('checkbox-control-0')
+
+                            if (billingCheck) {
+                                if (billingCheck.checked) {
+                                    if (body?.billing_address?.address_1) {
+                                        body.billing_address.address_1 += ` - ${shippingNumber}`;
+                                    }
+                                }
+                            }
+
                             if (shippingNumber && body?.shipping_address?.address_1) {
                                 body.shipping_address.address_1 += ` - ${shippingNumber}`;
                             }
