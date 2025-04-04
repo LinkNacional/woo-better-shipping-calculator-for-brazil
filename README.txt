@@ -1,6 +1,6 @@
 === Improved Shipping Calculator for Brazilian Stores ===  
 Contributors: LinkNacional
-Donate link: [LinkNacional](https://www.linknacional.com.br/)
+Donate link: https://www.linknacional.com.br
 Tags: woocommerce, brazil, shipping calculator, postcode  
 Requires at least: 4.6  
 Tested up to: 6.7
