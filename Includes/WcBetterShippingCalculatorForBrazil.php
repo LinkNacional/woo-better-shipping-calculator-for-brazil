@@ -141,9 +141,6 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
         $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
 
-        // Notice
-        $this->loader->add_filter('plugin_row_meta', $plugin_admin, 'plugin_meta', 10, 2);
-
         // force shipping cart settings
         $this->loader->add_filter('option_woocommerce_enable_shipping_calc', $this, 'activate_fields', 20);
         $this->loader->add_filter('option_woocommerce_shipping_cost_requires_address', $this, 'activate_fields', 20);
