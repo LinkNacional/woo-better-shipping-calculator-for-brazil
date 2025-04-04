@@ -41,11 +41,26 @@ Calculadora de frete melhorada para lojas brasileiras:
 
 ## Screenshots:
 
-### ANTES:
-<img src="Includes/assets/images/oldShipping.png" alt="Frete antigo" width="200" />
+### Página de configuração:
+<img src="Includes/assets/images/settings.png" alt="Configuração do plugin" width="1000" />
 
-### DEPOIS:
-<img src="Includes/assets/images/newShipping.png" alt="Frete novo" width="200" />
+### Antes(shortcode):
+<img src="Includes/assets/images/oldShortShipping.png" alt="Frete antigo no shortcode" width="200" />
+
+### Depois(shortcode):
+<img src="Includes/assets/images/newShortShipping.png" alt="Frete novo no shortcode" width="200" />
+
+### Antes(Gutenberg)
+<img src="Includes/assets/images/oldGutenbergShipping.png" alt="Frete antigo no gutenberg" width="200" />
+
+### Depois(Gutenberg)
+<img src="Includes/assets/images/newGutenbergShipping.png" alt="Frete novo no gutenberg" width="200" />
+
+### Novo campo número
+<img src="Includes/assets/images/shortcodeCheckout.png" alt="Campo número no checkout do shortcode" width="600" />
+
+<img src="Includes/assets/images/gutenbergShortcode.png" alt="Campo número no checkout do shortcode" width="600" />
+
 
 **OBS:** Os dados utilizados nas screenshots são meramente ilustrativos.
 
@@ -73,9 +88,9 @@ Caminho: **WooCommerce** > **Configurações** > **Avançado** > **Página de in
 
 ## Contato:
 
-Possui dúvidas? Deseja dar um feedback sobre o que achou do plugin ou compartilhar novas ideias? Envie um e-mail para nosso contato:
+Possui dúvidas? Deseja dar um feedback sobre o que achou do plugin ou compartilhar novas ideias? Entre em contato conosco:
 
-E-mail: contato@linknacional.com
+[Atendimento LinkNacional](https://www.linknacional.com.br/atendimento/)
 
 
 

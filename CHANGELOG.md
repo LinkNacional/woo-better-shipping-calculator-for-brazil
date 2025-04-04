@@ -1,5 +1,8 @@
-# 4.0.0 26/03/25
+# 4.0.0 - 26/03/25
 * Ajuste: Alteração do plugin para o modelo de Orientação a Objetos (OO).
+* Novo tab de configuração para o plugin.
+* Compatibilidade com o Gutenberg.
+* Novo campo de número no checkout do Woocommerce(shortcode e gutenberg)
 
 # 3.2.2  
 * Testado até o WordPress 6.6  

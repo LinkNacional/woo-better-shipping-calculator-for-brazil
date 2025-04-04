@@ -71,7 +71,10 @@ add_filter(
 == Changelog ==
 
 = 4.0.0 - 2025/03/26 =
-* Adjustment: Change of the plugin to the Object-Oriented (OO) model.
+* Adjustment: Refactored the plugin to follow the Object-Oriented (OO) model.
+* New settings tab for the plugin.
+* Compatibility with Gutenberg.
+* New number field in the WooCommerce checkout (shortcode and Gutenberg block).
 
 = 3.2.2 =
 * Tested up to WordPress 6.6
