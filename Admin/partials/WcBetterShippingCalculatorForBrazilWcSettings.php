@@ -10,8 +10,8 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
 {
     public function __construct()
     {
-        $this->id    = 'woo-better-calc';
-        $this->label = __('Woo-better-calc', 'woocommerce');
+        $this->id    = 'wc-better-calc';
+        $this->label = __('wc-better-calc', 'wc-better-shipping-calculator-for-brazil');
         parent::__construct();
     }
 
@@ -20,21 +20,21 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
         $settings = array(
 
             array(
-                'title' => __('Configurações', 'woocommerce'),
-                'desc'  => __('Personalize o plugin através das seguintes opções:', 'woocommerce'),
+                'title' => __('Configurações', 'wc-better-shipping-calculator-for-brazil'),
+                'desc'  => __('Personalize o plugin através das seguintes opções:', 'wc-better-shipping-calculator-for-brazil'),
                 'type'  => 'title',
                 'id'    => 'woo_better_calc_options'
             ),
 
             array(
-                'title'    => __('CEP obrigatório no carrinho', 'woocommerce'),
-                'desc_tip' => __('Torna o campo de CEP obrigatório na página do carrinho.', 'woocommerce'),
+                'title'    => __('CEP obrigatório no carrinho', 'wc-better-shipping-calculator-for-brazil'),
+                'desc_tip' => __('Torna o campo de CEP obrigatório na página do carrinho.', 'wc-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_cep_required',
                 'default'  => 'no',
                 'type'     => 'select',
                 'options'  => array(
-                    'yes' => __('Sim', 'woocommerce'),
-                    'no'  => __('Não', 'woocommerce')
+                    'yes' => __('Sim', 'wc-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Não', 'wc-better-shipping-calculator-for-brazil')
                 )
             ),
 
@@ -46,9 +46,8 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             array(
                 'title' => '',
                 'desc'  => __(
-                    'Avalie nosso plugin <a href="https://br.wordpress.org/plugins/woo-better-shipping-calculator-for-brazil/#reviews" target="_blank">★★★★★</a> . ' .
-                    'Quer conhecer mais sobre nossos plugins ou deseja tirar alguma dúvida? Acesse: <a href="https://www.linknacional.com.br" target="_blank">Link Nacional</a>',
-                    'woocommerce'
+                    'Avalie nosso plugin <a href="https://br.wordpress.org/plugins/woo-better-shipping-calculator-for-brazil/#reviews" target="_blank">★★★★★</a>. Quer conhecer mais sobre nossos plugins ou deseja tirar alguma dúvida? Acesse: <a href="https://www.linknacional.com.br" target="_blank">Link Nacional</a>',
+                    'wc-better-shipping-calculator-for-brazil'
                 ),
                 'type'  => 'title',
                 'id'    => 'woo_better_calc_footer',

@@ -164,7 +164,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             $this->plugin_name . '-frontend',
             'wc_better_shipping_calculator_for_brazil_params',
             [
-                'postcode_placeholder' => esc_attr__('Type your postcode', $this->plugin_name),
+                'postcode_placeholder' => esc_attr__('Type your postcode', 'wc-better-shipping-calculator-for-brazil'),
                 'postcode_input_type' => 'tel',
                 'selectors' => [
                     'postcode' => '#calc_shipping_postcode',

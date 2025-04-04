@@ -173,7 +173,7 @@ class WcBetterShippingCalculatorForBrazil
         // Checkbox
         $fields['billing']['lkn_billing_checkbox'] = array(
             'type'        => 'checkbox',
-            'label'       => __('Sem número (S/N)', 'woocommerce'),
+            'label'       => __('Sem número (S/N)', 'wc-better-shipping-calculator-for-brazil'),
             'required'    => false,
             'class'       => array('form-row-wide'),
             'priority'    => 60,
@@ -181,8 +181,8 @@ class WcBetterShippingCalculatorForBrazil
 
         // Adiciona um novo campo dentro do endereço de cobrança
         $fields['billing']['lkn_billing_shipping_number'] = array(
-            'label'       => __('Número', 'woocommerce'),
-            'placeholder' => __('Ex: 123a', 'woocommerce'),
+            'label'       => __('Número', 'wc-better-shipping-calculator-for-brazil'),
+            'placeholder' => __('Ex: 123a', 'wc-better-shipping-calculator-for-brazil'),
             'required'    => true,
             'class'       => array('form-row-wide'),
             'priority'    => 65,

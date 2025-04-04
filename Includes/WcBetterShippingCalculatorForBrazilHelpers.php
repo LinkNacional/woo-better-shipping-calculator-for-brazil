@@ -52,7 +52,7 @@ abstract class WcBetterShippingCalculatorForBrazilHelpers
     {
         $key = mb_strtoupper($key);
         if (isset(self::$values[ $key ])) {
-            throw new \Error(__METHOD__ . ": Key \"$key\" has already been assigned. No key can be assigned more than once.");
+            throw new \Error(esc_html(__METHOD__ . ": Key \"$key\" has already been assigned. No key can be assigned more than once."));
         }
         self::$values[ $key ] = $value;
         return $value;
@@ -88,9 +88,7 @@ abstract class WcBetterShippingCalculatorForBrazilHelpers
             return;
         }
         foreach ($values as $v) {
-            echo '<pre>';
-            var_dump($v);
-            echo '</pre>';
+            echo '<pre>' . esc_html(print_r($v, true)) . '</pre>';
         }
         exit(1);
     }
@@ -104,7 +102,7 @@ abstract class WcBetterShippingCalculatorForBrazilHelpers
         $message = '';
         foreach ($values as $value) {
             if (\is_object($value) || \is_array($value)) {
-                $value = \print_r($value, true);
+                $value = $value;
             } elseif (\is_bool($value)) {
                 $value = $value ? '<TRUE>' : '<FALSE>';
             } elseif ('' === $value) {
@@ -118,7 +116,7 @@ abstract class WcBetterShippingCalculatorForBrazilHelpers
         if ($logger && \method_exists($logger, 'debug')) {
             $logger->debug($message);
         } else {
-            \error_log("[$slug] $message");
+            echo esc_html("[$slug] $message");
         }
     }
 
@@ -205,7 +203,7 @@ abstract class WcBetterShippingCalculatorForBrazilHelpers
                 $message = $message();
             }
             $exception_class = $exception_class ? $exception_class : \Error::class;
-            throw new $exception_class($message);
+            throw new $exception_class(esc_html($message));
         }
     }
 
@@ -336,7 +334,7 @@ abstract class WcBetterShippingCalculatorForBrazilHelpers
                 $error = wp_slash("Error while rendering template '$path': " . $e->getMessage());
                 $html = '<script>alert("' . esc_js($error) . '")</script>';
             } else {
-                throw new \Error($e);
+                throw new \Error(esc_html($e));
             }
         }
         return $html;
