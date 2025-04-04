@@ -150,6 +150,16 @@ class WcBetterShippingCalculatorForBrazilPublic
             );
         }
 
+        if (is_checkout()) {
+            wp_enqueue_script(
+                $this->plugin_name . '-short-number-field',
+                plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicShortNumberField.js',
+                array(),
+                $this->version,
+                false
+            );
+        }
+
     }
 
     public function add_extra_js()

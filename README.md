@@ -69,7 +69,7 @@ Caminho: **WooCommerce** > **Configurações** > **Avançado** > **Página de in
 
 <img src="Includes/assets/images/woocommerceSettings.png" alt="Configurações do WooCommerce" width="800" />
 
-**Considerações finais**: A partir dessas configurações básicas, seu carrinho personalizado irá carregar durante o processo de pagamento. Lembre-se de que, nas próximas atualizações, esse problema deixará de existir.
+**Considerações finais**: A partir dessas configurações básicas, seu carrinho personalizado irá carregar durante o processo de pagamento.
 
 ## Contato:
 

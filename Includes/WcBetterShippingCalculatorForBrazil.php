@@ -156,8 +156,62 @@ class WcBetterShippingCalculatorForBrazil
         // detect state from postcode
         $this->loader->add_action('woocommerce_before_shipping_calculator', $plugin_admin, 'add_extra_css');
         $this->loader->add_filter('woocommerce_cart_calculate_shipping_address', $plugin_admin, 'prepare_address', 5);
+        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field');
 
         $this->loader->add_action('rest_api_init', $this, 'lkn_register_custom_cep_route');
+        $this->loader->add_action('woocommerce_checkout_update_order_meta', $this, 'lkn_merge_address_checkout');
+    }
+
+    public function lkn_add_custom_checkout_field($fields)
+    {
+        // Checkbox
+        $fields['billing']['lkn_billing_checkbox'] = array(
+            'type'        => 'checkbox',
+            'label'       => __('Sem número (S/N)', 'woocommerce'),
+            'required'    => false,
+            'class'       => array('form-row-wide'),
+            'priority'    => 60,
+        );
+
+        // Adiciona um novo campo dentro do endereço de cobrança
+        $fields['billing']['lkn_billing_shipping_number'] = array(
+            'label'       => __('Número', 'woocommerce'),
+            'placeholder' => __('Ex: 123a', 'woocommerce'),
+            'required'    => true,
+            'class'       => array('form-row-wide'),
+            'priority'    => 65,
+        );
+
+        return $fields;
+    }
+
+    public function lkn_merge_address_checkout($order_id)
+    {
+        $number = '';
+
+        if (isset($_POST['lkn_billing_shipping_number'])) {
+            $number = sanitize_text_field(wp_unslash($_POST['lkn_billing_shipping_number']));
+            update_post_meta($order_id, '_lkn_billing_shipping_number', $number);
+        }
+
+        // Obtém os valores dos campos preenchidos pelo usuário
+        $billing_endereco = get_post_meta($order_id, '_billing_address_1', true);
+        $shipping_endereco = get_post_meta($order_id, '_billing_address_1', true);
+        $number = get_post_meta($order_id, '_lkn_billing_shipping_number', true);
+
+        if (!$number) {
+            $number = "S/N";
+        }
+
+        if (!empty($billing_endereco) && !empty($number)) {
+            $novo_endereco = $billing_endereco . ' - ' . $number;
+            update_post_meta($order_id, '_billing_address_1', $novo_endereco);
+        }
+
+        if (!empty($shipping_endereco) && !empty($number)) {
+            $novo_endereco = $shipping_endereco . ' - ' . $number;
+            update_post_meta($order_id, '_shipping_address_1', $novo_endereco);
+        }
     }
 
     public function lkn_register_custom_cep_route()
