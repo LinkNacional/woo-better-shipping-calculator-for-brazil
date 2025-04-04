@@ -53,12 +53,11 @@ document.addEventListener('DOMContentLoaded', function () {
             postcodeInput = postcodeDiv.querySelector('input');
         }
 
-
-
         if (country) {
             inputCountry = country.querySelector('select');
             country.remove();
         }
+
         if (city) {
             const cityInput = city.querySelector('input');
 
