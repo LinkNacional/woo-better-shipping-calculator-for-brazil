@@ -2,6 +2,7 @@
 
 namespace Lkn\WcBetterShippingCalculatorForBrazil\Includes;
 
+use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilWcSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdmin;
 use Lkn\WcBetterShippingCalculatorForBrazil\PublicView\WcBetterShippingCalculatorForBrazilPublic;
 
@@ -157,6 +158,14 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('rest_api_init', $this, 'lkn_register_custom_cep_route');
         $this->loader->add_action('woocommerce_checkout_update_order_meta', $this, 'lkn_merge_address_checkout');
+
+        $this->loader->add_filter('woocommerce_get_settings_pages', $this, 'lkn_add_woo_better_settings_page');
+    }
+
+    public function lkn_add_woo_better_settings_page($settings)
+    {
+        $settings[] = new WcBetterShippingCalculatorForBrazilWcSettings();
+        return $settings;
     }
 
     public function lkn_add_custom_checkout_field($fields)

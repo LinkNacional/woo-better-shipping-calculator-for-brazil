@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function handleSubmitClick(inputPostcode, inputCountry, continueButton) {
-        if (continueButton) {
+        if (continueButton && wcBetterShippingCalculatorParams.cep_required === 'yes') {
             disableButton(continueButton)
             continueButton.removeEventListener('click', handleClick);
             continueButton.addEventListener('click', handleClick);
@@ -190,7 +190,9 @@ document.addEventListener('DOMContentLoaded', function () {
                                                     strongElement.textContent = `${inputPostcode.value}, ${data.city}, ${data.state}, Brasil`;
                                                     removeLoading(addressSummary);
                                                     previousText = strongElement.textContent;
-                                                    enableButton(continueButton);
+                                                    if (wcBetterShippingCalculatorParams.cep_required === 'yes') {
+                                                        enableButton(continueButton);
+                                                    }
                                                     clearInterval(checkTextChange);
                                                 }
                                             }, 500);
@@ -249,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             } else {
                 clearCepInterval = true
-                if (isValidCEP(inputPostcode.value) && errorRequest === false) {
+                if (isValidCEP(inputPostcode.value) && errorRequest === false && wcBetterShippingCalculatorParams.cep_required === 'yes') {
                     enableButton(continueButton)
                 }
             }
@@ -283,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (shippingAddressComponent) {
                 continueButton = document.querySelector('.wc-block-components-button.wp-element-button.wc-block-cart__submit-button.contained');
 
-                if (continueButton && !confirmButton) {
+                if (continueButton && !confirmButton && wcBetterShippingCalculatorParams.cep_required === 'yes') {
                     confirmButton = true;
                     disableButton(continueButton)
                     continueButton.addEventListener('click', handleClick);

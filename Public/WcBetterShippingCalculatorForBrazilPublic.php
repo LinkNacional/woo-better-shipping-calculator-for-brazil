@@ -114,28 +114,12 @@ class WcBetterShippingCalculatorForBrazilPublic
                 false
             );
 
-            // Dados de endereço
-            $address = WC()->customer->get_shipping_address() ?: '';
-            $city = WC()->customer->get_shipping_city() ?: '';
-            $state = WC()->customer->get_shipping_state() ?: '';
-            $postcode = WC()->customer->get_shipping_postcode() ?: '';
-
-            // Obter o nome completo do estado
-            $states = WC()->countries->get_states('BR');
-            $state_name = $state && isset($states[$state]) ? $states[$state] : $state;
-
-            // Formatar o endereço para exibir no formulário
-            $formatted_address = trim("{$address}, {$city}, {$state_name}, {$postcode}", ', ');
-
             // Passar os dados para o JS
             wp_localize_script(
                 $this->plugin_name . '-gutenberg-cep-field',
                 'wcBetterShippingCalculatorParams',
                 array(
-                    'address' => $formatted_address,
-                    'postcode' => $postcode,
-                    'ajax_url' => admin_url('admin-ajax.php'),
-                    'nonce'    => wp_create_nonce('update_shipping_rate_nonce')
+                    'cep_required' => get_option('woo_better_calc_cep_required', 'no') // 'no' como fallback
                 )
             );
         }
