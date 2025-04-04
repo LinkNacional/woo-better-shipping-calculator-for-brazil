@@ -11,7 +11,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
     public function __construct()
     {
         $this->id    = 'wc-better-calc';
-        $this->label = __('wc-better-calc', 'wc-better-shipping-calculator-for-brazil');
+        $this->label = __('Wc-better-calc', 'wc-better-shipping-calculator-for-brazil');
         parent::__construct();
     }
 
