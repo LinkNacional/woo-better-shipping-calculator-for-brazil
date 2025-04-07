@@ -142,10 +142,12 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_filter('woocommerce_get_settings_pages', $this, 'lkn_add_woo_better_settings_page');
 
-        $this->loader->add_action('admin_footer', $this, 'test_test');
+        $this->loader->add_action('admin_footer', $this, 'lkn_woo_better_footer_page');
+
+        $this->loader->add_filter('plugin_action_links_' . WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_BASENAME, $this, 'lkn_add_settings_link', 10, 2);
     }
 
-    public function test_test($value)
+    public function lkn_woo_better_footer_page()
     {
         // Verifica se estamos na página e na aba correta
         if (
@@ -162,6 +164,21 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
     }
+
+    public function lkn_add_settings_link($links)
+    {
+        $url = esc_url(admin_url('admin.php?page=wc-settings&tab=wc-better-calc'));
+
+        $settings_link = sprintf(
+            '<a href="%s">%s</a>',
+            $url,
+            esc_html__('Configurações', 'woo-better-shipping-calculator-for-brazil')
+        );
+
+        $links[] = $settings_link;
+        return $links;
+    }
+
 
     public function lkn_add_woo_better_settings_page($settings)
     {
