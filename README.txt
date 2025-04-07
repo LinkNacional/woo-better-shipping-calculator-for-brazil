@@ -28,7 +28,9 @@ When you need help, create a topic in the [Plugin Forum](https://wordpress.org/s
 
 = Contributions =  
 
-If you find any bugs or have suggestions, open an issue in our [GitHub repository](https://github.com/luizbills/wc-better-shipping-calculator-for-brazil).  
+If you find any bugs or have suggestions, open an issue in our [GitHub repository](https://github.com/luizbills/wc-better-shipping-calculator-for-brazil).
+
+[Brasil API](https://brasilapi.com.br) - CEP Field.
 
 == Installation ==  
 
