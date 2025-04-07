@@ -43,19 +43,21 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'id'   => 'woo_better_calc_options'
             ),
 
+            // Shortcodes info
             array(
-                'title' => '',
+                'title' => __('Shortcodes', 'wc-better-shipping-calculator-for-brazil'),
                 'desc'  => __(
-                    'Avalie nosso plugin <a href="https://br.wordpress.org/plugins/woo-better-shipping-calculator-for-brazil/#reviews" target="_blank">★★★★★</a>. Quer conhecer mais sobre nossos plugins ou deseja tirar alguma dúvida? Acesse: <a href="https://www.linknacional.com.br" target="_blank">Link Nacional</a>',
+                    'Caso deseje, também é possível utilizar os shortcodes abaixo para configurar o fluxo de pagamento no seu site.<br><br><strong>Carrinho:</strong> <code>[woocommerce_cart]</code><br><br><strong>Finalização de compra:</strong> <code>[woocommerce_checkout]</code>',
                     'wc-better-shipping-calculator-for-brazil'
                 ),
                 'type'  => 'title',
-                'id'    => 'woo_better_calc_footer',
+                'id'    => 'woo_better_calc_shortcodes',
             )
         );
 
         return apply_filters('woocommerce_get_settings_' . $this->id, $settings);
     }
+
 
     public function output()
     {

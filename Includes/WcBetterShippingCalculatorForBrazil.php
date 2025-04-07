@@ -160,6 +160,26 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('woocommerce_checkout_update_order_meta', $this, 'lkn_merge_address_checkout');
 
         $this->loader->add_filter('woocommerce_get_settings_pages', $this, 'lkn_add_woo_better_settings_page');
+
+        $this->loader->add_action('admin_footer', $this, 'test_test');
+    }
+
+    public function test_test($value)
+    {
+        // Verifica se estamos na página e na aba correta
+        if (
+            isset($_GET['page'], $_GET['tab']) &&
+            sanitize_text_field(wp_unslash($_GET['page'])) === 'wc-settings' &&
+            sanitize_text_field(wp_unslash($_GET['tab'])) === 'wc-better-calc'
+        ) {
+            wp_enqueue_script(
+                'wc-better-calc-footer-message',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/js/WcBetterShippingCalculatorForBrazilAdminSettings.js',
+                array(),
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                true
+            );
+        }
     }
 
     public function lkn_add_woo_better_settings_page($settings)
