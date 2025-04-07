@@ -14,7 +14,7 @@
  *
  * @wordpress-plugin
  * Plugin Name:       Calculadora de frete melhorada para lojas brasileiras
- * Plugin URI:        https://www.linknacional.com.br/wordpress/givewp/
+ * Plugin URI:        https://www.linknacional.com.br/wordpress
  * Description:       Calculadora de frete do WooCommerce otimizada para lojas brasileiras: remove dos campos de país, estado e cidade. E alguns outros ajustes.
  * Version:           4.0.0
  * Author:            Link Nacional
@@ -23,7 +23,7 @@
  * Requires at least: 4.6
  * License:           GPLv2 or later
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
- * Text Domain:       wc-better-shipping-calculator-for-brazil
+ * Text Domain:       woo-better-shipping-calculator-for-brazil
  * Domain Path:       /languages
  * Requires Plugins: woocommerce
  */

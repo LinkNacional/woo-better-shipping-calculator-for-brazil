@@ -112,7 +112,7 @@ class WcBetterShippingCalculatorForBrazilAdmin
         // translate to "Calcule o frete:"
         $postcode_label = apply_filters(
             h::prefix('postcode_label'),
-            __('Calculate shipping:', 'wc-better-shipping-calculator-for-brazil')
+            __('Calculate shipping:', 'woo-better-shipping-calculator-for-brazil')
         );
         ?>
 <style>

@@ -87,9 +87,12 @@ abstract class WcBetterShippingCalculatorForBrazilHelpers
         if (! WP_DEBUG) {
             return;
         }
+
         foreach ($values as $v) {
-            echo '<pre>' . esc_html(print_r($v, true)) . '</pre>';
+            $json = wp_json_encode($v, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            echo '<pre>' . esc_html($json) . '</pre>';
         }
+
         exit(1);
     }
 

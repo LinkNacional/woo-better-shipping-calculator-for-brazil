@@ -82,7 +82,6 @@ class WcBetterShippingCalculatorForBrazil
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
         $this->load_dependencies();
-        $this->set_locale();
         $this->define_admin_hooks();
         $this->define_public_hooks();
 
@@ -107,24 +106,6 @@ class WcBetterShippingCalculatorForBrazil
     private function load_dependencies()
     {
         $this->loader = new WcBetterShippingCalculatorForBrazilLoader();
-    }
-
-    /**
-     * Define the locale for this plugin for internationalization.
-     *
-     * Uses the WcBetterShippingCalculatorForBrazilI18n class in order to set the domain and to register the hook
-     * with WordPress.
-     *
-     * @since    1.0.0
-     * @access   private
-     */
-    private function set_locale()
-    {
-
-        $plugin_i18n = new WcBetterShippingCalculatorForBrazilI18n();
-
-        $this->loader->add_action('plugins_loaded', $plugin_i18n, 'load_plugin_textdomain');
-
     }
 
     /**
@@ -193,7 +174,7 @@ class WcBetterShippingCalculatorForBrazil
         // Checkbox
         $fields['billing']['lkn_billing_checkbox'] = array(
             'type'        => 'checkbox',
-            'label'       => __('Sem número (S/N)', 'wc-better-shipping-calculator-for-brazil'),
+            'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
             'required'    => false,
             'class'       => array('form-row-wide'),
             'priority'    => 60,
@@ -201,8 +182,8 @@ class WcBetterShippingCalculatorForBrazil
 
         // Adiciona um novo campo dentro do endereço de cobrança
         $fields['billing']['lkn_billing_shipping_number'] = array(
-            'label'       => __('Número', 'wc-better-shipping-calculator-for-brazil'),
-            'placeholder' => __('Ex: 123a', 'wc-better-shipping-calculator-for-brazil'),
+            'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
+            'placeholder' => __('Ex: 123a', 'woo-better-shipping-calculator-for-brazil'),
             'required'    => true,
             'class'       => array('form-row-wide'),
             'priority'    => 65,
