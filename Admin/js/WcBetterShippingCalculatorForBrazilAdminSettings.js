@@ -4,10 +4,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const div = document.createElement('div');
         div.innerHTML = `
             <p>
-                Avalie nosso plugin
+                Quer conhecer mais sobre nossos plugins? Suporte WordPress 24h:
+                <a href="https://www.linknacional.com.br/wordpress" target="_blank">Link Nacional</a>
+                | Avalie nosso plugin
                 <a href="https://br.wordpress.org/plugins/woo-better-shipping-calculator-for-brazil/#reviews" target="_blank">★★★★★</a>.
-                Quer conhecer mais sobre nossos plugins ou tirar alguma dúvida? Acesse:
-                <a href="https://www.linknacional.com.br/wordpress" target="_blank">Link Nacional</a>.
             </p>
         `;
         // Inserir abaixo do <p class="submit">

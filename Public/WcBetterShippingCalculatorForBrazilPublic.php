@@ -125,23 +125,29 @@ class WcBetterShippingCalculatorForBrazilPublic
         }
 
         if (has_block('woocommerce/checkout')) {
-            wp_enqueue_script(
-                $this->plugin_name . '-gutenberg-number-field',
-                plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergNumberField.js',
-                array(),
-                $this->version,
-                false
-            );
+            $number_field = get_option('woo_better_calc_number_required', 'no');
+            if ($number_field === 'yes') {
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-number-field',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergNumberField.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+            }
         }
 
         if (is_checkout()) {
-            wp_enqueue_script(
-                $this->plugin_name . '-short-number-field',
-                plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicShortNumberField.js',
-                array(),
-                $this->version,
-                false
-            );
+            $number_field = get_option('woo_better_calc_number_required', 'no');
+            if ($number_field === 'yes') {
+                wp_enqueue_script(
+                    $this->plugin_name . '-short-number-field',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicShortNumberField.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+            }
         }
 
     }

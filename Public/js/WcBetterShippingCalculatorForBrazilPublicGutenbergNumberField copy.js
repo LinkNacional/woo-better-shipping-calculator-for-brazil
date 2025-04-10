@@ -5,59 +5,19 @@ document.addEventListener("DOMContentLoaded", function () {
         const shippingBlock = document.querySelector('#shipping')
 
         if (shippingBlock && !blockFound) {
-            const shippingAddress1 = shippingBlock.querySelector('.wc-block-components-text-input.wc-block-components-address-form__address_1');
+            blockFound = true
+            const shippingName = shippingBlock.querySelector('.wc-block-components-text-input.wc-block-components-address-form__first_name')
+            const editButton = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="shipping"]');
 
-            if (shippingAddress1) {
-                blockFound = true
-                const shippingName = shippingBlock.querySelector('.wc-block-components-text-input.wc-block-components-address-form__first_name')
-                const editButton = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="shipping"]');
+            if (editButton.getAttribute('aria-expanded') != true) {
+                editButton.click()
+            }
 
-                if (editButton.getAttribute('aria-expanded') != true) {
-                    editButton.click()
-                }
+            if (shippingBlock) {
+                const shippingAddress1 = shippingBlock.querySelector('.wc-block-components-text-input.wc-block-components-address-form__address_1');
 
-                if (shippingName) {
-                    // Criando o checkbox clonado e personalizado
-                    const clonedCheckbox = document.createElement('div');
-                    clonedCheckbox.className = 'wc-block-components-checkbox wc-block-checkout__use-address-for-billing wc-better';
-
-                    // Criando a label
-                    const checkboxLabel = document.createElement('label');
-                    checkboxLabel.setAttribute('for', 'wc-better-checkbox');
-
-                    // Criando o input checkbox
-                    const checkboxInput = document.createElement('input');
-                    checkboxInput.id = 'wc-better-checkbox';
-                    checkboxInput.className = 'wc-block-components-checkbox__input';
-                    checkboxInput.type = 'checkbox';
-                    checkboxInput.setAttribute('aria-invalid', 'false');
-
-                    // Criando o SVG do checkmark
-                    const checkboxSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    checkboxSvg.setAttribute('class', 'wc-block-components-checkbox__mark');
-                    checkboxSvg.setAttribute('aria-hidden', 'true');
-                    checkboxSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                    checkboxSvg.setAttribute('viewBox', '0 0 24 20');
-
-                    // Criando o caminho do checkmark dentro do SVG
-                    const checkboxPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    checkboxPath.setAttribute('d', 'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z');
-
-                    // Adicionando o path ao SVG
-                    checkboxSvg.appendChild(checkboxPath);
-
-                    // Criando o texto da label
-                    const checkboxText = document.createElement('span');
-                    checkboxText.className = 'wc-block-components-checkbox__label';
-                    checkboxText.textContent = 'Sem número (S/N)';
-
-                    // Montando a estrutura
-                    checkboxLabel.appendChild(checkboxInput);
-                    checkboxLabel.appendChild(checkboxSvg);
-                    checkboxLabel.appendChild(checkboxText);
-                    clonedCheckbox.appendChild(checkboxLabel);
-
-                    // Agora clona o input como antes
+                if (shippingAddress1) {
+                    // Clonando o input como base para o campo "Número"
                     const clonedElement = shippingName.cloneNode(true);
                     clonedElement.className = 'wc-block-components-text-input wc-block-components-address-form__number is-active';
 
@@ -93,19 +53,50 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     const errorPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     errorPath.setAttribute('d', 'M10 2c4.42 0 8 3.58 8 8s-3.58 8-8 8-8-3.58-8-8 3.58-8 8-8zm1.13 9.38l.35-6.46H8.52l.35 6.46h2.26zm-.09 3.36c.24-.23.37-.55.37-.96 0-.42-.12-.74-.36-.97s-.59-.35-1.06-.35-.82.12-1.07.35-.37.55-.37.97c0 .41.13.73.38.96.26.23.61.34 1.06.34s.8-.11 1.05-.34z');
-
                     errorSvg.appendChild(errorPath);
+
                     const errorMessage = document.createElement('span');
                     errorMessage.textContent = 'Por favor, insira um número válido.';
-
                     errorParagraph.appendChild(errorSvg);
                     errorParagraph.appendChild(errorMessage);
                     errorDiv.appendChild(errorParagraph);
                     clonedElement.appendChild(errorDiv);
 
+                    // Criando o checkbox
+                    const clonedCheckbox = document.createElement('div');
+                    clonedCheckbox.className = 'wc-block-components-checkbox wc-block-checkout__use-address-for-billing wc-better';
 
-                    shippingAddress1.insertAdjacentElement('afterend', clonedCheckbox);
+                    const checkboxLabel = document.createElement('label');
+                    checkboxLabel.setAttribute('for', 'wc-better-checkbox');
+
+                    const checkboxInput = document.createElement('input');
+                    checkboxInput.id = 'wc-better-checkbox';
+                    checkboxInput.className = 'wc-block-components-checkbox__input';
+                    checkboxInput.type = 'checkbox';
+                    checkboxInput.setAttribute('aria-invalid', 'false');
+
+                    const checkboxSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    checkboxSvg.setAttribute('class', 'wc-block-components-checkbox__mark');
+                    checkboxSvg.setAttribute('aria-hidden', 'true');
+                    checkboxSvg.setAttribute('viewBox', '0 0 24 20');
+
+                    const checkboxPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    checkboxPath.setAttribute('d', 'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z');
+                    checkboxSvg.appendChild(checkboxPath);
+
+                    const checkboxText = document.createElement('span');
+                    checkboxText.className = 'wc-block-components-checkbox__label';
+                    checkboxText.textContent = 'Sem número (S/N)';
+
+                    checkboxLabel.appendChild(checkboxInput);
+                    checkboxLabel.appendChild(checkboxSvg);
+                    checkboxLabel.appendChild(checkboxText);
+                    clonedCheckbox.appendChild(checkboxLabel);
+
+                    // Primeiro insere o campo Número depois do address_1
                     shippingAddress1.insertAdjacentElement('afterend', clonedElement);
+                    // Depois insere o checkbox abaixo do campo Número
+                    clonedElement.insertAdjacentElement('afterend', clonedCheckbox);
                 }
             }
         }

@@ -162,6 +162,14 @@ class WcBetterShippingCalculatorForBrazil
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true
             );
+
+            wp_enqueue_style(
+                'wc-better-calc-style-settings',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/css/WcBetterShippingCalculatorForBrazilAdminSettings.css',
+                array(),
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                'all'
+            );
         }
     }
 
@@ -188,23 +196,27 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_add_custom_checkout_field($fields)
     {
-        // Checkbox
-        $fields['billing']['lkn_billing_checkbox'] = array(
-            'type'        => 'checkbox',
-            'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
-            'required'    => false,
-            'class'       => array('form-row-wide'),
-            'priority'    => 60,
-        );
+        $number_field = get_option('woo_better_calc_number_required', 'no');
 
-        // Adiciona um novo campo dentro do endereço de cobrança
-        $fields['billing']['lkn_billing_shipping_number'] = array(
-            'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
-            'placeholder' => __('Ex: 123a', 'woo-better-shipping-calculator-for-brazil'),
-            'required'    => true,
-            'class'       => array('form-row-wide'),
-            'priority'    => 65,
-        );
+        if ($number_field === 'yes') {
+            // Adiciona um novo campo dentro do endereço de cobrança
+            $fields['billing']['lkn_billing_shipping_number'] = array(
+                'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Ex: 123a', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => true,
+                'class'       => array('form-row-wide'),
+                'priority'    => 52,
+            );
+
+            // Checkbox
+            $fields['billing']['lkn_billing_checkbox'] = array(
+                'type'        => 'checkbox',
+                'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => false,
+                'class'       => array('form-row-wide'),
+                'priority'    => 55,
+            );
+        }
 
         return $fields;
     }
