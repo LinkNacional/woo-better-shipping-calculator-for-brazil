@@ -9,6 +9,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const billingBlock = document.querySelector('#billing')
 
+        if (!shippingBlock) {
+            shippingBlockFound = false
+        }
+
         if (!billingBlock) {
             billingBlockFound = false
         }

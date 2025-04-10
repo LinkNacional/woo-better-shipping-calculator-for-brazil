@@ -200,7 +200,7 @@ class WcBetterShippingCalculatorForBrazil
 
         if ($number_field === 'yes') {
             // Adiciona um novo campo dentro do endereço de cobrança
-            $fields['billing']['lkn_billing_shipping_number'] = array(
+            $fields['billing']['lkn_billing_number'] = array(
                 'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
                 'placeholder' => __('Ex: 123a', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
@@ -216,6 +216,23 @@ class WcBetterShippingCalculatorForBrazil
                 'class'       => array('form-row-wide'),
                 'priority'    => 55,
             );
+
+            $fields['shipping']['lkn_shipping_number'] = array(
+                'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Ex: 123a', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => true,
+                'class'       => array('form-row-wide'),
+                'priority'    => 52,
+            );
+
+            // Checkbox
+            $fields['shipping']['lkn_shipping_checkbox'] = array(
+                'type'        => 'checkbox',
+                'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => false,
+                'class'       => array('form-row-wide'),
+                'priority'    => 55,
+            );
         }
 
         return $fields;
@@ -223,29 +240,41 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_merge_address_checkout($order_id)
     {
-        $number = '';
+        $shipping_number = '';
+        $billing_number = '';
 
-        if (isset($_POST['lkn_billing_shipping_number'])) {
-            $number = sanitize_text_field(wp_unslash($_POST['lkn_billing_shipping_number']));
-            update_post_meta($order_id, '_lkn_billing_shipping_number', $number);
+        if (isset($_POST['lkn_billing_number'])) {
+            $number = sanitize_text_field(wp_unslash($_POST['lkn_billing_number']));
+            update_post_meta($order_id, '_lkn_billing_number', $number);
+        }
+
+        if (isset($_POST['lkn_shipping_number'])) {
+            $number = sanitize_text_field(wp_unslash($_POST['lkn_shipping_number']));
+            update_post_meta($order_id, '_lkn_shipping_number', $number);
         }
 
         // Obtém os valores dos campos preenchidos pelo usuário
         $billing_endereco = get_post_meta($order_id, '_billing_address_1', true);
-        $shipping_endereco = get_post_meta($order_id, '_billing_address_1', true);
-        $number = get_post_meta($order_id, '_lkn_billing_shipping_number', true);
+        $shipping_endereco = get_post_meta($order_id, '_shipping_address_1', true);
 
-        if (!$number) {
-            $number = "S/N";
+        $shipping_number = get_post_meta($order_id, '_lkn_shipping_number', true);
+        $billing_number = get_post_meta($order_id, '_lkn_billing_number', true);
+
+        if (!$shipping_number) {
+            $shipping_number = "S/N";
         }
 
-        if (!empty($billing_endereco) && !empty($number)) {
-            $novo_endereco = $billing_endereco . ' - ' . $number;
+        if (!$billing_number) {
+            $billing_number = "S/N";
+        }
+
+        if (!empty($billing_endereco)) {
+            $novo_endereco = $billing_endereco . ' - ' . $billing_number;
             update_post_meta($order_id, '_billing_address_1', $novo_endereco);
         }
 
-        if (!empty($shipping_endereco) && !empty($number)) {
-            $novo_endereco = $shipping_endereco . ' - ' . $number;
+        if (!empty($shipping_endereco)) {
+            $novo_endereco = $shipping_endereco . ' - ' . $shipping_number;
             update_post_meta($order_id, '_shipping_address_1', $novo_endereco);
         }
     }

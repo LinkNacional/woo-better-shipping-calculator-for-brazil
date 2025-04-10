@@ -1,26 +1,64 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const shippingNumberField = document.querySelector("#lkn_billing_shipping_number");
-    const shippingNumberFieldWrapper = document.querySelector("#lkn_billing_shipping_number_field");
+    const billingNumberField = document.querySelector("#lkn_billing_number");
+    const billingNumberFieldWrapper = document.querySelector("#lkn_billing_number_field");
     const checkbox = document.querySelector("#lkn_billing_checkbox");
 
-    if (checkbox && shippingNumberField) {
+    let shippingFound = false
+
+    if (checkbox && billingNumberField) {
         checkbox.addEventListener("change", async function () {
             if (this.checked) {
-                shippingNumberField.focus()
-                shippingNumberField.value = ""; // Limpa antes de começar a digitação
-                await typeCharacter(shippingNumberField, "S/N");
-                shippingNumberField.blur()
+                billingNumberField.focus()
+                billingNumberField.value = ""; // Limpa antes de começar a digitação
+                await typeCharacter(billingNumberField, "S/N");
+                billingNumberField.blur()
 
-                shippingNumberField.setAttribute("disabled", "disabled");
-                shippingNumberFieldWrapper.style.opacity = "0.5";
-                shippingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
+                billingNumberField.setAttribute("disabled", "disabled");
+                billingNumberFieldWrapper.style.opacity = "0.5";
+                billingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
             } else {
-                shippingNumberField.value = "";
-                shippingNumberField.removeAttribute("disabled");
-                shippingNumberFieldWrapper.style.opacity = "1";
+                billingNumberField.value = "";
+                billingNumberField.removeAttribute("disabled");
+                billingNumberFieldWrapper.style.opacity = "1";
             }
         });
     }
+
+    const observer = new MutationObserver(() => {
+        const shippingCheckbox = document.querySelector("#lkn_shipping_checkbox");
+
+        if (!shippingCheckbox) {
+            shippingFound = false
+        }
+
+        if (shippingCheckbox && !shippingFound) {
+            shippingFound = true
+            shippingCheckbox.addEventListener("change", async function () {
+                const shippingNumberField = document.querySelector("#lkn_shipping_number");
+                const shippingNumberFieldWrapper = document.querySelector("#lkn_shipping_number_field");
+
+                if (this.checked) {
+                    shippingNumberField.focus()
+                    shippingNumberField.value = ""; // Limpa antes de começar a digitação
+                    await typeCharacter(shippingNumberField, "S/N");
+                    shippingNumberField.blur()
+
+                    shippingNumberField.setAttribute("disabled", "disabled");
+                    shippingNumberFieldWrapper.style.opacity = "0.5";
+                    shippingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
+                } else {
+                    shippingNumberField.value = "";
+                    shippingNumberField.removeAttribute("disabled");
+                    shippingNumberFieldWrapper.style.opacity = "1";
+                }
+            });
+        }
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
 
     (function () {
         const originalOpen = XMLHttpRequest.prototype.open;
@@ -37,9 +75,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Converte a string para um objeto URLSearchParams
                 const params = new URLSearchParams(body);
 
-                const checkbox = document.querySelector("#lkn_billing_checkbox");
-                if (checkbox && checkbox.checked) {
-                    params.set("lkn_billing_shipping_number", "S/N");
+                const billingCheckbox = document.querySelector("#lkn_billing_checkbox");
+                const shippingCheckbox = document.querySelector("#lkn_shipping_checkbox");
+
+                if (billingCheckbox && billingCheckbox.checked) {
+                    params.set("lkn_shipping_number", "S/N");
+                }
+
+                if (shippingCheckbox && shippingCheckbox.checked) {
+                    params.set("lkn_billing_number", "S/N");
                 }
 
                 // Converte de volta para string antes de enviar
