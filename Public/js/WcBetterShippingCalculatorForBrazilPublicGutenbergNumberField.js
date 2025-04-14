@@ -154,13 +154,13 @@ document.addEventListener("DOMContentLoaded", function () {
             billingNumberHandle(billingBlock)
         }
 
-        const placeOrderContainer = document.querySelector('.wc-block-checkout__actions_row')
+        const placeOrderContainer = document.querySelector('.wc-block-components-checkout-place-order-button')
+        const shippingCheckboxInput = document.getElementById('wc-shipping-better-checkbox')
 
-        if (placeOrderContainer && !submitFound) {
+        if (placeOrderContainer && shippingCheckboxInput && !submitFound) {
             submitFound = true
             const placeOrderButton = placeOrderContainer.querySelector('.wc-block-components-button.wp-element-button.wc-block-components-checkout-place-order-button');
             const shippingNumberInput = document.getElementById('shipping-number');
-            const shippingCheckboxInput = document.getElementById('wc-shipping-better-checkbox')
             const shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
             const divInputNumber = document.querySelector('.wc-better-shipping-number');
 

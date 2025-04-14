@@ -145,6 +145,19 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('admin_footer', $this, 'lkn_woo_better_footer_page');
 
         $this->loader->add_filter('plugin_action_links_' . WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_BASENAME, $this, 'lkn_add_settings_link', 10, 2);
+
+        $this->loader->add_action('enqueue_block_assets', $this, 'lkn_woo_better_test', 999);
+    }
+
+    public function lkn_woo_better_test()
+    {
+        wp_enqueue_script(
+            'meu-plugin-hide-billing',
+            WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Public/js/WcBetterShippingCalculatorForBrazilPublicTest.js',
+            ['wp-element', 'wp-data', 'wc-blocks-checkout'],
+            '1.0.0',
+            true
+        );
     }
 
     public function lkn_woo_better_footer_page()
