@@ -105,6 +105,9 @@ class WcBetterShippingCalculatorForBrazilPublic
 
         wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublic.js', array( 'jquery' ), $this->version, false);
 
+        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'no');
+
+
         if (has_block('woocommerce/cart')) {
             wp_enqueue_script(
                 $this->plugin_name . '-gutenberg-cep-field',
@@ -119,7 +122,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                 $this->plugin_name . '-gutenberg-cep-field',
                 'wcBetterShippingCalculatorParams',
                 array(
-                    'cep_required' => get_option('woo_better_calc_cep_required', 'no') // 'no' como fallback
+                    'cep_required' => get_option('woo_better_calc_cep_required', 'no'),
+                    'disabled_shipping' => $disabled_shipping
                 )
             );
         }
@@ -130,6 +134,16 @@ class WcBetterShippingCalculatorForBrazilPublic
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-number-field',
                     plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergNumberField.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+            }
+
+            if ($disabled_shipping === 'yes') {
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-disabled-shipping',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergDiabledFields.js',
                     array(),
                     $this->version,
                     false

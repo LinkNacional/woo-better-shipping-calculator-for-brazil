@@ -51,6 +51,18 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             ),
 
             array(
+                'title'    => __('Desabilitar frete', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => __('Ao habilitar este campo, será desabilitado o frente nos produtos, juntamente com os campos de endereços no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_disabled_shipping',
+                'default'  => 'no',
+                'type'     => 'select',
+                'options'  => array(
+                    'yes' => __('Sim', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Não', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+
+            array(
                 'type' => 'sectionend',
                 'id'   => 'woo_better_calc_options'
             ),

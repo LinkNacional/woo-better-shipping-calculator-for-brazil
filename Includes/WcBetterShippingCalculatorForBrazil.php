@@ -146,18 +146,65 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_filter('plugin_action_links_' . WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_BASENAME, $this, 'lkn_add_settings_link', 10, 2);
 
-        $this->loader->add_action('enqueue_block_assets', $this, 'lkn_woo_better_test', 999);
+        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'no');
+
+        if ($disabled_shipping === 'yes') {
+            $this->loader->add_action('woocommerce_get_country_locale', $this, 'lkn_woo_better_shipping_calculator_locale', 10, 1);
+            $this->loader->add_action('woocommerce_init', $this, 'lkn_set_country_brasil', 999);
+        }
+
+        $this->loader->add_filter('woocommerce_cart_needs_shipping', $this, 'lkn_custom_disable_shipping', 10, 1);
+        $this->loader->add_filter('woocommerce_cart_needs_shipping_address', $this, 'lkn_custom_disable_shipping', 10, 1);
     }
 
-    public function lkn_woo_better_test()
+    public function lkn_custom_disable_shipping()
     {
-        wp_enqueue_script(
-            'meu-plugin-hide-billing',
-            WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Public/js/WcBetterShippingCalculatorForBrazilPublicTest.js',
-            ['wp-element', 'wp-data', 'wc-blocks-checkout'],
-            '1.0.0',
-            true
-        );
+        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'no');
+
+        if ($disabled_shipping === 'yes') {
+            $disabled_shipping = false;
+        } else {
+            $disabled_shipping = true;
+        }
+
+        return $disabled_shipping;
+    }
+
+    public function lkn_set_country_brasil()
+    {
+        $customer = WC()->customer;
+
+        // Verificar se o cliente está definido
+        if (is_a($customer, 'WC_Customer')) {
+            if ($customer->get_shipping_city() === '') {
+                $customer->set_shipping_country('BR');
+                $customer->set_shipping_state('SP');
+                $customer->set_shipping_city('Exemplo');
+                $customer->set_shipping_address('Exemplo');
+
+                $customer->save();
+            }
+        }
+    }
+
+    public function lkn_woo_better_shipping_calculator_locale($locale)
+    {
+        $locale['BR']['postcode']['required'] = false;
+        $locale['BR']['postcode']['hidden'] = true;
+
+        $locale['BR']['city']['required'] = false;
+        $locale['BR']['city']['hidden'] = true;
+
+        $locale['BR']['state']['required'] = false;
+        $locale['BR']['state']['hidden'] = true;
+
+        $locale['BR']['address_1']['required'] = false;
+        $locale['BR']['address_1']['hidden'] = true;
+
+        $locale['BR']['address_2']['required'] = false;
+        $locale['BR']['address_2']['hidden'] = true;
+
+        return $locale;
     }
 
     public function lkn_woo_better_footer_page()
