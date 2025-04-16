@@ -30,6 +30,9 @@ Calculadora de frete melhorada para lojas brasileiras:
 * Mantém o campo de CEP sempre visível.
 * Permite apenas a inserção de números no campo de CEP.
 * Exibe um teclado numérico em dispositivos móveis.
+* Habilita campo de número de endereço.
+* Habilita verificador de cep.
+* Desabilita frete no produto.
 
 
 ## Como instalar?

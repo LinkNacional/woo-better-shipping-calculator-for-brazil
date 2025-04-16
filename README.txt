@@ -19,6 +19,9 @@ WooCommerce shipping calculator optimized for Brazilian stores:
 * Keeps the postcode field always visible.  
 * Allows only numbers to be entered in the postcode field.  
 * Displays a numeric keyboard on mobile devices.  
+* Enables address number field.
+* Enables ZIP code validator.
+* Disables shipping on the product.
 
 Some of these features can be modified or disabled using hooks. More details in the [Frequently Asked Questions (FAQ)](#faq) section.  
 
