@@ -361,8 +361,9 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // Obtém os valores dos campos preenchidos pelo usuário
-        $billing_endereco = get_post_meta($order_id, '_billing_address_1', true);
-        $shipping_endereco = get_post_meta($order_id, '_shipping_address_1', true);
+        $order = wc_get_order($order_id);
+        $billing_endereco = $order->get_billing_address_1();
+        $shipping_endereco = $order->get_shipping_address_1();
 
         if (!empty($billing_endereco)) {
             $novo_endereco = $billing_endereco . ' - ' . $billing_number;
