@@ -27,6 +27,18 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             ),
 
             array(
+                'title'    => __('Desabilitar frete', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => __('Ao habilitar este campo, será desabilitado o frete nos produtos, juntamente com os campos de endereços no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_disabled_shipping',
+                'default'  => 'no',
+                'type'     => 'select',
+                'options'  => array(
+                    'yes' => __('Sim', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Não', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+
+            array(
                 'title'    => __('CEP obrigatório no carrinho(Gutenberg apenas)', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => __('Ao tornar o CEP obrigatório, o usuário precisa informar obrigatoriamente um CEP no carrinho antes de prosseguir para o checkout.', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_cep_required',
@@ -42,18 +54,6 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'title'    => __('Campo número(Checkout)', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => __('Ao habilitar este campo, será adicionado um componente de número para dar complemento adicional ao campo de endereço.', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_number_required',
-                'default'  => 'no',
-                'type'     => 'select',
-                'options'  => array(
-                    'yes' => __('Sim', 'woo-better-shipping-calculator-for-brazil'),
-                    'no'  => __('Não', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-
-            array(
-                'title'    => __('Desabilitar frete', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => __('Ao habilitar este campo, será desabilitado o frete nos produtos, juntamente com os campos de endereços no checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_calc_disabled_shipping',
                 'default'  => 'no',
                 'type'     => 'select',
                 'options'  => array(
