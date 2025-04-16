@@ -1,6 +1,6 @@
-/vendor/
-/node_modules/
-/wp-build/
-*.log
-*.min.js
-*.min.css
+.devcontainer/devcontainer.json
+.vscode/settings.json
+vendor
+node_modules
+Includes/logs/*.log
+.vscode/functions

@@ -1,0 +1,10 @@
+{
+    "recommendations": [
+        "mehedidracula.php-namespace-resolver",
+        "eamodio.gitlens",
+        "vivaxy.vscode-conventional-commits",
+        "ms-vscode-remote.remote-containers",
+        "yzhang.markdown-all-in-one",
+        "standard.vscode-standard"
+    ]
+}

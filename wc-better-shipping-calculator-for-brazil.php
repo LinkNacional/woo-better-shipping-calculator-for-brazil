@@ -1,45 +1,114 @@
 <?php
-/*
-Plugin Name: Calculadora de frete melhorada para lojas brasileiras
-Plugin URI: https://github.com/luizbills/woo-better-shipping-calculator-for-brazil
-Description: Calculadora de frete do WooCommerce otimizada para lojas brasileiras: remove dos campos de país, estado e cidade. E alguns outros ajustes.
-Version: 3.2.2
-Author: Luiz Bills
-Author URI: https://luizpb.com
-Requires PHP: 7.3
-Requires at least: 4.6
-License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Text Domain: wc-better-shipping-calculator-for-brazil
-Domain Path: /languages
-Requires Plugins: woocommerce
-*/
 
-// prevents your PHP files from being executed via direct browser access
-defined( 'WPINC' ) || exit( 1 );
+/**
+ * The plugin bootstrap file
+ *
+ * This file is read by WordPress to generate the plugin information in the plugin
+ * admin area. This file also includes all of the dependencies used by the plugin,
+ * registers the activation and deactivation functions, and defines a function
+ * that starts the plugin.
+ *
+ * @link              https://linknacional.com.br
+ * @since             1.0.0
+ * @package           WcBetterShippingCalculatorForBrazil
+ *
+ * @wordpress-plugin
+ * Plugin Name:       Calculadora de frete melhorada para lojas brasileiras
+ * Plugin URI:        https://www.linknacional.com.br/wordpress
+ * Description:       Calculadora de frete do WooCommerce otimizada para lojas brasileiras: remove dos campos de país, estado e cidade. E alguns outros ajustes.
+ * Version:           4.0.0
+ * Author:            Link Nacional
+ * Author URI:        https://linknacional.com.br/
+ * Requires PHP:      7.3
+ * Requires at least: 4.6
+ * License:           GPLv2 or later
+ * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
+ * Text Domain:       woo-better-shipping-calculator-for-brazil
+ * Domain Path:       /languages
+ * Requires Plugins: woocommerce
+ */
 
-load_plugin_textdomain( 'wc-better-shipping-calculator-for-brazil', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+use Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazil;
+use Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazilActivator;
+use Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazilDeactivator;
 
-try {
-	// check composer autoload
-	$composer_autoload = __DIR__ . '/vendor/autoload.php';
-	if ( ! file_exists( $composer_autoload ) ) {
-		throw new \Error( $composer_autoload . ' does not exist' );
-	}
-	include_once $composer_autoload;
-} catch ( Throwable $e ) {
-	return add_action( 'admin_notices', function () use ( $e ) {
-		if ( ! current_user_can( 'install_plugins' ) ) return;
-		list( $plugin_name ) = get_file_data( __FILE__, [ 'plugin name' ] );
-		$message = sprintf(
-			/* translators: %1$s is replaced with plugin name and %2$s with an error message */
-			esc_html__( 'Error on %1$s plugin activation: %2$s', 'wc-better-shipping-calculator-for-brazil' ),
-			'<strong>' . esc_html( $plugin_name ) . '</strong>',
-			'<br><code>' . esc_html( $e->getMessage() ) . '</code>'
-		);
-		echo "<div class='notice notice-error'><p>$message</p></div>";
-	} );
+require_once __DIR__ . '/vendor/autoload.php';
+
+// If this file is called directly, abort.
+if (! defined('WPINC')) {
+    die;
 }
 
-// run the plugin
-\WC_Better_Shipping_Calculator_for_Brazil\Core\Main::start_plugin( __FILE__ );
+/**
+ * Currently plugin version.
+ * Start at version 1.0.0 and use SemVer - https://semver.org
+ * Rename this for your plugin and update it as you release new versions.
+ */
+// Consts
+if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
+    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION', '4.0.0');
+}
+
+if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_MIN_GIVE_VERSION')) {
+    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_MIN_GIVE_VERSION', '1.0.0');
+}
+
+if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_FILE')) {
+    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_FILE', __DIR__ . '/wc-better-shipping-calculator-for-brazil.php');
+}
+
+if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_DIR')) {
+    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_DIR', plugin_dir_path(WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_FILE));
+}
+
+if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL')) {
+    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL', plugin_dir_url(WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_FILE));
+}
+
+if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_BASENAME')) {
+    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_BASENAME', plugin_basename(WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_FILE));
+}
+
+if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_FILE')) {
+    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_FILE', __FILE__);
+}
+
+/**
+ * The code that runs during plugin activation.
+ * This action is documented in includes/class-wc-better-shipping-calculator-for-brazil-activator.php
+ */
+function activateWcBetterShippingCalculatorForBrazil()
+{
+    WcBetterShippingCalculatorForBrazilActivator::activate();
+}
+
+/**
+ * The code that runs during plugin deactivation.
+ * This action is documented in includes/class-wc-better-shipping-calculator-for-brazil-deactivator.php
+ */
+function deactivateWcBetterShippingCalculatorForBrazil()
+{
+    WcBetterShippingCalculatorForBrazilDeactivator::deactivate();
+}
+
+register_activation_hook(__FILE__, 'activateWcBetterShippingCalculatorForBrazil');
+register_deactivation_hook(__FILE__, 'deactivateWcBetterShippingCalculatorForBrazil');
+
+
+/**
+ * Begins execution of the plugin.
+ *
+ * Since everything within the plugin is registered via hooks,
+ * then kicking off the plugin from this point in the file does
+ * not affect the page life cycle.
+ *
+ * @since    1.0.0
+ */
+function runWcBetterShippingCalculatorForBrazil()
+{
+
+    $plugin = new WcBetterShippingCalculatorForBrazil();
+    $plugin->run();
+
+}
+runWcBetterShippingCalculatorForBrazil();

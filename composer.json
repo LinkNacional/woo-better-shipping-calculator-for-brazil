@@ -1,23 +1,28 @@
 {
-    "require": {
-        "php": ">=7.3",
-        "ext-mbstring": "*"
-    },
-    "require-dev": {},
+    "name": "lkn/wc-better-shipping-calculator-for-brazil",
+    "type": "project",
+    "license": "Proprietary",
     "autoload": {
         "psr-4": {
-            "WC_Better_Shipping_Calculator_for_Brazil\\": [
-                "classes/"
-            ],
-            "WC_Better_Shipping_Calculator_for_Brazil\\Core\\": [
-                "core/"
-            ]
+            "Lkn\\WcBetterShippingCalculatorForBrazil\\Includes\\": "Includes/",
+            "Lkn\\WcBetterShippingCalculatorForBrazil\\Admin\\": "Admin/",
+            "Lkn\\WcBetterShippingCalculatorForBrazil\\PublicView\\": "Public/"
         }
     },
-    "scripts": {
-        "build": "./scripts/build",
-        "deploy": "./scripts/svn-push",
-        "update-trunk": "./scripts/svn-push --only-trunk",
-        "make-pot": "wp i18n make-pot . languages/wc-better-shipping-calculator-for-brazil.pot"
+    "authors": [
+        {
+            "name": "Link Nacional",
+            "email": "contato@linknacional.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require-dev": {
+        "phan/phan": "5.4.1"
+    },
+    "require": {},
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true
+        }
     }
 }

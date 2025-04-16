@@ -1,0 +1,107 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+{
+    "name": "PHP",
+    "image": "mcr.microsoft.com/vscode/devcontainers/php:8.1",
+    "features": {
+        // https://github.com/devcontainers/features/tree/main/src/node
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "18.14.0",
+            "nvmVersion": "0.39.3"
+        }
+    },
+    "postCreateCommand": "npm install",
+    "mounts": [
+        {
+            // path in your local machine where WordPress is.
+            "source": "/home/{yourusername}/projects/_wordpress",
+            "target": "/home/vscode/_wordpress",
+            "type": "bind"
+        }
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "junstyle.php-cs-fixer",
+                "bmewburn.vscode-intelephense-client",
+                "neilbrayfield.php-docblocker",
+                "dbaeumer.vscode-eslint",
+                "jkiviluoto.tws",
+                "lacroixdavid1.vscode-format-context-menu",
+                "Gruntfuggly.todo-tree",
+                "Natizyskunk.sftp"
+            ],
+            "settings": {
+                "php-cs-fixer.config": ".php-cs-fixer.php",
+                "files.eol": "\n",
+                "files.encoding": "utf8",
+                "php.suggest.basic": false,
+                "[smarty]": {
+                    "editor.tabSize": 2
+                },
+                "[php]": {
+                    "editor.indentSize": "tabSize",
+                    "editor.detectIndentation": false,
+                    "editor.defaultFormatter": "junstyle.php-cs-fixer",
+                    "editor.insertSpaces": true,
+                    "editor.tabSize": 4,
+                    "editor.rulers": [
+                        120
+                    ]
+                },
+                "php-cs-fixer.formatHtml": true,
+                "php-cs-fixer.onsave": true,
+                "php-cs-fixer.executablePath": "${extensionPath}/php-cs-fixer.phar",
+                "php.validate.enable": false,
+                "php-docblocker.useShortNames": true,
+                "php-docblocker.qualifyClassNames": true,
+                "php-docblocker.paramDescription": true,
+                "php-docblocker.returnGap": true,
+                "php-docblocker.alignParams": true,
+                "php-docblocker.alignReturn": true,
+                "php-docblocker.gap": true,
+                "php-docblocker.defaultType": "string",
+                "php-docblocker.classTemplate": {
+                    "message": {},
+                    "since": {
+                        "content": "@since 1.0.0",
+                        "gapAfter": true,
+                        "gapBefore": true
+                    },
+                    "link": {
+                        "content": "@link "
+                    }
+                },
+                "php-docblocker.functionTemplate": {
+                    "message": {
+                        "gapAfter": true
+                    },
+                    "since": {
+                        "content": "@since 1.0.0"
+                    },
+                    "param": {
+                        "gapBefore": true,
+                        "gapAfter": true
+                    },
+                    "return": {}
+                },
+                "php-docblocker.propertyTemplate": {
+                    "message": {
+                        "gapAfter": true
+                    },
+                    "since": {
+                        "content": "@since 1.0.0"
+                    },
+                    "var": {
+                        "content": "@var ${1:mixed}"
+                    },
+                    "access": {
+                        "access": "@access "
+                    },
+                    "link": {
+                        "content": "@link "
+                    }
+                }
+            }
+        }
+    }
+}

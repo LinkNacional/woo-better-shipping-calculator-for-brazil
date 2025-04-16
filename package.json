@@ -1,12 +1,29 @@
 {
-    "name": "shipping-simulator-for-woocommerce",
-    "scripts": {
-        "start": "./scripts/bundle --watch",
-        "build": "./scripts/bundle",
-        "postinstall": "npm run build"
-    },
-    "devDependencies": {
-        "cli-color": "^2.0.3",
-        "esbuild": "^0.14.54"
-    }
+  "name": "docker-php-dev-container",
+  "version": "4.0.0",
+  "description": "This repository provides a development environment for WordPress",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/srbrunoferreira/docker-php-dev-container.git"
+  },
+  "keywords": [
+    "WordPress",
+    "plugin",
+    "Dev Container",
+    "VS Code"
+  ],
+  "author": "Link Nacional",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil/issues"
+  },
+  "homepage": "https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil",
+  "devDependencies": {
+    "eslint": "^8.34.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-n": "^15.6.1",
+    "eslint-plugin-promise": "^6.1.1"
+  }
 }

@@ -1,0 +1,7 @@
+{
+    "intelephense.environment.phpVersion": "7.4",
+    // For autocomplete
+    "intelephense.environment.includePaths": [
+        "/home/vscode/_wordpress" // This path is a bind mount that comes from devcontainer.json.
+    ]
+}
