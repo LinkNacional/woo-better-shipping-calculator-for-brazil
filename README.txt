@@ -3,7 +3,7 @@ Contributors: LinkNacional
 Donate link: https://www.linknacional.com.br
 Tags: woocommerce, brazil, shipping calculator, postcode  
 Requires at least: 4.6  
-Tested up to: 6.7
+Tested up to: 6.8
 Requires PHP: 7.3  
 Stable tag: 4.0.0
 License: GPLv2 or later  
