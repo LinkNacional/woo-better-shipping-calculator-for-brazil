@@ -138,7 +138,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field');
 
         $this->loader->add_action('rest_api_init', $this, 'lkn_register_custom_cep_route');
-        $this->loader->add_action('woocommerce_checkout_update_order_meta', $this, 'lkn_merge_address_checkout');
+        $this->loader->add_action('woocommerce_checkout_create_order', $this, 'lkn_merge_address_checkout', 999, 2);
 
         $this->loader->add_filter('woocommerce_get_settings_pages', $this, 'lkn_add_woo_better_settings_page');
 
@@ -334,7 +334,7 @@ class WcBetterShippingCalculatorForBrazil
         return $fields;
     }
 
-    public function lkn_merge_address_checkout($order_id)
+    public function lkn_merge_address_checkout($order, $data)
     {
         $shipping_number = '';
         $billing_number = '';
@@ -361,18 +361,18 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // Obtém os valores dos campos preenchidos pelo usuário
-        $order = wc_get_order($order_id);
-        $billing_endereco = $order->get_billing_address_1();
-        $shipping_endereco = $order->get_shipping_address_1();
+        $billing_address = $data['billing_address_1'] ?? '';
 
-        if (!empty($billing_endereco)) {
-            $novo_endereco = $billing_endereco . ' - ' . $billing_number;
-            update_post_meta($order_id, '_billing_address_1', $novo_endereco);
+        $shipping_address = $data['shipping_address_1'] ?? '';
+
+        if (!empty($billing_address)) {
+            $new_billing = $billing_address . ' - ' . $billing_number;
+            $order->set_billing_address_1($new_billing);
         }
 
-        if (!empty($shipping_endereco)) {
-            $novo_endereco = $shipping_endereco . ' - ' . $shipping_number;
-            update_post_meta($order_id, '_shipping_address_1', $novo_endereco);
+        if (!empty($shipping_address)) {
+            $new_shipping = $shipping_address . ' - ' . $shipping_number;
+            $order->set_shipping_address_1($new_shipping);
         }
     }
 
