@@ -27,7 +27,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             ),
 
             array(
-                'title'    => __('CEP obrigatório no carrinho', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('CEP obrigatório no carrinho(Gutenberg apenas)', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => __('Ao tornar o CEP obrigatório, o usuário precisa informar obrigatoriamente um CEP no carrinho antes de prosseguir para o checkout.', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_cep_required',
                 'default'  => 'no',
@@ -52,7 +52,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
 
             array(
                 'title'    => __('Desabilitar frete', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => __('Ao habilitar este campo, será desabilitado o frente nos produtos, juntamente com os campos de endereços no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => __('Ao habilitar este campo, será desabilitado o frete nos produtos, juntamente com os campos de endereços no checkout.', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_disabled_shipping',
                 'default'  => 'no',
                 'type'     => 'select',
@@ -82,7 +82,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             array(
                 'title' => __('Próximas funcionalidades', 'woo-better-shipping-calculator-for-brazil'),
                 'desc'  => __(
-                    'Desabilitar cobrança de frete, Gerador de etiqueta, Shortcode calculo de CEP, Autopreenchimento de cep, frete gratuito e muitos mais. <a href="https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil/issues/new" target="_blank">Participe envie sua sugestão.</a>',
+                    'Gerador de etiqueta, Shortcode calculo de CEP, Autopreenchimento de cep, frete gratuito e muitos mais. <a href="https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil/issues/new" target="_blank">Participe envie sua sugestão.</a>',
                     'woo-better-shipping-calculator-for-brazil'
                 ),
                 'type'  => 'title',

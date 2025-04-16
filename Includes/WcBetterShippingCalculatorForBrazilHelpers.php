@@ -7,7 +7,7 @@ abstract class WcBetterShippingCalculatorForBrazilHelpers
     protected static $values = [];
 
     // Get the value if set, otherwise return a default value or `null`. Prevents notices when data is not set.
-    public static function get(&$var, $default = null)
+    public static function get($var, $default = null)
     {
         return isset($var) ? $var : $default;
     }

@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
             shippingMethod.remove()
         }
 
-        if (addressMethod && addressMethod.textContent !== 'Frete gratuito para todo o Brasil' && !textFound) {
+        if (addressMethod && !textFound) {
             textFound = true;
             addressMethod.remove()
         }

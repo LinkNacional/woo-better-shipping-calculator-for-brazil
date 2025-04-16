@@ -75,15 +75,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Converte a string para um objeto URLSearchParams
                 const params = new URLSearchParams(body);
 
-                const billingCheckbox = document.querySelector("#lkn_billing_checkbox");
-                const shippingCheckbox = document.querySelector("#lkn_shipping_checkbox");
-
-                if (billingCheckbox && billingCheckbox.checked) {
-                    params.set("lkn_shipping_number", "S/N");
+                if (params.has('lkn_billing_checkbox') && params.get('lkn_billing_checkbox') == '1') {
+                    params.set("lkn_billing_number", "S/N");
                 }
 
-                if (shippingCheckbox && shippingCheckbox.checked) {
-                    params.set("lkn_billing_number", "S/N");
+                if (params.has('lkn_shipping_checkbox') && params.get('lkn_shipping_checkbox') == '1') {
+                    params.set("lkn_shipping_number", "S/N");
                 }
 
                 // Converte de volta para string antes de enviar

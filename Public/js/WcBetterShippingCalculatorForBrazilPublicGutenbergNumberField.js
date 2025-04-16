@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let billingBlockFound = false
     let submitFound = false
     let submitEvent = false
+    let placeOrderButton = null
 
     const observer = new MutationObserver((mutationsList) => {
         const shippingBlock = document.querySelector('#shipping')
@@ -154,12 +155,15 @@ document.addEventListener("DOMContentLoaded", function () {
             billingNumberHandle(billingBlock)
         }
 
-        const placeOrderContainer = document.querySelector('.wc-block-components-checkout-place-order-button')
+        const placeOrderContainer = document.querySelector('.wc-block-checkout__actions_row')
         const shippingCheckboxInput = document.getElementById('wc-shipping-better-checkbox')
 
-        if (placeOrderContainer && shippingCheckboxInput && !submitFound) {
+        if (placeOrderContainer) {
+            placeOrderButton = placeOrderContainer.querySelector('button')
+        }
+
+        if (placeOrderButton && shippingCheckboxInput && !submitFound) {
             submitFound = true
-            const placeOrderButton = placeOrderContainer.querySelector('.wc-block-components-button.wp-element-button.wc-block-components-checkout-place-order-button');
             const shippingNumberInput = document.getElementById('shipping-number');
             const shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
             const divInputNumber = document.querySelector('.wc-better-shipping-number');
@@ -203,7 +207,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (placeOrderButton) {
-                console.log('acheiiiii')
                 placeOrderButton.addEventListener('click', handlePlaceOrderClick);
 
                 function handlePlaceOrderClick(event) {
@@ -212,9 +215,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     const shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
                     const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
-
-                    console.log(shippingNumberInput.value)
-                    console.log(billingNumberInput.value)
 
                     if (!shippingNumberInput.value.trim().length) {
                         event.stopPropagation(); // Bloqueia a propagação se estiver vazio

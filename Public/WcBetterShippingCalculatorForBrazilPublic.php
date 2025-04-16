@@ -130,7 +130,8 @@ class WcBetterShippingCalculatorForBrazilPublic
 
         if (has_block('woocommerce/checkout')) {
             $number_field = get_option('woo_better_calc_number_required', 'no');
-            if ($number_field === 'yes') {
+
+            if ($number_field === 'yes' && $disabled_shipping === 'no') {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-number-field',
                     plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergNumberField.js',
@@ -153,7 +154,7 @@ class WcBetterShippingCalculatorForBrazilPublic
 
         if (is_checkout()) {
             $number_field = get_option('woo_better_calc_number_required', 'no');
-            if ($number_field === 'yes') {
+            if ($number_field === 'yes' && $disabled_shipping === 'no') {
                 wp_enqueue_script(
                     $this->plugin_name . '-short-number-field',
                     plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicShortNumberField.js',

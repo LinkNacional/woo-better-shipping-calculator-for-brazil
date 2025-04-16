@@ -11,19 +11,20 @@
     position: absolute;
     top: 25%;
     left: 45%;
-    transform: translate(-50%, -50%);
 }
 
-.lkn-wc-shipping-address-summary {
-    background-color: rgba(0, 0, 0, 0.205);
-}
-
+/* O segredo está aqui 👇 */
 @keyframes spin {
     from {
-        transform: rotate(0deg);
+        transform: translate(-50%, -50%) rotate(0deg);
     }
 
     to {
-        transform: rotate(360deg);
+        transform: translate(-50%, -50%) rotate(360deg);
     }
+}
+
+
+.lkn-wc-shipping-address-summary {
+    background-color: rgba(0, 0, 0, 0.205);
 }
