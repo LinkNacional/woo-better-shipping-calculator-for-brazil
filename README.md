@@ -42,7 +42,7 @@ Calculadora de frete melhorada para lojas brasileiras:
 ## Screenshots:
 
 ### Página de configuração:
-<img src="Includes/assets/images/settings.png" alt="Configuração do plugin" width="1000" />
+<img src="Includes/assets/images/settingsPage.png" alt="Configuração do plugin" width="1000" />
 
 ### Antes(shortcode):
 <img src="Includes/assets/images/oldShortShipping.png" alt="Frete antigo no shortcode" width="200" />
