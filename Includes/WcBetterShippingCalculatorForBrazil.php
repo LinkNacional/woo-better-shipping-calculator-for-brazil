@@ -300,8 +300,35 @@ class WcBetterShippingCalculatorForBrazil
         if ($disabled_shipping === 'yes') {
             unset($fields['billing']['billing_state']);
             unset($fields['shipping']['shipping_state']);
-            unset($fields['billing']['billing_postcode']['validate']);
-            unset($fields['shipping']['shipping_postcode']['validate']);
+
+            // Desabilita validação de CEP e torna não obrigatório
+            $fields['billing']['billing_postcode']['validate'] = array();
+            $fields['billing']['billing_postcode']['required'] = false;
+
+            $fields['shipping']['shipping_postcode']['validate'] = array();
+            $fields['shipping']['shipping_postcode']['required'] = false;
+
+            $fields['billing']['billing_country'] = [
+                'type'     => 'hidden',
+                'default'  => 'BR'
+            ];
+            $fields['shipping']['shipping_country'] = [
+                'type'     => 'hidden',
+                'default'  => 'BR'
+            ];
+
+            // Remove os outros campos visuais
+            unset($fields['billing']['billing_postcode']);
+            unset($fields['billing']['billing_address_1']);
+            unset($fields['billing']['billing_address_2']);
+            unset($fields['billing']['billing_city']);
+            unset($fields['billing']['billing_state']);
+
+            unset($fields['shipping']['shipping_postcode']);
+            unset($fields['shipping']['shipping_address_1']);
+            unset($fields['shipping']['shipping_address_2']);
+            unset($fields['shipping']['shipping_city']);
+            unset($fields['shipping']['shipping_state']);
         }
 
         return $fields;
