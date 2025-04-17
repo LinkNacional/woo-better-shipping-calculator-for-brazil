@@ -86,7 +86,7 @@ jobs:
     - name: Generate new Release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "${{ env.PLUGIN_NAME }}.zip"
+        artifacts: "dist/${{ env.PLUGIN_NAME }}.zip"
         token: ${{ secrets.GITHUB_TOKEN }}
         commit: "main"
         draft: true
