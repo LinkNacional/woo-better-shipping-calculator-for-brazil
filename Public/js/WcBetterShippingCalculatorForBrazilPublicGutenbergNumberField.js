@@ -257,15 +257,18 @@ document.addEventListener("DOMContentLoaded", function () {
                                 if (billingCheck.checked) {
                                     if (body?.billing_address?.address_1) {
                                         body.billing_address.address_1 += ` - ${shippingNumber}`;
+                                        body['payment_data'].push({ key: 'lkn_billing_number', value: shippingNumber })
                                     }
                                 } else {
                                     if (billingNumber) {
                                         if (body?.billing_address?.address_1) {
                                             body.billing_address.address_1 += ` - ${billingNumber}`;
+                                            body['payment_data'].push({ key: 'lkn_billing_number', value: billingNumber })
                                         }
                                     } else {
                                         if (body?.billing_address?.address_1) {
                                             body.billing_address.address_1 += ` - S/N`;
+                                            body['payment_data'].push({ key: 'lkn_billing_number', value: 'S/N' })
                                         }
                                     }
                                 }
@@ -273,6 +276,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                             if (shippingNumber && body?.shipping_address?.address_1) {
                                 body.shipping_address.address_1 += ` - ${shippingNumber}`;
+                                body['payment_data'].push({ key: 'lkn_shipping_number', value: shippingNumber })
                             }
 
                             // Atualiza o corpo da requisição

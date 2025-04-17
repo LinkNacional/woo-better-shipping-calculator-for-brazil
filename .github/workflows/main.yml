@@ -51,16 +51,16 @@ jobs:
         mv ./build/${{ env.PLUGIN_NAME }}.zip ./dist/
 
     # File upload to server via FTP
-    - name: Upload .zip to server via FTP
-      uses: SamKirkland/FTP-Deploy-Action@4.3.0
-      with:
-        server: ${{ secrets.FTP_HOST }} # Endereço do servidor FTP
-        port: ${{ secrets.FTP_PORT }}
-        username: ${{ secrets.FTP_USER }} # Usuário FTP
-        password: ${{ secrets.FTP_PASSWORD }} # Senha FTP
-        local-dir: ./dist/ # Diretório local onde o arquivo está
-        server-dir: ./wp/ # Diretório remoto onde o arquivo será enviado
-        #include: "${{ env.PLUGIN_NAME }}.zip" # Arquivo específico a ser enviado
+    # - name: Upload .zip to server via FTP
+    #   uses: SamKirkland/FTP-Deploy-Action@4.3.0
+    #   with:
+    #     server: ${{ secrets.FTP_HOST }} # Endereço do servidor FTP
+    #     port: ${{ secrets.FTP_PORT }}
+    #     username: ${{ secrets.FTP_USER }} # Usuário FTP
+    #     password: ${{ secrets.FTP_PASSWORD }} # Senha FTP
+    #     local-dir: ./dist/ # Diretório local onde o arquivo está
+    #     server-dir: ./wp/ # Diretório remoto onde o arquivo será enviado
+    #     #include: "${{ env.PLUGIN_NAME }}.zip" # Arquivo específico a ser enviado
 
     # File upload to server
     # - name: Upload .zip to server
@@ -75,20 +75,20 @@ jobs:
     #     TARGET: ${{secrets.DOWNLOAD_FOLDER}}${{ env.PLUGIN_NAME }}.zip
 
     # Update version tag
-    # - name: Bump version and push tag
-    #   id: tag_version
-    #   uses: mathieudutour/github-tag-action@v6.0
-    #   with:
-    #     github_token: ${{ secrets.GITHUB_TOKEN }}
-    #     custom_tag: '4.0.0' # // TODO caso necessário definir a tag da release manualmente
+    - name: Bump version and push tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.0
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        custom_tag: '4.0.0' # // TODO caso necessário definir a tag da release manualmente
 
-    # # Generate new release
-    # - name: Generate new Release
-    #   uses: ncipollo/release-action@v1
-    #   with:
-    #     artifacts: "${{ env.PLUGIN_NAME }}.zip"
-    #     token: ${{ secrets.GITHUB_TOKEN }}
-    #     commit: "main"
-    #     draft: true
-    #     tag: ${{ steps.tag_version.outputs.new_tag }}
-    #     name: Release ${{ steps.tag_version.outputs.new_tag }}
+    # Generate new release
+    - name: Generate new Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "dist/${{ env.PLUGIN_NAME }}.zip"
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit: "main"
+        draft: true
+        tag: ${{ steps.tag_version.outputs.new_tag }}
+        name: Release ${{ steps.tag_version.outputs.new_tag }}
