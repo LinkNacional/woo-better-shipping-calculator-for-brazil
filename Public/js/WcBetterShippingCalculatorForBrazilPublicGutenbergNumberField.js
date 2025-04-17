@@ -257,15 +257,18 @@ document.addEventListener("DOMContentLoaded", function () {
                                 if (billingCheck.checked) {
                                     if (body?.billing_address?.address_1) {
                                         body.billing_address.address_1 += ` - ${shippingNumber}`;
+                                        body['shipping_number'] = shippingNumber
                                     }
                                 } else {
                                     if (billingNumber) {
                                         if (body?.billing_address?.address_1) {
                                             body.billing_address.address_1 += ` - ${billingNumber}`;
+                                            body['billing_number'] = shippingNumber
                                         }
                                     } else {
                                         if (body?.billing_address?.address_1) {
                                             body.billing_address.address_1 += ` - S/N`;
+                                            body['billing_number'] = 'S/N'
                                         }
                                     }
                                 }
