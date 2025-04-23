@@ -9,7 +9,7 @@
 * Tags: woocommerce, brasil, calculadora de frete, CEP
 * Testado até: 6.8
 * Requer PHP: 7.3
-* Tag estável: 4.0.0
+* Tag estável: 4.0.1
 * Licença: GPLv2 ou posterior
 * URI da licença: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -33,7 +33,6 @@ Calculadora de frete melhorada para lojas brasileiras:
 * Habilita campo de número de endereço.
 * Habilita verificador de cep.
 * Desabilita frete no produto.
-
 
 ## Como instalar?
 

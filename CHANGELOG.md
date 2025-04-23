@@ -1,3 +1,6 @@
+# 4.0.1 - 23/04/25
+* Correção: Novo Readme.txt e lista de imagens.
+
 # 4.0.0 - 26/03/25
 * Ajuste: Alteração do plugin para o modelo de Orientação a Objetos (OO).
 * Novo tab de configuração para o plugin.
