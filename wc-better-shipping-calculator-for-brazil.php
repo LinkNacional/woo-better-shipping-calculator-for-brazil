@@ -16,7 +16,7 @@
  * Plugin Name:       Calculadora de frete melhorada para lojas brasileiras
  * Plugin URI:        https://www.linknacional.com.br/wordpress
  * Description:       Calculadora de frete do WooCommerce otimizada para lojas brasileiras: remove dos campos de país, estado e cidade. E alguns outros ajustes.
- * Version:           4.0.0
+ * Version:           4.0.1
  * Author:            Link Nacional
  * Author URI:        https://linknacional.com.br/
  * Requires PHP:      7.3
@@ -46,7 +46,7 @@ if (! defined('WPINC')) {
  */
 // Consts
 if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
-    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION', '4.0.0');
+    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION', '4.0.1');
 }
 
 if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_MIN_GIVE_VERSION')) {

@@ -5,7 +5,7 @@ Tags: woocommerce, brazil, shipping calculator, postcode
 Requires at least: 4.6  
 Tested up to: 6.8
 Requires PHP: 7.3  
-Stable tag: 4.0.0
+Stable tag: 4.0.1
 License: GPLv2 or later  
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)  
 
@@ -13,60 +13,65 @@ WooCommerce shipping calculator without Country and State fields. Keeping only t
 
 == Description ==  
 
-WooCommerce shipping calculator optimized for Brazilian stores:  
+Calculadora de frete WooCommerce otimizada para lojas brasileiras:
 
-* Removes country, state, and city fields.  
-* Keeps the postcode field always visible.  
-* Allows only numbers to be entered in the postcode field.  
-* Displays a numeric keyboard on mobile devices.  
-* Enables address number field.
-* Enables ZIP code validator.
-* Disables shipping on the product.
+* Remove os campos de país, estado e cidade.
+* Mantém o campo de CEP sempre visível.
+* Permite apenas números no campo de CEP.
+* Exibe um teclado numérico em dispositivos móveis.
+* Habilita o campo de número do endereço.
+* Habilita o validador de CEP.
+* Desabilita o frete no produto.
 
-Some of these features can be modified or disabled using hooks. More details in the [Frequently Asked Questions (FAQ)](#faq) section.  
+Algumas dessas funcionalidades podem ser modificadas ou desativadas usando hooks. Mais detalhes na seção [Perguntas Frequentes (FAQ)](#faq).
 
 = Help and Support =  
 
-When you need help, create a topic in the [Plugin Forum](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).  
+Quando precisar de ajuda, crie um tópico no [Fórum de Suporte do Plugin](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
 
 = Contributions =  
 
-If you find any bugs or have suggestions, open an issue in our [GitHub repository](https://github.com/luizbills/wc-better-shipping-calculator-for-brazil).
+Se encontrar algum erro ou tiver sugestões, abra um problema no nosso [repositório no GitHub](https://github.com/luizbills/wc-better-shipping-calculator-for-brazil).
 
-[Brasil API](https://brasilapi.com.br) - CEP Field.
+[Brasil API](https://brasilapi.com.br) - Campo de CEP.
 
 == Installation ==  
 
-1. Access your WordPress admin and go to **Plugins > Add New**.  
-2. Search for "Improved Shipping Calculator for Brazilian Stores".
-3. Find the plugin, click "Install Now", and then "Activate".
-4. Done! No further configuration needed.
+1. Acesse o admin do seu WordPress e vá para **Plugins > Adicionar Novo**.
+2. Busque por "Calculadora de Frete Melhorada para Lojas Brasileiras".
+3. Encontre o plugin, clique em "Instalar Agora" e depois em "Ativar".
+4. Pronto! Nenhuma configuração adicional necessária.
 
 == Screenshots ==  
 
-1. Comparison before and after installing the plugin.  
-2. Final result.
+1. Nova página de configuração do plugin.
+2. Tela antiga do carrinho através do editor de blocos do Gutenberg.
+3. Tela nova do carrinho através do editor de blocos do Gutenberg.
+4. Tela antiga do carrinho através do shortcode do WooCommerce.
+4. Tela nova do carrinho através do shortcode do WooCommerce.
+6. Campo de número através do editor de blocos do Gutenberg.
+7. Campo de número através do shortcode do WooCommerce.
 
 == Frequently Asked Questions ==  
 
-= How can I CHANGE the text "Calculate shipping"? =  
+= Como posso ALTERAR o texto "Calcular frete"? =
 
-Use the following code:  
+Use o seguinte código:
 
-```php
+```
 add_filter(
     'wc_better_shipping_calculator_for_brazil_postcode_label',
     function () {
-        return 'your new text';
+        return 'seu novo texto';
     }
 );
 ```
 
-= How can I REMOVE the text "Calculate shipping"? =
+= Como posso REMOVER o texto "Calcular frete"? =
 
-Use the following code:
+Use o seguinte código:
 
-```php
+```
 add_filter(
     'wc_better_shipping_calculator_for_brazil_postcode_label',
     '__return_null'
@@ -74,6 +79,9 @@ add_filter(
 ```
 
 == Changelog ==
+
+= 4.0.1 - 2025/04/23 =
+* Fix: New Readme.txt and image list.
 
 = 4.0.0 - 2025/03/26 =
 * Adjustment: Refactored the plugin to follow the Object-Oriented (OO) model.
