@@ -9,7 +9,7 @@ Stable tag: 4.1.1
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
-Calculadora automática de Frete com CEP para Woocommerce. Sem necessidade de informar o Pais e estado. Compatível com Gutenberg e shortcodes. Ideal para Lojas Brasileiras.
+Calculadora de frete com CEP automático para WooCommerce. Compatível com Gutenberg e ideal para lojas brasileiras.
 
 == Description ==
 
