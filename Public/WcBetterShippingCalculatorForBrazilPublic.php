@@ -106,25 +106,30 @@ class WcBetterShippingCalculatorForBrazilPublic
         wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublic.js', array( 'jquery' ), $this->version, false);
 
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'no');
+        $hidden_address = get_option('woo_better_hidden_cart_address', 'yes');
+        $cep_required = get_option('woo_better_calc_cep_required', 'no');
 
+        if ($hidden_address === 'yes') {
+            if (wp_script_is('wc-cart-checkout-base', 'enqueued')) {
+                wp_dequeue_script('wc-cart-checkout-base-js');
 
-        if (has_block('woocommerce/cart')) {
+                wp_enqueue_script(
+                    'wc-cart-checkout-base-js',
+                    plugin_dir_url(__FILE__) . 'js/wc-cart-checkout-base-frontend.js',
+                    array(),
+                    '1.0.0',
+                    false
+                );
+            }
+        }
+
+        if (has_block('woocommerce/cart') && $cep_required === 'yes') {
             wp_enqueue_script(
                 $this->plugin_name . '-gutenberg-cep-field',
                 plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergCEPField.js',
                 array(),
                 $this->version,
                 false
-            );
-
-            // Passar os dados para o JS
-            wp_localize_script(
-                $this->plugin_name . '-gutenberg-cep-field',
-                'wcBetterShippingCalculatorParams',
-                array(
-                    'cep_required' => get_option('woo_better_calc_cep_required', 'no'),
-                    'disabled_shipping' => $disabled_shipping
-                )
             );
         }
 
@@ -165,32 +170,27 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
         }
 
-    }
+        if (is_cart()) {
+            wp_enqueue_script(
+                $this->plugin_name . '-frontend',
+                plugin_dir_url(__FILE__) . "js/WcBetterShippingCalculatorForBrazilPublicCEPField.js",
+                [ 'jquery', 'wc-cart' ],
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                true
+            );
 
-    public function add_extra_js()
-    {
-        if (! is_cart()) {
-            return;
+            wp_localize_script(
+                $this->plugin_name . '-frontend',
+                'wc_better_shipping_calculator_for_brazil_params',
+                [
+                    'postcode_placeholder' => esc_attr__('Type your postcode', 'woo-better-shipping-calculator-for-brazil'),
+                    'postcode_input_type' => 'tel',
+                    'selectors' => [
+                        'postcode' => '#calc_shipping_postcode',
+                    ],
+                ]
+            );
         }
 
-        wp_enqueue_script(
-            $this->plugin_name . '-frontend',
-            plugin_dir_url(__FILE__) . "js/WcBetterShippingCalculatorForBrazilPublicCEPField.js",
-            [ 'jquery', 'wc-cart' ],
-            WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
-            true
-        );
-
-        wp_localize_script(
-            $this->plugin_name . '-frontend',
-            'wc_better_shipping_calculator_for_brazil_params',
-            [
-                'postcode_placeholder' => esc_attr__('Type your postcode', 'woo-better-shipping-calculator-for-brazil'),
-                'postcode_input_type' => 'tel',
-                'selectors' => [
-                    'postcode' => '#calc_shipping_postcode',
-                ],
-            ]
-        );
     }
 }

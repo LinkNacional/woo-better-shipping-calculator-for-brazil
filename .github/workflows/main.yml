@@ -80,7 +80,7 @@ jobs:
       uses: mathieudutour/github-tag-action@v6.0
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        custom_tag: '4.0.1' # // TODO caso necessário definir a tag da release manualmente
+        custom_tag: '4.1.1' # // TODO caso necessário definir a tag da release manualmente
 
     # Generate new release
     - name: Generate new Release

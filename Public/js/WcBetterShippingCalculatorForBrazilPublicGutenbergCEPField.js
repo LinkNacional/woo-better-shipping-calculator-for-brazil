@@ -1,16 +1,20 @@
 document.addEventListener('DOMContentLoaded', function () {
     let observer;
     let previousClickHandler = null;
-    let shippingAddressComponentFound = false
-    let inputCountry = '';
-    let confirmButton = false;
+    let cepFound = false
     let previousCep = ''
-    let clearCepInterval = true
-    let continueButton = ''
-    let secondsElapsed = 0;
-    let clearCheckInterval = false
-    const maxTime = 10;
+    let continueButtonFound = false
     let errorRequest = true
+    let iconSummary = null
+    let addressSummary = null
+    let previousText = ''
+    let postcodeValue = ''
+    let continueButton = null
+
+    let batchRequested = false
+    let addressData = ''
+    let stateData = ''
+    let cityData = ''
 
     const handleClick = (event) => {
         event.preventDefault();  // Evita a ação do botão enquanto ele estiver desabilitado
@@ -41,75 +45,32 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 1000);
     };
 
-    async function removeUnnecessaryFields(shippingAddressComponent) {
+    async function handleSubmitClick(continueButton) {
+        const postcodeField = document.querySelector('.wc-block-components-text-input.wc-block-components-address-form__postcode');
+        const inputPostcode = postcodeField ? postcodeField.querySelector('input') : null;
 
-        return new Promise((resolve) => {
-            let attempts = 0;
-            const maxAttempts = 30; // Ex: tenta por no máximo 30x (~3 segundos se for 100ms)
-
-            const interval = setInterval(() => {
-                const country = shippingAddressComponent.querySelector('.wc-block-components-address-form__country');
-                if (country || attempts >= maxAttempts) {
-                    clearInterval(interval);
-
-                    if (!country) {
-                        resolve();
-                        return;
-                    }
-
-                    const city = shippingAddressComponent.querySelector('.wc-block-components-address-form__city');
-                    const state = shippingAddressComponent.querySelector('.wc-block-components-address-form__state');
-                    const iconSVG = shippingAddressComponent.querySelector('svg');
-                    const postcodeDiv = document.querySelector('.wc-block-components-address-form__postcode');
-                    let postcodeInput = postcodeDiv ? postcodeDiv.querySelector('input') : '';
-
-                    inputCountry = country.querySelector('select');
-                    if (inputCountry) {
-                        country.remove();
-                    }
-
-                    if (city) {
-                        const cityInput = city.querySelector('input');
-                        const errorCity = shippingAddressComponent.querySelector('.wc-block-components-text-input.wc-block-components-address-form__city.has-error');
-
-                        if (cityInput && cityInput.getAttribute('value') === '') {
-                            if (postcodeInput) postcodeInput.focus();
-                            if (postcodeInput) previousCep = postcodeInput.value;
-                            cityInput.remove();
-                        } else {
-                            if (postcodeInput) previousCep = postcodeInput.value;
-                            city.remove();
-                        }
-
-                        if (errorCity) errorCity.remove();
-                    }
-
-                    if (state) state.remove();
-                    if (iconSVG) iconSVG.remove();
-
-                    resolve();
-                }
-
-                attempts++;
-            }, 100); // Checa a cada 100ms
-        });
-    }
-
-    function handleSubmitClick(inputPostcode, inputCountry, continueButton) {
-        if (continueButton && wcBetterShippingCalculatorParams.cep_required === 'yes') {
+        if (continueButton && inputPostcode) {
             disableButton(continueButton)
             continueButton.removeEventListener('click', handleClick);
             continueButton.addEventListener('click', handleClick);
         }
 
-        if (isValidCEP(inputPostcode.value)) {
-            if (inputPostcode.value !== previousCep || errorRequest) {
-                errorRequest = false
-                const url = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${inputPostcode.value}&country=${inputCountry.value}`;
-                const addressSummary = document.querySelector('.wc-block-components-totals-shipping-address-summary');
-                let previousText = ''
+        addressSummary = document.querySelector('.wc-block-components-totals-shipping-address-summary');
+        if (addressSummary) {
+            const summaryBlock = document.querySelector('.wc-block-components-totals-shipping-panel');
+            if (summaryBlock) {
+                iconSummary = summaryBlock.querySelector('.wc-block-components-panel__button-icon');
+                if (iconSummary) {
+                    iconSummary.addEventListener('click', blockInteraction, true);
+                }
+            }
+            if (isValidCEP(inputPostcode.value)) {
+                postcodeValue = inputPostcode.value
+                if (inputPostcode.value !== previousCep) {
+                    batchRequested = false
+                    errorRequest = false
 
-                if (addressSummary) {
+                    addressSummary.addEventListener('click', blockInteraction, true);
                     addressSummary.classList.add('lkn-wc-shipping-address-summary');
                     addressSummary.style.position = 'relative';
                     addressSummary.classList.add('loading');
@@ -124,244 +85,102 @@ document.addEventListener('DOMContentLoaded', function () {
                     } else {
                         previousText = 'old'
                     }
-                }
 
-                // Armazena o fetch original apenas uma vez
-                if (!window.originalFetch) {
-                    window.originalFetch = window.fetch;
-                }
+                } else {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    const apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
 
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === true) {
-                            const updateUrl = '/wp-json/wc/store/v1/cart/update-customer';
-                            const nonce = wcBlocksMiddlewareConfig.storeApiNonce;
+                    addressSummary.addEventListener('click', blockInteraction, true);
+                    addressSummary.classList.add('lkn-wc-shipping-address-summary');
+                    addressSummary.style.position = 'relative';
+                    addressSummary.classList.add('loading');
+                    const spinner = addressSummary.querySelector('.spinner');
+                    if (!spinner) {
+                        addressSummary.insertAdjacentHTML('beforeend', '<span class="spinner is-active"></span>');
+                    }
 
-                            let bodyData = {
-                                shipping_address: {
-                                    address_1: data.address ? data.address : ' ',
-                                    address_2: ' ',
-                                    country: 'BR',
-                                    state: data.state_sigla ? data.state_sigla : ' ',
-                                    city: data.city ? data.city : ' ',
-                                    postcode: inputPostcode.value
+                    await fetch(apiUrl, { signal: controller.signal })
+                        .then(response => response.json())
+                        .then(data => {
+                            clearTimeout(timeoutId); // Se deu certo, limpa o timeout
+
+                            if (data.status === true) {
+                                enableButton(continueButton)
+                                removeLoading(addressSummary);
+                                addressSummary.removeEventListener('click', blockInteraction, true);
+                                if (iconSummary) {
+                                    iconSummary.removeEventListener('click', blockInteraction, true);
                                 }
-                            };
-
-                            // Função para restaurar o fetch original
-                            const restoreFetch = () => {
-                                if (window.fetch !== window.originalFetch) {
-                                    window.fetch = window.originalFetch;
+                            } else {
+                                alert('Erro: ' + data.message);
+                                removeLoading(addressSummary);
+                                addressSummary.removeEventListener('click', blockInteraction, true);
+                                if (iconSummary) {
+                                    iconSummary.removeEventListener('click', blockInteraction, true);
                                 }
-                            };
-
-                            // Função para atualizar o carrinho
-                            const updateCart = () => {
-                                fetch(updateUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Nonce': nonce
-                                    },
-                                    body: JSON.stringify(bodyData)
-                                })
-                                    .then(response => response.json())
-                                    .then(() => {
-                                        const previousPostcode = document.querySelector('.wc-block-components-address-form__postcode');
-                                        const inputPreviousPostcode = previousPostcode ? previousPostcode.querySelector('input') : null;
-                                        let strongElement = addressSummary.querySelector('strong');
-                                        if (!strongElement) {
-                                            const newStrong = document.createElement('strong');
-                                            newStrong.textContent = addressSummary.textContent;
-
-                                            // Limpa o conteúdo atual e insere o novo <strong>
-                                            addressSummary.textContent = '';
-                                            addressSummary.appendChild(newStrong);
-
-                                            strongElement = addressSummary.querySelector('strong');
-                                        }
-                                        if (previousText && strongElement) {
-                                            const checkTextChange = setInterval(() => {
-                                                const responseText = `${inputPostcode.value}, ${data.city}, ${data.state}, Brasil`
-                                                if (responseText !== previousText || clearCepInterval) {
-                                                    clearCepInterval = false;
-                                                    strongElement.textContent = responseText;
-                                                    removeLoading(addressSummary);
-                                                    previousText = strongElement.textContent;
-                                                    if (wcBetterShippingCalculatorParams.cep_required === 'yes') {
-                                                        enableButton(continueButton);
-                                                    }
-                                                    if (inputPreviousPostcode) {
-                                                        previousCep = inputPreviousPostcode.value;
-                                                    }
-                                                    clearInterval(checkTextChange);
-                                                }
-                                            }, 500);
-                                        } else {
-                                            removeLoading(addressSummary)
-                                        }
-
-                                        restoreFetch(); // Remove o interceptador após a requisição
-                                    })
-                                    .catch(error => {
-                                        removeLoading(addressSummary);
-                                        restoreFetch(); // Remove o interceptador se houver erro
-                                    });
-                            };
-
-                            // Interceptador de requisição
-                            const interceptBatchRequest = () => {
-                                restoreFetch(); // Garante que não há interceptador antigo
-
-                                // Timer para forçar atualização após 6s caso a requisição não ocorra
-                                const limitTime = setTimeout(() => {
-                                    updateCart();
-                                }, 6000);
-
-                                window.fetch = function (url, options) {
-                                    if (url.includes('/wp-json/wc/store/v1/batch?_locale=site')) {
-                                        clearTimeout(limitTime);
-
-                                        return window.originalFetch(url, options)
-                                            .then(response => {
-                                                response.clone().json().then(() => {
-                                                    updateCart();
-                                                });
-                                                return response;
-                                            })
-                                            .catch(error => {
-                                                restoreFetch();
-                                                return Promise.reject(error);
-                                            });
-                                    }
-
-                                    return window.originalFetch(url, options);
-                                };
-                            };
-
-                            interceptBatchRequest();
-                        } else {
-                            alert('Erro: ' + data.message);
+                                errorRequest = true;
+                            }
+                        })
+                        .catch(error => {
+                            clearTimeout(timeoutId); // Também limpa o timeout no erro
+                            if (error.name === 'AbortError') {
+                                alert('Erro: Tempo limite de resposta excedido.');
+                            } else {
+                                console.error(error);
+                            }
                             removeLoading(addressSummary);
-                            errorRequest = true
-                        }
-                    })
-                    .catch(error => {
-                        removeLoading(addressSummary);
-                    });
-
+                            addressSummary.removeEventListener('click', blockInteraction, true);
+                            if (iconSummary) {
+                                iconSummary.removeEventListener('click', blockInteraction, true);
+                            }
+                        });
+                }
             } else {
-                clearCepInterval = true
-                if (isValidCEP(inputPostcode.value) && errorRequest === false && wcBetterShippingCalculatorParams.cep_required === 'yes') {
-                    enableButton(continueButton)
+                alert('CEP inválido.');
+                addressSummary.removeEventListener('click', blockInteraction, true);
+                if (iconSummary) {
+                    iconSummary.removeEventListener('click', blockInteraction, true);
                 }
             }
-        } else {
-            alert('CEP inválido.');
         }
-
     }
 
     function initObserver() {
-        observer = new MutationObserver(async function (mutationsList) {
-            if (!clearCheckInterval) {
-                const checkElement = setInterval(() => {
-                    const shippingBlock = document.querySelector('.wp-block-woocommerce-cart-order-summary-totals-block')
-                    if (!shippingBlock && secondsElapsed === maxTime) {
-                        clearInterval(checkElement);
-                        secondsElapsed = 0;
-                        observer.disconnect();
-                        return
-                    } else if (shippingBlock) {
-                        clearInterval(checkElement);
-                        secondsElapsed = 0;
-                    }
-                    secondsElapsed++;
-                }, 1000)
-                clearCheckInterval = true
+        observer = new MutationObserver(async function () {
+            const postcodeField = document.querySelector('.wc-block-components-text-input.wc-block-components-address-form__postcode');
+            continueButton = document.querySelector('.wc-block-components-button.wp-element-button.wc-block-cart__submit-button.contained');
+
+            if (!continueButton) {
+                continueButtonFound = false
+            }
+            if (continueButton && !continueButtonFound) {
+                continueButtonFound = true
+                disableButton(continueButton)
+                continueButton.removeEventListener('click', handleClick);
+                continueButton.addEventListener('click', handleClick);
             }
 
-            const shippingAddressComponent = document.querySelector('.wc-block-components-shipping-address');
+            if (!postcodeField) {
+                cepFound = false
+            }
+            if (postcodeField && !cepFound) {
+                cepFound = true
+                const submitButton = document.querySelector('.wc-block-components-button.wp-element-button.wc-block-components-shipping-calculator-address__button.outlined');
 
-            if (shippingAddressComponent && !shippingAddressComponentFound) {
-                shippingAddressComponentFound = true
-                continueButton = document.querySelector('.wc-block-components-button.wp-element-button.wc-block-cart__submit-button.contained');
+                const inputPostcode = postcodeField ? postcodeField.querySelector('input') : null;
 
-                if (wcBetterShippingCalculatorParams.disabled_shipping === 'yes') {
-                    enableButton(continueButton)
-                } else {
-                    if (continueButton && !confirmButton && wcBetterShippingCalculatorParams.cep_required === 'yes') {
-                        confirmButton = true;
-                        disableButton(continueButton)
-                        continueButton.addEventListener('click', handleClick);
+                if (submitButton && continueButton && inputPostcode) {
+                    previousCep = inputPostcode.value
+                    if (previousClickHandler) {
+                        submitButton.removeEventListener('click', previousClickHandler);
                     }
-                }
-                const button = shippingAddressComponent.querySelector('.wc-block-components-panel__button');
-                if (button) {
-                    const buttonObserver = new MutationObserver(async () => {
-                        if (button.getAttribute('aria-expanded') == 'false') {
-                            button.click();
-                            button.style.pointerEvents = 'none';
 
-                            await removeUnnecessaryFields(shippingAddressComponent);
-
-                            const postcode = shippingAddressComponent.querySelector('.wc-block-components-address-form__postcode');
-                            const inputPostcode = postcode ? postcode.querySelector('input') : null;
-                            const submitButton = document.querySelector('.wc-block-components-button.wp-element-button.wc-block-components-shipping-calculator-address__button.outlined');
-
-                            if (inputPostcode && inputCountry && submitButton) {
-
-                                if (previousClickHandler) {
-                                    submitButton.removeEventListener('click', previousClickHandler);
-                                }
-
-                                previousClickHandler = () => handleSubmitClick(inputPostcode, inputCountry, continueButton);
-                                submitButton.addEventListener('click', previousClickHandler);
-                            }
-                        }
-                    });
-
-                    // Configura o observer para monitorar o atributo 'aria-expanded' do botão
-                    buttonObserver.observe(button, { attributes: true, attributeFilter: ['aria-expanded'], subtree: true });
-
-                    if (button.getAttribute('aria-expanded') == 'false') {
-                        button.click();
-                        button.style.pointerEvents = 'none';
-
-                        await removeUnnecessaryFields(shippingAddressComponent);
-
-                        const postcode = shippingAddressComponent.querySelector('.wc-block-components-address-form__postcode');
-                        const inputPostcode = postcode ? postcode.querySelector('input') : null;
-                        const submitButton = document.querySelector('.wc-block-components-button.wp-element-button.wc-block-components-shipping-calculator-address__button.outlined');
-
-                        if (inputPostcode && inputCountry && submitButton) {
-                            if (previousClickHandler) {
-                                submitButton.removeEventListener('click', previousClickHandler);
-                            }
-
-                            previousClickHandler = () => handleSubmitClick(inputPostcode, inputCountry, continueButton);
-                            submitButton.addEventListener('click', previousClickHandler);
-                        }
-                    } else if (button.getAttribute('aria-expanded') == 'true') {
-                        await removeUnnecessaryFields(shippingAddressComponent);
-
-                        const postcode = shippingAddressComponent.querySelector('.wc-block-components-address-form__postcode');
-                        const inputPostcode = postcode ? postcode.querySelector('input') : null;
-                        const submitButton = document.querySelector('.wc-block-components-button.wp-element-button.wc-block-components-shipping-calculator-address__button.outlined');
-
-                        if (inputPostcode && inputCountry && submitButton) {
-                            if (previousClickHandler) {
-                                submitButton.removeEventListener('click', previousClickHandler);
-                            }
-
-                            previousClickHandler = () => handleSubmitClick(inputPostcode, inputCountry, continueButton);
-                            submitButton.addEventListener('click', previousClickHandler);
-                        }
-                    }
-                    observer.disconnect();
+                    previousClickHandler = () => handleSubmitClick(continueButton);
+                    submitButton.addEventListener('click', previousClickHandler);
                 }
             }
+
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
@@ -393,5 +212,172 @@ document.addEventListener('DOMContentLoaded', function () {
         return cepPattern.test(cep);
     }
 
+    function blockInteraction(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+    }
+
+    async function interceptSubmit() {
+
+        // Guarda o fetch original uma única vez
+        const originalFetch = window.fetch;
+        // Sobrescreve o fetch
+        window.fetch = async function (url, options) {
+
+            if (url.includes('/wp-json/wc/store/v1/batch?_locale=site')) {
+                if (!batchRequested && isValidCEP(postcodeValue)) {
+
+                    if (addressSummary) {
+                        const summaryBlock = document.querySelector('.wc-block-components-totals-shipping-panel');
+                        if (summaryBlock) {
+                            iconSummary = summaryBlock.querySelector('.wc-block-components-panel__button-icon');
+                            if (iconSummary) {
+                                iconSummary.addEventListener('click', blockInteraction, true);
+                            }
+
+                            const apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+
+                            batchRequested = true
+
+                            const controller = new AbortController();
+                            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
+
+                            await fetch(apiUrl, { signal: controller.signal })
+                                .then(response => response.json())
+                                .then(data => {
+                                    clearTimeout(timeoutId); // Se deu certo, limpa o timeout
+
+                                    if (data.status === true) {
+                                        if (options && options.body) {
+                                            addressData = data.address ? data.address : ' ';
+                                            stateData = data.state_sigla;
+                                            cityData = data.city ? data.city : ' ';
+                                        }
+                                    } else {
+                                        alert('Erro: ' + data.message);
+                                        removeLoading(addressSummary);
+                                        addressSummary.removeEventListener('click', blockInteraction, true);
+                                        if (iconSummary) {
+                                            iconSummary.removeEventListener('click', blockInteraction, true);
+                                        }
+                                        errorRequest = true;
+                                    }
+                                })
+                                .catch(error => {
+                                    clearTimeout(timeoutId); // Também limpa o timeout no erro
+                                    if (error.name === 'AbortError') {
+                                        alert('Erro: Tempo limite de resposta excedido.');
+                                    } else {
+                                        console.error(error);
+                                    }
+                                    removeLoading(addressSummary);
+                                    addressSummary.removeEventListener('click', blockInteraction, true);
+                                    if (iconSummary) {
+                                        iconSummary.removeEventListener('click', blockInteraction, true);
+                                    }
+                                });
+                        }
+                    }
+
+                }
+
+                try {
+                    let requestData = JSON.parse(options.body);
+
+                    const updateCustomerRequest = requestData.requests.find(
+                        (request) => request.path === '/wc/store/v1/cart/update-customer'
+                    );
+
+                    if (updateCustomerRequest) {
+
+                        if (addressData !== '') {
+                            updateCustomerRequest.data.shipping_address.address_1 = addressData
+                            updateCustomerRequest.body.shipping_address.address_1 = addressData
+                        }
+
+                        if (stateData !== '') {
+                            updateCustomerRequest.data.shipping_address.state = stateData
+                            updateCustomerRequest.body.shipping_address.state = stateData
+                        }
+
+                        if (cityData !== '') {
+                            updateCustomerRequest.data.shipping_address.city = cityData
+                            updateCustomerRequest.body.shipping_address.city = cityData
+                        }
+
+                        if (addressData !== '' && stateData !== '' && cityData !== '' && !errorRequest) {
+                            const previousPostcode = document.querySelector('.wc-block-components-address-form__postcode');
+                            const inputPreviousPostcode = previousPostcode ? previousPostcode.querySelector('input') : null;
+                            let strongElement = addressSummary.querySelector('strong');
+                            if (!strongElement) {
+                                const newStrong = document.createElement('strong');
+                                newStrong.textContent = addressSummary.textContent;
+
+                                // Limpa o conteúdo atual e insere o novo <strong>
+                                addressSummary.textContent = '';
+                                addressSummary.appendChild(newStrong);
+
+                                strongElement = addressSummary.querySelector('strong');
+                            }
+                            if (previousText && strongElement) {
+                                const responseText = `${postcodeValue}, ${cityData}, ${stateData}, Brasil`
+
+                                if (postcodeValue !== previousCep) {
+                                    strongElement.textContent = responseText;
+                                    removeLoading(addressSummary);
+                                    previousText = strongElement.textContent;
+                                    enableButton(continueButton);
+                                    if (inputPreviousPostcode) {
+                                        previousCep = inputPreviousPostcode.value;
+                                    }
+                                }
+
+                                if (addressSummary) {
+                                    addressSummary.removeEventListener('click', blockInteraction, true);
+                                }
+                                if (iconSummary) {
+                                    iconSummary.removeEventListener('click', blockInteraction, true);
+                                }
+                            } else {
+                                removeLoading(addressSummary)
+                                if (addressSummary) {
+                                    addressSummary.removeEventListener('click', blockInteraction, true);
+                                }
+                                if (iconSummary) {
+                                    iconSummary.removeEventListener('click', blockInteraction, true);
+                                }
+                            }
+                        } else {
+                            removeLoading(addressSummary)
+                            if (addressSummary) {
+                                addressSummary.removeEventListener('click', blockInteraction, true);
+                            }
+                            if (iconSummary) {
+                                iconSummary.removeEventListener('click', blockInteraction, true);
+                            }
+                        }
+
+                        options.body = JSON.stringify(requestData);
+                    }
+                } catch (err) {
+                    console.error('Erro ao modificar o body: ', err);
+                    removeLoading(addressSummary)
+                    if (addressSummary) {
+                        addressSummary.removeEventListener('click', blockInteraction, true);
+                    }
+                    if (iconSummary) {
+                        iconSummary.removeEventListener('click', blockInteraction, true);
+                    }
+                }
+            }
+
+            // Sempre chama o fetch original
+            return originalFetch(url, options);
+        };
+    }
+
     initObserver();
+    interceptSubmit()
+
 });

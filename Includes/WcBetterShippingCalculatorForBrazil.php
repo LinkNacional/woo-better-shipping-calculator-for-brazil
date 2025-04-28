@@ -5,6 +5,8 @@ namespace Lkn\WcBetterShippingCalculatorForBrazil\Includes;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilWcSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdmin;
 use Lkn\WcBetterShippingCalculatorForBrazil\PublicView\WcBetterShippingCalculatorForBrazilPublic;
+use Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema;
+use Automattic\WooCommerce\StoreApi\Schemas\V1\CartSchema;
 
 /**
  * The file that defines the core plugin class
@@ -77,7 +79,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.0.1';
+            $this->version = '4.1.1';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -156,6 +158,7 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_filter('woocommerce_cart_needs_shipping', $this, 'lkn_custom_disable_shipping', 10, 1);
         $this->loader->add_filter('woocommerce_cart_needs_shipping_address', $this, 'lkn_custom_disable_shipping', 10, 1);
+
     }
 
     public function lkn_custom_disable_shipping()
@@ -336,43 +339,47 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_merge_address_checkout($order, $data)
     {
-        $shipping_number = '';
-        $billing_number = '';
+        $number_field = get_option('woo_better_calc_number_required', 'no');
 
-        if (isset($_POST['lkn_billing_number'])) {
-            $billing_number = sanitize_text_field(wp_unslash($_POST['lkn_billing_number']));
-        }
+        if ($number_field === 'yes') {
+            $shipping_number = '';
+            $billing_number = '';
 
-        if (isset($_POST['lkn_shipping_number'])) {
-            $shipping_number = sanitize_text_field(wp_unslash($_POST['lkn_shipping_number']));
-        }
+            if (isset($_POST['lkn_billing_number'])) {
+                $billing_number = sanitize_text_field(wp_unslash($_POST['lkn_billing_number']));
+            }
 
-        if (empty($shipping_number) && isset($billing_number)) {
-            $shipping_number = $billing_number;
-        }
+            if (isset($_POST['lkn_shipping_number'])) {
+                $shipping_number = sanitize_text_field(wp_unslash($_POST['lkn_shipping_number']));
+            }
 
-        if (empty($billing_number) && isset($shipping_number)) {
-            $billing_number = $shipping_number;
-        }
+            if (empty($shipping_number) && isset($billing_number)) {
+                $shipping_number = $billing_number;
+            }
 
-        if (empty($shipping_number) && empty($billing_number)) {
-            $shipping_number = "S/N";
-            $billing_number = "S/N";
-        }
+            if (empty($billing_number) && isset($shipping_number)) {
+                $billing_number = $shipping_number;
+            }
 
-        // Obtém os valores dos campos preenchidos pelo usuário
-        $billing_address = $data['billing_address_1'] ?? '';
+            if (empty($shipping_number) && empty($billing_number)) {
+                $shipping_number = "S/N";
+                $billing_number = "S/N";
+            }
 
-        $shipping_address = $data['shipping_address_1'] ?? '';
+            // Obtém os valores dos campos preenchidos pelo usuário
+            $billing_address = $data['billing_address_1'] ?? '';
 
-        if (!empty($billing_address)) {
-            $new_billing = $billing_address . ' - ' . $billing_number;
-            $order->set_billing_address_1($new_billing);
-        }
+            $shipping_address = $data['shipping_address_1'] ?? '';
 
-        if (!empty($shipping_address)) {
-            $new_shipping = $shipping_address . ' - ' . $shipping_number;
-            $order->set_shipping_address_1($new_shipping);
+            if (!empty($billing_address)) {
+                $new_billing = $billing_address . ' - ' . $billing_number;
+                $order->set_billing_address_1($new_billing);
+            }
+
+            if (!empty($shipping_address)) {
+                $new_shipping = $shipping_address . ' - ' . $shipping_number;
+                $order->set_shipping_address_1($new_shipping);
+            }
         }
     }
 
@@ -384,10 +391,7 @@ class WcBetterShippingCalculatorForBrazil
             'args' => array(
                 'postcode' => array(
                     'required' => true,
-                ),
-                'country' => array(
-                    'required' => true,
-                ),
+                )
             ),
         ));
     }
@@ -397,10 +401,10 @@ class WcBetterShippingCalculatorForBrazil
         // Pega o parâmetro cep da requisição
         $cep = $request->get_param('postcode');
 
-        $country = $request->get_param('country');
+        $country = WC()->customer->get_billing_country();
 
         // Verifica se o país é o Brasil (BR)
-        if (strtolower($country) !== 'br') {
+        if (isset($country) && strtolower($country) !== 'br') {
             return new \WP_REST_Response(
                 array(
                     'status' => false,
@@ -447,6 +451,7 @@ class WcBetterShippingCalculatorForBrazil
         // Verifica se o CEP foi encontrado na resposta
         if (isset($data['cep'])) {
             $state = $this->lkn_get_state_name_from_sigla($data['state']);
+
             return new \WP_REST_Response(
                 array(
                     'status' => true,
@@ -461,11 +466,10 @@ class WcBetterShippingCalculatorForBrazil
 
         // Caso a resposta seja um erro, como no caso de CEP inválido
         if (isset($data['errors']) && !empty($data['errors'])) {
-            $error_message = $data['errors'][0]['message'];
             return new \WP_REST_Response(
                 array(
                     'status' => false,
-                    'message' => $error_message,
+                    'message' => 'Cep não encontrado ou inválido.',
                 ),
                 404 // Erro de validação de CEP
             );
@@ -504,10 +508,7 @@ class WcBetterShippingCalculatorForBrazil
         $plugin_public = new WcBetterShippingCalculatorForBrazilPublic($this->get_plugin_name(), $this->get_version());
 
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
-        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts');
-
-        // frontend scripts
-        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'add_extra_js');
+        $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts', 100);
     }
 
     /**
