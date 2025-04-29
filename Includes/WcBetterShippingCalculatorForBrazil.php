@@ -408,7 +408,7 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // Verifica se o país é o Brasil (BR)
-        if (isset($country) && strtolower($country) !== 'BR') {
+        if (isset($country) && strtolower($country) !== 'br') {
             return new \WP_REST_Response(
                 array(
                     'status' => false,
