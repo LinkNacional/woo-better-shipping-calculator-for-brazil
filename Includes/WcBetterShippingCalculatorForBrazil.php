@@ -401,10 +401,14 @@ class WcBetterShippingCalculatorForBrazil
         // Pega o parâmetro cep da requisição
         $cep = $request->get_param('postcode');
 
-        $country = WC()->customer->get_billing_country();
+        $country = 'BR';
+
+        if (function_exists('WC') && WC()->customer && method_exists(WC()->customer, 'get_shipping_country')) {
+            $country = WC()->customer->get_shipping_country();
+        }
 
         // Verifica se o país é o Brasil (BR)
-        if (isset($country) && strtolower($country) !== 'br') {
+        if (isset($country) && strtolower($country) !== 'BR') {
             return new \WP_REST_Response(
                 array(
                     'status' => false,
