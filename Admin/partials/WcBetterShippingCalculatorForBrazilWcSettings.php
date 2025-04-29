@@ -56,7 +56,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             ),
 
             array(
-                'title' => __('Campos Gutenberg', 'woo-better-shipping-calculator-for-brazil'),
+                'title' => __('Gutenberg configurações:', 'woo-better-shipping-calculator-for-brazil'),
                 'type'  => 'title',
                 'id'    => 'woo_better_calc_gutenberg_fields'
             ),
