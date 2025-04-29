@@ -105,6 +105,8 @@ class WcBetterShippingCalculatorForBrazilAdmin
          */
         wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilAdmin.js', array( 'jquery' ), $this->version, false);
 
+        wp_enqueue_script($this->plugin_name . '-settings', plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilAdmin.js', array( 'jquery' ), $this->version, false);
+
     }
 
     public function add_extra_css()

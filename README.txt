@@ -1,17 +1,17 @@
-=== Improved Shipping Calculator for Brazilian Stores ===  
+=== Calculadora de Frete para o Brasil ===
 Contributors: LinkNacional
 Donate link: https://www.linknacional.com.br
-Tags: woocommerce, brazil, shipping calculator, postcode  
-Requires at least: 4.6  
+Tags: woocommerce, brasil, calculadora de frete, CEP
+Requires at least: 4.6
 Tested up to: 6.8
-Requires PHP: 7.3  
-Stable tag: 4.0.1
-License: GPLv2 or later  
-License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)  
+Requires PHP: 7.3
+Stable tag: 4.1.1
+License: GPLv2 or later
+License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
-WooCommerce shipping calculator without Country and State fields. Keeping only the Postcode field always visible.  
+Calculadora de frete com CEP automático para WooCommerce. Compatível com Gutenberg e ideal para lojas brasileiras.
 
-== Description ==  
+== Description ==
 
 Calculadora de frete WooCommerce otimizada para lojas brasileiras:
 
@@ -19,30 +19,31 @@ Calculadora de frete WooCommerce otimizada para lojas brasileiras:
 * Mantém o campo de CEP sempre visível.
 * Permite apenas números no campo de CEP.
 * Exibe um teclado numérico em dispositivos móveis.
-* Habilita o campo de número do endereço.
-* Habilita o validador de CEP.
+* Habilita o campo de número para complementar o endereço.
+* Habilita o validador de CEP(Editor de blocos do Gutenberg).
 * Desabilita o frete no produto.
+* Compatibilidade com o editor de blocos do Gutenberg e shortcode(modo clássico).
 
 Algumas dessas funcionalidades podem ser modificadas ou desativadas usando hooks. Mais detalhes na seção [Perguntas Frequentes (FAQ)](#faq).
 
-= Help and Support =  
+= Help and Support =
 
 Quando precisar de ajuda, crie um tópico no [Fórum de Suporte do Plugin](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
 
-= Contributions =  
+= Contributions =
 
-Se encontrar algum erro ou tiver sugestões, abra um problema no nosso [repositório no GitHub](https://github.com/luizbills/wc-better-shipping-calculator-for-brazil).
+Se encontrar algum erro ou tiver sugestões, abra um problema no nosso [repositório no GitHub](https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil).
 
 [Brasil API](https://brasilapi.com.br) - Campo de CEP.
 
-== Installation ==  
+== Installation ==
 
 1. Acesse o admin do seu WordPress e vá para **Plugins > Adicionar Novo**.
 2. Busque por "Calculadora de Frete Melhorada para Lojas Brasileiras".
 3. Encontre o plugin, clique em "Instalar Agora" e depois em "Ativar".
 4. Pronto! Nenhuma configuração adicional necessária.
 
-== Screenshots ==  
+== Screenshots ==
 
 1. Nova página de configuração do plugin.
 2. Tela antiga do carrinho através do editor de blocos do Gutenberg.
@@ -52,31 +53,27 @@ Se encontrar algum erro ou tiver sugestões, abra um problema no nosso [reposit�
 6. Campo de número através do editor de blocos do Gutenberg.
 7. Campo de número através do shortcode do WooCommerce.
 
-== Frequently Asked Questions ==  
+== Frequently Asked Questions ==
 
 = Como posso ALTERAR o texto "Calcular frete"? =
 
 Use o seguinte código:
 
-```
 add_filter(
     'wc_better_shipping_calculator_for_brazil_postcode_label',
     function () {
         return 'seu novo texto';
     }
 );
-```
 
 = Como posso REMOVER o texto "Calcular frete"? =
 
 Use o seguinte código:
 
-```
 add_filter(
     'wc_better_shipping_calculator_for_brazil_postcode_label',
     '__return_null'
 );
-```
 
 == Changelog ==
 

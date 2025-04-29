@@ -39,9 +39,9 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             ),
 
             array(
-                'title'    => __('CEP obrigatório no carrinho(Gutenberg apenas)', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => __('Ao tornar o CEP obrigatório, o usuário precisa informar obrigatoriamente um CEP no carrinho antes de prosseguir para o checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_calc_cep_required',
+                'title'    => __('Campo número(Checkout)', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => __('Ao habilitar este campo, será adicionado um componente de número para dar complemento adicional ao campo de endereço.', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_number_required',
                 'default'  => 'no',
                 'type'     => 'select',
                 'options'  => array(
@@ -51,9 +51,32 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             ),
 
             array(
-                'title'    => __('Campo número(Checkout)', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => __('Ao habilitar este campo, será adicionado um componente de número para dar complemento adicional ao campo de endereço.', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_calc_number_required',
+                'type' => 'sectionend',
+                'id'   => 'woo_better_calc_gutenberg_fields'
+            ),
+
+            array(
+                'title' => __('Gutenberg configurações:', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'title',
+                'id'    => 'woo_better_calc_gutenberg_fields'
+            ),
+
+            array(
+                'title'    => __('Ocultar campos de endereço na página de carrinho', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => __('Ao habilitar este campo, será desabilitado os campos de endereços na página de carrinho do Gutenberg.', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_hidden_cart_address',
+                'default'  => 'yes',
+                'type'     => 'select',
+                'options'  => array(
+                    'yes' => __('Sim', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Não', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+
+            array(
+                'title'    => __('CEP obrigatório no carrinho', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => __('Ao tornar o CEP obrigatório, o usuário precisa validar um CEP no carrinho antes de prosseguir para o checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_cep_required',
                 'default'  => 'no',
                 'type'     => 'select',
                 'options'  => array(
@@ -101,6 +124,16 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
 
     public function save()
     {
-        \WC_Admin_Settings::save_fields($this->get_settings());
+        $settings = $this->get_settings();
+
+        $disable_shipping = isset($_POST['woo_better_calc_disabled_shipping']) ? sanitize_text_field(wp_unslash($_POST['woo_better_calc_disabled_shipping'])) : 'no';
+
+        if ($disable_shipping === 'yes') {
+            $_POST['woo_better_calc_number_required'] = 'no';
+            $_POST['woo_better_hidden_cart_address'] = 'no';
+            $_POST['woo_better_calc_cep_required'] = 'no';
+        }
+
+        \WC_Admin_Settings::save_fields($settings);
     }
 }
