@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const disableShipping = document.getElementById('woo_better_calc_disabled_shipping');
     if (disableShipping) {
-        if (disableShipping.value === 'yes') {
+        console.log(disableShipping.value);
+        if (disableShipping.value === 'all' || disableShipping.value === 'digital') {
             const numberField = document.getElementById('woo_better_calc_number_required');
             const hiddenField = document.getElementById('woo_better_hidden_cart_address');
             const requirePostcode = document.getElementById('woo_better_calc_cep_required');

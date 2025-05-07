@@ -147,11 +147,11 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_filter('plugin_action_links_' . WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_BASENAME, $this, 'lkn_add_settings_link', 10, 2);
 
-        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'no');
+        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
 
         $this->loader->add_action('woocommerce_init', $this, 'lkn_set_country_brasil', 999);
 
-        if ($disabled_shipping === 'yes') {
+        if ($disabled_shipping === 'all' || $disabled_shipping === 'digital') {
             $this->loader->add_action('woocommerce_get_country_locale', $this, 'lkn_woo_better_shipping_calculator_locale', 10, 1);
         }
 
@@ -162,22 +162,22 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_custom_disable_shipping()
     {
-        $disable_shipping_option = get_option('woo_better_calc_disabled_shipping', 'no');
+        $disable_shipping_option = get_option('woo_better_calc_disabled_shipping', 'default');
 
-        if ($disable_shipping_option === 'yes') {
+        $only_virtual = false;
+        foreach (WC()->cart->get_cart() as $cart_item) {
+            $product = $cart_item['data'];
+            if ($product->is_virtual() || $product->is_downloadable()) {
+                $only_virtual = true;
+            } else {
+                $only_virtual = false;
+                break;
+            }
+        }
+
+        if ($disable_shipping_option === 'all' || ($only_virtual && $disable_shipping_option === 'digital')) {
             return false;
         } else {
-            $only_virtual = false;
-            foreach (WC()->cart->get_cart() as $cart_item) {
-                $product = $cart_item['data'];
-                if ($product->is_virtual() || $product->is_downloadable()) {
-                    $only_virtual = true;
-                } else {
-                    $only_virtual = false;
-                    break;
-                }
-            }
-
             // Se todos forem virtuais, não precisa de frete
             return $only_virtual ? false : true;
         }
@@ -202,20 +202,34 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_woo_better_shipping_calculator_locale($locale)
     {
-        $locale['BR']['postcode']['required'] = false;
-        $locale['BR']['postcode']['hidden'] = true;
+        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
+        $only_virtual = false;
+        foreach (WC()->cart->get_cart() as $cart_item) {
+            $product = $cart_item['data'];
+            if ($product->is_virtual() || $product->is_downloadable()) {
+                $only_virtual = true;
+            } else {
+                $only_virtual = false;
+                break;
+            }
+        }
 
-        $locale['BR']['city']['required'] = false;
-        $locale['BR']['city']['hidden'] = true;
+        if ($disabled_shipping === 'all' ||  ($only_virtual && $disabled_shipping === 'digital')) {
+            $locale['BR']['postcode']['required'] = false;
+            $locale['BR']['postcode']['hidden'] = true;
 
-        $locale['BR']['state']['required'] = false;
-        $locale['BR']['state']['hidden'] = true;
+            $locale['BR']['city']['required'] = false;
+            $locale['BR']['city']['hidden'] = true;
 
-        $locale['BR']['address_1']['required'] = false;
-        $locale['BR']['address_1']['hidden'] = true;
+            $locale['BR']['state']['required'] = false;
+            $locale['BR']['state']['hidden'] = true;
 
-        $locale['BR']['address_2']['required'] = false;
-        $locale['BR']['address_2']['hidden'] = true;
+            $locale['BR']['address_1']['required'] = false;
+            $locale['BR']['address_1']['hidden'] = true;
+
+            $locale['BR']['address_2']['required'] = false;
+            $locale['BR']['address_2']['hidden'] = true;
+        }
 
         return $locale;
     }
@@ -270,9 +284,20 @@ class WcBetterShippingCalculatorForBrazil
     public function lkn_add_custom_checkout_field($fields)
     {
         $number_field = get_option('woo_better_calc_number_required', 'no');
-        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'no');
+        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
 
-        if ($number_field === 'yes' && $disabled_shipping === 'no') {
+        $only_virtual = false;
+        foreach (WC()->cart->get_cart() as $cart_item) {
+            $product = $cart_item['data'];
+            if ($product->is_virtual() || $product->is_downloadable()) {
+                $only_virtual = true;
+            } else {
+                $only_virtual = false;
+                break;
+            }
+        }
+
+        if ($number_field === 'yes' && ($disabled_shipping === 'default' || !$only_virtual && $disabled_shipping === 'digital')) {
             // Adiciona um novo campo dentro do endereço de cobrança
             $fields['billing']['lkn_billing_number'] = array(
                 'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
@@ -309,7 +334,7 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
 
-        if ($disabled_shipping === 'yes') {
+        if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
             unset($fields['billing']['billing_state']);
             unset($fields['shipping']['shipping_state']);
 

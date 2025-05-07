@@ -105,23 +105,9 @@ class WcBetterShippingCalculatorForBrazilPublic
 
         wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublic.js', array( 'jquery' ), $this->version, false);
 
-        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'no');
+        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
         $hidden_address = get_option('woo_better_hidden_cart_address', 'yes');
         $cep_required = get_option('woo_better_calc_cep_required', 'no');
-
-        if ($hidden_address === 'yes') {
-            if (wp_script_is('wc-cart-checkout-base', 'enqueued')) {
-                wp_dequeue_script('wc-cart-checkout-base-js');
-
-                wp_enqueue_script(
-                    'wc-cart-checkout-base-js',
-                    plugin_dir_url(__FILE__) . 'js/wc-cart-checkout-base-frontend.js',
-                    array(),
-                    '1.0.0',
-                    false
-                );
-            }
-        }
 
         if (has_block('woocommerce/cart') && $cep_required === 'yes') {
             wp_enqueue_script(
@@ -136,7 +122,19 @@ class WcBetterShippingCalculatorForBrazilPublic
         if (has_block('woocommerce/checkout')) {
             $number_field = get_option('woo_better_calc_number_required', 'no');
 
-            if ($number_field === 'yes' && $disabled_shipping === 'no') {
+
+            $only_virtual = false;
+            foreach (WC()->cart->get_cart() as $cart_item) {
+                $product = $cart_item['data'];
+                if ($product->is_virtual() || $product->is_downloadable()) {
+                    $only_virtual = true;
+                } else {
+                    $only_virtual = false;
+                    break;
+                }
+            }
+
+            if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-number-field',
                     plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergNumberField.js',
@@ -146,7 +144,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
-            if ($disabled_shipping === 'yes') {
+            if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-disabled-shipping',
                     plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergDiabledFields.js',
@@ -159,7 +157,7 @@ class WcBetterShippingCalculatorForBrazilPublic
 
         if (is_checkout()) {
             $number_field = get_option('woo_better_calc_number_required', 'no');
-            if ($number_field === 'yes' && $disabled_shipping === 'no') {
+            if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
                 wp_enqueue_script(
                     $this->plugin_name . '-short-number-field',
                     plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicShortNumberField.js',
@@ -171,6 +169,20 @@ class WcBetterShippingCalculatorForBrazilPublic
         }
 
         if (is_cart()) {
+            if ($hidden_address === 'yes') {
+                if (wp_script_is('wc-cart-checkout-base', 'enqueued')) {
+                    wp_dequeue_script('wc-cart-checkout-base-js');
+
+                    wp_enqueue_script(
+                        'wc-cart-checkout-base-js',
+                        plugin_dir_url(__FILE__) . 'js/wc-cart-checkout-base-frontend.js',
+                        array(),
+                        '1.0.0',
+                        false
+                    );
+                }
+            }
+
             wp_enqueue_script(
                 $this->plugin_name . '-frontend',
                 plugin_dir_url(__FILE__) . "js/WcBetterShippingCalculatorForBrazilPublicCEPField.js",

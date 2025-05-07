@@ -30,11 +30,12 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'title'    => __('Entrega de produto', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => __('Controla a exibição dos métodos de entrega em todo o fluxo de compra (carrinho e checkout). Ao selecionar "Desabilitar entrega para todos os produtos", todos os métodos de entrega e campos de endereço serão desabilitados, independentemente dos itens no carrinho. Já com "Manter entrega dinâmica", os métodos só serão ocultados se o carrinho contiver exclusivamente produtos digitais (virtuais e baixáveis).', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_disabled_shipping',
-                'default'  => 'no',
+                'default'  => 'default',
                 'type'     => 'select',
                 'options'  => array(
-                    'yes' => __('Desabilitar entrega para todos os produtos', 'woo-better-shipping-calculator-for-brazil'),
-                    'no'  => __('Manter entrega dinâmica', 'woo-better-shipping-calculator-for-brazil')
+                    'all' => __('Desabilitar entrega/endereço para todos os produtos', 'woo-better-shipping-calculator-for-brazil'),
+                    'digital'  => __('Desabilitar entrega/endereço para apenas produtos digitais', 'woo-better-shipping-calculator-for-brazil'),
+                    'default'  => __('Manter entrega padrão', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
 
@@ -126,12 +127,14 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
     {
         $settings = $this->get_settings();
 
-        $disable_shipping = isset($_POST['woo_better_calc_disabled_shipping']) ? sanitize_text_field(wp_unslash($_POST['woo_better_calc_disabled_shipping'])) : 'no';
+        $disable_shipping = isset($_POST['woo_better_calc_disabled_shipping']) && (sanitize_text_field(wp_unslash($_POST['woo_better_calc_disabled_shipping'])) === 'all' || sanitize_text_field(wp_unslash($_POST['woo_better_calc_disabled_shipping'])) === 'digital') ? sanitize_text_field(wp_unslash($_POST['woo_better_calc_disabled_shipping'])) : 'default';
 
-        if ($disable_shipping === 'yes') {
+        if ($disable_shipping === 'all' || $disable_shipping === 'digital') {
             $_POST['woo_better_calc_number_required'] = 'no';
             $_POST['woo_better_hidden_cart_address'] = 'no';
             $_POST['woo_better_calc_cep_required'] = 'no';
+        } else {
+            $_POST['woo_better_calc_disabled_shipping'] = 'default';
         }
 
         \WC_Admin_Settings::save_fields($settings);
