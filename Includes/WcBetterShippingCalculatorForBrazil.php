@@ -163,15 +163,25 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_custom_disable_shipping()
     {
-        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'no');
+        $disable_shipping_option = get_option('woo_better_calc_disabled_shipping', 'no');
 
-        if ($disabled_shipping === 'yes') {
-            $disabled_shipping = false;
+        if ($disable_shipping_option === 'yes') {
+            return false;
         } else {
-            $disabled_shipping = true;
-        }
+            $only_virtual = false;
+            foreach (WC()->cart->get_cart() as $cart_item) {
+                $product = $cart_item['data'];
+                if ($product->is_virtual() || $product->is_downloadable()) {
+                    $only_virtual = true;
+                } else {
+                    $only_virtual = false;
+                    break;
+                }
+            }
 
-        return $disabled_shipping;
+            // Se todos forem virtuais, não precisa de frete
+            return $only_virtual ? false : true;
+        }
     }
 
     public function lkn_set_country_brasil()

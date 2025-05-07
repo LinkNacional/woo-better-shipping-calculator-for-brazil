@@ -27,19 +27,19 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             ),
 
             array(
-                'title'    => __('Desabilitar frete', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => __('Ao habilitar este campo, será desabilitado o frete nos produtos, juntamente com os campos de endereços no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Entrega de produto', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => __('Controla a exibição dos métodos de entrega em todo o fluxo de compra (carrinho e checkout). Ao selecionar "Desabilitar entrega para todos os produtos", todos os métodos de entrega e campos de endereço serão desabilitados, independentemente dos itens no carrinho. Já com "Manter entrega dinâmica", os métodos só serão ocultados se o carrinho contiver exclusivamente produtos digitais (virtuais e baixáveis).', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_disabled_shipping',
                 'default'  => 'no',
                 'type'     => 'select',
                 'options'  => array(
-                    'yes' => __('Sim', 'woo-better-shipping-calculator-for-brazil'),
-                    'no'  => __('Não', 'woo-better-shipping-calculator-for-brazil')
+                    'yes' => __('Desabilitar entrega para todos os produtos', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Manter entrega dinâmica', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
 
             array(
-                'title'    => __('Campo número(Checkout)', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Adicionar campo de número(Checkout)', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => __('Ao habilitar este campo, será adicionado um componente de número para dar complemento adicional ao campo de endereço.', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_number_required',
                 'default'  => 'no',

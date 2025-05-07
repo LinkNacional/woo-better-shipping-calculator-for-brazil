@@ -148,17 +148,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function initObserver() {
         observer = new MutationObserver(async function () {
+            const shippingAddressBlock = document.querySelector('.wc-block-components-shipping-address');
             const postcodeField = document.querySelector('.wc-block-components-text-input.wc-block-components-address-form__postcode');
             continueButton = document.querySelector('.wc-block-components-button.wp-element-button.wc-block-cart__submit-button.contained');
+
 
             if (!continueButton) {
                 continueButtonFound = false
             }
-            if (continueButton && !continueButtonFound) {
+            if (continueButton && !continueButtonFound && shippingAddressBlock) {
                 continueButtonFound = true
-                disableButton(continueButton)
                 continueButton.removeEventListener('click', handleClick);
                 continueButton.addEventListener('click', handleClick);
+
+                if (!shippingAddressBlock) {
+                    enableButton(continueButton)
+                } else {
+                    disableButton(continueButton)
+                }
+            }
+
+            if (!shippingAddressBlock && continueButton) {
+                enableButton(continueButton)
             }
 
             if (!postcodeField) {

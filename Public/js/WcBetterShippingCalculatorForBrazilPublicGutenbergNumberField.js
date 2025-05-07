@@ -216,13 +216,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     const shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
                     const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
 
-                    if (!shippingNumberInput.value.trim().length) {
+                    if (shippingNumberInput && !shippingNumberInput.value.trim().length) {
                         event.stopPropagation(); // Bloqueia a propagação se estiver vazio
                         event.preventDefault(); // Previne o envio do formulário
                         shippingErrorNumberInput.style.display = 'block'
 
                         shippingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    } else if (!billingNumberInput.value.trim().length) {
+                    } else if (billingNumberInput && !billingNumberInput.value.trim().length) {
                         event.stopPropagation(); // Bloqueia a propagação se estiver vazio
                         event.preventDefault(); // Previne o envio do formulário
                         billingErrorNumberInput.style.display = 'block'
@@ -448,12 +448,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 billingNumberInput.addEventListener('input', function () {
                     const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
-                    if (billingNumberInput.value.trim().length > 0) {
-                        // Remove a restrição ao clique
-                        billingErrorNumberInput.style.display = 'none'
-                    } else {
-                        // Adiciona novamente a restrição caso fique vazio
-                        billingErrorNumberInput.style.display = 'block'
+                    if (billingNumberInput) {
+                        if (billingNumberInput.value.trim().length > 0) {
+                            // Remove a restrição ao clique
+                            billingErrorNumberInput.style.display = 'none'
+                        } else {
+                            // Adiciona novamente a restrição caso fique vazio
+                            billingErrorNumberInput.style.display = 'block'
+                        }
                     }
                 });
             }
