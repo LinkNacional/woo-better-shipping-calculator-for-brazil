@@ -77,6 +77,14 @@ add_filter(
 
 == Changelog ==
 
+= 4.1.2 - 2025/05/07 =
+* Fix: Adjustments in the identification of physical and digital products.
+* Improvement: Enhanced GitHub workflow for plugin deployment to the repository and WordPress.
+
+= 4.1.1 - 2025/04/29 =
+* Fix: Improved README.txt description for Brazilian Portuguese.
+* Fix: Improved Gutenberg field for ZIP code — it's now possible to enable or disable address field hiding based on ZIP input.
+
 = 4.0.1 - 2025/04/23 =
 * Fix: New Readme.txt and image list.
 
