@@ -386,8 +386,24 @@ class WcBetterShippingCalculatorForBrazil
     public function lkn_merge_address_checkout($order, $data)
     {
         $number_field = get_option('woo_better_calc_number_required', 'no');
+        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
 
-        if ($number_field === 'yes') {
+        $only_virtual = false;
+        if (function_exists('WC')) {
+            if (isset(WC()->cart)) {
+                foreach (WC()->cart->get_cart() as $cart_item) {
+                    $product = $cart_item['data'];
+                    if ($product->is_virtual() || $product->is_downloadable()) {
+                        $only_virtual = true;
+                    } else {
+                        $only_virtual = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($number_field === 'yes' && ($disabled_shipping === 'default' || !$only_virtual && $disabled_shipping === 'digital')) {
             $shipping_number = '';
             $billing_number = '';
 
