@@ -337,16 +337,41 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
 
                         if (addressData !== '' && stateData !== '' && cityData !== '' && !errorRequest) {
+
+                            observer = new MutationObserver((mutationsList) => {
+                                for (const mutation of mutationsList) {
+                                    if (
+                                        mutation.type === 'childList' ||
+                                        mutation.type === 'characterData' ||
+                                        mutation.type === 'subtree'
+                                    ) {
+                                        const strongELement = addressSummary.querySelector('strong');
+                                        if (strongELement) {
+                                            console.log('opa')
+                                            addressSummary.removeChild(strongELement);
+                                        }
+                                    }
+                                }
+                            });
+
+                            observer.observe(addressSummary, {
+                                childList: true,
+                                characterData: true,
+                                subtree: true
+                            });
+
                             const previousPostcode = document.querySelector('.wc-block-components-address-form__postcode');
                             const inputPreviousPostcode = previousPostcode ? previousPostcode.querySelector('input') : null;
-                            let strongElement = addressSummary.querySelector('strong');
-                            if (!strongElement) {
-                                const newStrong = document.createElement('strong');
-                                newStrong.textContent = addressSummary.textContent;
 
-                                // Limpa o conteúdo atual e insere o novo <strong>
+                            let pComponent = addressSummary.querySelector('p');
 
-                                const spanField = addressSummary.querySelector('span');
+                            console.log(pComponent)
+
+                            if (!pComponent) {
+                                let newP = document.createElement('p');
+                                newP.style.margin = '0';
+
+                                const spanField = addressSummary.querySelector('span:not(.spinner)');
                                 if (spanField) {
                                     const textNode = Array.from(addressSummary.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
 
@@ -355,24 +380,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
                                         // Insert the <strong> before the <span>
                                         const span = addressSummary.querySelector('span');
-                                        addressSummary.insertBefore(newStrong, span);
+                                        addressSummary.insertBefore(newP, span);
                                     }
                                 } else {
-                                    addressSummary.textContent = '';
-                                    addressSummary.appendChild(newStrong);
+                                    console.log('opaaaaaaaaa')
+                                    addressSummary.appendChild(newP);
                                 }
-
                             }
 
-                            strongElement = addressSummary.querySelector('strong');
+                            newP = addressSummary.querySelector('p');
 
-                            if (previousText && strongElement) {
-                                const responseText = `Entrega em ${postcodeValue}, ${cityData}, ${stateData}, Brasil `
+                            if (previousText && newP) {
+                                let responseText = '';
+                                if (WooBetterData.wooVersion === 'woo-block') {
+                                    responseText = `${postcodeValue}, ${cityData}, ${stateData}, Brasil `
+                                } else {
+                                    responseText = `Entrega em ${postcodeValue}, ${cityData}, ${stateData}, Brasil `
+                                }
 
                                 if (postcodeValue !== previousCep) {
-                                    strongElement.textContent = responseText;
+
+                                    newP.textContent = responseText;
                                     removeLoading(addressSummary);
-                                    previousText = strongElement.textContent;
+                                    previousText = newP.textContent;
                                     enableButton(continueButton);
                                     if (inputPreviousPostcode) {
                                         previousCep = inputPreviousPostcode.value;

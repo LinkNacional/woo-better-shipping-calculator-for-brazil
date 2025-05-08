@@ -388,6 +388,9 @@ class WcBetterShippingCalculatorForBrazil
         $number_field = get_option('woo_better_calc_number_required', 'no');
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
 
+        error_log('number_field: ' . $number_field);
+        error_log('disabled_shipping: ' . $disabled_shipping);
+
         $only_virtual = false;
         if (function_exists('WC')) {
             if (isset(WC()->cart)) {
@@ -404,6 +407,7 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         if ($number_field === 'yes' && ($disabled_shipping === 'default' || !$only_virtual && $disabled_shipping === 'digital')) {
+            error_log('opaaaaa');
             $shipping_number = '';
             $billing_number = '';
 
@@ -433,7 +437,7 @@ class WcBetterShippingCalculatorForBrazil
 
             $shipping_address = $data['shipping_address_1'] ?? '';
 
-            if (!empty($billing_address)) {
+            if (!empty($billing_address) && !$only_virtual) {
                 $new_billing = $billing_address . ' - ' . $billing_number;
                 $order->set_billing_address_1($new_billing);
             }

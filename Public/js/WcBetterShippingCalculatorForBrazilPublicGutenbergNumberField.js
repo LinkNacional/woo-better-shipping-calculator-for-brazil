@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let submitEvent = false
     let placeOrderButton = null
     let intervalCount = 0
+    let checkboxCount = 0
 
     const observer = new MutationObserver((mutationsList) => {
         const shippingBlock = document.querySelector('#shipping')
@@ -172,81 +173,96 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         const placeOrderContainer = document.querySelector('.wc-block-checkout__actions_row')
-        const shippingCheckboxInput = document.getElementById('wc-shipping-better-checkbox')
 
         if (placeOrderContainer) {
             placeOrderButton = placeOrderContainer.querySelector('button')
         }
 
-        if (placeOrderButton && shippingCheckboxInput && !submitFound) {
+        if (placeOrderButton && !submitFound) {
             submitFound = true
-            const shippingNumberInput = document.getElementById('shipping-number');
-            const shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
-            const divInputNumber = document.querySelector('.wc-better-shipping-number');
 
-            shippingCheckboxInput.addEventListener('change', function () {
-                if (this.checked) {
-                    shippingNumberInput.disabled = true;
-                    shippingNumberInput.setAttribute('value', 'S/N');
-                    shippingNumberInput.value = 'S/N';
-                    shippingNumberInput.style.backgroundColor = '#e0e0e0';
-                    shippingNumberInput.style.color = '#808080';
-                    if (divInputNumber) {
-                        divInputNumber.classList.add('is-active');
+            let shippingNumberInput = ''
+            let shippingErrorNumberInput = ''
+
+
+            const checkboxInterval = setInterval(() => {
+                const shippingCheckboxInput = document.getElementById('wc-shipping-better-checkbox')
+
+                shippingNumberInput = document.getElementById('shipping-number');
+                shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
+                const divInputNumber = document.querySelector('.wc-better-shipping-number');
+
+                if (checkboxCount > 20) {
+                    clearInterval(checkboxInterval)
+                }
+
+                if (shippingCheckboxInput) {
+                    clearInterval(checkboxInterval)
+                    shippingCheckboxInput.addEventListener('change', function () {
+                        if (this.checked) {
+                            shippingNumberInput.disabled = true;
+                            shippingNumberInput.setAttribute('value', 'S/N');
+                            shippingNumberInput.value = 'S/N';
+                            shippingNumberInput.style.backgroundColor = '#e0e0e0';
+                            shippingNumberInput.style.color = '#808080';
+                            if (divInputNumber) {
+                                divInputNumber.classList.add('is-active');
+                            }
+                            if (shippingErrorNumberInput) {
+                                shippingErrorNumberInput.style.display = 'none'
+                            }
+                        } else {
+                            shippingNumberInput.disabled = false;
+                            shippingNumberInput.setAttribute('value', '');
+                            shippingNumberInput.value = '';
+                            shippingNumberInput.style.backgroundColor = '';
+                            shippingNumberInput.style.color = '';
+                            if (divInputNumber) {
+                                divInputNumber.classList.remove('is-active');
+                            }
+                        }
+                    });
+
+                    if (shippingNumberInput && shippingErrorNumberInput) {
+                        // Evento de input para monitorar mudanças no campo
+                        shippingNumberInput.addEventListener('input', function () {
+                            if (shippingNumberInput.value.trim().length > 0) {
+                                // Remove a restrição ao clique
+                                shippingErrorNumberInput.style.display = 'none'
+                            } else {
+                                // Adiciona novamente a restrição caso fique vazio
+                                shippingErrorNumberInput.style.display = 'block'
+                            }
+                        });
                     }
-                    if (shippingErrorNumberInput) {
-                        shippingErrorNumberInput.style.display = 'none'
-                    }
-                } else {
-                    shippingNumberInput.disabled = false;
-                    shippingNumberInput.setAttribute('value', '');
-                    shippingNumberInput.value = '';
-                    shippingNumberInput.style.backgroundColor = '';
-                    shippingNumberInput.style.color = '';
-                    if (divInputNumber) {
-                        divInputNumber.classList.remove('is-active');
+
+                    if (placeOrderButton) {
+                        placeOrderButton.addEventListener('click', handlePlaceOrderClick);
+
+                        function handlePlaceOrderClick(event) {
+                            const shippingNumberInput = document.getElementById('shipping-number');
+                            const billingNumberInput = document.getElementById('billing-number');
+
+                            const shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
+                            const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
+
+                            if (shippingNumberInput && !shippingNumberInput.value.trim().length) {
+                                event.stopPropagation(); // Bloqueia a propagação se estiver vazio
+                                event.preventDefault(); // Previne o envio do formulário
+                                shippingErrorNumberInput.style.display = 'block'
+
+                                shippingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            } else if (billingNumberInput && !billingNumberInput.value.trim().length) {
+                                event.stopPropagation(); // Bloqueia a propagação se estiver vazio
+                                event.preventDefault(); // Previne o envio do formulário
+                                billingErrorNumberInput.style.display = 'block'
+
+                                billingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }
                     }
                 }
-            });
-
-            if (shippingNumberInput && shippingErrorNumberInput) {
-                // Evento de input para monitorar mudanças no campo
-                shippingNumberInput.addEventListener('input', function () {
-                    if (shippingNumberInput.value.trim().length > 0) {
-                        // Remove a restrição ao clique
-                        shippingErrorNumberInput.style.display = 'none'
-                    } else {
-                        // Adiciona novamente a restrição caso fique vazio
-                        shippingErrorNumberInput.style.display = 'block'
-                    }
-                });
-            }
-
-            if (placeOrderButton) {
-                placeOrderButton.addEventListener('click', handlePlaceOrderClick);
-
-                function handlePlaceOrderClick(event) {
-                    const shippingNumberInput = document.getElementById('shipping-number');
-                    const billingNumberInput = document.getElementById('billing-number');
-
-                    const shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
-                    const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
-
-                    if (shippingNumberInput && !shippingNumberInput.value.trim().length) {
-                        event.stopPropagation(); // Bloqueia a propagação se estiver vazio
-                        event.preventDefault(); // Previne o envio do formulário
-                        shippingErrorNumberInput.style.display = 'block'
-
-                        shippingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    } else if (billingNumberInput && !billingNumberInput.value.trim().length) {
-                        event.stopPropagation(); // Bloqueia a propagação se estiver vazio
-                        event.preventDefault(); // Previne o envio do formulário
-                        billingErrorNumberInput.style.display = 'block'
-
-                        billingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                }
-            }
+            }, 10);
         }
 
         if (shippingBlockFound && submitFound && !submitEvent) {
