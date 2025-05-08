@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let submitFound = false
     let submitEvent = false
     let placeOrderButton = null
+    let intervalCount = 0
 
     const observer = new MutationObserver((mutationsList) => {
         const shippingBlock = document.querySelector('#shipping')
@@ -12,6 +13,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!shippingBlock) {
             shippingBlockFound = false
+            intervalCount = 0
         }
 
         if (!billingBlock) {
@@ -23,6 +25,11 @@ document.addEventListener("DOMContentLoaded", function () {
             shippingBlockFound = true
 
             const observerEditButton = setInterval(() => {
+
+                if (intervalCount > 20) {
+                    clearInterval(observerEditButton)
+                    return
+                }
 
                 const editShippingButton = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="shipping"]');
 
@@ -153,6 +160,8 @@ document.addEventListener("DOMContentLoaded", function () {
                         });
                     }
                 }
+
+                intervalCount++
 
             }, 5);
 

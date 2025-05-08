@@ -73,6 +73,10 @@ if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_FILE')) {
     define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_FILE', __FILE__);
 }
 
+if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_LAST_WOO_VERSION')) {
+    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_LAST_WOO_VERSION', '9.8.0');
+}
+
 /**
  * The code that runs during plugin activation.
  * This action is documented in includes/class-wc-better-shipping-calculator-for-brazil-activator.php

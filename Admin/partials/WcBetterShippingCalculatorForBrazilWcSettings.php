@@ -28,7 +28,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
 
             array(
                 'title'    => __('Entrega de produto', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => __('Controla a exibição dos métodos de entrega em todo o fluxo de compra (carrinho e checkout). Ao selecionar "Desabilitar entrega para todos os produtos", todos os métodos de entrega e campos de endereço serão desabilitados, independentemente dos itens no carrinho. Já com "Manter entrega dinâmica", os métodos só serão ocultados se o carrinho contiver exclusivamente produtos digitais (virtuais e baixáveis).', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
                 'id'       => 'woo_better_calc_disabled_shipping',
                 'default'  => 'default',
                 'type'     => 'select',

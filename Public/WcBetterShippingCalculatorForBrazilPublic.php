@@ -117,6 +117,14 @@ class WcBetterShippingCalculatorForBrazilPublic
                 $this->version,
                 false
             );
+
+            if (defined('WC_VERSION')) {
+                $woo_version_type = version_compare(WC_VERSION, '9.5.0', '>') ? 'woo-block' : 'woo-class';
+
+                wp_localize_script($this->plugin_name . '-gutenberg-cep-field', 'WooBetterData', [
+                    'wooVersion' => $woo_version_type,
+                ]);
+            }
         }
 
         if (has_block('woocommerce/checkout')) {
@@ -124,13 +132,17 @@ class WcBetterShippingCalculatorForBrazilPublic
 
 
             $only_virtual = false;
-            foreach (WC()->cart->get_cart() as $cart_item) {
-                $product = $cart_item['data'];
-                if ($product->is_virtual() || $product->is_downloadable()) {
-                    $only_virtual = true;
-                } else {
-                    $only_virtual = false;
-                    break;
+            if (function_exists('WC')) {
+                if (isset(WC()->cart)) {
+                    foreach (WC()->cart->get_cart() as $cart_item) {
+                        $product = $cart_item['data'];
+                        if ($product->is_virtual() || $product->is_downloadable()) {
+                            $only_virtual = true;
+                        } else {
+                            $only_virtual = false;
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -155,7 +167,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
         }
 
-        if (is_checkout()) {
+        if (function_exists('is_checkout') && is_checkout()) {
             $number_field = get_option('woo_better_calc_number_required', 'no');
             if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
                 wp_enqueue_script(
@@ -168,18 +180,37 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
         }
 
-        if (is_cart()) {
+        if (function_exists('is_cart') && is_cart()) {
             if ($hidden_address === 'yes') {
-                if (wp_script_is('wc-cart-checkout-base', 'enqueued')) {
-                    wp_dequeue_script('wc-cart-checkout-base-js');
+                if (wp_script_is('wc-cart-checkout-base', 'registered')) {
+                    wp_deregister_script('wc-cart-checkout-base-js');
 
-                    wp_enqueue_script(
-                        'wc-cart-checkout-base-js',
-                        plugin_dir_url(__FILE__) . 'js/wc-cart-checkout-base-frontend.js',
-                        array(),
-                        '1.0.0',
-                        false
-                    );
+                    if (defined('WC_VERSION')) {
+                        $version_parts = explode('.', WC_VERSION);
+                        $version_slug = $version_parts[0] . '-' . $version_parts[1] . '-0';
+
+                        // Define caminho base
+                        $base_filename = 'wc-cart-checkout-base-frontend-';
+                        $base_dir = plugin_dir_path(__FILE__) . 'js/wooCartBlocks/';
+                        $base_url = plugin_dir_url(__FILE__) . 'js/wooCartBlocks/';
+
+                        // Verifica se o arquivo da versão existe
+                        $script_path = $base_dir . $base_filename . $version_slug . '.js';
+
+                        if (!file_exists($script_path)) {
+                            // Usa a constante como fallback
+                            $version_slug = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_LAST_WOO_VERSION;
+                        }
+
+                        // Enfileira o script
+                        wp_enqueue_script(
+                            'wc-cart-checkout-base-js',
+                            $base_url . $base_filename . $version_slug . '.js',
+                            array(),
+                            '1.0.0',
+                            false
+                        );
+                    }
                 }
             }
 

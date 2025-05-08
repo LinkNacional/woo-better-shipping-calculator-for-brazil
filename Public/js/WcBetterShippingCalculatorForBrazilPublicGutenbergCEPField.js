@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let stateData = ''
     let cityData = ''
 
+    let shippingBlockIntervalCount = 0
+
     const handleClick = (event) => {
         event.preventDefault();  // Evita a ação do botão enquanto ele estiver desabilitado
         alert('Verifique as opções de entrega');
@@ -55,7 +57,13 @@ document.addEventListener('DOMContentLoaded', function () {
             continueButton.addEventListener('click', handleClick);
         }
 
-        addressSummary = document.querySelector('.wc-block-components-totals-shipping-address-summary');
+        // Woo versions
+        if (typeof WooBetterData !== 'undefined' && WooBetterData.wooVersion === 'woo-block') {
+            addressSummary = document.querySelector('.wc-block-components-totals-shipping-address-summary');
+        } else if (typeof WooBetterData !== 'undefined' && WooBetterData.wooVersion === 'woo-class') {
+            await waitForShippingBlock()
+        }
+
         if (addressSummary) {
             const summaryBlock = document.querySelector('.wc-block-components-totals-shipping-panel');
             if (summaryBlock) {
@@ -148,7 +156,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function initObserver() {
         observer = new MutationObserver(async function () {
-            const shippingAddressBlock = document.querySelector('.wc-block-components-shipping-address');
+            let shippingAddressBlock = document.querySelector('.wc-block-components-shipping-address');
+            if (!shippingAddressBlock) {
+                shippingAddressBlock = document.querySelector('.wc-block-components-totals-shipping__change-address__link');
+            }
             const postcodeField = document.querySelector('.wc-block-components-text-input.wc-block-components-address-form__postcode');
             continueButton = document.querySelector('.wc-block-components-button.wp-element-button.wc-block-cart__submit-button.contained');
 
@@ -161,11 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 continueButton.removeEventListener('click', handleClick);
                 continueButton.addEventListener('click', handleClick);
 
-                if (!shippingAddressBlock) {
-                    enableButton(continueButton)
-                } else {
-                    disableButton(continueButton)
-                }
+                disableButton(continueButton)
             }
 
             if (!shippingAddressBlock && continueButton) {
@@ -177,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             if (postcodeField && !cepFound) {
                 cepFound = true
-                const submitButton = document.querySelector('.wc-block-components-button.wp-element-button.wc-block-components-shipping-calculator-address__button.outlined');
+                const submitButton = document.querySelector('.wc-block-components-shipping-calculator-address__button');
 
                 const inputPostcode = postcodeField ? postcodeField.querySelector('input') : null;
 
@@ -236,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Sobrescreve o fetch
         window.fetch = async function (url, options) {
 
-            if (url.includes('/wp-json/wc/store/v1/batch?_locale=site')) {
+            if (url.includes('/wp-json/wc/store/v1/batch')) {
                 if (!batchRequested && isValidCEP(postcodeValue)) {
 
                     if (addressSummary) {
@@ -246,49 +253,49 @@ document.addEventListener('DOMContentLoaded', function () {
                             if (iconSummary) {
                                 iconSummary.addEventListener('click', blockInteraction, true);
                             }
+                        }
 
-                            const apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+                        const apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
 
-                            batchRequested = true
+                        batchRequested = true
 
-                            const controller = new AbortController();
-                            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
 
-                            await fetch(apiUrl, { signal: controller.signal })
-                                .then(response => response.json())
-                                .then(data => {
-                                    clearTimeout(timeoutId); // Se deu certo, limpa o timeout
+                        await fetch(apiUrl, { signal: controller.signal })
+                            .then(response => response.json())
+                            .then(data => {
+                                clearTimeout(timeoutId); // Se deu certo, limpa o timeout
 
-                                    if (data.status === true) {
-                                        if (options && options.body) {
-                                            addressData = data.address ? data.address : ' ';
-                                            stateData = data.state_sigla;
-                                            cityData = data.city ? data.city : ' ';
-                                        }
-                                    } else {
-                                        alert('Erro: ' + data.message);
-                                        removeLoading(addressSummary);
-                                        addressSummary.removeEventListener('click', blockInteraction, true);
-                                        if (iconSummary) {
-                                            iconSummary.removeEventListener('click', blockInteraction, true);
-                                        }
-                                        errorRequest = true;
+                                if (data.status === true) {
+                                    if (options && options.body) {
+                                        addressData = data.address ? data.address : ' ';
+                                        stateData = data.state_sigla;
+                                        cityData = data.city ? data.city : ' ';
                                     }
-                                })
-                                .catch(error => {
-                                    clearTimeout(timeoutId); // Também limpa o timeout no erro
-                                    if (error.name === 'AbortError') {
-                                        alert('Erro: Tempo limite de resposta excedido.');
-                                    } else {
-                                        console.error(error);
-                                    }
+                                } else {
+                                    alert('Erro: ' + data.message);
                                     removeLoading(addressSummary);
                                     addressSummary.removeEventListener('click', blockInteraction, true);
                                     if (iconSummary) {
                                         iconSummary.removeEventListener('click', blockInteraction, true);
                                     }
-                                });
-                        }
+                                    errorRequest = true;
+                                }
+                            })
+                            .catch(error => {
+                                clearTimeout(timeoutId); // Também limpa o timeout no erro
+                                if (error.name === 'AbortError') {
+                                    alert('Erro: Tempo limite de resposta excedido.');
+                                } else {
+                                    console.error(error);
+                                }
+                                removeLoading(addressSummary);
+                                addressSummary.removeEventListener('click', blockInteraction, true);
+                                if (iconSummary) {
+                                    iconSummary.removeEventListener('click', blockInteraction, true);
+                                }
+                            });
                     }
 
                 }
@@ -305,16 +312,28 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (addressData !== '') {
                             updateCustomerRequest.data.shipping_address.address_1 = addressData
                             updateCustomerRequest.body.shipping_address.address_1 = addressData
+                            if (!updateCustomerRequest.data.billing_address) {
+                                updateCustomerRequest.data.billing_address = {};
+                                updateCustomerRequest.body.billing_address = {};
+                                updateCustomerRequest.data.billing_address.postcode = postcodeValue
+                                updateCustomerRequest.body.billing_address.postcode = postcodeValue
+                            }
+                            updateCustomerRequest.data.billing_address.address_1 = addressData
+                            updateCustomerRequest.body.billing_address.address_1 = addressData
                         }
 
                         if (stateData !== '') {
                             updateCustomerRequest.data.shipping_address.state = stateData
                             updateCustomerRequest.body.shipping_address.state = stateData
+                            updateCustomerRequest.data.billing_address.state = stateData
+                            updateCustomerRequest.body.billing_address.state = stateData
                         }
 
                         if (cityData !== '') {
                             updateCustomerRequest.data.shipping_address.city = cityData
                             updateCustomerRequest.body.shipping_address.city = cityData
+                            updateCustomerRequest.data.billing_address.city = cityData
+                            updateCustomerRequest.body.billing_address.city = cityData
                         }
 
                         if (addressData !== '' && stateData !== '' && cityData !== '' && !errorRequest) {
@@ -326,13 +345,29 @@ document.addEventListener('DOMContentLoaded', function () {
                                 newStrong.textContent = addressSummary.textContent;
 
                                 // Limpa o conteúdo atual e insere o novo <strong>
-                                addressSummary.textContent = '';
-                                addressSummary.appendChild(newStrong);
 
-                                strongElement = addressSummary.querySelector('strong');
+                                const spanField = addressSummary.querySelector('span');
+                                if (spanField) {
+                                    const textNode = Array.from(addressSummary.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
+
+                                    if (textNode) {
+                                        addressSummary.removeChild(textNode);
+
+                                        // Insert the <strong> before the <span>
+                                        const span = addressSummary.querySelector('span');
+                                        addressSummary.insertBefore(newStrong, span);
+                                    }
+                                } else {
+                                    addressSummary.textContent = '';
+                                    addressSummary.appendChild(newStrong);
+                                }
+
                             }
+
+                            strongElement = addressSummary.querySelector('strong');
+
                             if (previousText && strongElement) {
-                                const responseText = `${postcodeValue}, ${cityData}, ${stateData}, Brasil`
+                                const responseText = `Entrega em ${postcodeValue}, ${cityData}, ${stateData}, Brasil `
 
                                 if (postcodeValue !== previousCep) {
                                     strongElement.textContent = responseText;
@@ -386,6 +421,25 @@ document.addEventListener('DOMContentLoaded', function () {
             // Sempre chama o fetch original
             return originalFetch(url, options);
         };
+    }
+
+    async function waitForShippingBlock() {
+        return new Promise((resolve, reject) => {
+            const shippingBlockInterval = setInterval(() => {
+                const shippingBlock = document.querySelector('.wc-block-components-shipping-address');
+
+                if (shippingBlock) {
+                    addressSummary = shippingBlock
+                    clearInterval(shippingBlockInterval);
+                    resolve();
+                } else if (shippingBlockIntervalCount >= 20) {
+                    clearInterval(shippingBlockInterval);
+                    resolve();
+                }
+
+                shippingBlockIntervalCount++;
+            }, 100);
+        });
     }
 
     initObserver();

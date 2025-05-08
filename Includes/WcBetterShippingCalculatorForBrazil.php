@@ -165,13 +165,17 @@ class WcBetterShippingCalculatorForBrazil
         $disable_shipping_option = get_option('woo_better_calc_disabled_shipping', 'default');
 
         $only_virtual = false;
-        foreach (WC()->cart->get_cart() as $cart_item) {
-            $product = $cart_item['data'];
-            if ($product->is_virtual() || $product->is_downloadable()) {
-                $only_virtual = true;
-            } else {
-                $only_virtual = false;
-                break;
+        if (function_exists('WC')) {
+            if (isset(WC()->cart)) {
+                foreach (WC()->cart->get_cart() as $cart_item) {
+                    $product = $cart_item['data'];
+                    if ($product->is_virtual() || $product->is_downloadable()) {
+                        $only_virtual = true;
+                    } else {
+                        $only_virtual = false;
+                        break;
+                    }
+                }
             }
         }
 
@@ -204,13 +208,17 @@ class WcBetterShippingCalculatorForBrazil
     {
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
         $only_virtual = false;
-        foreach (WC()->cart->get_cart() as $cart_item) {
-            $product = $cart_item['data'];
-            if ($product->is_virtual() || $product->is_downloadable()) {
-                $only_virtual = true;
-            } else {
-                $only_virtual = false;
-                break;
+        if (function_exists('WC')) {
+            if (isset(WC()->cart)) {
+                foreach (WC()->cart->get_cart() as $cart_item) {
+                    $product = $cart_item['data'];
+                    if ($product->is_virtual() || $product->is_downloadable()) {
+                        $only_virtual = true;
+                    } else {
+                        $only_virtual = false;
+                        break;
+                    }
+                }
             }
         }
 
@@ -287,13 +295,17 @@ class WcBetterShippingCalculatorForBrazil
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
 
         $only_virtual = false;
-        foreach (WC()->cart->get_cart() as $cart_item) {
-            $product = $cart_item['data'];
-            if ($product->is_virtual() || $product->is_downloadable()) {
-                $only_virtual = true;
-            } else {
-                $only_virtual = false;
-                break;
+        if (function_exists('WC')) {
+            if (isset(WC()->cart)) {
+                foreach (WC()->cart->get_cart() as $cart_item) {
+                    $product = $cart_item['data'];
+                    if ($product->is_virtual() || $product->is_downloadable()) {
+                        $only_virtual = true;
+                    } else {
+                        $only_virtual = false;
+                        break;
+                    }
+                }
             }
         }
 
