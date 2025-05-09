@@ -502,7 +502,6 @@ class WcBetterShippingCalculatorForBrazil
 
         // Verifica se houve erro na requisição
         if (is_wp_error($response)) {
-            error_log('entrei no erro');
             $ws_response = wp_remote_get("https://viacep.com.br/ws/{$cep}/json/");
 
             $ws_response_body = wp_remote_retrieve_body($ws_response);
@@ -515,7 +514,7 @@ class WcBetterShippingCalculatorForBrazil
                     'city' => $ws_response_data['localidade'],
                     'state_sigla' => $ws_response_data['uf'],
                     'state' => $ws_response_data['estado'],
-                    'address' => $ws_response_data['logradouro']
+                    'street' => $ws_response_data['logradouro']
                 ];
             } else {
                 return new \WP_REST_Response(
