@@ -130,7 +130,6 @@ class WcBetterShippingCalculatorForBrazilPublic
         if (has_block('woocommerce/checkout')) {
             $number_field = get_option('woo_better_calc_number_required', 'no');
 
-
             $only_virtual = false;
             if (function_exists('WC')) {
                 if (isset(WC()->cart)) {
@@ -159,7 +158,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-disabled-shipping',
-                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergDiabledFields.js',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicDiabledFields.js',
                     array(),
                     $this->version,
                     false
@@ -190,6 +189,16 @@ class WcBetterShippingCalculatorForBrazilPublic
                 wp_enqueue_script(
                     $this->plugin_name . '-short-number-field',
                     plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicShortNumberField.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+            }
+
+            if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-disabled-shipping',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicDiabledFields.js',
                     array(),
                     $this->version,
                     false
