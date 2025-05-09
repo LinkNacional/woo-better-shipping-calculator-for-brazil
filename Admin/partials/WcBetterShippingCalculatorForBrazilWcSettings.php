@@ -129,7 +129,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
 
         $disable_shipping = isset($_POST['woo_better_calc_disabled_shipping']) && (sanitize_text_field(wp_unslash($_POST['woo_better_calc_disabled_shipping'])) === 'all' || sanitize_text_field(wp_unslash($_POST['woo_better_calc_disabled_shipping'])) === 'digital') ? sanitize_text_field(wp_unslash($_POST['woo_better_calc_disabled_shipping'])) : 'default';
 
-        if ($disable_shipping === 'all' || $disable_shipping === 'digital') {
+        if ($disable_shipping === 'all') {
             $_POST['woo_better_calc_number_required'] = 'no';
             $_POST['woo_better_hidden_cart_address'] = 'no';
             $_POST['woo_better_calc_cep_required'] = 'no';
