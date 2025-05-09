@@ -9,7 +9,7 @@
 * Tags: woocommerce, brasil, calculadora de frete, CEP
 * Testado até: 6.8
 * Requer PHP: 7.3
-* Tag estável: 4.1.1
+* Tag estável: 4.1.2
 * Licença: GPLv2 ou posterior
 * URI da licença: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -59,9 +59,9 @@ Calculadora de frete melhorada para lojas brasileiras:
 <img src="Includes/assets/images/postCodeFieldGutenberg.png" alt="Frete novo no gutenberg" width="200" />
 
 ### Novo campo número
-<img src="Includes/assets/images/shortcodeCheckout.png" alt="Campo número no checkout do shortcode" width="600" />
+<img src="Includes/assets/images/shortcodeNumberField.png" alt="Campo número no checkout do shortcode" width="600" />
 
-<img src="Includes/assets/images/gutenbergShortcode.png" alt="Campo número no checkout do shortcode" width="600" />
+<img src="Includes/assets/images/gutenbergNumberField.png" alt="Campo número no checkout do shortcode" width="600" />
 
 
 **OBS:** Os dados utilizados nas screenshots são meramente ilustrativos.

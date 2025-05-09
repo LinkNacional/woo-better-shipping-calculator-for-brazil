@@ -27,19 +27,20 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             ),
 
             array(
-                'title'    => __('Desabilitar frete', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => __('Ao habilitar este campo, será desabilitado o frete nos produtos, juntamente com os campos de endereços no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Entrega de produto', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
                 'id'       => 'woo_better_calc_disabled_shipping',
-                'default'  => 'no',
+                'default'  => 'default',
                 'type'     => 'select',
                 'options'  => array(
-                    'yes' => __('Sim', 'woo-better-shipping-calculator-for-brazil'),
-                    'no'  => __('Não', 'woo-better-shipping-calculator-for-brazil')
+                    'all' => __('Desabilitar entrega/endereço para todos os produtos', 'woo-better-shipping-calculator-for-brazil'),
+                    'digital'  => __('Desabilitar entrega/endereço para apenas produtos digitais', 'woo-better-shipping-calculator-for-brazil'),
+                    'default'  => __('Manter entrega padrão', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
 
             array(
-                'title'    => __('Campo número(Checkout)', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Adicionar campo de número(Checkout)', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => __('Ao habilitar este campo, será adicionado um componente de número para dar complemento adicional ao campo de endereço.', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_number_required',
                 'default'  => 'no',
@@ -126,12 +127,16 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
     {
         $settings = $this->get_settings();
 
-        $disable_shipping = isset($_POST['woo_better_calc_disabled_shipping']) ? sanitize_text_field(wp_unslash($_POST['woo_better_calc_disabled_shipping'])) : 'no';
+        $disable_shipping = isset($_POST['woo_better_calc_disabled_shipping']) && (sanitize_text_field(wp_unslash($_POST['woo_better_calc_disabled_shipping'])) === 'all' || sanitize_text_field(wp_unslash($_POST['woo_better_calc_disabled_shipping'])) === 'digital') ? sanitize_text_field(wp_unslash($_POST['woo_better_calc_disabled_shipping'])) : 'default';
 
-        if ($disable_shipping === 'yes') {
+        if ($disable_shipping === 'all') {
             $_POST['woo_better_calc_number_required'] = 'no';
             $_POST['woo_better_hidden_cart_address'] = 'no';
             $_POST['woo_better_calc_cep_required'] = 'no';
+        } elseif ($disable_shipping === 'digital') {
+            $_POST['woo_better_calc_disabled_shipping'] = 'digital';
+        } else {
+            $_POST['woo_better_calc_disabled_shipping'] = 'default';
         }
 
         \WC_Admin_Settings::save_fields($settings);

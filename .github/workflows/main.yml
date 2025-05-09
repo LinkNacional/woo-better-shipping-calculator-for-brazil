@@ -8,7 +8,7 @@ on:
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
   PHP_VERSION: "7.4"
-
+  DEPLOY_TAG: "4.1.2"
 jobs:
   release-build:
     runs-on: ubuntu-latest
@@ -27,13 +27,35 @@ jobs:
         command: install
         dev: no
 
+    - name: Executar Plugin Check com configurações personalizadas
+      uses: wordpress/plugin-check-action@v1
+      with:
+        build-dir: './'
+        exclude-directories: 'node_modules,vendor,.eslintrc'
+        ignore-codes: |
+          WordPress.WP.I18n.TextDomainMismatch
+          WordPress.Security.NonceVerification.Missing
+          WordPress.Security.NonceVerification.Recommended
+          WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+          WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+          trademarked_term
+          textdomain_mismatch
+          hidden_files
+        categories: |
+          performance
+          accessibility
+          general
+          plugin_repo
+          security
+        strict: true
+
     # Add plugin files to a root directory
     - name: Prepare plugin folder
       run: |
         mkdir -p dist
-        mkdir -p build
-        mv ./Admin ./Includes ./languages ./Public *.php *.txt ./build
-        cp -r vendor build/vendor
+        mkdir -p build/${{ env.PLUGIN_NAME }}
+        mv ./Admin ./Includes ./languages ./Public *.php *.txt ./build/${{ env.PLUGIN_NAME }}
+        cp -r vendor build/${{ env.PLUGIN_NAME }}/vendor
         find ./build -type f -exec chmod 0644 {} +
         find ./build -type d -exec chmod 0755 {} +
 
@@ -50,37 +72,13 @@ jobs:
       run: |
         mv ./build/${{ env.PLUGIN_NAME }}.zip ./dist/
 
-    # File upload to server via FTP
-    # - name: Upload .zip to server via FTP
-    #   uses: SamKirkland/FTP-Deploy-Action@4.3.0
-    #   with:
-    #     server: ${{ secrets.FTP_HOST }} # Endereço do servidor FTP
-    #     port: ${{ secrets.FTP_PORT }}
-    #     username: ${{ secrets.FTP_USER }} # Usuário FTP
-    #     password: ${{ secrets.FTP_PASSWORD }} # Senha FTP
-    #     local-dir: ./dist/ # Diretório local onde o arquivo está
-    #     server-dir: ./wp/ # Diretório remoto onde o arquivo será enviado
-    #     #include: "${{ env.PLUGIN_NAME }}.zip" # Arquivo específico a ser enviado
-
-    # File upload to server
-    # - name: Upload .zip to server
-    #   uses: easingthemes/ssh-deploy@main
-    #   env:
-    #     SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-    #     ARGS: "-lptgoDz"
-    #     SOURCE: ./${{ env.PLUGIN_NAME }}.zip
-    #     EXCLUDE: "/.git, /.github, LICENSE.txt, README.md, README.txt, /${{ env.PLUGIN_NAME }}"
-    #     REMOTE_HOST: ${{ secrets.SSH_HOST }}
-    #     REMOTE_USER: ${{ secrets.SSH_USER }}
-    #     TARGET: ${{secrets.DOWNLOAD_FOLDER}}${{ env.PLUGIN_NAME }}.zip
-
     # Update version tag
     - name: Bump version and push tag
       id: tag_version
       uses: mathieudutour/github-tag-action@v6.0
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        custom_tag: '4.1.1' # // TODO caso necessário definir a tag da release manualmente
+        custom_tag: ${{ env.DEPLOY_TAG }} # // TODO caso necessário definir a tag da release manualmente
 
     # Generate new release
     - name: Generate new Release
