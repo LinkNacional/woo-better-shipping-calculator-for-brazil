@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 } else {
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    const timeoutId = setTimeout(() => controller.abort(), 15000);
                     const apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
 
                     addressSummary.addEventListener('click', blockInteraction, true);
@@ -121,12 +121,82 @@ document.addEventListener('DOMContentLoaded', function () {
                             clearTimeout(timeoutId); // Se deu certo, limpa o timeout
 
                             if (data.status === true) {
-                                enableButton(continueButton)
-                                removeLoading(addressSummary);
-                                addressSummary.removeEventListener('click', blockInteraction, true);
-                                if (iconSummary) {
-                                    iconSummary.removeEventListener('click', blockInteraction, true);
+
+                                const addressData = data.address ? data.address : ' ';
+                                const stateData = data.state_sigla;
+                                const cityData = data.city ? data.city : ' ';
+
+                                let wooNonce = ''
+
+                                if (wcBlocksMiddlewareConfig) {
+                                    wooNonce = wcBlocksMiddlewareConfig.storeApiNonce
                                 }
+
+                                fetch('https://wordpress.local/wp-json/wc/store/v1/batch?_locale=site', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Nonce': wooNonce
+                                    },
+                                    body: JSON.stringify({
+                                        requests: [
+                                            {
+                                                method: 'POST',
+                                                path: '/wc/store/v1/cart/update-customer',
+                                                body: {
+                                                    shipping_address: {
+                                                        postcode: postcodeValue,
+                                                        address_1: addressData,
+                                                        state: stateData,
+                                                        city: cityData
+                                                    },
+                                                    billing_address: {
+                                                        postcode: postcodeValue,
+                                                        address_1: addressData,
+                                                        state: stateData,
+                                                        city: cityData
+                                                    }
+                                                },
+                                                data: {
+                                                    shipping_address: {
+                                                        postcode: postcodeValue,
+                                                        address_1: addressData,
+                                                        state: stateData,
+                                                        city: cityData
+                                                    },
+                                                    billing_address: {
+                                                        postcode: postcodeValue,
+                                                        address_1: addressData,
+                                                        state: stateData,
+                                                        city: cityData
+                                                    }
+                                                },
+                                                headers: {
+                                                    'Nonce': wooNonce
+                                                },
+                                                cache: 'no-store'
+                                            }
+                                        ]
+                                    })
+                                })
+                                    .then(data => {
+                                        enableButton(continueButton)
+                                        removeLoading(addressSummary);
+                                        addressSummary.removeEventListener('click', blockInteraction, true);
+                                        if (iconSummary) {
+                                            iconSummary.removeEventListener('click', blockInteraction, true);
+                                        }
+                                    })
+                                    .catch(error => {
+                                        alert('Erro: ' + error?.message);
+                                        removeLoading(addressSummary);
+                                        addressSummary.removeEventListener('click', blockInteraction, true);
+                                        if (iconSummary) {
+                                            iconSummary.removeEventListener('click', blockInteraction, true);
+                                        }
+                                        errorRequest = true;
+                                    });
+
                             } else {
                                 alert('Erro: ' + data.message);
                                 removeLoading(addressSummary);
