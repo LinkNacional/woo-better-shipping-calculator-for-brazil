@@ -10,12 +10,14 @@ document.addEventListener('DOMContentLoaded', function () {
     let previousText = ''
     let postcodeValue = ''
     let continueButton = null
+    let requestRepeated = false
 
     let batchRequested = false
     let addressData = ''
     let stateData = ''
     let cityData = ''
 
+    let responseText = '';
     let blockObserver = null
 
     let shippingBlockIntervalCount = 0
@@ -71,6 +73,7 @@ document.addEventListener('DOMContentLoaded', function () {
             await waitForShippingBlock()
         }
 
+
         if (addressSummary) {
             const summaryBlock = document.querySelector('.wc-block-components-totals-shipping-panel');
             if (summaryBlock) {
@@ -82,6 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (isValidCEP(inputPostcode.value)) {
                 postcodeValue = inputPostcode.value
                 if (inputPostcode.value !== previousCep) {
+                    requestRepeated = false
                     batchRequested = false
                     errorRequest = false
 
@@ -111,6 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     addressSummary.style.position = 'relative';
                     addressSummary.classList.add('loading');
                     const spinner = addressSummary.querySelector('.spinner');
+                    requestRepeated = true
                     if (!spinner) {
                         addressSummary.insertAdjacentHTML('beforeend', '<span class="spinner is-active"></span>');
                     }
@@ -332,47 +337,49 @@ document.addEventListener('DOMContentLoaded', function () {
                             }
                         }
 
-                        const apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+                        if (!requestRepeated) {
+                            const apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
 
-                        batchRequested = true
+                            batchRequested = true
 
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
+                            const controller = new AbortController();
+                            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
 
-                        await fetch(apiUrl, { signal: controller.signal })
-                            .then(response => response.json())
-                            .then(data => {
-                                clearTimeout(timeoutId); // Se deu certo, limpa o timeout
+                            await fetch(apiUrl, { signal: controller.signal })
+                                .then(response => response.json())
+                                .then(data => {
+                                    clearTimeout(timeoutId); // Se deu certo, limpa o timeout
 
-                                if (data.status === true) {
-                                    if (options && options.body) {
-                                        addressData = data.address ? data.address : ' ';
-                                        stateData = data.state_sigla;
-                                        cityData = data.city ? data.city : ' ';
+                                    if (data.status === true) {
+                                        if (options && options.body) {
+                                            addressData = data.address ? data.address : ' ';
+                                            stateData = data.state_sigla;
+                                            cityData = data.city ? data.city : ' ';
+                                        }
+                                    } else {
+                                        alert('Erro: ' + data.message);
+                                        removeLoading(addressSummary);
+                                        addressSummary.removeEventListener('click', blockInteraction, true);
+                                        if (iconSummary) {
+                                            iconSummary.removeEventListener('click', blockInteraction, true);
+                                        }
+                                        errorRequest = true;
                                     }
-                                } else {
-                                    alert('Erro: ' + data.message);
+                                })
+                                .catch(error => {
+                                    clearTimeout(timeoutId); // Também limpa o timeout no erro
+                                    if (error.name === 'AbortError') {
+                                        alert('Erro: Tempo limite de resposta excedido.');
+                                    } else {
+                                        console.error(error);
+                                    }
                                     removeLoading(addressSummary);
                                     addressSummary.removeEventListener('click', blockInteraction, true);
                                     if (iconSummary) {
                                         iconSummary.removeEventListener('click', blockInteraction, true);
                                     }
-                                    errorRequest = true;
-                                }
-                            })
-                            .catch(error => {
-                                clearTimeout(timeoutId); // Também limpa o timeout no erro
-                                if (error.name === 'AbortError') {
-                                    alert('Erro: Tempo limite de resposta excedido.');
-                                } else {
-                                    console.error(error);
-                                }
-                                removeLoading(addressSummary);
-                                addressSummary.removeEventListener('click', blockInteraction, true);
-                                if (iconSummary) {
-                                    iconSummary.removeEventListener('click', blockInteraction, true);
-                                }
-                            });
+                                });
+                        }
                     }
 
                 }
@@ -422,9 +429,50 @@ document.addEventListener('DOMContentLoaded', function () {
                                         mutation.type === 'characterData' ||
                                         mutation.type === 'subtree'
                                     ) {
+
+                                        let pComponent = addressSummary.querySelector('p');
+
+                                        if (!pComponent) {
+                                            let newP = document.createElement('p');
+                                            newP.style.margin = '0';
+
+                                            newP.textContent = responseText ? responseText : '';
+
+                                            const spanSummary = addressSummary.querySelector('span:not(.spinner)');
+                                            if (spanSummary) {
+                                                const textNode = Array.from(addressSummary.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
+
+                                                if (textNode) {
+                                                    addressSummary.removeChild(textNode);
+                                                }
+
+                                                addressSummary.insertBefore(newP, spanSummary);
+                                            } else {
+                                                if (addressSummary && addressSummary.tagName === 'SPAN') {
+                                                    const textNode = Array.from(addressSummary.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
+
+                                                    if (textNode) {
+                                                        addressSummary.removeChild(textNode);
+                                                    }
+                                                    addressSummary.appendChild(newP);
+                                                } else {
+                                                    addressSummary.appendChild(newP);
+                                                }
+                                            }
+                                        }
+
+
                                         const strongELement = addressSummary.querySelector('strong');
                                         if (strongELement) {
                                             addressSummary.removeChild(strongELement);
+                                        }
+
+                                        if (addressSummary && addressSummary.tagName === 'SPAN') {
+                                            const textNode = Array.from(addressSummary.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
+
+                                            if (textNode) {
+                                                addressSummary.removeChild(textNode);
+                                            }
                                         }
                                     }
                                 }
@@ -445,26 +493,32 @@ document.addEventListener('DOMContentLoaded', function () {
                                 let newP = document.createElement('p');
                                 newP.style.margin = '0';
 
-                                const spanField = addressSummary.querySelector('span:not(.spinner)');
-                                if (spanField) {
+                                const spanSummary = addressSummary.querySelector('span:not(.spinner)');
+                                if (spanSummary) {
                                     const textNode = Array.from(addressSummary.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
 
                                     if (textNode) {
                                         addressSummary.removeChild(textNode);
-
-                                        // Insert the <strong> before the <span>
-                                        const span = addressSummary.querySelector('span');
-                                        addressSummary.insertBefore(newP, span);
                                     }
+
+                                    addressSummary.insertBefore(newP, spanSummary);
                                 } else {
-                                    addressSummary.appendChild(newP);
+                                    if (addressSummary && addressSummary.tagName === 'SPAN') {
+                                        const textNode = Array.from(addressSummary.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
+
+                                        if (textNode) {
+                                            addressSummary.removeChild(textNode);
+                                        }
+                                        addressSummary.appendChild(newP);
+                                    } else {
+                                        addressSummary.appendChild(newP);
+                                    }
                                 }
                             }
 
                             newP = addressSummary.querySelector('p');
 
                             if (previousText && newP) {
-                                let responseText = '';
                                 if (WooBetterData.wooVersion === 'woo-block') {
                                     responseText = `${postcodeValue}, ${cityData}, ${stateData}, Brasil `
                                 } else {

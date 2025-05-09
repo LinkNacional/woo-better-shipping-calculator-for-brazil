@@ -136,7 +136,7 @@ class WcBetterShippingCalculatorForBrazil
         // detect state from postcode
         $this->loader->add_action('woocommerce_before_shipping_calculator', $plugin_admin, 'add_extra_css');
         $this->loader->add_filter('woocommerce_cart_calculate_shipping_address', $plugin_admin, 'prepare_address', 5);
-        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field');
+        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100);
 
         $this->loader->add_action('rest_api_init', $this, 'lkn_register_custom_cep_route');
         $this->loader->add_action('woocommerce_checkout_create_order', $this, 'lkn_merge_address_checkout', 999, 2);
@@ -371,13 +371,13 @@ class WcBetterShippingCalculatorForBrazil
             unset($fields['billing']['billing_address_1']);
             unset($fields['billing']['billing_address_2']);
             unset($fields['billing']['billing_city']);
-            unset($fields['billing']['billing_state']);
+            unset($fields['billing']['billing_neighborhood']);
 
             unset($fields['shipping']['shipping_postcode']);
             unset($fields['shipping']['shipping_address_1']);
             unset($fields['shipping']['shipping_address_2']);
             unset($fields['shipping']['shipping_city']);
-            unset($fields['shipping']['shipping_state']);
+            unset($fields['shipping']['billing_neighborhood']);
         }
 
         return $fields;
