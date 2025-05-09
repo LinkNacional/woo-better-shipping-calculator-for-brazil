@@ -498,21 +498,40 @@ class WcBetterShippingCalculatorForBrazil
 
         // Realiza a requisição à BrasilAPI
         $response = wp_remote_get("https://brasilapi.com.br/api/cep/v2/{$cep}");
+        $data = [];
 
         // Verifica se houve erro na requisição
         if (is_wp_error($response)) {
-            return new \WP_REST_Response(
-                array(
-                    'status' => false,
-                    'message' => 'CEP inválido.',
-                ),
-                400
-            );
+            error_log('entrei no erro');
+            $ws_response = wp_remote_get("https://viacep.com.br/ws/{$cep}/json/");
+
+            $ws_response_body = wp_remote_retrieve_body($ws_response);
+            $ws_response_data = json_decode($ws_response_body, true);
+
+            if (isset($ws_response_data['cep'])) {
+                $data = [
+                    'status' => true,
+                    'cep' => $ws_response_data['cep'],
+                    'city' => $ws_response_data['localidade'],
+                    'state_sigla' => $ws_response_data['uf'],
+                    'state' => $ws_response_data['estado'],
+                    'address' => $ws_response_data['logradouro']
+                ];
+            } else {
+                return new \WP_REST_Response(
+                    array(
+                        'status' => false,
+                        'message' => 'CEP inválido.',
+                    ),
+                    400
+                );
+            }
+        } else {
+            // Pega o corpo da resposta e converte em um array
+            $body = wp_remote_retrieve_body($response);
+            $data = json_decode($body, true);
         }
 
-        // Pega o corpo da resposta e converte em um array
-        $body = wp_remote_retrieve_body($response);
-        $data = json_decode($body, true);
 
         // Verifica se o CEP foi encontrado na resposta
         if (isset($data['cep'])) {

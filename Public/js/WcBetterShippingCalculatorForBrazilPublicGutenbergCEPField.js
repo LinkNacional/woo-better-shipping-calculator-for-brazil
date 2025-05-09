@@ -115,6 +115,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         addressSummary.insertAdjacentHTML('beforeend', '<span class="spinner is-active"></span>');
                     }
 
+                    console.log('chameiii')
+
                     await fetch(apiUrl, { signal: controller.signal })
                         .then(response => response.json())
                         .then(data => {

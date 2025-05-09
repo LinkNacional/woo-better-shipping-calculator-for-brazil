@@ -35,6 +35,7 @@ Quando precisar de ajuda, crie um tópico no [Fórum de Suporte do Plugin](https
 Se encontrar algum erro ou tiver sugestões, abra um problema no nosso [repositório no GitHub](https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil).
 
 [Brasil API](https://brasilapi.com.br) - Campo de CEP.
+[VIACEP](https://viacep.com.br) - Campo de CEP.
 
 == Installation ==
 
