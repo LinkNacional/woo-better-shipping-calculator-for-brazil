@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let stateData = ''
     let cityData = ''
 
+    let blockObserver = null
+
     let shippingBlockIntervalCount = 0
 
     const handleClick = (event) => {
@@ -50,6 +52,11 @@ document.addEventListener('DOMContentLoaded', function () {
     async function handleSubmitClick(continueButton) {
         const postcodeField = document.querySelector('.wc-block-components-text-input.wc-block-components-address-form__postcode');
         const inputPostcode = postcodeField ? postcodeField.querySelector('input') : null;
+
+        if (blockObserver instanceof MutationObserver) {
+            blockObserver.disconnect();
+        }
+        blockObserver = null
 
         if (continueButton && inputPostcode) {
             disableButton(continueButton)
@@ -338,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         if (addressData !== '' && stateData !== '' && cityData !== '' && !errorRequest) {
 
-                            observer = new MutationObserver((mutationsList) => {
+                            blockObserver = new MutationObserver((mutationsList) => {
                                 for (const mutation of mutationsList) {
                                     if (
                                         mutation.type === 'childList' ||
@@ -347,14 +354,13 @@ document.addEventListener('DOMContentLoaded', function () {
                                     ) {
                                         const strongELement = addressSummary.querySelector('strong');
                                         if (strongELement) {
-                                            console.log('opa')
                                             addressSummary.removeChild(strongELement);
                                         }
                                     }
                                 }
                             });
 
-                            observer.observe(addressSummary, {
+                            blockObserver.observe(addressSummary, {
                                 childList: true,
                                 characterData: true,
                                 subtree: true
@@ -364,8 +370,6 @@ document.addEventListener('DOMContentLoaded', function () {
                             const inputPreviousPostcode = previousPostcode ? previousPostcode.querySelector('input') : null;
 
                             let pComponent = addressSummary.querySelector('p');
-
-                            console.log(pComponent)
 
                             if (!pComponent) {
                                 let newP = document.createElement('p');
@@ -383,7 +387,6 @@ document.addEventListener('DOMContentLoaded', function () {
                                         addressSummary.insertBefore(newP, span);
                                     }
                                 } else {
-                                    console.log('opaaaaaaaaa')
                                     addressSummary.appendChild(newP);
                                 }
                             }

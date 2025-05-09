@@ -235,37 +235,37 @@ document.addEventListener("DOMContentLoaded", function () {
                             }
                         });
                     }
-
-                    if (placeOrderButton) {
-                        placeOrderButton.addEventListener('click', handlePlaceOrderClick);
-
-                        function handlePlaceOrderClick(event) {
-                            const shippingNumberInput = document.getElementById('shipping-number');
-                            const billingNumberInput = document.getElementById('billing-number');
-
-                            const shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
-                            const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
-
-                            if (shippingNumberInput && !shippingNumberInput.value.trim().length) {
-                                event.stopPropagation(); // Bloqueia a propagação se estiver vazio
-                                event.preventDefault(); // Previne o envio do formulário
-                                shippingErrorNumberInput.style.display = 'block'
-
-                                shippingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            } else if (billingNumberInput && !billingNumberInput.value.trim().length) {
-                                event.stopPropagation(); // Bloqueia a propagação se estiver vazio
-                                event.preventDefault(); // Previne o envio do formulário
-                                billingErrorNumberInput.style.display = 'block'
-
-                                billingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }
-                        }
-                    }
                 }
             }, 10);
+
+            if (placeOrderButton) {
+                placeOrderButton.addEventListener('click', handlePlaceOrderClick);
+
+                function handlePlaceOrderClick(event) {
+                    const shippingNumberInput = document.getElementById('shipping-number');
+                    const billingNumberInput = document.getElementById('billing-number');
+
+                    const shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
+                    const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
+
+                    if (shippingNumberInput && !shippingNumberInput.value.trim().length) {
+                        event.stopPropagation(); // Bloqueia a propagação se estiver vazio
+                        event.preventDefault(); // Previne o envio do formulário
+                        shippingErrorNumberInput.style.display = 'block'
+
+                        shippingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else if (billingNumberInput && !billingNumberInput.value.trim().length) {
+                        event.stopPropagation(); // Bloqueia a propagação se estiver vazio
+                        event.preventDefault(); // Previne o envio do formulário
+                        billingErrorNumberInput.style.display = 'block'
+
+                        billingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }
         }
 
-        if (shippingBlockFound && submitFound && !submitEvent) {
+        if ((shippingBlockFound || billingBlockFound) && submitFound && !submitEvent) {
             (function () {
                 const originalFetch = window.fetch;
 
@@ -287,9 +287,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
                             if (billingCheck) {
                                 if (billingCheck.checked) {
-                                    if (body?.billing_address?.address_1) {
+                                    if (body?.billing_address?.address_1 && shippingNumber) {
                                         body.billing_address.address_1 += ` - ${shippingNumber}`;
                                         body['payment_data'].push({ key: 'lkn_billing_number', value: shippingNumber })
+                                    } else if (body?.billing_address?.address_1 && !shippingNumber) {
+                                        body.billing_address.address_1 += ` - S/N`;
+                                        body['payment_data'].push({ key: 'lkn_billing_number', value: 'S/N' })
                                     }
                                 } else {
                                     if (billingNumber) {
