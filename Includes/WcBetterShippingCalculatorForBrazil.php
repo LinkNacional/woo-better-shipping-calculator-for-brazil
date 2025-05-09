@@ -309,6 +309,10 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
+        if (isset($fields['billing']['billing_neighborhood'])) {
+            unset($fields['billing']['billing_neighborhood']);
+        }
+
         if ($number_field === 'yes' && ($disabled_shipping === 'default' || !$only_virtual && $disabled_shipping === 'digital')) {
             // Adiciona um novo campo dentro do endereço de cobrança
             $fields['billing']['lkn_billing_number'] = array(
@@ -347,6 +351,7 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
+
             unset($fields['billing']['billing_state']);
             unset($fields['shipping']['shipping_state']);
 
@@ -371,13 +376,11 @@ class WcBetterShippingCalculatorForBrazil
             unset($fields['billing']['billing_address_1']);
             unset($fields['billing']['billing_address_2']);
             unset($fields['billing']['billing_city']);
-            unset($fields['billing']['billing_neighborhood']);
 
             unset($fields['shipping']['shipping_postcode']);
             unset($fields['shipping']['shipping_address_1']);
             unset($fields['shipping']['shipping_address_2']);
             unset($fields['shipping']['shipping_city']);
-            unset($fields['shipping']['billing_neighborhood']);
         }
 
         return $fields;
