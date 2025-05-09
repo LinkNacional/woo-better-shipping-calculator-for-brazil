@@ -133,6 +133,8 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             $_POST['woo_better_calc_number_required'] = 'no';
             $_POST['woo_better_hidden_cart_address'] = 'no';
             $_POST['woo_better_calc_cep_required'] = 'no';
+        } elseif ($disable_shipping === 'digital') {
+            $_POST['woo_better_calc_disabled_shipping'] = 'digital';
         } else {
             $_POST['woo_better_calc_disabled_shipping'] = 'default';
         }
