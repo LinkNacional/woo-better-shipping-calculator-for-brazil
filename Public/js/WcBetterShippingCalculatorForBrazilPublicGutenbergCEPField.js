@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let responseText = '';
     let blockObserver = null
+    let enableRequest = null
 
     let shippingBlockIntervalCount = 0
 
@@ -59,6 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
             blockObserver.disconnect();
         }
         blockObserver = null
+        enableRequest = null
 
         if (continueButton && inputPostcode) {
             disableButton(continueButton)
@@ -105,126 +107,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         previousText = 'old'
                     }
 
+                    enableRequest = setInterval(() => {
+                        batchRequest()
+                    }, 5000);
+
                 } else {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 15000);
-                    const apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
-
-                    addressSummary.addEventListener('click', blockInteraction, true);
-                    addressSummary.classList.add('lkn-wc-shipping-address-summary');
-                    addressSummary.style.position = 'relative';
-                    addressSummary.classList.add('loading');
-                    const spinner = addressSummary.querySelector('.spinner');
-                    requestRepeated = true
-                    if (!spinner) {
-                        addressSummary.insertAdjacentHTML('beforeend', '<span class="spinner is-active"></span>');
-                    }
-
-                    await fetch(apiUrl, { signal: controller.signal })
-                        .then(response => response.json())
-                        .then(data => {
-                            clearTimeout(timeoutId); // Se deu certo, limpa o timeout
-
-                            if (data.status === true) {
-
-                                const addressData = data.address ? data.address : ' ';
-                                const stateData = data.state_sigla;
-                                const cityData = data.city ? data.city : ' ';
-
-                                let wooNonce = ''
-
-                                if (wcBlocksMiddlewareConfig) {
-                                    wooNonce = wcBlocksMiddlewareConfig.storeApiNonce
-                                }
-
-                                fetch('https://wordpress.local/wp-json/wc/store/v1/batch?_locale=site', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Nonce': wooNonce
-                                    },
-                                    body: JSON.stringify({
-                                        requests: [
-                                            {
-                                                method: 'POST',
-                                                path: '/wc/store/v1/cart/update-customer',
-                                                body: {
-                                                    shipping_address: {
-                                                        postcode: postcodeValue,
-                                                        address_1: addressData,
-                                                        state: stateData,
-                                                        city: cityData
-                                                    },
-                                                    billing_address: {
-                                                        postcode: postcodeValue,
-                                                        address_1: addressData,
-                                                        state: stateData,
-                                                        city: cityData
-                                                    }
-                                                },
-                                                data: {
-                                                    shipping_address: {
-                                                        postcode: postcodeValue,
-                                                        address_1: addressData,
-                                                        state: stateData,
-                                                        city: cityData
-                                                    },
-                                                    billing_address: {
-                                                        postcode: postcodeValue,
-                                                        address_1: addressData,
-                                                        state: stateData,
-                                                        city: cityData
-                                                    }
-                                                },
-                                                headers: {
-                                                    'Nonce': wooNonce
-                                                },
-                                                cache: 'no-store'
-                                            }
-                                        ]
-                                    })
-                                })
-                                    .then(data => {
-                                        enableButton(continueButton)
-                                        removeLoading(addressSummary);
-                                        addressSummary.removeEventListener('click', blockInteraction, true);
-                                        if (iconSummary) {
-                                            iconSummary.removeEventListener('click', blockInteraction, true);
-                                        }
-                                    })
-                                    .catch(error => {
-                                        alert('Erro: ' + error?.message);
-                                        removeLoading(addressSummary);
-                                        addressSummary.removeEventListener('click', blockInteraction, true);
-                                        if (iconSummary) {
-                                            iconSummary.removeEventListener('click', blockInteraction, true);
-                                        }
-                                        errorRequest = true;
-                                    });
-
-                            } else {
-                                alert('Erro: ' + data.message);
-                                removeLoading(addressSummary);
-                                addressSummary.removeEventListener('click', blockInteraction, true);
-                                if (iconSummary) {
-                                    iconSummary.removeEventListener('click', blockInteraction, true);
-                                }
-                                errorRequest = true;
-                            }
-                        })
-                        .catch(error => {
-                            clearTimeout(timeoutId); // Também limpa o timeout no erro
-                            if (error.name === 'AbortError') {
-                                alert('Erro: Tempo limite de resposta excedido.');
-                            } else {
-                                console.error(error);
-                            }
-                            removeLoading(addressSummary);
-                            addressSummary.removeEventListener('click', blockInteraction, true);
-                            if (iconSummary) {
-                                iconSummary.removeEventListener('click', blockInteraction, true);
-                            }
-                        });
+                    batchRequest()
                 }
             } else {
                 alert('CEP inválido.');
@@ -327,6 +215,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (url.includes('/wp-json/wc/store/v1/batch')) {
                 if (!batchRequested && isValidCEP(postcodeValue)) {
+
+                    if (enableRequest) {
+                        clearInterval(enableRequest);
+                        enableRequest = null
+                    }
 
                     if (addressSummary) {
                         const summaryBlock = document.querySelector('.wc-block-components-totals-shipping-panel');
@@ -598,6 +491,130 @@ document.addEventListener('DOMContentLoaded', function () {
             }, 100);
         });
     }
+
+    async function batchRequest() {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+
+        addressSummary.addEventListener('click', blockInteraction, true);
+        addressSummary.classList.add('lkn-wc-shipping-address-summary');
+        addressSummary.style.position = 'relative';
+        addressSummary.classList.add('loading');
+        const spinner = addressSummary.querySelector('.spinner');
+        requestRepeated = true
+        if (!spinner) {
+            addressSummary.insertAdjacentHTML('beforeend', '<span class="spinner is-active"></span>');
+        }
+
+        await fetch(apiUrl, { signal: controller.signal })
+            .then(response => response.json())
+            .then(data => {
+                clearTimeout(timeoutId); // Se deu certo, limpa o timeout
+
+                if (data.status === true) {
+
+                    const addressData = data.address ? data.address : ' ';
+                    const stateData = data.state_sigla;
+                    const cityData = data.city ? data.city : ' ';
+
+                    let wooNonce = ''
+
+                    if (wcBlocksMiddlewareConfig) {
+                        wooNonce = wcBlocksMiddlewareConfig.storeApiNonce
+                    }
+
+                    fetch('https://wordpress.local/wp-json/wc/store/v1/batch?_locale=site', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Nonce': wooNonce,
+                            'X-WC-Store-API-Nonce': wooNonce
+                        },
+                        body: JSON.stringify({
+                            requests: [
+                                {
+                                    method: 'POST',
+                                    path: '/wc/store/v1/cart/update-customer',
+                                    body: {
+                                        shipping_address: {
+                                            postcode: postcodeValue,
+                                            address_1: addressData,
+                                            state: stateData,
+                                            city: cityData
+                                        },
+                                        billing_address: {
+                                            postcode: postcodeValue,
+                                            address_1: addressData,
+                                            state: stateData,
+                                            city: cityData
+                                        }
+                                    },
+                                    data: {
+                                        shipping_address: {
+                                            postcode: postcodeValue,
+                                            address_1: addressData,
+                                            state: stateData,
+                                            city: cityData
+                                        },
+                                        billing_address: {
+                                            postcode: postcodeValue,
+                                            address_1: addressData,
+                                            state: stateData,
+                                            city: cityData
+                                        }
+                                    },
+                                    headers: {
+                                        'Nonce': wooNonce
+                                    },
+                                    cache: 'no-store'
+                                }
+                            ]
+                        })
+                    })
+                        .then(data => {
+                            enableButton(continueButton)
+                            removeLoading(addressSummary);
+                            addressSummary.removeEventListener('click', blockInteraction, true);
+                            if (iconSummary) {
+                                iconSummary.removeEventListener('click', blockInteraction, true);
+                            }
+                        })
+                        .catch(error => {
+                            alert('Erro: ' + error?.message);
+                            removeLoading(addressSummary);
+                            addressSummary.removeEventListener('click', blockInteraction, true);
+                            if (iconSummary) {
+                                iconSummary.removeEventListener('click', blockInteraction, true);
+                            }
+                            errorRequest = true;
+                        });
+
+                } else {
+                    alert('Erro: ' + data.message);
+                    removeLoading(addressSummary);
+                    addressSummary.removeEventListener('click', blockInteraction, true);
+                    if (iconSummary) {
+                        iconSummary.removeEventListener('click', blockInteraction, true);
+                    }
+                    errorRequest = true;
+                }
+            })
+            .catch(error => {
+                clearTimeout(timeoutId); // Também limpa o timeout no erro
+                if (error.name === 'AbortError') {
+                    alert('Erro: Tempo limite de resposta excedido.');
+                } else {
+                    console.error(error);
+                }
+                removeLoading(addressSummary);
+                addressSummary.removeEventListener('click', blockInteraction, true);
+                if (iconSummary) {
+                    iconSummary.removeEventListener('click', blockInteraction, true);
+                }
+            });
+    }
+
 
     initObserver();
     interceptSubmit()
