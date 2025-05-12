@@ -75,7 +75,6 @@ document.addEventListener('DOMContentLoaded', function () {
             await waitForShippingBlock()
         }
 
-
         if (addressSummary) {
             const summaryBlock = document.querySelector('.wc-block-components-totals-shipping-panel');
             if (summaryBlock) {
@@ -132,7 +131,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             const postcodeField = document.querySelector('.wc-block-components-text-input.wc-block-components-address-form__postcode');
             continueButton = document.querySelector('.wc-block-components-button.wp-element-button.wc-block-cart__submit-button.contained');
-
 
             if (!continueButton) {
                 continueButtonFound = false
@@ -519,6 +517,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     const cityData = data.city ? data.city : ' ';
 
                     let wooNonce = ''
+                    let wpNonce = ''
+
+                    if (wpApiSettings.nonce) {
+                        wpNonce = wpApiSettings.nonce
+                    }
 
                     if (wcBlocksMiddlewareConfig) {
                         wooNonce = wcBlocksMiddlewareConfig.storeApiNonce
@@ -529,7 +532,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         headers: {
                             'Content-Type': 'application/json',
                             'Nonce': wooNonce,
-                            'X-WC-Store-API-Nonce': wooNonce
+                            'x-wp-nonce': wpNonce
                         },
                         body: JSON.stringify({
                             requests: [

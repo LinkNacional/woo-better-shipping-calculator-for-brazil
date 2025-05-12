@@ -109,20 +109,38 @@ class WcBetterShippingCalculatorForBrazilPublic
         $hidden_address = get_option('woo_better_hidden_cart_address', 'yes');
         $cep_required = get_option('woo_better_calc_cep_required', 'no');
 
-        if (has_block('woocommerce/cart') && $cep_required === 'yes') {
-            wp_enqueue_script(
-                $this->plugin_name . '-gutenberg-cep-field',
-                plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergCEPField.js',
-                array(),
-                $this->version,
-                false
-            );
+        if (has_block('woocommerce/cart')) {
 
-            if (defined('WC_VERSION')) {
-                $woo_version_type = version_compare(WC_VERSION, '9.6.0', '>=') ? 'woo-block' : 'woo-class';
+            if ($cep_required === 'yes') {
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-cep-field',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergCEPField.js',
+                    array(),
+                    $this->version,
+                    false
+                );
 
-                wp_localize_script($this->plugin_name . '-gutenberg-cep-field', 'WooBetterData', [
-                    'wooVersion' => $woo_version_type,
+                if (defined('WC_VERSION')) {
+                    $woo_version_type = version_compare(WC_VERSION, '9.6.0', '>=') ? 'woo-block' : 'woo-class';
+
+                    wp_localize_script($this->plugin_name . '-gutenberg-cep-field', 'WooBetterData', [
+                        'wooVersion' => $woo_version_type,
+                        'hiddenAddress' => $hidden_address,
+                    ]);
+                }
+            }
+
+            if ($hidden_address === 'yes') {
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-hidden-address',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergHiddenAddress.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script($this->plugin_name . '-gutenberg-hidden-address', 'WooBetterAddress', [
+                    'hiddenAddress' => $hidden_address,
                 ]);
             }
         }
@@ -207,38 +225,6 @@ class WcBetterShippingCalculatorForBrazilPublic
         }
 
         if (function_exists('is_cart') && is_cart()) {
-            if ($hidden_address === 'yes') {
-                if (wp_script_is('wc-cart-checkout-base', 'registered')) {
-                    wp_deregister_script('wc-cart-checkout-base-js');
-
-                    if (defined('WC_VERSION')) {
-                        $version_parts = explode('.', WC_VERSION);
-                        $version_slug = $version_parts[0] . '-' . $version_parts[1] . '-0';
-
-                        // Define caminho base
-                        $base_filename = 'wc-cart-checkout-base-frontend-';
-                        $base_dir = plugin_dir_path(__FILE__) . 'js/wooCartBlocks/';
-                        $base_url = plugin_dir_url(__FILE__) . 'js/wooCartBlocks/';
-
-                        // Verifica se o arquivo da versão existe
-                        $script_path = $base_dir . $base_filename . $version_slug . '.js';
-
-                        if (!file_exists($script_path)) {
-                            // Usa a constante como fallback
-                            $version_slug = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_LAST_WOO_VERSION;
-                        }
-
-                        // Enfileira o script
-                        wp_enqueue_script(
-                            'wc-cart-checkout-base-js',
-                            $base_url . $base_filename . $version_slug . '.js',
-                            array(),
-                            '1.0.0',
-                            false
-                        );
-                    }
-                }
-            }
 
             wp_enqueue_script(
                 $this->plugin_name . '-frontend',
