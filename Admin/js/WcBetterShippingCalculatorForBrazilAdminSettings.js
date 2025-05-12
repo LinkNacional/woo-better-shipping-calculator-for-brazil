@@ -10,14 +10,14 @@
             // Desabilitar campos adcionais
             const disableShipping = document.getElementById('woo_better_calc_disabled_shipping');
             if (disableShipping) {
-                if (disableShipping.value === 'all') {
-                    const numberField = document.getElementById('woo_better_calc_number_required');
-                    const hiddenField = document.getElementById('woo_better_hidden_cart_address');
-                    const requirePostcode = document.getElementById('woo_better_calc_cep_required');
+                const numberField = document.getElementById('woo_better_calc_number_required');
+                const hiddenField = document.getElementById('woo_better_hidden_cart_address');
+                const requirePostcode = document.getElementById('woo_better_calc_cep_required');
 
+                if (disableShipping.value === 'all') {
                     if (numberField) {
                         numberField.disabled = true;
-                        numberField.style.backgroundColor = '#f1f1f1'; // Cinza claro
+                        numberField.style.backgroundColor = '#f1f1f1';
                         numberField.style.cursor = 'not-allowed';
                     }
                     if (hiddenField) {
@@ -29,6 +29,14 @@
                         requirePostcode.disabled = true;
                         requirePostcode.style.backgroundColor = '#f1f1f1';
                         requirePostcode.style.cursor = 'not-allowed';
+                    }
+                } else {
+                    if (requirePostcode && requirePostcode.value === 'no') {
+                        if (hiddenField) {
+                            hiddenField.disabled = true;
+                            hiddenField.style.backgroundColor = '#f1f1f1';
+                            hiddenField.style.cursor = 'not-allowed';
+                        }
                     }
                 }
             }

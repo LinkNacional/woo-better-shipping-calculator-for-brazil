@@ -158,6 +158,29 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_cart_needs_shipping', $this, 'lkn_custom_disable_shipping', 10, 1);
         $this->loader->add_filter('woocommerce_cart_needs_shipping_address', $this, 'lkn_custom_disable_shipping', 10, 1);
 
+        $this->loader->add_filter('woocommerce_package_rates', $this, 'lkn_simular_frete_playground', 10, 2);
+
+    }
+
+    public function lkn_simular_frete_playground($rates, $package)
+    {
+        $environment = wp_get_environment_type();
+
+        if ($environment === 'local' || $environment === 'development' || strpos(home_url(), 'playground.wordpress.net') !== false) {
+            $rates = [];
+
+            $rate = new \WC_Shipping_Rate(
+                'simulado_playground',
+                'Frete Simulado (Playground)',
+                12.34,
+                [],
+                'simulado_playground'
+            );
+
+            $rates['simulado_playground'] = $rate;
+        }
+
+        return $rates;
     }
 
     public function lkn_custom_disable_shipping()
@@ -191,9 +214,11 @@ class WcBetterShippingCalculatorForBrazil
     {
         $customer = WC()->customer;
 
+        $cep_required = get_option('woo_better_calc_cep_required', 'no');
+
         // Verificar se o cliente está definido
         if (is_a($customer, 'WC_Customer')) {
-            if ($customer->get_shipping_city() === '') {
+            if ($customer->get_shipping_city() === '' && $cep_required === 'yes') {
                 $customer->set_shipping_country('BR');
                 $customer->set_shipping_state('SP');
                 $customer->set_shipping_city('Exemplo');
@@ -465,6 +490,21 @@ class WcBetterShippingCalculatorForBrazil
     {
         // Pega o parâmetro cep da requisição
         $cep = $request->get_param('postcode');
+
+        $environment = wp_get_environment_type();
+
+        if ($environment === 'local' || $environment === 'development' || strpos(home_url(), 'playground.wordpress.net') !== false) {
+            return new \WP_REST_Response(
+                array(
+                    'status' => true,
+                    'city' => 'Cidade',
+                    'state_sigla' => 'SP',
+                    'state' => 'Estado',
+                    'address' => 'Endereço'
+                ),
+                200
+            );
+        }
 
         $country = 'BR';
 

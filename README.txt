@@ -30,6 +30,8 @@ Algumas dessas funcionalidades podem ser modificadas ou desativadas usando hooks
 
 Quando precisar de ajuda, crie um tópico no [Fórum de Suporte do Plugin](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
 
+Caso queira testar nosso plugin no Playground do WordPress e não saiba como configurar o WooCommerce ou nosso plugin, acesse o [repositório no GitHub](https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil). No README do repositório, consulte a seção: `Como configurar o Woo-better no Playground`.
+
 = Contributions =
 
 Se encontrar algum erro ou tiver sugestões, abra um problema no nosso [repositório no GitHub](https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil).

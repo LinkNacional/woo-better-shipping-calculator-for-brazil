@@ -41,5 +41,5 @@ jobs:
           SLUG: ${{ env.PLUGIN_NAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-          ASSETS_DIR: build/${{ env.PLUGIN_NAME }}/Includes/assets/wordpressImages
+          ASSETS_DIR: build/${{ env.PLUGIN_NAME }}/Includes/assets/wordpressAssets
           BUILD_DIR: build/${{ env.PLUGIN_NAME }}

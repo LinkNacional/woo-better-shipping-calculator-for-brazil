@@ -130,7 +130,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                 }
             }
 
-            if ($hidden_address === 'yes') {
+            if ($cep_required === 'yes' && $hidden_address === 'yes') {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-hidden-address',
                     plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergHiddenAddress.js',
