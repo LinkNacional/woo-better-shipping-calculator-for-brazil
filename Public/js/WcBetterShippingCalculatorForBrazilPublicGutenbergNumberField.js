@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let submitFound = false
     let submitEvent = false
     let placeOrderButton = null
+    let intervalCount = 0
+    let checkboxCount = 0
 
     const observer = new MutationObserver((mutationsList) => {
         const shippingBlock = document.querySelector('#shipping')
@@ -12,6 +14,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!shippingBlock) {
             shippingBlockFound = false
+            intervalCount = 0
         }
 
         if (!billingBlock) {
@@ -19,136 +22,150 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (shippingBlock && !shippingBlockFound) {
-            const editShippingButton = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="shipping"]');
 
-            if (editShippingButton.getAttribute('aria-expanded') != 'true') {
-                editShippingButton.click()
-            }
+            shippingBlockFound = true
 
-            if (editShippingButton.getAttribute('aria-expanded') == 'true') {
+            const observerEditButton = setInterval(() => {
 
-                const shippingAddress1 = shippingBlock.querySelector('.wc-block-components-text-input.wc-block-components-address-form__address_1');
-
-                shippingBlockFound = true
-
-                if (shippingAddress1) {
-
-                    // Criando a div principal
-                    const customInputDiv = document.createElement('div');
-                    customInputDiv.className = 'wc-block-components-text-input wc-block-components-address-form__number wc-better-shipping-number';
-
-                    // Criando o input
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.id = 'shipping-number';
-                    input.setAttribute('autocomplete', 'give-number');
-                    input.setAttribute('aria-label', 'Número');
-                    input.setAttribute('required', '');
-                    input.setAttribute('aria-invalid', 'false');
-                    input.setAttribute('autocapitalize', 'sentences');
-                    input.value = '';
-
-                    // Criando o label
-                    const label = document.createElement('label');
-                    label.setAttribute('for', 'shipping-number');
-                    label.textContent = 'Número';
-
-                    // Adicionando input e label ao container
-                    customInputDiv.appendChild(input);
-                    customInputDiv.appendChild(label);
-
-                    // Criando a div de erro (inicialmente oculta)
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'wc-block-components-validation-error wc-better-shipping';
-                    errorDiv.setAttribute('role', 'alert');
-                    errorDiv.style.display = 'none';
-
-                    const errorParagraph = document.createElement('p');
-                    errorParagraph.id = 'validate-error-shipping_number';
-
-                    const errorSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    errorSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                    errorSvg.setAttribute('viewBox', '-2 -2 24 24');
-                    errorSvg.setAttribute('width', '24');
-                    errorSvg.setAttribute('height', '24');
-                    errorSvg.setAttribute('aria-hidden', 'true');
-                    errorSvg.setAttribute('focusable', 'false');
-
-                    const errorPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    errorPath.setAttribute('d', 'M10 2c4.42 0 8 3.58 8 8s-3.58 8-8 8-8-3.58-8-8 3.58-8 8-8zm1.13 9.38l.35-6.46H8.52l.35 6.46h2.26zm-.09 3.36c.24-.23.37-.55.37-.96 0-.42-.12-.74-.36-.97s-.59-.35-1.06-.35-.82.12-1.07.35-.37.55-.37.97c0 .41.13.73.38.96.26.23.61.34 1.06.34s.8-.11 1.05-.34z');
-
-                    errorSvg.appendChild(errorPath);
-                    const errorMessage = document.createElement('span');
-                    errorMessage.textContent = 'Por favor, insira um número válido.';
-
-                    errorParagraph.appendChild(errorSvg);
-                    errorParagraph.appendChild(errorMessage);
-                    errorDiv.appendChild(errorParagraph);
-
-                    // Adicionando a mensagem de erro ao input
-                    customInputDiv.appendChild(errorDiv);
-
-                    // Também adiciona o checkbox personalizado
-                    const clonedCheckbox = document.createElement('div');
-                    clonedCheckbox.className = 'wc-block-components-checkbox wc-block-checkout__use-address-for-shipping wc-better';
-
-                    const checkboxLabel = document.createElement('label');
-                    checkboxLabel.setAttribute('for', 'wc-shipping-better-checkbox');
-
-                    const checkboxInput = document.createElement('input');
-                    checkboxInput.id = 'wc-shipping-better-checkbox';
-                    checkboxInput.className = 'wc-block-components-checkbox__input';
-                    checkboxInput.type = 'checkbox';
-                    checkboxInput.setAttribute('aria-invalid', 'false');
-
-                    const checkboxSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    checkboxSvg.setAttribute('class', 'wc-block-components-checkbox__mark');
-                    checkboxSvg.setAttribute('aria-hidden', 'true');
-                    checkboxSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                    checkboxSvg.setAttribute('viewBox', '0 0 24 20');
-
-                    const checkboxPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    checkboxPath.setAttribute('d', 'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z');
-
-                    checkboxSvg.appendChild(checkboxPath);
-
-                    const checkboxText = document.createElement('span');
-                    checkboxText.className = 'wc-block-components-checkbox__label';
-                    checkboxText.textContent = 'Sem número (S/N)';
-
-                    checkboxLabel.appendChild(checkboxInput);
-                    checkboxLabel.appendChild(checkboxSvg);
-                    checkboxLabel.appendChild(checkboxText);
-                    clonedCheckbox.appendChild(checkboxLabel);
-
-                    // Inserindo no DOM
-                    shippingAddress1.insertAdjacentElement('afterend', clonedCheckbox);
-                    shippingAddress1.insertAdjacentElement('afterend', customInputDiv);
-
-                    input.addEventListener('focus', () => {
-                        customInputDiv.classList.add('is-active');
-                    });
-
-                    input.addEventListener('blur', () => {
-                        if (!input.value) {
-                            customInputDiv.classList.remove('is-active');
-                        }
-                    });
+                if (intervalCount > 20) {
+                    clearInterval(observerEditButton)
+                    return
                 }
 
-                const billingCheckContainer = document.querySelector('.wc-block-components-checkbox.wc-block-checkout__use-address-for-billing');
-                const billingCheck = billingCheckContainer ? billingCheckContainer.querySelector('input') : null;
+                const editShippingButton = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="shipping"]');
 
-                if (billingCheck) {
-                    billingCheck.addEventListener('change', function () {
-                        if (!billingCheck.checked) {
-                            billingBlockFound = false
-                            const newBillingBlock = document.querySelector('#billing')
-                            billingNumberHandle(newBillingBlock);
-                        }
-                    });
+                if (editShippingButton.getAttribute('aria-expanded') != 'true') {
+                    editShippingButton.click()
                 }
-            }
+
+                if (editShippingButton.getAttribute('aria-expanded') == 'true') {
+
+                    clearInterval(observerEditButton)
+
+                    const shippingAddress1 = shippingBlock.querySelector('.wc-block-components-text-input.wc-block-components-address-form__address_1');
+                    if (shippingAddress1) {
+
+                        // Criando a div principal
+                        const customInputDiv = document.createElement('div');
+                        customInputDiv.className = 'wc-block-components-text-input wc-block-components-address-form__number wc-better-shipping-number';
+
+                        // Criando o input
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.id = 'shipping-number';
+                        input.setAttribute('autocomplete', 'give-number');
+                        input.setAttribute('aria-label', 'Número');
+                        input.setAttribute('required', '');
+                        input.setAttribute('aria-invalid', 'false');
+                        input.setAttribute('autocapitalize', 'sentences');
+                        input.value = '';
+
+                        // Criando o label
+                        const label = document.createElement('label');
+                        label.setAttribute('for', 'shipping-number');
+                        label.textContent = 'Número';
+
+                        // Adicionando input e label ao container
+                        customInputDiv.appendChild(input);
+                        customInputDiv.appendChild(label);
+
+                        // Criando a div de erro (inicialmente oculta)
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'wc-block-components-validation-error wc-better-shipping';
+                        errorDiv.setAttribute('role', 'alert');
+                        errorDiv.style.display = 'none';
+
+                        const errorParagraph = document.createElement('p');
+                        errorParagraph.id = 'validate-error-shipping_number';
+
+                        const errorSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        errorSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                        errorSvg.setAttribute('viewBox', '-2 -2 24 24');
+                        errorSvg.setAttribute('width', '24');
+                        errorSvg.setAttribute('height', '24');
+                        errorSvg.setAttribute('aria-hidden', 'true');
+                        errorSvg.setAttribute('focusable', 'false');
+
+                        const errorPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        errorPath.setAttribute('d', 'M10 2c4.42 0 8 3.58 8 8s-3.58 8-8 8-8-3.58-8-8 3.58-8 8-8zm1.13 9.38l.35-6.46H8.52l.35 6.46h2.26zm-.09 3.36c.24-.23.37-.55.37-.96 0-.42-.12-.74-.36-.97s-.59-.35-1.06-.35-.82.12-1.07.35-.37.55-.37.97c0 .41.13.73.38.96.26.23.61.34 1.06.34s.8-.11 1.05-.34z');
+
+                        errorSvg.appendChild(errorPath);
+                        const errorMessage = document.createElement('span');
+                        errorMessage.textContent = 'Por favor, insira um número válido.';
+
+                        errorParagraph.appendChild(errorSvg);
+                        errorParagraph.appendChild(errorMessage);
+                        errorDiv.appendChild(errorParagraph);
+
+                        // Adicionando a mensagem de erro ao input
+                        customInputDiv.appendChild(errorDiv);
+
+                        // Também adiciona o checkbox personalizado
+                        const clonedCheckbox = document.createElement('div');
+                        clonedCheckbox.className = 'wc-block-components-checkbox wc-block-checkout__use-address-for-shipping wc-better';
+
+                        const checkboxLabel = document.createElement('label');
+                        checkboxLabel.setAttribute('for', 'wc-shipping-better-checkbox');
+
+                        const checkboxInput = document.createElement('input');
+                        checkboxInput.id = 'wc-shipping-better-checkbox';
+                        checkboxInput.className = 'wc-block-components-checkbox__input';
+                        checkboxInput.type = 'checkbox';
+                        checkboxInput.setAttribute('aria-invalid', 'false');
+
+                        const checkboxSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        checkboxSvg.setAttribute('class', 'wc-block-components-checkbox__mark');
+                        checkboxSvg.setAttribute('aria-hidden', 'true');
+                        checkboxSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                        checkboxSvg.setAttribute('viewBox', '0 0 24 20');
+
+                        const checkboxPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        checkboxPath.setAttribute('d', 'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z');
+
+                        checkboxSvg.appendChild(checkboxPath);
+
+                        const checkboxText = document.createElement('span');
+                        checkboxText.className = 'wc-block-components-checkbox__label';
+                        checkboxText.textContent = 'Sem número (S/N)';
+
+                        checkboxLabel.appendChild(checkboxInput);
+                        checkboxLabel.appendChild(checkboxSvg);
+                        checkboxLabel.appendChild(checkboxText);
+                        clonedCheckbox.appendChild(checkboxLabel);
+
+                        // Inserindo no DOM
+                        shippingAddress1.insertAdjacentElement('afterend', clonedCheckbox);
+                        shippingAddress1.insertAdjacentElement('afterend', customInputDiv);
+
+                        input.addEventListener('focus', () => {
+                            customInputDiv.classList.add('is-active');
+                        });
+
+                        input.addEventListener('blur', () => {
+                            if (!input.value) {
+                                customInputDiv.classList.remove('is-active');
+                            }
+                        });
+                    }
+
+                    const billingCheckContainer = document.querySelector('.wc-block-components-checkbox.wc-block-checkout__use-address-for-billing');
+                    const billingCheck = billingCheckContainer ? billingCheckContainer.querySelector('input') : null;
+
+                    if (billingCheck) {
+                        billingCheck.addEventListener('change', function () {
+                            if (!billingCheck.checked) {
+                                billingBlockFound = false
+                                const newBillingBlock = document.querySelector('#billing')
+                                billingNumberHandle(newBillingBlock);
+                            }
+                        });
+                    }
+                }
+
+                intervalCount++
+
+            }, 5);
+
         }
 
         if (billingBlock && !billingBlockFound) {
@@ -156,55 +173,70 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         const placeOrderContainer = document.querySelector('.wc-block-checkout__actions_row')
-        const shippingCheckboxInput = document.getElementById('wc-shipping-better-checkbox')
 
         if (placeOrderContainer) {
             placeOrderButton = placeOrderContainer.querySelector('button')
         }
 
-        if (placeOrderButton && shippingCheckboxInput && !submitFound) {
+        if (placeOrderButton && !submitFound) {
             submitFound = true
-            const shippingNumberInput = document.getElementById('shipping-number');
-            const shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
-            const divInputNumber = document.querySelector('.wc-better-shipping-number');
 
-            shippingCheckboxInput.addEventListener('change', function () {
-                if (this.checked) {
-                    shippingNumberInput.disabled = true;
-                    shippingNumberInput.setAttribute('value', 'S/N');
-                    shippingNumberInput.value = 'S/N';
-                    shippingNumberInput.style.backgroundColor = '#e0e0e0';
-                    shippingNumberInput.style.color = '#808080';
-                    if (divInputNumber) {
-                        divInputNumber.classList.add('is-active');
-                    }
-                    if (shippingErrorNumberInput) {
-                        shippingErrorNumberInput.style.display = 'none'
-                    }
-                } else {
-                    shippingNumberInput.disabled = false;
-                    shippingNumberInput.setAttribute('value', '');
-                    shippingNumberInput.value = '';
-                    shippingNumberInput.style.backgroundColor = '';
-                    shippingNumberInput.style.color = '';
-                    if (divInputNumber) {
-                        divInputNumber.classList.remove('is-active');
+            let shippingNumberInput = ''
+            let shippingErrorNumberInput = ''
+
+
+            const checkboxInterval = setInterval(() => {
+                const shippingCheckboxInput = document.getElementById('wc-shipping-better-checkbox')
+
+                shippingNumberInput = document.getElementById('shipping-number');
+                shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
+                const divInputNumber = document.querySelector('.wc-better-shipping-number');
+
+                if (checkboxCount > 20) {
+                    clearInterval(checkboxInterval)
+                }
+
+                if (shippingCheckboxInput) {
+                    clearInterval(checkboxInterval)
+                    shippingCheckboxInput.addEventListener('change', function () {
+                        if (this.checked) {
+                            shippingNumberInput.disabled = true;
+                            shippingNumberInput.setAttribute('value', 'S/N');
+                            shippingNumberInput.value = 'S/N';
+                            shippingNumberInput.style.backgroundColor = '#e0e0e0';
+                            shippingNumberInput.style.color = '#808080';
+                            if (divInputNumber) {
+                                divInputNumber.classList.add('is-active');
+                            }
+                            if (shippingErrorNumberInput) {
+                                shippingErrorNumberInput.style.display = 'none'
+                            }
+                        } else {
+                            shippingNumberInput.disabled = false;
+                            shippingNumberInput.setAttribute('value', '');
+                            shippingNumberInput.value = '';
+                            shippingNumberInput.style.backgroundColor = '';
+                            shippingNumberInput.style.color = '';
+                            if (divInputNumber) {
+                                divInputNumber.classList.remove('is-active');
+                            }
+                        }
+                    });
+
+                    if (shippingNumberInput && shippingErrorNumberInput) {
+                        // Evento de input para monitorar mudanças no campo
+                        shippingNumberInput.addEventListener('input', function () {
+                            if (shippingNumberInput.value.trim().length > 0) {
+                                // Remove a restrição ao clique
+                                shippingErrorNumberInput.style.display = 'none'
+                            } else {
+                                // Adiciona novamente a restrição caso fique vazio
+                                shippingErrorNumberInput.style.display = 'block'
+                            }
+                        });
                     }
                 }
-            });
-
-            if (shippingNumberInput && shippingErrorNumberInput) {
-                // Evento de input para monitorar mudanças no campo
-                shippingNumberInput.addEventListener('input', function () {
-                    if (shippingNumberInput.value.trim().length > 0) {
-                        // Remove a restrição ao clique
-                        shippingErrorNumberInput.style.display = 'none'
-                    } else {
-                        // Adiciona novamente a restrição caso fique vazio
-                        shippingErrorNumberInput.style.display = 'block'
-                    }
-                });
-            }
+            }, 10);
 
             if (placeOrderButton) {
                 placeOrderButton.addEventListener('click', handlePlaceOrderClick);
@@ -216,13 +248,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     const shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
                     const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
 
-                    if (!shippingNumberInput.value.trim().length) {
+                    if (shippingNumberInput && !shippingNumberInput.value.trim().length) {
                         event.stopPropagation(); // Bloqueia a propagação se estiver vazio
                         event.preventDefault(); // Previne o envio do formulário
                         shippingErrorNumberInput.style.display = 'block'
 
                         shippingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    } else if (!billingNumberInput.value.trim().length) {
+                    } else if (billingNumberInput && !billingNumberInput.value.trim().length) {
                         event.stopPropagation(); // Bloqueia a propagação se estiver vazio
                         event.preventDefault(); // Previne o envio do formulário
                         billingErrorNumberInput.style.display = 'block'
@@ -233,7 +265,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        if (shippingBlockFound && submitFound && !submitEvent) {
+        if ((shippingBlockFound || billingBlockFound) && submitFound && !submitEvent) {
             (function () {
                 const originalFetch = window.fetch;
 
@@ -255,9 +287,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
                             if (billingCheck) {
                                 if (billingCheck.checked) {
-                                    if (body?.billing_address?.address_1) {
+                                    if (body?.billing_address?.address_1 && shippingNumber) {
                                         body.billing_address.address_1 += ` - ${shippingNumber}`;
                                         body['payment_data'].push({ key: 'lkn_billing_number', value: shippingNumber })
+                                    } else if (body?.billing_address?.address_1 && !shippingNumber) {
+                                        body.billing_address.address_1 += ` - S/N`;
+                                        body['payment_data'].push({ key: 'lkn_billing_number', value: 'S/N' })
                                     }
                                 } else {
                                     if (billingNumber) {
@@ -448,12 +483,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 billingNumberInput.addEventListener('input', function () {
                     const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
-                    if (billingNumberInput.value.trim().length > 0) {
-                        // Remove a restrição ao clique
-                        billingErrorNumberInput.style.display = 'none'
-                    } else {
-                        // Adiciona novamente a restrição caso fique vazio
-                        billingErrorNumberInput.style.display = 'block'
+                    if (billingNumberInput) {
+                        if (billingNumberInput.value.trim().length > 0) {
+                            // Remove a restrição ao clique
+                            billingErrorNumberInput.style.display = 'none'
+                        } else {
+                            // Adiciona novamente a restrição caso fique vazio
+                            billingErrorNumberInput.style.display = 'block'
+                        }
                     }
                 });
             }

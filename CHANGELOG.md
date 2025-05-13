@@ -1,3 +1,11 @@
+# 4.1.2 - 07/05/25
+* Correção: Ajustes na identificação de produtos físicos e digitais.
+* Ajuste : Melhoria no fluxo do githubworkflow para lançamento do plugin no repositorio e Wordpress.
+
+# 4.1.1 - 29/04/25
+* Correção: Melhoria na descrição do README.txt para o Português - BR.
+* Correção: Melhoria no campo do Gutenberg para campo de CEP, agora é possível habilitar ou desabilitar a ocultação do endereço nos campos de CEP.
+
 # 4.0.1 - 23/04/25
 * Correção: Novo Readme.txt e lista de imagens.
 

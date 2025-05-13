@@ -1,0 +1,45 @@
+name: Deploy Plugin to WordPress.org
+
+on:
+  workflow_dispatch:
+
+env:
+  PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
+  PHP_VERSION: "7.4"
+  DEPLOY_TAG: "4.1.2"
+
+jobs:
+  deploy-to-wp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch main
+        uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Run composer install
+        uses: php-actions/composer@v6
+        with:
+          php_version: ${{ env.PHP_VERSION }}
+          working_dir: "."
+          args: --ignore-platform-reqs
+          command: install
+          dev: no
+
+      - name: Prepare plugin folder
+        run: |
+          mkdir -p build/${{ env.PLUGIN_NAME }}
+          mv ./Admin ./Includes ./languages ./Public *.php *.txt ./build/${{ env.PLUGIN_NAME }}
+          cp -r vendor build/${{ env.PLUGIN_NAME }}/vendor
+          find ./build -type f -exec chmod 0644 {} +
+          find ./build -type d -exec chmod 0755 {} +
+
+      - name: Deploy para WordPress.org
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          VERSION: ${{ env.DEPLOY_TAG }}
+          SLUG: ${{ env.PLUGIN_NAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          ASSETS_DIR: build/${{ env.PLUGIN_NAME }}/Includes/assets/wordpressAssets
+          BUILD_DIR: build/${{ env.PLUGIN_NAME }}

@@ -1,0 +1,33 @@
+{
+    "landingPage": "wp-admin/admin.php?page=wc-settings&tab=wc-better-calc",
+    "phpExtensionBundles": [
+        "kitchen-sink"
+    ],
+    "steps": [
+        {
+            "step": "login",
+            "username": "admin",
+            "password": "admin"
+        },
+        {
+            "step": "installPlugin",
+            "pluginZipFile": {
+                "resource": "wordpress.org/plugins",
+                "slug": "woocommerce"
+            },
+            "options": {
+                "activate": true
+            }
+        },
+        {
+            "step": "installPlugin",
+            "pluginZipFile": {
+                "resource": "wordpress.org/plugins",
+                "slug": "woo-better-shipping-calculator-for-brazil"
+            },
+            "options": {
+                "activate": true
+            }
+        }
+    ]
+}

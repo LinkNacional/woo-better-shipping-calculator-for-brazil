@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP
 Requires at least: 4.6
 Tested up to: 6.8
 Requires PHP: 7.3
-Stable tag: 4.1.1
+Stable tag: 4.1.2
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -30,11 +30,14 @@ Algumas dessas funcionalidades podem ser modificadas ou desativadas usando hooks
 
 Quando precisar de ajuda, crie um tópico no [Fórum de Suporte do Plugin](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
 
+Caso queira testar nosso plugin no Playground do WordPress e não saiba como configurar o WooCommerce ou nosso plugin, acesse o [repositório no GitHub](https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil). No README do repositório, consulte a seção: `Como configurar o Woo-better no Playground`.
+
 = Contributions =
 
 Se encontrar algum erro ou tiver sugestões, abra um problema no nosso [repositório no GitHub](https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil).
 
 [Brasil API](https://brasilapi.com.br) - Campo de CEP.
+[VIACEP](https://viacep.com.br) - Campo de CEP.
 
 == Installation ==
 
@@ -76,6 +79,14 @@ add_filter(
 );
 
 == Changelog ==
+
+= 4.1.2 - 2025/05/07 =
+* Fix: Adjustments in the identification of physical and digital products.
+* Improvement: Enhanced GitHub workflow for plugin deployment to the repository and WordPress.
+
+= 4.1.1 - 2025/04/29 =
+* Fix: Improved README.txt description for Brazilian Portuguese.
+* Fix: Improved Gutenberg field for ZIP code — it's now possible to enable or disable address field hiding based on ZIP input.
 
 = 4.0.1 - 2025/04/23 =
 * Fix: New Readme.txt and image list.

@@ -79,14 +79,13 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.1.1';
+            $this->version = '4.1.2';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
         $this->load_dependencies();
         $this->define_admin_hooks();
         $this->define_public_hooks();
-
     }
 
     /**
@@ -137,7 +136,7 @@ class WcBetterShippingCalculatorForBrazil
         // detect state from postcode
         $this->loader->add_action('woocommerce_before_shipping_calculator', $plugin_admin, 'add_extra_css');
         $this->loader->add_filter('woocommerce_cart_calculate_shipping_address', $plugin_admin, 'prepare_address', 5);
-        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field');
+        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100);
 
         $this->loader->add_action('rest_api_init', $this, 'lkn_register_custom_cep_route');
         $this->loader->add_action('woocommerce_checkout_create_order', $this, 'lkn_merge_address_checkout', 999, 2);
@@ -148,39 +147,78 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_filter('plugin_action_links_' . WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_BASENAME, $this, 'lkn_add_settings_link', 10, 2);
 
-        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'no');
+        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
 
         $this->loader->add_action('woocommerce_init', $this, 'lkn_set_country_brasil', 999);
 
-        if ($disabled_shipping === 'yes') {
+        if ($disabled_shipping === 'all' || $disabled_shipping === 'digital') {
             $this->loader->add_action('woocommerce_get_country_locale', $this, 'lkn_woo_better_shipping_calculator_locale', 10, 1);
         }
 
         $this->loader->add_filter('woocommerce_cart_needs_shipping', $this, 'lkn_custom_disable_shipping', 10, 1);
         $this->loader->add_filter('woocommerce_cart_needs_shipping_address', $this, 'lkn_custom_disable_shipping', 10, 1);
 
+        $this->loader->add_filter('woocommerce_package_rates', $this, 'lkn_simular_frete_playground', 10, 2);
+
+    }
+
+    public function lkn_simular_frete_playground($rates, $package)
+    {
+        $environment = wp_get_environment_type();
+
+        if ($environment === 'local' || $environment === 'development' || strpos(home_url(), 'playground.wordpress.net') !== false) {
+            $rates = [];
+
+            $rate = new \WC_Shipping_Rate(
+                'simulado_playground',
+                'Frete Simulado (Playground)',
+                12.34,
+                [],
+                'simulado_playground'
+            );
+
+            $rates['simulado_playground'] = $rate;
+        }
+
+        return $rates;
     }
 
     public function lkn_custom_disable_shipping()
     {
-        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'no');
+        $disable_shipping_option = get_option('woo_better_calc_disabled_shipping', 'default');
 
-        if ($disabled_shipping === 'yes') {
-            $disabled_shipping = false;
-        } else {
-            $disabled_shipping = true;
+        $only_virtual = false;
+        if (function_exists('WC')) {
+            if (isset(WC()->cart)) {
+                foreach (WC()->cart->get_cart() as $cart_item) {
+                    $product = $cart_item['data'];
+                    if ($product->is_virtual() || $product->is_downloadable()) {
+                        $only_virtual = true;
+                    } else {
+                        $only_virtual = false;
+                        break;
+                    }
+                }
+            }
         }
 
-        return $disabled_shipping;
+        if ($disable_shipping_option === 'all' || ($only_virtual && $disable_shipping_option === 'digital')) {
+            return false;
+        } else {
+            // Se todos forem virtuais, não precisa de frete
+            return $only_virtual ? false : true;
+        }
     }
 
     public function lkn_set_country_brasil()
     {
         $customer = WC()->customer;
 
+        $cep_required = get_option('woo_better_calc_cep_required', 'no');
+
         // Verificar se o cliente está definido
         if (is_a($customer, 'WC_Customer')) {
-            if ($customer->get_shipping_city() === '') {
+            if ($customer->get_shipping_city() === '' && $cep_required === 'yes') {
                 $customer->set_shipping_country('BR');
                 $customer->set_shipping_state('SP');
                 $customer->set_shipping_city('Exemplo');
@@ -193,20 +231,38 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_woo_better_shipping_calculator_locale($locale)
     {
-        $locale['BR']['postcode']['required'] = false;
-        $locale['BR']['postcode']['hidden'] = true;
+        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
+        $only_virtual = false;
+        if (function_exists('WC')) {
+            if (isset(WC()->cart)) {
+                foreach (WC()->cart->get_cart() as $cart_item) {
+                    $product = $cart_item['data'];
+                    if ($product->is_virtual() || $product->is_downloadable()) {
+                        $only_virtual = true;
+                    } else {
+                        $only_virtual = false;
+                        break;
+                    }
+                }
+            }
+        }
 
-        $locale['BR']['city']['required'] = false;
-        $locale['BR']['city']['hidden'] = true;
+        if ($disabled_shipping === 'all' ||  ($only_virtual && $disabled_shipping === 'digital')) {
+            $locale['BR']['postcode']['required'] = false;
+            $locale['BR']['postcode']['hidden'] = true;
 
-        $locale['BR']['state']['required'] = false;
-        $locale['BR']['state']['hidden'] = true;
+            $locale['BR']['city']['required'] = false;
+            $locale['BR']['city']['hidden'] = true;
 
-        $locale['BR']['address_1']['required'] = false;
-        $locale['BR']['address_1']['hidden'] = true;
+            $locale['BR']['state']['required'] = false;
+            $locale['BR']['state']['hidden'] = true;
 
-        $locale['BR']['address_2']['required'] = false;
-        $locale['BR']['address_2']['hidden'] = true;
+            $locale['BR']['address_1']['required'] = false;
+            $locale['BR']['address_1']['hidden'] = true;
+
+            $locale['BR']['address_2']['required'] = false;
+            $locale['BR']['address_2']['hidden'] = true;
+        }
 
         return $locale;
     }
@@ -261,9 +317,28 @@ class WcBetterShippingCalculatorForBrazil
     public function lkn_add_custom_checkout_field($fields)
     {
         $number_field = get_option('woo_better_calc_number_required', 'no');
-        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'no');
+        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
 
-        if ($number_field === 'yes' && $disabled_shipping === 'no') {
+        $only_virtual = false;
+        if (function_exists('WC')) {
+            if (isset(WC()->cart)) {
+                foreach (WC()->cart->get_cart() as $cart_item) {
+                    $product = $cart_item['data'];
+                    if ($product->is_virtual() || $product->is_downloadable()) {
+                        $only_virtual = true;
+                    } else {
+                        $only_virtual = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (isset($fields['billing']['billing_neighborhood'])) {
+            unset($fields['billing']['billing_neighborhood']);
+        }
+
+        if ($number_field === 'yes' && ($disabled_shipping === 'default' || !$only_virtual && $disabled_shipping === 'digital')) {
             // Adiciona um novo campo dentro do endereço de cobrança
             $fields['billing']['lkn_billing_number'] = array(
                 'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
@@ -300,7 +375,8 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
 
-        if ($disabled_shipping === 'yes') {
+        if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
+
             unset($fields['billing']['billing_state']);
             unset($fields['shipping']['shipping_state']);
 
@@ -325,13 +401,11 @@ class WcBetterShippingCalculatorForBrazil
             unset($fields['billing']['billing_address_1']);
             unset($fields['billing']['billing_address_2']);
             unset($fields['billing']['billing_city']);
-            unset($fields['billing']['billing_state']);
 
             unset($fields['shipping']['shipping_postcode']);
             unset($fields['shipping']['shipping_address_1']);
             unset($fields['shipping']['shipping_address_2']);
             unset($fields['shipping']['shipping_city']);
-            unset($fields['shipping']['shipping_state']);
         }
 
         return $fields;
@@ -340,8 +414,24 @@ class WcBetterShippingCalculatorForBrazil
     public function lkn_merge_address_checkout($order, $data)
     {
         $number_field = get_option('woo_better_calc_number_required', 'no');
+        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
 
-        if ($number_field === 'yes') {
+        $only_virtual = false;
+        if (function_exists('WC')) {
+            if (isset(WC()->cart)) {
+                foreach (WC()->cart->get_cart() as $cart_item) {
+                    $product = $cart_item['data'];
+                    if ($product->is_virtual() || $product->is_downloadable()) {
+                        $only_virtual = true;
+                    } else {
+                        $only_virtual = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($number_field === 'yes' && ($disabled_shipping === 'default' || !$only_virtual && $disabled_shipping === 'digital')) {
             $shipping_number = '';
             $billing_number = '';
 
@@ -371,7 +461,7 @@ class WcBetterShippingCalculatorForBrazil
 
             $shipping_address = $data['shipping_address_1'] ?? '';
 
-            if (!empty($billing_address)) {
+            if (!empty($billing_address) && !$only_virtual) {
                 $new_billing = $billing_address . ' - ' . $billing_number;
                 $order->set_billing_address_1($new_billing);
             }
@@ -400,6 +490,21 @@ class WcBetterShippingCalculatorForBrazil
     {
         // Pega o parâmetro cep da requisição
         $cep = $request->get_param('postcode');
+
+        $environment = wp_get_environment_type();
+
+        if ($environment === 'local' || $environment === 'development' || strpos(home_url(), 'playground.wordpress.net') !== false) {
+            return new \WP_REST_Response(
+                array(
+                    'status' => true,
+                    'city' => 'Cidade',
+                    'state_sigla' => 'SP',
+                    'state' => 'Estado',
+                    'address' => 'Endereço'
+                ),
+                200
+            );
+        }
 
         $country = 'BR';
 
@@ -436,21 +541,39 @@ class WcBetterShippingCalculatorForBrazil
 
         // Realiza a requisição à BrasilAPI
         $response = wp_remote_get("https://brasilapi.com.br/api/cep/v2/{$cep}");
+        $data = [];
 
         // Verifica se houve erro na requisição
         if (is_wp_error($response)) {
-            return new \WP_REST_Response(
-                array(
-                    'status' => false,
-                    'message' => 'CEP inválido.',
-                ),
-                400
-            );
+            $ws_response = wp_remote_get("https://viacep.com.br/ws/{$cep}/json/");
+
+            $ws_response_body = wp_remote_retrieve_body($ws_response);
+            $ws_response_data = json_decode($ws_response_body, true);
+
+            if (isset($ws_response_data['cep'])) {
+                $data = [
+                    'status' => true,
+                    'cep' => $ws_response_data['cep'],
+                    'city' => $ws_response_data['localidade'],
+                    'state_sigla' => $ws_response_data['uf'],
+                    'state' => $ws_response_data['estado'],
+                    'street' => $ws_response_data['logradouro']
+                ];
+            } else {
+                return new \WP_REST_Response(
+                    array(
+                        'status' => false,
+                        'message' => 'CEP inválido.',
+                    ),
+                    400
+                );
+            }
+        } else {
+            // Pega o corpo da resposta e converte em um array
+            $body = wp_remote_retrieve_body($response);
+            $data = json_decode($body, true);
         }
 
-        // Pega o corpo da resposta e converte em um array
-        $body = wp_remote_retrieve_body($response);
-        $data = json_decode($body, true);
 
         // Verifica se o CEP foi encontrado na resposta
         if (isset($data['cep'])) {

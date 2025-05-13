@@ -105,38 +105,65 @@ class WcBetterShippingCalculatorForBrazilPublic
 
         wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublic.js', array( 'jquery' ), $this->version, false);
 
-        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'no');
+        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
         $hidden_address = get_option('woo_better_hidden_cart_address', 'yes');
         $cep_required = get_option('woo_better_calc_cep_required', 'no');
 
-        if ($hidden_address === 'yes') {
-            if (wp_script_is('wc-cart-checkout-base', 'enqueued')) {
-                wp_dequeue_script('wc-cart-checkout-base-js');
+        if (has_block('woocommerce/cart')) {
 
+            if ($cep_required === 'yes') {
                 wp_enqueue_script(
-                    'wc-cart-checkout-base-js',
-                    plugin_dir_url(__FILE__) . 'js/wc-cart-checkout-base-frontend.js',
+                    $this->plugin_name . '-gutenberg-cep-field',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergCEPField.js',
                     array(),
-                    '1.0.0',
+                    $this->version,
                     false
                 );
-            }
-        }
 
-        if (has_block('woocommerce/cart') && $cep_required === 'yes') {
-            wp_enqueue_script(
-                $this->plugin_name . '-gutenberg-cep-field',
-                plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergCEPField.js',
-                array(),
-                $this->version,
-                false
-            );
+                if (defined('WC_VERSION')) {
+                    $woo_version_type = version_compare(WC_VERSION, '9.6.0', '>=') ? 'woo-block' : 'woo-class';
+
+                    wp_localize_script($this->plugin_name . '-gutenberg-cep-field', 'WooBetterData', [
+                        'wooVersion' => $woo_version_type,
+                        'hiddenAddress' => $hidden_address,
+                    ]);
+                }
+            }
+
+            if ($cep_required === 'yes' && $hidden_address === 'yes') {
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-hidden-address',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergHiddenAddress.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script($this->plugin_name . '-gutenberg-hidden-address', 'WooBetterAddress', [
+                    'hiddenAddress' => $hidden_address,
+                ]);
+            }
         }
 
         if (has_block('woocommerce/checkout')) {
             $number_field = get_option('woo_better_calc_number_required', 'no');
 
-            if ($number_field === 'yes' && $disabled_shipping === 'no') {
+            $only_virtual = false;
+            if (function_exists('WC')) {
+                if (isset(WC()->cart)) {
+                    foreach (WC()->cart->get_cart() as $cart_item) {
+                        $product = $cart_item['data'];
+                        if ($product->is_virtual() || $product->is_downloadable()) {
+                            $only_virtual = true;
+                        } else {
+                            $only_virtual = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-number-field',
                     plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergNumberField.js',
@@ -146,10 +173,10 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
-            if ($disabled_shipping === 'yes') {
+            if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-disabled-shipping',
-                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergDiabledFields.js',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicDiabledFields.js',
                     array(),
                     $this->version,
                     false
@@ -157,9 +184,26 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
         }
 
-        if (is_checkout()) {
+        if (function_exists('is_checkout') && is_checkout()) {
             $number_field = get_option('woo_better_calc_number_required', 'no');
-            if ($number_field === 'yes' && $disabled_shipping === 'no') {
+
+            $only_virtual = false;
+            if (function_exists('WC')) {
+                if (isset(WC()->cart)) {
+                    foreach (WC()->cart->get_cart() as $cart_item) {
+                        $product = $cart_item['data'];
+                        if ($product->is_virtual() || $product->is_downloadable()) {
+                            $only_virtual = true;
+                        } else {
+                            $only_virtual = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+
+            if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
                 wp_enqueue_script(
                     $this->plugin_name . '-short-number-field',
                     plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicShortNumberField.js',
@@ -168,9 +212,20 @@ class WcBetterShippingCalculatorForBrazilPublic
                     false
                 );
             }
+
+            if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-disabled-shipping',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicDiabledFields.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+            }
         }
 
-        if (is_cart()) {
+        if (function_exists('is_cart') && is_cart()) {
+
             wp_enqueue_script(
                 $this->plugin_name . '-frontend',
                 plugin_dir_url(__FILE__) . "js/WcBetterShippingCalculatorForBrazilPublicCEPField.js",
