@@ -80,7 +80,6 @@ class WcBetterShippingCalculatorForBrazilAdmin
          * class.
          */
 
-        wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/WcBetterShippingCalculatorForBrazilAdmin.css', array(), $this->version, 'all');
 
     }
 
@@ -103,10 +102,6 @@ class WcBetterShippingCalculatorForBrazilAdmin
          * between the defined hooks and the functions defined in this
          * class.
          */
-        wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilAdmin.js', array( 'jquery' ), $this->version, false);
-
-        wp_enqueue_script($this->plugin_name . '-settings', plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilAdmin.js', array( 'jquery' ), $this->version, false);
-
     }
 
     public function add_extra_css()

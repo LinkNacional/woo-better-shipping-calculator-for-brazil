@@ -79,8 +79,10 @@ class WcBetterShippingCalculatorForBrazilPublic
          * class.
          */
 
-        wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/WcBetterShippingCalculatorForBrazilPublic.css', array(), $this->version, 'all');
-
+        $cep_required = get_option('woo_better_calc_cep_required', 'no');
+        if ($cep_required === 'yes') {
+            wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/WcBetterShippingCalculatorForBrazilPublic.css', array(), $this->version, 'all');
+        }
     }
 
     /**
@@ -102,9 +104,6 @@ class WcBetterShippingCalculatorForBrazilPublic
          * between the defined hooks and the functions defined in this
          * class.
          */
-
-        wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublic.js', array( 'jquery' ), $this->version, false);
-
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
         $hidden_address = get_option('woo_better_hidden_cart_address', 'yes');
         $cep_required = get_option('woo_better_calc_cep_required', 'no');
