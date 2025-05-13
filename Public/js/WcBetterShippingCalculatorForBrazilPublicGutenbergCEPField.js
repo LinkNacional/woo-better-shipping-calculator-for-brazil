@@ -236,7 +236,13 @@ document.addEventListener('DOMContentLoaded', function () {
                             const controller = new AbortController();
                             const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
 
-                            await fetch(apiUrl, { signal: controller.signal })
+                            await fetch(apiUrl, {
+                                method: 'GET',
+                                signal: controller.signal,
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            })
                                 .then(response => response.json())
                                 .then(data => {
                                     clearTimeout(timeoutId); // Se deu certo, limpa o timeout
@@ -505,7 +511,13 @@ document.addEventListener('DOMContentLoaded', function () {
             addressSummary.insertAdjacentHTML('beforeend', '<span class="spinner is-active"></span>');
         }
 
-        await fetch(apiUrl, { signal: controller.signal })
+        await fetch(apiUrl, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
             .then(response => response.json())
             .then(data => {
                 clearTimeout(timeoutId); // Se deu certo, limpa o timeout
