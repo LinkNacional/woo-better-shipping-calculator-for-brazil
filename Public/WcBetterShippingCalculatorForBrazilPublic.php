@@ -79,9 +79,12 @@ class WcBetterShippingCalculatorForBrazilPublic
          * class.
          */
 
-        $cep_required = get_option('woo_better_calc_cep_required', 'yes');
-        if ($cep_required === 'yes') {
-            wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/WcBetterShippingCalculatorForBrazilPublic.css', array(), $this->version, 'all');
+        if (has_block('woocommerce/cart')) {
+            $cep_required = get_option('woo_better_calc_cep_required', 'yes');
+
+            if ($cep_required === 'yes') {
+                wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/WcBetterShippingCalculatorForBrazilPublic.css', array(), $this->version, 'all');
+            }
         }
     }
 
