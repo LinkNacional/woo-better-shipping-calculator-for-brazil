@@ -29,14 +29,14 @@ Calculadora de frete melhorada para lojas brasileiras, facilitando e melhorando 
 > Na página de Carrinho:
 
 - Validação de CEP.
-- Botão de controle, permitindo apenas seguir após inserir um CEP válido.
-- Ocultação de campo de endereço.
+- Controle no botão de envio, permitindo apenas seguir após inserir um CEP válido.
+- Ocultação de campos de endereço.
 - Compatibilidade com o modo Legacy e Blocos (Gutenberg).
 
 > Na página de Checkout:
 
 - Campo de número(complementando o endereço via `checkbox` ou `text-input`).
-- Ocultação de campo de endereço.
+- Ocultação de campos de endereço.
 - Compatibilidade com o modo Legacy e Blocos (Gutenberg).
 
 ## Como instalar?
