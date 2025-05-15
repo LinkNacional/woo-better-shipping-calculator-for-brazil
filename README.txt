@@ -1,6 +1,6 @@
 === Calculadora de Frete para o Brasil ===
 Contributors: LinkNacional
-Donate link: https://www.linknacional.com.br
+Donate link:
 Tags: woocommerce, brasil, calculadora de frete, CEP
 Requires at least: 4.6
 Tested up to: 6.8
@@ -13,24 +13,26 @@ Calculadora de frete com CEP automático para WooCommerce. Compatível com Guten
 
 == Description ==
 
-Calculadora de frete WooCommerce otimizada para lojas brasileiras:
+Calculadora de frete melhorada para lojas brasileiras, facilitando e melhorando o fluxo de preenchimendo dos dados nas páginas de carrinho e checkout:
 
-* Remove os campos de país, estado e cidade.
-* Mantém o campo de CEP sempre visível.
-* Permite apenas números no campo de CEP.
-* Exibe um teclado numérico em dispositivos móveis.
-* Habilita o campo de número para complementar o endereço.
-* Habilita o validador de CEP(Editor de blocos do Gutenberg).
-* Desabilita o frete no produto.
-* Compatibilidade com o editor de blocos do Gutenberg e shortcode(modo clássico).
+> Na página de Carrinho:
+
+- Validação de CEP.
+- Botão de controle, permitindo apenas seguir após inserir um CEP válido.
+- Ocultação de campo de endereço.
+- Compatibilidade com o modo Legacy e Blocos (Gutenberg).
+
+> Na página de Checkout:
+
+- Campo de número(complementando o endereço via `checkbox` ou `text-input`).
+- Ocultação de campo de endereço.
+- Compatibilidade com o modo Legacy e Blocos (Gutenberg).
 
 Algumas dessas funcionalidades podem ser modificadas ou desativadas usando hooks. Mais detalhes na seção [Perguntas Frequentes (FAQ)](#faq).
 
 = Help and Support =
 
 Quando precisar de ajuda, crie um tópico no [Fórum de Suporte do Plugin](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
-
-Caso queira testar nosso plugin no Playground do WordPress e não saiba como configurar o WooCommerce ou nosso plugin, acesse o [repositório no GitHub](https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil). No README do repositório, consulte a seção: `Como configurar o Woo-better no Playground`.
 
 = Contributions =
 

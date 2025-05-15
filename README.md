@@ -24,15 +24,20 @@
 
 ## Descrição
 
-Calculadora de frete melhorada para lojas brasileiras:
+Calculadora de frete melhorada para lojas brasileiras, facilitando e melhorando o fluxo de preenchimendo dos dados nas páginas de carrinho e checkout:
 
-* Remove os campos de país, estado e cidade.
-* Mantém o campo de CEP sempre visível.
-* Permite apenas a inserção de números no campo de CEP.
-* Exibe um teclado numérico em dispositivos móveis.
-* Habilita campo de número de endereço.
-* Habilita verificador de cep.
-* Desabilita frete no produto.
+> Na página de Carrinho:
+
+- Validação de CEP.
+- Botão de controle, permitindo apenas seguir após inserir um CEP válido.
+- Ocultação de campo de endereço.
+- Compatibilidade com o modo Legacy e Blocos (Gutenberg).
+
+> Na página de Checkout:
+
+- Campo de número(complementando o endereço via `checkbox` ou `text-input`).
+- Ocultação de campo de endereço.
+- Compatibilidade com o modo Legacy e Blocos (Gutenberg).
 
 ## Como instalar?
 
@@ -67,75 +72,6 @@ Calculadora de frete melhorada para lojas brasileiras:
 **OBS:** Os dados utilizados nas screenshots são meramente ilustrativos.
 
 **Tema utilizado:** Twenty Twenty-Five
-
-## Como configurar o Woo-better no playgroud:
-
-### Certifique-se de configurar os dados iniciais do WooCommerce:
-
-* Clique na opção para iniciar as configurações de preenchimento do Woocommerce:
-
-<img src="Includes/assets/images/tutorial/woo-tela-inicial.png" alt="Woo página inicial" width="800" />
-
-* Clique em `Skip this step` para prosseguir com a configuração:
-
-<img src="Includes/assets/images/tutorial/woo-descricao.png" alt="Woo página de descrição" width="800" />
-
-* Selecione o tipo de produtos oferecidos no comércio, juntamente com a localização, no caso, Brasil.
-
-<img src="Includes/assets/images/tutorial/woo-local.png" alt="Woo página de local" width="800" />
-
-* Desmaque todas as opções, pois não iremos utilizar esses recursos na modo de teste:
-
-<img src="Includes/assets/images/tutorial/woo-recursos.png" alt="Woo página de recursos" width="800" />
-
-* Siga para página de Woocommerce -> Settings. Localize o campo de `Postcode(CEP)` e preencha com um CEP de alguma localidade da sua região.
-
-<img src="Includes/assets/images/tutorial/woo-configuracao.png" alt="Woo página de configuração" width="800" />
-
-* Salve as configurações.
-
-### Com as configurações inicias finalizada, siga para cadastrar um produto:
-
-* Localize a opção `Products` e selecione `Add new product`:
-
-<img src="Includes/assets/images/tutorial/woo-produto.png" alt="Woo configuração de produto" width="800" />
-
-* Crie um produto simples e preencha seus dados e clique em `Publish`:
-
-<img src="Includes/assets/images/tutorial/woo-produto-simples.png" alt="Woo página de configuração de produto simples" width="800" />
-
-### Após o produto e configurações terem sido finalizados, verifique as opções disponíveis do nosso plugin, simplificando e melhorando o preenchimento dos dados no formulário de entrega do Woocommerce(Carrinho/Checkout):
-
-* Para acessar as configurações do nosso plugin acesse `Woocommerce`-> `Settings`:
-
-<img src="Includes/assets/images/settingsPage.png" alt="Woo-better página de configuração" width="800" />
-
-* Para visualizar o funcionamento completo do nosso plugin deixe a entrega do produto como `padrão` e as demais funcionalidades marcado como `sim`.
-
-* Acesse um produto clicando em `Products`-> `All Products`, então passe o mouse por cima do produto selecionado e clique na opção `View`:
-
-* Clique em `Add to cart` ou `Adicionar ao carrinho`:
-
-<img src="Includes/assets/images/tutorial/woo-add-cart.png" alt="Página do produto" width="800" />
-
-* Clique em visualizar o carrinho:
-
-<img src="Includes/assets/images/tutorial/woo-view-cart.png" alt="Mensagem para visualizar o carrinho" width="800" />
-
-* Na página do carrinho verifique as funcionalidades do nosso plugin nas páginas de `Cart(Carrinho)` e `Checkout`.
-
-* Insira um CEP e verifique as funcionalidades do carrinho, nos quais incluem:
-
-- Validação de CEP.
-- Botão de controle, permitindo apenas seguir após inserir um CEP válido.
-- Ocultação de campo de endereço.
-- Compatibilidade com o modo Legacy e Blocos (Gutenberg).
-
-* Na página de Checkout as funcionalidades são:
-
-- Campo de número(complementando o endereço via `checkbox` ou `text-input`).
-- Ocultação de campo de endereço.
-- Compatibilidade com o modo Legacy e Blocos (Gutenberg).
 
 ## Dicas:
 

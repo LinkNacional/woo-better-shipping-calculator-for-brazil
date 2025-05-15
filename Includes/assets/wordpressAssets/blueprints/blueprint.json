@@ -1,5 +1,5 @@
 {
-    "landingPage": "wp-admin/admin.php?page=wc-settings&tab=wc-better-calc",
+    "landingPage": "/produto/camisa",
     "phpExtensionBundles": [
         "kitchen-sink"
     ],
@@ -28,6 +28,22 @@
             "options": {
                 "activate": true
             }
+        },
+        {
+            "step": "runPHP",
+            "code": "<?php require '/wordpress/wp-load.php'; do_action('plugins_loaded'); add_action('init', function() { if (!class_exists('WC_Product_Simple')) return; update_option('woocommerce_default_country', 'BR:SP'); update_option('woocommerce_store_postcode', '05833-290'); update_option('woocommerce_currency', 'BRL'); if (!get_page_by_title('Camisa', OBJECT, 'product')) { $product = new WC_Product_Simple(); $product->set_name('Camisa'); $product->set_status('publish'); $product->set_catalog_visibility('visible'); $product->set_price(20); $product->set_regular_price(20); $product->set_stock_status('instock'); $product->save(); }}); do_action('init');"
+        },
+        {
+            "step": "runPHP",
+            "code": "<?php require '/wordpress/wp-load.php'; do_action('plugins_loaded'); add_action('init', function() { if (!class_exists('WC_Shipping_Zones')) return; $zone_name = 'Brasil SP - CEP'; $zone_id = null; foreach (WC_Shipping_Zones::get_zones() as $zone) { if ($zone['zone_name'] === $zone_name) { $zone_id = $zone['zone_id']; break; } } if (!$zone_id) { $zone = new WC_Shipping_Zone(); $zone->set_zone_name($zone_name); $zone->add_location('BR:SP', 'state'); $zone->add_location('05833-290', 'postcode'); $zone_id = $zone->save(); } }); do_action('init');"
+        },
+        {
+            "step": "runPHP",
+            "code": "<?php require '/wordpress/wp-load.php'; do_action('plugins_loaded'); add_action('init', function() { if (!class_exists('WC_Shipping_Zone')) { error_log('WC_Shipping_Zone not found'); return; } try { $zone_name = 'Brasil SP - CEP'; $zone_id = null; foreach (WC_Shipping_Zones::get_zones() as $z) { if ($z['zone_name'] === $zone_name) { $zone_id = $z['zone_id']; break; } } if (!$zone_id) { error_log('Shipping zone not found'); return; } $zone = new WC_Shipping_Zone($zone_id); $has_flat_rate = false; foreach ($zone->get_shipping_methods() as $method) { if ($method->id === 'flat_rate') { $has_flat_rate = true; break; } } if (!$has_flat_rate) { $zone->add_shipping_method('flat_rate'); sleep(2); $methods = $zone->get_shipping_methods(); foreach ($methods as $method) { if ($method->id === 'flat_rate') { $method->settings['cost'] = '5'; $method->save(); } } } update_option('woocommerce_shipping_enabled', 'yes'); } catch (Throwable $e) { error_log('Erro ao configurar método de envio: ' . $e->getMessage()); } }); do_action('init');"
+        },
+        {
+            "step": "runPHP",
+            "code": "<?php require '/wordpress/wp-load.php'; add_action('init', function () { update_option('woocommerce_onboarding_profile', ['completed' => true]); update_option('woocommerce_admin_install_timestamp', time()); update_option('woocommerce_admin_onboarding_opt_in', true); update_option('woocommerce_show_admin_notice', 'no'); }); do_action('init');"
         }
     ]
 }

@@ -214,7 +214,7 @@ class WcBetterShippingCalculatorForBrazil
     {
         $customer = WC()->customer;
 
-        $cep_required = get_option('woo_better_calc_cep_required', 'no');
+        $cep_required = get_option('woo_better_calc_cep_required', 'yes');
 
         // Verificar se o cliente está definido
         if (is_a($customer, 'WC_Customer')) {
