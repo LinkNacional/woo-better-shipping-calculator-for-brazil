@@ -1,3 +1,6 @@
+# 4.1.3 - 15/05/25
+* Ajuste: blueprint mais dinâmico no momento da configuração do playground.
+
 # 4.1.2 - 07/05/25
 * Correção: Ajustes na identificação de produtos físicos e digitais.
 * Ajuste : Melhoria no fluxo do githubworkflow para lançamento do plugin no repositorio e Wordpress.
