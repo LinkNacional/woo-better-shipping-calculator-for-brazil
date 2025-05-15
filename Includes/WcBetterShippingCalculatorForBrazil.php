@@ -79,7 +79,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.1.2';
+            $this->version = '4.1.3';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -214,7 +214,7 @@ class WcBetterShippingCalculatorForBrazil
     {
         $customer = WC()->customer;
 
-        $cep_required = get_option('woo_better_calc_cep_required', 'no');
+        $cep_required = get_option('woo_better_calc_cep_required', 'yes');
 
         // Verificar se o cliente está definido
         if (is_a($customer, 'WC_Customer')) {

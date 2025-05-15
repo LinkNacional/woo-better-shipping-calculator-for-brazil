@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             newP = addressSummary.querySelector('p');
 
                             if (previousText && newP) {
-                                if (WooBetterData.wooVersion === 'woo-block') {
+                                if (typeof WooBetterData !== 'undefined' && WooBetterData.wooVersion === 'woo-block') {
                                     responseText = `${postcodeValue}, ${cityData}, ${stateData}, Brasil `
                                 } else {
                                     responseText = `Entrega em ${postcodeValue}, ${cityData}, ${stateData}, Brasil `
