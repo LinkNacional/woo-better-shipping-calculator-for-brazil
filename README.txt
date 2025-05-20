@@ -1,11 +1,11 @@
 === Calculadora de Frete para o Brasil ===
 Contributors: LinkNacional
 Donate link:
-Tags: woocommerce, brasil, calculadora de frete, CEP
+Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.8
 Requires PHP: 7.3
-Stable tag: 4.1.3
+Stable tag: 4.1.4
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -81,6 +81,10 @@ add_filter(
 );
 
 == Changelog ==
+
+= 4.1.4 - 20/05/2025 =
+* Ajuste: campo de bairro está fora dos parâmetros estabelecidos.
+* Ajuste: tags do arquivo README.txt.
 
 = 4.1.3 - 15/05/2025 =
 * Ajuste: blueprint mais dinâmico no momento da configuração do playground.

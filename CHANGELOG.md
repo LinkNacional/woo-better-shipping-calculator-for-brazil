@@ -1,3 +1,7 @@
+# 4.1.4 - 20/05/25
+* Ajuste: campo de bairro está fora dos parâmetros estabelecidos.
+* Ajuste: tags do arquivo README.txt.
+
 # 4.1.3 - 15/05/25
 * Ajuste: blueprint mais dinâmico no momento da configuração do playground.
 
