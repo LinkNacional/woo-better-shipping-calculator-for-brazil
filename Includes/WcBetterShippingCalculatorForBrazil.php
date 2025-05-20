@@ -334,10 +334,6 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
-        if (isset($fields['billing']['billing_neighborhood'])) {
-            unset($fields['billing']['billing_neighborhood']);
-        }
-
         if ($number_field === 'yes' && ($disabled_shipping === 'default' || !$only_virtual && $disabled_shipping === 'digital')) {
             // Adiciona um novo campo dentro do endereço de cobrança
             $fields['billing']['lkn_billing_number'] = array(
