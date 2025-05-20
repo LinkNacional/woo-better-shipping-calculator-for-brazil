@@ -15,7 +15,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
         parent::__construct();
     }
 
-    public function get_settings()
+    public function get_general_settings()
     {
         $settings = array(
 
@@ -41,44 +41,9 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
 
             array(
                 'title'    => __('Adicionar campo de número(Checkout)', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => __('Ao habilitar este campo, será adicionado um componente de número para dar complemento adicional ao campo de endereço.', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
                 'id'       => 'woo_better_calc_number_required',
                 'default'  => 'no',
-                'type'     => 'select',
-                'options'  => array(
-                    'yes' => __('Sim', 'woo-better-shipping-calculator-for-brazil'),
-                    'no'  => __('Não', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-
-            array(
-                'type' => 'sectionend',
-                'id'   => 'woo_better_calc_gutenberg_fields'
-            ),
-
-            array(
-                'title' => __('Gutenberg configurações:', 'woo-better-shipping-calculator-for-brazil'),
-                'type'  => 'title',
-                'id'    => 'woo_better_calc_gutenberg_fields'
-            ),
-
-            array(
-                'title'    => __('CEP obrigatório no carrinho', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => __('Ao tornar o CEP obrigatório, o usuário precisa validar um CEP no carrinho antes de prosseguir para o checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_calc_cep_required',
-                'default'  => 'yes',
-                'type'     => 'select',
-                'options'  => array(
-                    'yes' => __('Sim', 'woo-better-shipping-calculator-for-brazil'),
-                    'no'  => __('Não', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-
-            array(
-                'title'    => __('Ocultar campos de endereço na página de carrinho', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => __('Ao habilitar este campo, será desabilitado os campos de endereços na página de carrinho do Gutenberg.', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_hidden_cart_address',
-                'default'  => 'yes',
                 'type'     => 'select',
                 'options'  => array(
                     'yes' => __('Sim', 'woo-better-shipping-calculator-for-brazil'),
@@ -91,6 +56,48 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'id'   => 'woo_better_calc_options'
             ),
 
+            array(
+                'title' => __('Gutenberg configurações:', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'title',
+                'id'    => 'woo_better_calc_gutenberg_fields'
+            ),
+
+            array(
+                'title'    => __('CEP obrigatório no carrinho', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_calc_cep_required',
+                'default'  => 'yes',
+                'type'     => 'select',
+                'options'  => array(
+                    'yes' => __('Sim', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Não', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+
+            array(
+                'title'    => __('Ocultar campos de endereço', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_hidden_cart_address',
+                'default'  => 'yes',
+                'type'     => 'select',
+                'options'  => array(
+                    'yes' => __('Sim', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Não', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+
+            array(
+                'type' => 'sectionend',
+                'id'   => 'woo_better_calc_gutenberg_fields'
+            )
+        );
+
+        return apply_filters('woocommerce_get_settings_' . $this->id, $settings);
+    }
+
+    public function get_shortcodes_settings()
+    {
+        return array(
             // Shortcodes info
             array(
                 'title' => __('Shortcodes', 'woo-better-shipping-calculator-for-brazil'),
@@ -111,16 +118,47 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 ),
                 'type'  => 'title',
                 'id'    => 'woo_better_calc_functions',
+            ),
+
+            array(
+                'type' => 'sectionend',
+                'id'   => 'woo_better_calc_shortcodes'
             )
         );
-
-        return apply_filters('woocommerce_get_settings_' . $this->id, $settings);
     }
 
 
     public function output()
     {
-        \WC_Admin_Settings::output_fields($this->get_settings());
+        echo '
+            <div id="woo-better-calc-tabs" style="margin-bottom: 20px;">
+                <ul class="woo-better-tab-nav">
+                    <li class="active" data-tab="config-tab">Configurações</li>
+                    <li data-tab="shortcodes-tab">Shortcodes</li>
+                </ul>
+            </div>
+
+            <div class="woo-better-tab-content active" id="config-tab">
+        ';
+        \WC_Admin_Settings::output_fields($this->get_general_settings());
+
+        echo '
+            </div>
+            <div class="woo-better-tab-content" id="shortcodes-tab">
+        ';
+        \WC_Admin_Settings::output_fields($this->get_shortcodes_settings());
+
+        echo '
+            </div>
+        ';
+
+        $gif_url = plugin_dir_url(__DIR__) . '../Includes/assets/gifs/loading.gif';
+
+        echo '<div id="wc-better-calc-root">
+            <div>
+                <img class="wc-better-loading-spinner" src="' . esc_url($gif_url) . '" alt="Carregando...">
+            </div>
+        </div>';
     }
 
     public function save()

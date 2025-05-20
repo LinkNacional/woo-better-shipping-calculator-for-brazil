@@ -2,3 +2,106 @@
 #woo_better_calc_functions-description {
     max-width: 700px;
 }
+
+/* Basic setting */
+#wc-better-calc-root {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    gap: 10px;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(241, 241, 241);
+    top: 0%;
+    left: 0%;
+}
+
+.wc-better-loading-spinner {
+    height: 200px;
+    width: auto;
+}
+
+/* Tab setting */
+.woo-better-tab-nav {
+    list-style: none;
+    padding-left: 0;
+    display: flex;
+    gap: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+.woo-better-tab-nav li {
+    padding: 10px 15px;
+    cursor: pointer;
+    background: #f1f1f1;
+    border: 1px solid transparent;
+    border-bottom: none;
+    margin-bottom: 0px;
+}
+
+.woo-better-tab-nav li.active {
+    background: #fff;
+    border-bottom: 1px solid #0073aa;
+    font-weight: bold;
+}
+
+.woo-better-tab-content {
+    display: none;
+}
+
+.woo-better-tab-content.active {
+    display: block;
+}
+
+/* Title setting */
+.woo-better-tab-content h2 {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+
+#woo_better_calc_disabled_shipping,
+#woo_better_calc_number_required,
+#woo_better_calc_cep_required,
+#woo_better_hidden_cart_address {
+    margin: auto 0px;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    border-radius: 0px;
+}
+
+.woo-better-calc-desc-box p {
+    color: rgb(109, 109, 109);
+    font-weight: normal;
+}
+
+label[for="woo_better_calc_disabled_shipping"],
+label[for="woo_better_calc_number_required"],
+label[for="woo_better_calc_cep_required"],
+label[for="woo_better_hidden_cart_address"] {
+    /* Estilos aqui */
+    font-weight: bold;
+    color: #0073aa;
+    font-size: 18px;
+}
+
+.woo-better-box {
+    display: flex !important;
+    flex-direction: column !important;
+    background-color: white;
+    border-radius: 6px;
+    min-height: 120px;
+    padding: 10px !important;
+    margin-bottom: 30px !important;
+}
+
+.woo-better-box div strong {
+    padding: 0px !important;
+}
+
+th {
+    padding: 10px 20px !important;
+}

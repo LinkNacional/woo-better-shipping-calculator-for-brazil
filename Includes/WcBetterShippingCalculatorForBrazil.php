@@ -278,7 +278,7 @@ class WcBetterShippingCalculatorForBrazil
             wp_enqueue_script(
                 'wc-better-calc-footer-message',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/js/WcBetterShippingCalculatorForBrazilAdminSettings.js',
-                array(),
+                array('jquery'),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true
             );
