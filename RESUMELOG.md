@@ -1,3 +1,10 @@
+# 4.1.5 - 22/05/25
+* Ajuste: campo de ocultação de endereço.
+* Inserção: dos contribuidores do plugin.
+* Inserção: de link que leva para página de configurações do plugin na página do carrinho apenas quando o usuário for administrador.
+
+![image](https://github.com/user-attachments/assets/8c5b6e61-a87d-491f-9b4c-8a6712f20bba)
+
 # 4.1.4 - 20/05/25
 * Ajuste: campo de bairro está fora dos parâmetros estabelecidos.
 * Ajuste: tags do arquivo README.txt.

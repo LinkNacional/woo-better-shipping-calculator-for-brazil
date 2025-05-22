@@ -4,15 +4,15 @@ document.addEventListener('DOMContentLoaded', function () {
     let cepFound = false
     let previousCep = ''
     let continueButtonFound = false
-    let errorRequest = true
     let iconSummary = null
     let addressSummary = null
-    let previousText = ''
+    let postcodeError = false
     let postcodeValue = ''
     let continueButton = null
     let requestRepeated = false
+    let countRequest = 1
+    let countRequestTimeOut = null
 
-    let batchRequested = false
     let addressData = ''
     let stateData = ''
     let cityData = ''
@@ -56,6 +56,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const postcodeField = document.querySelector('.wc-block-components-text-input.wc-block-components-address-form__postcode');
         const inputPostcode = postcodeField ? postcodeField.querySelector('input') : null;
 
+        if (typeof WooBetterData !== 'undefined' && WooBetterData.wooHiddenAddress === 'no') {
+            const cityBlock = document.querySelector('.wc-block-components-text-input.wc-block-components-address-form__city');
+            if (cityBlock) {
+                const inputCity = cityBlock.querySelector('input');
+                if (inputCity && inputCity.value === '') {
+                    alert('Campo cidade vazio');
+                    inputCity.focus();
+                    return;
+                }
+            }
+        }
+
         if (blockObserver instanceof MutationObserver) {
             blockObserver.disconnect();
         }
@@ -87,8 +99,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 postcodeValue = inputPostcode.value
                 if (inputPostcode.value !== previousCep) {
                     requestRepeated = false
-                    batchRequested = false
-                    errorRequest = false
 
                     addressSummary.addEventListener('click', blockInteraction, true);
                     addressSummary.classList.add('lkn-wc-shipping-address-summary');
@@ -97,13 +107,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     const spinner = addressSummary.querySelector('.spinner');
                     if (!spinner) {
                         addressSummary.insertAdjacentHTML('beforeend', '<span class="spinner is-active"></span>');
-                    }
-                    const strongElement = addressSummary.querySelector('strong');
-
-                    if (strongElement) {
-                        previousText = strongElement.textContent;
-                    } else {
-                        previousText = 'old'
                     }
 
                     enableRequest = setInterval(() => {
@@ -212,71 +215,102 @@ document.addEventListener('DOMContentLoaded', function () {
         window.fetch = async function (url, options) {
 
             if (url.includes('/wp-json/wc/store/v1/batch')) {
-                if (!batchRequested && isValidCEP(postcodeValue)) {
+                if (!postcodeValue) {
+                    const postcodeField = document.querySelector('.wc-block-components-text-input.wc-block-components-address-form__postcode');
+                    if (postcodeField) {
+                        const inputPostcode = postcodeField ? postcodeField.querySelector('input') : null;
+                        if (inputPostcode) {
+                            postcodeValue = inputPostcode.value
+                        }
+                    }
+                }
+
+                if (isValidCEP(postcodeValue)) {
 
                     if (enableRequest) {
                         clearInterval(enableRequest);
                         enableRequest = null
                     }
 
-                    if (addressSummary) {
-                        const summaryBlock = document.querySelector('.wc-block-components-totals-shipping-panel');
-                        if (summaryBlock) {
-                            iconSummary = summaryBlock.querySelector('.wc-block-components-panel__button-icon');
-                            if (iconSummary) {
-                                iconSummary.addEventListener('click', blockInteraction, true);
-                            }
+                    const summaryBlock = document.querySelector('.wc-block-components-totals-shipping-panel');
+                    if (summaryBlock) {
+                        iconSummary = summaryBlock.querySelector('.wc-block-components-panel__button-icon');
+                        if (iconSummary) {
+                            iconSummary.addEventListener('click', blockInteraction, true);
                         }
+                    }
 
-                        if (!requestRepeated) {
-                            const apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+                    if (!requestRepeated) {
+                        requestRepeated = true
+                        const apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
 
-                            batchRequested = true
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
 
-                            const controller = new AbortController();
-                            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
+                        await fetch(apiUrl, {
+                            method: 'GET',
+                            signal: controller.signal,
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                clearTimeout(timeoutId); // Se deu certo, limpa o timeout
 
-                            await fetch(apiUrl, {
-                                method: 'GET',
-                                signal: controller.signal,
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                }
-                            })
-                                .then(response => response.json())
-                                .then(data => {
-                                    clearTimeout(timeoutId); // Se deu certo, limpa o timeout
+                                if (data.status === true) {
+                                    if (options && options.body) {
+                                        if (!data.address || !data.state_sigla || !data.city) {
+                                            postcodeError = true
+                                            if (addressSummary) {
+                                                removeLoading(addressSummary);
+                                                addressSummary.removeEventListener('click', blockInteraction, true);
+                                            }
+                                            if (iconSummary) {
+                                                iconSummary.removeEventListener('click', blockInteraction, true);
+                                            }
 
-                                    if (data.status === true) {
-                                        if (options && options.body) {
-                                            addressData = data.address ? data.address : ' ';
-                                            stateData = data.state_sigla;
-                                            cityData = data.city ? data.city : ' ';
+                                            if (!data.address) {
+                                                return alert('Erro: Endereço inválido.');
+                                            }
+
+                                            if (!data.state_sigla) {
+                                                return alert('Erro: Estado inválido.');
+                                            }
+
+                                            if (!data.city) {
+                                                return alert('Erro: Cidade inválida.');
+                                            }
+                                        } else {
+                                            postcodeError = false
                                         }
-                                    } else {
-                                        alert('Erro: ' + data.message);
-                                        removeLoading(addressSummary);
-                                        addressSummary.removeEventListener('click', blockInteraction, true);
-                                        if (iconSummary) {
-                                            iconSummary.removeEventListener('click', blockInteraction, true);
-                                        }
-                                        errorRequest = true;
+
+                                        addressData = data.address;
+                                        stateData = data.state_sigla;
+                                        cityData = data.city;
                                     }
-                                })
-                                .catch(error => {
-                                    clearTimeout(timeoutId); // Também limpa o timeout no erro
-                                    if (error.name === 'AbortError') {
-                                        alert('Erro: Tempo limite de resposta excedido.');
-                                    } else {
-                                        console.error(error);
-                                    }
+                                } else {
+                                    alert('Erro: ' + data.message);
                                     removeLoading(addressSummary);
                                     addressSummary.removeEventListener('click', blockInteraction, true);
                                     if (iconSummary) {
                                         iconSummary.removeEventListener('click', blockInteraction, true);
                                     }
-                                });
-                        }
+                                }
+                            })
+                            .catch(error => {
+                                clearTimeout(timeoutId); // Também limpa o timeout no erro
+                                if (error.name === 'AbortError') {
+                                    alert('Erro: Tempo limite de resposta excedido.');
+                                } else {
+                                    console.error(error);
+                                }
+                                removeLoading(addressSummary);
+                                addressSummary.removeEventListener('click', blockInteraction, true);
+                                if (iconSummary) {
+                                    iconSummary.removeEventListener('click', blockInteraction, true);
+                                }
+                            });
                     }
 
                 }
@@ -290,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     if (updateCustomerRequest) {
 
-                        if (addressData !== '') {
+                        if (addressData !== '' && WooBetterData.wooHiddenAddress === 'yes' && !postcodeError) {
                             updateCustomerRequest.data.shipping_address.address_1 = addressData
                             updateCustomerRequest.body.shipping_address.address_1 = addressData
                             if (!updateCustomerRequest.data.billing_address) {
@@ -303,178 +337,87 @@ document.addEventListener('DOMContentLoaded', function () {
                             updateCustomerRequest.body.billing_address.address_1 = addressData
                         }
 
-                        if (stateData !== '') {
+                        if (stateData !== '' && WooBetterData.wooHiddenAddress === 'yes') {
                             updateCustomerRequest.data.shipping_address.state = stateData
                             updateCustomerRequest.body.shipping_address.state = stateData
                             updateCustomerRequest.data.billing_address.state = stateData
                             updateCustomerRequest.body.billing_address.state = stateData
                         }
 
-                        if (cityData !== '') {
+                        if (cityData !== '' && WooBetterData.wooHiddenAddress === 'yes') {
                             updateCustomerRequest.data.shipping_address.city = cityData
                             updateCustomerRequest.body.shipping_address.city = cityData
                             updateCustomerRequest.data.billing_address.city = cityData
                             updateCustomerRequest.body.billing_address.city = cityData
                         }
 
-                        if (addressData !== '' && stateData !== '' && cityData !== '' && !errorRequest) {
-
-                            blockObserver = new MutationObserver((mutationsList) => {
-                                for (const mutation of mutationsList) {
-                                    if (
-                                        mutation.type === 'childList' ||
-                                        mutation.type === 'characterData' ||
-                                        mutation.type === 'subtree'
-                                    ) {
-
-                                        let pComponent = addressSummary.querySelector('p');
-
-                                        if (!pComponent) {
-                                            let newP = document.createElement('p');
-                                            newP.style.margin = '0';
-
-                                            newP.textContent = responseText ? responseText : '';
-
-                                            const spanSummary = addressSummary.querySelector('span:not(.spinner)');
-                                            if (spanSummary) {
-                                                const textNode = Array.from(addressSummary.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
-
-                                                if (textNode) {
-                                                    addressSummary.removeChild(textNode);
-                                                }
-
-                                                addressSummary.insertBefore(newP, spanSummary);
-                                            } else {
-                                                if (addressSummary && addressSummary.tagName === 'SPAN') {
-                                                    const textNode = Array.from(addressSummary.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
-
-                                                    if (textNode) {
-                                                        addressSummary.removeChild(textNode);
-                                                    }
-                                                    addressSummary.appendChild(newP);
-                                                } else {
-                                                    addressSummary.appendChild(newP);
-                                                }
-                                            }
-                                        }
-
-
-                                        const strongELement = addressSummary.querySelector('strong');
-                                        if (strongELement) {
-                                            addressSummary.removeChild(strongELement);
-                                        }
-
-                                        if (addressSummary && addressSummary.tagName === 'SPAN') {
-                                            const textNode = Array.from(addressSummary.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
-
-                                            if (textNode) {
-                                                addressSummary.removeChild(textNode);
-                                            }
-                                        }
-                                    }
-                                }
-                            });
-
-                            blockObserver.observe(addressSummary, {
-                                childList: true,
-                                characterData: true,
-                                subtree: true
-                            });
-
-                            const previousPostcode = document.querySelector('.wc-block-components-address-form__postcode');
-                            const inputPreviousPostcode = previousPostcode ? previousPostcode.querySelector('input') : null;
-
-                            let pComponent = addressSummary.querySelector('p');
-
-                            if (!pComponent) {
-                                let newP = document.createElement('p');
-                                newP.style.margin = '0';
-
-                                const spanSummary = addressSummary.querySelector('span:not(.spinner)');
-                                if (spanSummary) {
-                                    const textNode = Array.from(addressSummary.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
-
-                                    if (textNode) {
-                                        addressSummary.removeChild(textNode);
-                                    }
-
-                                    addressSummary.insertBefore(newP, spanSummary);
-                                } else {
-                                    if (addressSummary && addressSummary.tagName === 'SPAN') {
-                                        const textNode = Array.from(addressSummary.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
-
-                                        if (textNode) {
-                                            addressSummary.removeChild(textNode);
-                                        }
-                                        addressSummary.appendChild(newP);
-                                    } else {
-                                        addressSummary.appendChild(newP);
-                                    }
-                                }
-                            }
-
-                            newP = addressSummary.querySelector('p');
-
-                            if (previousText && newP) {
-                                if (typeof WooBetterData !== 'undefined' && WooBetterData.wooVersion === 'woo-block') {
-                                    responseText = `${postcodeValue}, ${cityData}, ${stateData}, Brasil `
-                                } else {
-                                    responseText = `Entrega em ${postcodeValue}, ${cityData}, ${stateData}, Brasil `
-                                }
-
-                                if (postcodeValue !== previousCep) {
-
-                                    newP.textContent = responseText;
-                                    removeLoading(addressSummary);
-                                    previousText = newP.textContent;
-                                    enableButton(continueButton);
-                                    if (inputPreviousPostcode) {
-                                        previousCep = inputPreviousPostcode.value;
-                                    }
-                                }
-
-                                if (addressSummary) {
-                                    addressSummary.removeEventListener('click', blockInteraction, true);
-                                }
-                                if (iconSummary) {
-                                    iconSummary.removeEventListener('click', blockInteraction, true);
-                                }
-                            } else {
-                                removeLoading(addressSummary)
-                                if (addressSummary) {
-                                    addressSummary.removeEventListener('click', blockInteraction, true);
-                                }
-                                if (iconSummary) {
-                                    iconSummary.removeEventListener('click', blockInteraction, true);
-                                }
-                            }
-                        } else {
-                            removeLoading(addressSummary)
-                            if (addressSummary) {
-                                addressSummary.removeEventListener('click', blockInteraction, true);
-                            }
-                            if (iconSummary) {
-                                iconSummary.removeEventListener('click', blockInteraction, true);
-                            }
-                        }
-
                         options.body = JSON.stringify(requestData);
                     }
                 } catch (err) {
                     console.error('Erro ao modificar o body: ', err);
-                    removeLoading(addressSummary)
                     if (addressSummary) {
+                        removeLoading(addressSummary)
                         addressSummary.removeEventListener('click', blockInteraction, true);
                     }
                     if (iconSummary) {
                         iconSummary.removeEventListener('click', blockInteraction, true);
                     }
                 }
+
+                const result = originalFetch(url, options);
+
+                return result.then(async function (response) {
+                    if (!postcodeError) {
+                        if (countRequest === 1) {
+                            countRequestTimeOut = setTimeout(async () => {
+                                countRequest = 0
+                                await removeInteractionEvents();
+                                resetAddressInteraction();
+                            }, 4000);
+                        } else if (countRequest > 1) {
+                            clearTimeout(countRequestTimeOut);
+                            countRequest = 0
+                            await removeInteractionEvents();
+                            resetAddressInteraction();
+                        }
+
+                        countRequest++;
+                    }
+                    return response;
+                }).catch(error => {
+                    console.error('Erro na requisição:', error);
+                    throw error;
+                });
             }
 
             // Sempre chama o fetch original
             return originalFetch(url, options);
-        };
+
+        }
+    }
+
+    async function removeInteractionEvents() {
+        if (typeof WooBetterData !== 'undefined' && WooBetterData.wooVersion === 'woo-block') {
+            addressSummary = document.querySelector('.wc-block-components-totals-shipping-address-summary');
+        } else if (WooBetterData.wooVersion === 'woo-class') {
+            await waitForShippingBlock();
+        }
+
+        if (addressSummary) {
+            addressSummary.removeEventListener('click', blockInteraction, true);
+        }
+        if (iconSummary) {
+            iconSummary.removeEventListener('click', blockInteraction, true);
+        }
+    }
+
+    function resetAddressInteraction() {
+        removeLoading(addressSummary);
+        enableButton(continueButton);
+        addressData = '';
+        stateData = '';
+        cityData = '';
+        countRequestTimeOut = null;
     }
 
     async function waitForShippingBlock() {
@@ -486,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     addressSummary = shippingBlock
                     clearInterval(shippingBlockInterval);
                     resolve();
-                } else if (shippingBlockIntervalCount >= 20) {
+                } else if (shippingBlockIntervalCount >= 40) {
                     clearInterval(shippingBlockInterval);
                     resolve();
                 }
@@ -520,18 +463,43 @@ document.addEventListener('DOMContentLoaded', function () {
         })
             .then(response => response.json())
             .then(data => {
-                clearTimeout(timeoutId); // Se deu certo, limpa o timeout
+                clearTimeout(timeoutId);
 
                 if (data.status === true) {
+                    if (!data.address || !data.state_sigla || !data.city) {
+                        postcodeError = true
+                        if (addressSummary) {
+                            removeLoading(addressSummary);
+                            addressSummary.removeEventListener('click', blockInteraction, true);
+                            if (iconSummary) {
 
-                    const addressData = data.address ? data.address : ' ';
-                    const stateData = data.state_sigla;
-                    const cityData = data.city ? data.city : ' ';
+                            }
+                            iconSummary.removeEventListener('click', blockInteraction, true);
+                        }
+
+                        if (!data.address) {
+                            return alert('Erro: Endereço inválido.');
+                        }
+
+                        if (!data.state_sigla) {
+                            return alert('Erro: Estado inválido.');
+                        }
+
+                        if (!data.city) {
+                            return alert('Erro: Cidade inválida.');
+                        }
+                    } else {
+                        postcodeError = false
+                    }
+
+                    addressData = data.address;
+                    stateData = data.state_sigla;
+                    cityData = data.city;
 
                     let wooNonce = ''
                     let wpNonce = ''
 
-                    if (wpApiSettings.nonce) {
+                    if (typeof wpApiSettings !== 'undefined' && wpApiSettings?.nonce) {
                         wpNonce = wpApiSettings.nonce
                     }
 
@@ -587,24 +555,6 @@ document.addEventListener('DOMContentLoaded', function () {
                             ]
                         })
                     })
-                        .then(data => {
-                            enableButton(continueButton)
-                            removeLoading(addressSummary);
-                            addressSummary.removeEventListener('click', blockInteraction, true);
-                            if (iconSummary) {
-                                iconSummary.removeEventListener('click', blockInteraction, true);
-                            }
-                        })
-                        .catch(error => {
-                            alert('Erro: ' + error?.message);
-                            removeLoading(addressSummary);
-                            addressSummary.removeEventListener('click', blockInteraction, true);
-                            if (iconSummary) {
-                                iconSummary.removeEventListener('click', blockInteraction, true);
-                            }
-                            errorRequest = true;
-                        });
-
                 } else {
                     alert('Erro: ' + data.message);
                     removeLoading(addressSummary);
@@ -612,7 +562,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (iconSummary) {
                         iconSummary.removeEventListener('click', blockInteraction, true);
                     }
-                    errorRequest = true;
                 }
             })
             .catch(error => {

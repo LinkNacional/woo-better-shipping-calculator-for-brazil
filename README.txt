@@ -1,11 +1,11 @@
 === Calculadora de Frete para o Brasil ===
-Contributors: LinkNacional
+Contributors: LinkNacional, luizbills
 Donate link:
 Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.8
 Requires PHP: 7.3
-Stable tag: 4.1.4
+Stable tag: 4.1.5
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -28,7 +28,7 @@ Calculadora de frete melhorada para lojas brasileiras, facilitando e melhorando 
 - Ocultação de campos de endereço.
 - Compatibilidade com o modo Legacy e Blocos (Gutenberg).
 
-Algumas dessas funcionalidades podem ser modificadas ou desativadas usando hooks. Mais detalhes na seção [Perguntas Frequentes (FAQ)](#faq).
+Algumas dessas funcionalidades podem ser modificadas ou desativadas usando hooks. Mais detalhes na seção [Perguntas Frequentes (FAQ)](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
 
 = Help and Support =
 
@@ -81,6 +81,11 @@ add_filter(
 );
 
 == Changelog ==
+
+= 4.1.5 - 22/05/2025 =
+* Ajuste: campo de ocultação de endereço.
+* Inserção: dos contribuidores do plugin.
+* Inserção: de link que leva para página de configurações do plugin na página do carrinho apenas quando o usuário for administrador.
 
 = 4.1.4 - 20/05/2025 =
 * Ajuste: campo de bairro está fora dos parâmetros estabelecidos.
