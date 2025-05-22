@@ -114,7 +114,6 @@ class WcBetterShippingCalculatorForBrazilPublic
         if (has_block('woocommerce/cart')) {
 
             if (current_user_can('manage_options')) {
-                error_log('entreiiii');
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-cep-settings-link',
                     plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergSettingsLink.js',
