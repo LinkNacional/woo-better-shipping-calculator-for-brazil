@@ -28,7 +28,7 @@ Calculadora de frete melhorada para lojas brasileiras, facilitando e melhorando 
 - Ocultação de campos de endereço.
 - Compatibilidade com o modo Legacy e Blocos (Gutenberg).
 
-Algumas dessas funcionalidades podem ser modificadas ou desativadas usando hooks. Mais detalhes na seção [Perguntas Frequentes (FAQ)](#faq).
+Algumas dessas funcionalidades podem ser modificadas ou desativadas usando hooks. Mais detalhes na seção [Perguntas Frequentes (FAQ)](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
 
 = Help and Support =
 
