@@ -1,3 +1,6 @@
+# 4.1.5 - 22/05/25
+* Ajuste: campo de ocultação de endereço.
+
 # 4.1.4 - 20/05/25
 * Ajuste: campo de bairro está fora dos parâmetros estabelecidos.
 * Ajuste: tags do arquivo README.txt.

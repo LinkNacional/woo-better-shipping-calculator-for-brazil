@@ -55,7 +55,6 @@ document.addEventListener('DOMContentLoaded', function () {
     async function handleSubmitClick(continueButton) {
         const postcodeField = document.querySelector('.wc-block-components-text-input.wc-block-components-address-form__postcode');
         const inputPostcode = postcodeField ? postcodeField.querySelector('input') : null;
-        //  TODO aqui!!
 
         if (typeof WooBetterData !== 'undefined' && WooBetterData.wooHiddenAddress === 'no') {
             const cityBlock = document.querySelector('.wc-block-components-text-input.wc-block-components-address-form__city');
@@ -464,7 +463,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
             .then(response => response.json())
             .then(data => {
-                clearTimeout(timeoutId); // Se deu certo, limpa o timeout
+                clearTimeout(timeoutId);
 
                 if (data.status === true) {
                     if (!data.address || !data.state_sigla || !data.city) {

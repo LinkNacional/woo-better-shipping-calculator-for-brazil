@@ -82,6 +82,9 @@ add_filter(
 
 == Changelog ==
 
+= 4.1.5 - 22/05/2025 =
+* Ajuste: campo de ocultação de endereço.
+
 = 4.1.4 - 20/05/2025 =
 * Ajuste: campo de bairro está fora dos parâmetros estabelecidos.
 * Ajuste: tags do arquivo README.txt.
