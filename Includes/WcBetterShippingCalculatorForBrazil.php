@@ -215,14 +215,15 @@ class WcBetterShippingCalculatorForBrazil
         $customer = WC()->customer;
 
         $cep_required = get_option('woo_better_calc_cep_required', 'yes');
+        $hidden_address = get_option('woo_better_hidden_cart_address', 'yes');
 
         // Verificar se o cliente está definido
         if (is_a($customer, 'WC_Customer')) {
-            if ($customer->get_shipping_city() === '' && $cep_required === 'yes') {
+            if ($customer->get_shipping_city() === '' && $cep_required === 'yes' && $hidden_address === 'yes') {
                 $customer->set_shipping_country('BR');
                 $customer->set_shipping_state('SP');
-                $customer->set_shipping_city('Exemplo');
-                $customer->set_shipping_address('Exemplo');
+                $customer->set_shipping_city('Vazio');
+                $customer->set_shipping_address('Vazio');
 
                 $customer->save();
             }

@@ -126,7 +126,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $woo_version_type = version_compare(WC_VERSION, '9.6.0', '>=') ? 'woo-block' : 'woo-class';
 
                     wp_localize_script($this->plugin_name . '-gutenberg-cep-field', 'WooBetterData', [
-                        'wooVersion' => $woo_version_type
+                        'wooVersion' => $woo_version_type,
+                        'wooHiddenAddress' => $hidden_address,
                     ]);
                 }
             }
