@@ -4,7 +4,7 @@
 
 # Calculadora de frete melhorada para lojas brasileiras
 
-* Contribuidores: LinkNacional
+* Contribuidores: LinkNacional, luizbills
 * Link para doações: [LinkNacional](https://www.linknacional.com.br/)
 * Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 * Testado até: 6.8

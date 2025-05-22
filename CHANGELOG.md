@@ -1,5 +1,7 @@
 # 4.1.5 - 22/05/25
 * Ajuste: campo de ocultação de endereço.
+* Inserção: dos contribuidores do plugin.
+* Inserção: de link que leva para página de configurações do plugin na página do carrinho apenas quando o usuário for administrador.
 
 # 4.1.4 - 20/05/25
 * Ajuste: campo de bairro está fora dos parâmetros estabelecidos.
