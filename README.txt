@@ -82,6 +82,9 @@ add_filter(
 
 == Changelog ==
 
+= 4.1.6 - 02/06/2025 =
+* Adjustment: fix in the address auto-fill field.
+
 = 4.1.5 - 22/05/2025 =
 * Adjustment: address hiding field.
 * Addition: plugin contributors.
