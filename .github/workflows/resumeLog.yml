@@ -5,8 +5,8 @@ on:
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
-  TITLE: "Ajustes no blueprint do playground e valores padrão"
-  VERSION: "4.1.5"
+  TITLE: "Remoção do campo bairro"
+  VERSION: "4.1.6"
 
 jobs:
   send-email:
