@@ -79,7 +79,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.1.5';
+            $this->version = '4.1.6';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -149,7 +149,7 @@ class WcBetterShippingCalculatorForBrazil
 
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
 
-        $this->loader->add_action('woocommerce_init', $this, 'lkn_set_country_brasil', 999);
+        $this->loader->add_action('template_redirect', $this, 'lkn_set_country_brasil', 999);
 
         if ($disabled_shipping === 'all' || $disabled_shipping === 'digital') {
             $this->loader->add_action('woocommerce_get_country_locale', $this, 'lkn_woo_better_shipping_calculator_locale', 10, 1);
@@ -219,13 +219,41 @@ class WcBetterShippingCalculatorForBrazil
 
         // Verificar se o cliente está definido
         if (is_a($customer, 'WC_Customer')) {
-            if ($customer->get_shipping_city() === '' && $cep_required === 'yes' && $hidden_address === 'yes') {
-                $customer->set_shipping_country('BR');
-                $customer->set_shipping_state('SP');
-                $customer->set_shipping_city('Vazio');
-                $customer->set_shipping_address('Vazio');
+            if (has_block('woocommerce/cart')) {
+                if ($customer->get_shipping_city() === '' && $cep_required === 'yes' && $hidden_address === 'yes') {
+                    $customer->set_shipping_country('BR');
+                    $customer->set_shipping_state('SP');
+                    $customer->set_shipping_city('Vazio');
+                    $customer->set_shipping_address('Vazio');
 
-                $customer->save();
+                    $customer->save();
+                } elseif ($hidden_address === 'no' && $customer->get_shipping_city() === 'Vazio') {
+                    $customer->set_shipping_country('BR');
+                    $customer->set_shipping_state('SP');
+                    $customer->set_shipping_city('');
+                    $customer->set_shipping_address('');
+
+                    $customer->set_billing_country('BR');
+                    $customer->set_billing_state('SP');
+                    $customer->set_billing_city('');
+                    $customer->set_billing_address('');
+
+                    $customer->save();
+                }
+            } elseif (has_block('woocommerce/checkout')) {
+                if ($customer->get_shipping_city() === 'Vazio') {
+                    $customer->set_shipping_country('BR');
+                    $customer->set_shipping_state('SP');
+                    $customer->set_shipping_city('');
+                    $customer->set_shipping_address('');
+
+                    $customer->set_billing_country('BR');
+                    $customer->set_billing_state('SP');
+                    $customer->set_billing_city('');
+                    $customer->set_billing_address('');
+
+                    $customer->save();
+                }
             }
         }
     }

@@ -1,3 +1,8 @@
+# 4.1.6 - 02/06/25
+* Ajuste: correção no campo de autopreenchimento de endereço.
+
+![image](https://github.com/user-attachments/assets/095e3cef-3546-4418-a1dc-c59aa0844bde)
+
 # 4.1.5 - 22/05/25
 * Ajuste: campo de ocultação de endereço.
 * Inserção: dos contribuidores do plugin.
