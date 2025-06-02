@@ -1,7 +1,7 @@
-=== Calculadora de Frete para o Brasil ===
+=== Shipping Calculator for Brazil ===
 Contributors: LinkNacional, luizbills
 Donate link:
-Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
+Tags: woocommerce, brazil, shipping calculator, ZIP code, delivery
 Requires at least: 4.6
 Tested up to: 6.8
 Requires PHP: 7.3
@@ -9,71 +9,71 @@ Stable tag: 4.1.5
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
-Calculadora de frete com CEP automático para WooCommerce. Compatível com Gutenberg e ideal para lojas brasileiras.
+Shipping calculator with automatic ZIP code for WooCommerce. Compatible with Gutenberg and ideal for Brazilian stores.
 
 == Description ==
 
-Calculadora de frete melhorada para lojas brasileiras, facilitando e melhorando o fluxo de preenchimendo dos dados nas páginas de carrinho e checkout:
+Improved shipping calculator for Brazilian stores, making it easier and improving the data entry flow on the cart and checkout pages:
 
-> Na página de Carrinho:
+> On the Cart page:
 
-- Validação de CEP.
-- Controle no botão de envio, permitindo apenas seguir após inserir um CEP válido.
-- Ocultação de campos de endereço.
-- Compatibilidade com o modo Legacy e Blocos (Gutenberg).
+- ZIP code validation.
+- Control on the submit button, allowing you to proceed only after entering a valid ZIP code.
+- Hiding address fields.
+- Compatibility with Legacy and Blocks (Gutenberg) mode.
 
-> Na página de Checkout:
+> On the Checkout page:
 
-- Campo de número(complementando o endereço via `checkbox` ou `text-input`).
-- Ocultação de campos de endereço.
-- Compatibilidade com o modo Legacy e Blocos (Gutenberg).
+- Number field (complementing the address via `checkbox` or `text-input`).
+- Hiding address fields.
+- Compatibility with Legacy and Blocks (Gutenberg) mode.
 
-Algumas dessas funcionalidades podem ser modificadas ou desativadas usando hooks. Mais detalhes na seção [Perguntas Frequentes (FAQ)](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
+Some of these features can be modified or disabled using hooks. More details in the [Frequently Asked Questions (FAQ)](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
 
 = Help and Support =
 
-Quando precisar de ajuda, crie um tópico no [Fórum de Suporte do Plugin](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
+When you need help, create a topic in the [Plugin Support Forum](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
 
 = Contributions =
 
-Se encontrar algum erro ou tiver sugestões, abra um problema no nosso [repositório no GitHub](https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil).
+If you find any errors or have suggestions, open an issue in our [GitHub repository](https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil).
 
-[Brasil API](https://brasilapi.com.br) - Campo de CEP.
-[VIACEP](https://viacep.com.br) - Campo de CEP.
+[Brasil API](https://brasilapi.com.br) - ZIP code field.
+[VIACEP](https://viacep.com.br) - ZIP code field.
 
 == Installation ==
 
-1. Acesse o admin do seu WordPress e vá para **Plugins > Adicionar Novo**.
-2. Busque por "Calculadora de Frete Melhorada para Lojas Brasileiras".
-3. Encontre o plugin, clique em "Instalar Agora" e depois em "Ativar".
-4. Pronto! Nenhuma configuração adicional necessária.
+1. Access your WordPress admin and go to **Plugins > Add New**.
+2. Search for "Improved Shipping Calculator for Brazilian Stores".
+3. Find the plugin, click "Install Now" and then "Activate".
+4. Done! No additional configuration needed.
 
 == Screenshots ==
 
-1. Nova página de configuração do plugin.
-2. Tela antiga do carrinho através do editor de blocos do Gutenberg.
-3. Tela nova do carrinho através do editor de blocos do Gutenberg.
-4. Tela antiga do carrinho através do shortcode do WooCommerce.
-4. Tela nova do carrinho através do shortcode do WooCommerce.
-6. Campo de número através do editor de blocos do Gutenberg.
-7. Campo de número através do shortcode do WooCommerce.
+1. New plugin settings page.
+2. Old cart screen using the Gutenberg block editor.
+3. New cart screen using the Gutenberg block editor.
+4. Old cart screen using the WooCommerce shortcode.
+4. New cart screen using the WooCommerce shortcode.
+6. Number field using the Gutenberg block editor.
+7. Number field using the WooCommerce shortcode.
 
 == Frequently Asked Questions ==
 
-= Como posso ALTERAR o texto "Calcular frete"? =
+= How can I CHANGE the text "Calculate shipping"? =
 
-Use o seguinte código:
+Use the following code:
 
 add_filter(
     'wc_better_shipping_calculator_for_brazil_postcode_label',
     function () {
-        return 'seu novo texto';
+        return 'your new text';
     }
 );
 
-= Como posso REMOVER o texto "Calcular frete"? =
+= How can I REMOVE the text "Calculate shipping"? =
 
-Use o seguinte código:
+Use the following code:
 
 add_filter(
     'wc_better_shipping_calculator_for_brazil_postcode_label',
@@ -83,99 +83,97 @@ add_filter(
 == Changelog ==
 
 = 4.1.5 - 22/05/2025 =
-* Ajuste: campo de ocultação de endereço.
-* Inserção: dos contribuidores do plugin.
-* Inserção: de link que leva para página de configurações do plugin na página do carrinho apenas quando o usuário for administrador.
+* Adjustment: address hiding field.
+* Addition: plugin contributors.
+* Addition: link to the plugin settings page on the cart page only when the user is an administrator.
 
 = 4.1.4 - 20/05/2025 =
-* Ajuste: campo de bairro está fora dos parâmetros estabelecidos.
-* Ajuste: tags do arquivo README.txt.
+* Adjustment: neighborhood field is outside the established parameters.
+* Adjustment: README.txt file tags.
 
 = 4.1.3 - 15/05/2025 =
-* Ajuste: blueprint mais dinâmico no momento da configuração do playground.
+* Adjustment: more dynamic blueprint at the time of playground configuration.
 
 = 4.1.2 - 07/05/2025 =
-* Correção: Ajustes na identificação de produtos físicos e digitais.
-* Ajuste : Melhoria no fluxo do githubworkflow para lançamento do plugin no repositorio e Wordpress.
+* Fix: Adjustments in the identification of physical and digital products.
+* Adjustment: Improvement in the githubworkflow flow for plugin release in the repository and WordPress.
 
 = 4.1.1 - 29/04/2025 =
-* Correção: Melhoria na descrição do README.txt para o Português - BR.
-* Correção: Melhoria no campo do Gutenberg para campo de CEP, agora é possível habilitar ou desabilitar a ocultação do endereço nos campos de CEP.
+* Fix: Improved README.txt description for Portuguese - BR.
+* Fix: Improved Gutenberg field for ZIP code field, now it is possible to enable or disable address hiding in ZIP code fields.
 
 = 4.0.1 - 23/04/2025 =
-* Correção: Novo Readme.txt e lista de imagens.
+* Fix: New Readme.txt and image list.
 
 = 4.0.0 - 26/03/2025 =
-* Ajuste: Alteração do plugin para o modelo de Orientação a Objetos (OO).
-* Novo tab de configuração para o plugin.
-* Compatibilidade com o Gutenberg.
-* Novo campo de número no checkout do Woocommerce(shortcode e gutenberg)
+* Adjustment: Plugin changed to Object Oriented (OO) model.
+* New settings tab for the plugin.
+* Compatibility with Gutenberg.
+* New number field in Woocommerce checkout (shortcode and gutenberg)
 
 = 3.2.2 =
-* Testado até o WordPress 6.6
+* Tested up to WordPress 6.6
 
 = 3.2.1 =
-* Testado até o WordPress 6.4
+* Tested up to WordPress 6.4
 
 = 3.2.0 =
-* Ajuste: Força as configurações do WooCommerce para ativar o cálculo de frete.
+* Adjustment: Forces WooCommerce settings to enable shipping calculation.
 
 = 3.1.2 =
-* Correção: Incompatibilidade com o plugin Fluid Checkout.
+* Fix: Incompatibility with the Fluid Checkout plugin.
 
 = 3.1.1 =
-* Correção: Às vezes, a máscara do campo de CEP não estava funcionando em novos cálculos de frete.
+* Fix: Sometimes the ZIP code field mask was not working in new shipping calculations.
 
 = 3.1.0 =
-* Recurso: Agora o campo de CEP possui o tipo 'tel' (para mostrar o teclado numérico no celular).
+* Feature: Now the ZIP code field has the 'tel' type (to show the numeric keyboard on mobile).
 
 = 3.0.2 =
-* Correção: O aviso de doação não estava fechando.
+* Fix: The donation notice was not closing.
 
 = 3.0.1 =
-* Correção: O JavaScript do plugin deve ser executado apenas na página do carrinho.
+* Fix: The plugin's JavaScript should only run on the cart page.
 
 = 3.0.0 =
-* Ajuste: Código refatorado para melhor compatibilidade.
-* Ruptura: Vários hooks foram removidos.
+* Adjustment: Refactored code for better compatibility.
+* Breaking: Several hooks have been removed.
 
 = 2.2.0 =
-* Ajuste: Limpa o campo de cidade para evitar resultados inesperados.
-* Corrigido o hook de filtro `wc_better_shipping_calculator_for_brazil_hide_country`.
+* Adjustment: Clears the city field to avoid unexpected results.
+* Fixed the `wc_better_shipping_calculator_for_brazil_hide_country` filter hook.
 
 = 2.1.2 =
-* Correções menores.
+* Minor fixes.
 
 = 2.1.1 =
-* Correção em JavaScript.
+* JavaScript fix.
 
 = 2.1.0 =
-* Nome do plugin alterado para "Calculadora de frete melhorada para lojas brasileiras".
-* Agora o campo de CEP está sempre visível.
-* Novo filtro de hook: `wc_better_shipping_calculator_for_brazil_add_postcode_mask` (padrão: `true`)
-* Novo filtro de hook: `wc_better_shipping_calculator_for_brazil_postcode_label` (padrão: `"Calcule o frete:"`)
-* Correção no `register_activation_hook`.
+* Plugin name changed to "Improved shipping calculator for Brazilian stores".
+* Now the ZIP code field is always visible.
+* New hook filter: `wc_better_shipping_calculator_for_brazil_add_postcode_mask` (default: `true`)
+* New hook filter: `wc_better_shipping_calculator_for_brazil_postcode_label` (default: `"Calculate shipping:"`)
+* Fix in `register_activation_hook`.
 
 = 2.0.4 =
-* Correção na tradução pt_BR.
-* Testado com WordPress 6.0 e WooCommerce 6.5.
+* Fix in pt_BR translation.
+* Tested with WordPress 6.0 and WooCommerce 6.5.
 
 = 2.0.3 =
-* Correção de um erro de sintaxe com versões antigas do PHP.
+* Fix for a syntax error with older PHP versions.
 
 = 2.0.2 =
-* Correções em JavaScript.
-* Adicionada tradução para PT-BR.
+* JavaScript fixes.
+* Added translation for PT-BR.
 
 = 2.0.1 =
-* Correções internas.
+* Internal fixes.
 
 = 2.0.0 =
-* Lançamento inicial.
+* Initial release.
 
 == Upgrade Notice ==
 
 = 2.0.0 =
-* Lançamento inicial.
-
-
+* Initial release.
