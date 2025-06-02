@@ -227,6 +227,18 @@ class WcBetterShippingCalculatorForBrazil
                     $customer->set_shipping_address('Vazio');
 
                     $customer->save();
+                } elseif ($hidden_address === 'no' && $customer->get_shipping_city() === 'Vazio') {
+                    $customer->set_shipping_country('BR');
+                    $customer->set_shipping_state('SP');
+                    $customer->set_shipping_city('');
+                    $customer->set_shipping_address('');
+
+                    $customer->set_billing_country('BR');
+                    $customer->set_billing_state('SP');
+                    $customer->set_billing_city('');
+                    $customer->set_billing_address('');
+
+                    $customer->save();
                 }
             } elseif (has_block('woocommerce/checkout')) {
                 if ($customer->get_shipping_city() === 'Vazio') {
