@@ -1,7 +1,7 @@
-=== Shipping Calculator for Brazil ===
+=== Calculadora de Frete para o Brasil ===
 Contributors: LinkNacional, luizbills
 Donate link:
-Tags: woocommerce, brazil, shipping calculator, ZIP code, delivery
+Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.8
 Requires PHP: 7.3
