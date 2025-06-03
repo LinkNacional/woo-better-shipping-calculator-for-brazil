@@ -165,6 +165,8 @@ class WcBetterShippingCalculatorForBrazil
     public function lkn_simular_frete_playground($rates, $package)
     {
         $environment = wp_get_environment_type();
+        $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
+        $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
 
         if ($environment === 'local' || $environment === 'development' || strpos(home_url(), 'playground.wordpress.net') !== false) {
             $rates = [];
@@ -178,6 +180,24 @@ class WcBetterShippingCalculatorForBrazil
             );
 
             $rates['simulado_playground'] = $rate;
+        }
+
+        // Só aplica se estiver habilitado e valor for maior que zero
+        if ($enable_min === 'yes' && $min_value > 0) {
+            $cart_total = WC()->cart->get_displayed_subtotal();
+
+            if ($cart_total >= $min_value) {
+                // Remove todas as opções de frete e adiciona frete grátis
+                $rates = array();
+
+                $rates['free_shipping_min'] = new \WC_Shipping_Rate(
+                    'free_shipping_min',
+                    __('Free Shipping', 'woo-better-shipping-calculator-for-brazil'),
+                    0,
+                    array(),
+                    'free_shipping'
+                );
+            }
         }
 
         return $rates;

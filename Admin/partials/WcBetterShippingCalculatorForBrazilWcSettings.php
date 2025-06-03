@@ -87,6 +87,44 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             ),
 
             array(
+                'title'    => __('Enable minimum value for free shipping', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => __('Enable this option to set a minimum cart value for free shipping.', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_enable_min_free_shipping',
+                'default'  => 'no',
+                'type'     => 'checkbox',
+            ),
+
+            array(
+                'title'    => __('Minimum value for free shipping', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => __('Set the minimum cart value required to activate free shipping.', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_min_free_shipping_value',
+                'default'  => '',
+                'type'     => 'number',
+                'custom_attributes' => array(
+                    'min' => 0
+                ),
+            ),
+
+            array(
+                'title'    => __('Enable maximum value for free shipping', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => __('Enable this option to set a maximum cart value for free shipping.', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_enable_max_free_shipping',
+                'default'  => 'no',
+                'type'     => 'checkbox',
+            ),
+
+            array(
+                'title'    => __('Maximum value for free shipping', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => __('Set the maximum cart value allowed to activate free shipping.', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_max_free_shipping_value',
+                'default'  => '',
+                'type'     => 'number',
+                'custom_attributes' => array(
+                    'min' => 0
+                ),
+            ),
+
+            array(
                 'type' => 'sectionend',
                 'id'   => 'woo_better_calc_options'
             ),

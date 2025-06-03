@@ -110,6 +110,7 @@ class WcBetterShippingCalculatorForBrazilPublic
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
         $hidden_address = get_option('woo_better_hidden_cart_address', 'yes');
         $cep_required = get_option('woo_better_calc_cep_required', 'yes');
+        $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
 
         if (has_block('woocommerce/cart')) {
 
@@ -159,6 +160,24 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'hiddenAddress' => $hidden_address,
                 ]);
             }
+        }
+
+        if ((has_block('woocommerce/checkout') || has_block('woocommerce/cart')) && $enable_min === 'yes') {
+            wp_enqueue_script(
+                $this->plugin_name . '-progress-bar',
+                plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilProgressBar.js',
+                array(),
+                $this->version,
+                false
+            );
+
+            wp_localize_script(
+                $this->plugin_name . '-progress-bar',
+                'wc_better_shipping_progress',
+                array(
+                    'min_free_shipping_value' => get_option('woo_better_min_free_shipping_value', 0),
+                )
+            );
         }
 
         if (has_block('woocommerce/checkout')) {

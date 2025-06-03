@@ -14,6 +14,59 @@
                 const hiddenField = document.getElementById('woo_better_hidden_cart_address');
                 const requirePostcode = document.getElementById('woo_better_calc_cep_required');
 
+                const minimumFreeShipping = document.getElementById('woo_better_enable_min_free_shipping');
+                const maximumFreeShipping = document.getElementById('woo_better_enable_max_free_shipping');
+
+                if (minimumFreeShipping) {
+                    const minimumFreeShippingValue = document.getElementById('woo_better_min_free_shipping_value');
+                    if (minimumFreeShippingValue) {
+                        if (!minimumFreeShipping.checked && minimumFreeShippingValue) {
+                            minimumFreeShippingValue.disabled = true;
+                            minimumFreeShippingValue.style.backgroundColor = '#f1f1f1';
+                            minimumFreeShippingValue.style.cursor = 'not-allowed';
+                            minimumFreeShippingValue.value = 0;
+                        }
+                        minimumFreeShipping.addEventListener('change', function () {
+                            if (minimumFreeShipping.checked) {
+                                minimumFreeShippingValue.disabled = false;
+                                minimumFreeShippingValue.style.backgroundColor = '';
+                                minimumFreeShippingValue.style.cursor = '';
+                            } else {
+                                minimumFreeShippingValue.value = 0;
+                                minimumFreeShippingValue.disabled = true;
+                                minimumFreeShippingValue.style.backgroundColor = '#f1f1f1';
+                                minimumFreeShippingValue.style.cursor = 'not-allowed';
+                            }
+
+                        });
+                    }
+                }
+
+                if (maximumFreeShipping) {
+                    const maximumFreeShippingValue = document.getElementById('woo_better_max_free_shipping_value');
+                    if (!maximumFreeShipping.checked && maximumFreeShippingValue) {
+                        maximumFreeShippingValue.disabled = true;
+                        maximumFreeShippingValue.style.backgroundColor = '#f1f1f1';
+                        maximumFreeShippingValue.style.cursor = 'not-allowed';
+                        maximumFreeShippingValue.value = 0;
+                    }
+                    if (maximumFreeShippingValue) {
+                        maximumFreeShipping.addEventListener('change', function () {
+                            if (maximumFreeShipping.checked) {
+                                maximumFreeShippingValue.disabled = false;
+                                maximumFreeShippingValue.style.backgroundColor = '';
+                                maximumFreeShippingValue.style.cursor = '';
+                            } else {
+                                maximumFreeShippingValue.value = 0;
+                                maximumFreeShippingValue.disabled = true;
+                                maximumFreeShippingValue.style.backgroundColor = '#f1f1f1';
+                                maximumFreeShippingValue.style.cursor = 'not-allowed';
+                            }
+
+                        });
+                    }
+                }
+
                 if (disableShipping.value === 'all') {
                     if (numberField) {
                         numberField.disabled = true;
