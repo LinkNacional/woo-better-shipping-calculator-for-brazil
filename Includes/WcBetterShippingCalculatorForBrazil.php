@@ -183,7 +183,7 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // Só aplica se estiver habilitado e valor for maior que zero
-        if ($enable_min === 'yes' && $min_value > 0) {
+        if ($enable_min === 'yes') {
             $cart_total = WC()->cart->get_displayed_subtotal();
 
             if ($cart_total >= $min_value) {
@@ -326,7 +326,7 @@ class WcBetterShippingCalculatorForBrazil
         ) {
             wp_enqueue_script(
                 'wc-better-calc-footer-message',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/js/WcBetterShippingCalculatorForBrazilAdminSettings.js',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/js/WcBetterShippingCalculatorForBrazilAdminLayout.js',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true

@@ -15,7 +15,6 @@
                 const requirePostcode = document.getElementById('woo_better_calc_cep_required');
 
                 const minimumFreeShipping = document.getElementById('woo_better_enable_min_free_shipping');
-                const maximumFreeShipping = document.getElementById('woo_better_enable_max_free_shipping');
 
                 if (minimumFreeShipping) {
                     const minimumFreeShippingValue = document.getElementById('woo_better_min_free_shipping_value');
@@ -36,31 +35,6 @@
                                 minimumFreeShippingValue.disabled = true;
                                 minimumFreeShippingValue.style.backgroundColor = '#f1f1f1';
                                 minimumFreeShippingValue.style.cursor = 'not-allowed';
-                            }
-
-                        });
-                    }
-                }
-
-                if (maximumFreeShipping) {
-                    const maximumFreeShippingValue = document.getElementById('woo_better_max_free_shipping_value');
-                    if (!maximumFreeShipping.checked && maximumFreeShippingValue) {
-                        maximumFreeShippingValue.disabled = true;
-                        maximumFreeShippingValue.style.backgroundColor = '#f1f1f1';
-                        maximumFreeShippingValue.style.cursor = 'not-allowed';
-                        maximumFreeShippingValue.value = 0;
-                    }
-                    if (maximumFreeShippingValue) {
-                        maximumFreeShipping.addEventListener('change', function () {
-                            if (maximumFreeShipping.checked) {
-                                maximumFreeShippingValue.disabled = false;
-                                maximumFreeShippingValue.style.backgroundColor = '';
-                                maximumFreeShippingValue.style.cursor = '';
-                            } else {
-                                maximumFreeShippingValue.value = 0;
-                                maximumFreeShippingValue.disabled = true;
-                                maximumFreeShippingValue.style.backgroundColor = '#f1f1f1';
-                                maximumFreeShippingValue.style.cursor = 'not-allowed';
                             }
 
                         });
