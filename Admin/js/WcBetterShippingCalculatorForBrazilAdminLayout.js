@@ -12,33 +12,32 @@
     mainContainer.style.flexWrap = 'wrap';
     mainContainer.style.boxSizing = 'border-box';
     mainContainer.style.marginTop = '40px';
+    mainContainer.style.gap = '20px';
 
     // Conteúdo principal (tabs/tabelas)
     const contentContainer = document.createElement('div');
+    contentContainer.className = 'lkn-settings-content';
     contentContainer.style.flex = '1';
-    contentContainer.style.paddingRight = '32px';
+    contentContainer.style.minWidth = '500px';
     contentContainer.style.boxSizing = 'border-box';
 
     // Lateral (logo/empresa)
     const sideContainer = document.createElement('div');
-    sideContainer.style.flex = '0 0 30%';
-    sideContainer.style.minWidth = '30%';
+    sideContainer.className = 'lkn-settings-side';
     sideContainer.style.display = 'flex';
     sideContainer.style.flexDirection = 'column';
+    sideContainer.style.minWidth = '400px';
     sideContainer.style.alignItems = 'center';
     sideContainer.style.justifyContent = 'flex-start';
-    sideContainer.style.background = '#f7f7f7';
-    sideContainer.style.borderRadius = '8px';
     sideContainer.style.padding = '32px 16px';
-    sideContainer.style.minHeight = '400px';
     sideContainer.style.boxSizing = 'border-box';
 
-    // Exemplo de conteúdo lateral
-    sideContainer.innerHTML = `
-      <img src="https://placehold.co/120x120?text=Logo" alt="Logo" style="margin-bottom: 24px; border-radius: 50%;">
-      <h2 style="margin: 0 0 12px 0; font-size: 1.3em;">Sua Empresa</h2>
-      <p style="color: #555; text-align: center;">Exemplo de texto institucional ou informações de contato.<br>Adapte como quiser!</p>
-    `;
+    const settingsCard = document.querySelector('#WooBetterLinkSettingsCard');
+    if (settingsCard) {
+      settingsCard.style.display = 'block'
+      // Move o componente para o sideContainer
+      sideContainer.appendChild(settingsCard);
+    }
 
     mainContainer.appendChild(contentContainer);
     mainContainer.appendChild(sideContainer);
@@ -54,7 +53,6 @@
     // Cria o menu de tabs
     const tabMenu = document.createElement('div');
     tabMenu.className = 'lkn-settings-tabs';
-    tabMenu.style.height = '40px';
     const tabLinks = [];
 
     subTitles.forEach((subTitle, idx) => {
@@ -83,50 +81,82 @@
     tables[0].parentNode.insertBefore(tabMenu, tables[0]);
 
     tables.forEach((table, idx) => {
-      table.style.width = 'auto';
+      table.style.width = '100%';
+
+      const ths = table.querySelectorAll('th');
+      ths.forEach(th => {
+        th.style.paddingTop = '68px';
+      })
 
       const rows = table.querySelectorAll('tr'); // Busca todas as linhas da tabela
       rows.forEach(row => {
-        // Lógica para '.titledesc'
-        const titleDesc = row.querySelector('.titledesc');
-        if (titleDesc) {
-          const pElement = document.createElement('p');
-          titleDesc.style.paddingLeft = '.5em';
-          titleDesc.appendChild(pElement);
-
-          const tipElement = titleDesc.querySelector('.woocommerce-help-tip');
-          if (tipElement) {
-            const contentElement = tipElement.getAttribute('aria-label');
-            if (contentElement) {
-              pElement.textContent = contentElement;
-              tipElement.remove();
-            }
-          }
-        }
-
         // Lógica para '.forminp'
         const forminp = row.querySelector('.forminp');
         if (forminp) {
-          const inputFields = forminp.querySelectorAll('input, select, textarea');
-          inputFields.forEach(inputField => {
+          forminp.style.display = 'flex'
+          forminp.style.flexDirection = 'column';
+          forminp.style.width = 'auto'
+          forminp.style.padding = '15px 25px';
+          forminp.style.backgroundColor = '#fff';
+          forminp.style.borderRadius = '8px';
+
+          let inputField = forminp.querySelector('input, select, textarea');
+          let labelElement = ''
+          if (inputField) {
             const headerComponent = document.createElement('div');
             headerComponent.className = 'woo-forminp-header';
+            headerComponent.style.paddingLeft = '4px';
+            headerComponent.style.minHeight = '44px';
 
-            // Insere o labelText no header
-            let labelElement = titleDesc.querySelector('label');
-            if (!labelElement) {
-              labelElement = titleDesc;
+            // Lógica para '.titledesc'
+            const titleDesc = row.querySelector('.titledesc');
+            if (titleDesc) {
+              const tipElement = titleDesc.querySelector('.woocommerce-help-tip');
+              if (tipElement) {
+                tipElement.remove();
+              }
+
+              const pElement = document.createElement('p');
+              pElement.style.fontWeight = 'normal';
+              pElement.style.color = '#646970';
+
+              if (inputField.getAttribute('data-desc-tip')) {
+                pElement.textContent = inputField.getAttribute('data-desc-tip');
+              }
+
+              titleDesc.style.paddingLeft = '.5em';
+
+              // Insere o labelText no header
+              labelElement = titleDesc.querySelector('label');
+              if (!labelElement) {
+                if (titleDesc.textContent && titleDesc.textContent !== '') {
+                  labelElement = document.createElement('label');
+                  labelElement.setAttribute('for', inputField.id || '');
+                  labelElement.textContent = titleDesc.textContent;
+                  titleDesc.replaceChildren(labelElement)
+                }
+              }
+
+              titleDesc.style.fontSize = '20px';
+              titleDesc.appendChild(pElement);
             }
+
             if (labelElement) {
-              const labelText = labelElement.textContent?.trim();
 
               // Cria o <p> para o texto do label
               const headerText = document.createElement('p');
-              headerText.textContent = labelText;
+              headerText.classList.add('woo-forminp-header-text');
+              headerText.style.fontWeight = 'bold';
+
+              headerText.textContent = labelElement.textContent.trim();
 
               // Cria o <span> logo abaixo do <hr>
               const spanElement = document.createElement('span');
-              spanElement.textContent = 'Descrição adicional aqui'; // Substitua pelo texto desejado
+
+              if (inputField.getAttribute('data-title-description')) {
+                spanElement.textContent = inputField.getAttribute('data-title-description');
+              }
+
               spanElement.style.color = '#888'; // Cinza suave
               spanElement.style.fontSize = '0.9em';
 
@@ -145,6 +175,24 @@
             // Cria o componente woo-forminp-body
             const bodyComponent = document.createElement('div');
             bodyComponent.className = 'woo-forminp-body';
+            bodyComponent.style.display = 'flex';
+            bodyComponent.style.flexDirection = 'column';
+            bodyComponent.style.justifyContent = 'center';
+            bodyComponent.style.padding = '20px 0px';
+            bodyComponent.style.minHeight = '136px';
+            bodyComponent.style.paddingLeft = '4px';
+
+            const descriptionField = inputField.closest('fieldset')?.querySelector('p.description');
+            if (descriptionField) {
+              descriptionField.remove()
+            }
+
+            const pDescriptionField = document.createElement('p');
+            pDescriptionField.className = 'description';
+
+            if (inputField.getAttribute('data-description')) {
+              pDescriptionField.textContent = inputField.getAttribute('data-description');
+            }
 
             // Move o input para o body
             if (
@@ -156,14 +204,45 @@
               inputField.style.width = '100%';
               inputField.style.maxWidth = '400px';
               inputField.style.boxSizing = 'border-box';
+              bodyComponent.appendChild(inputField);
+            } else if (inputField.tagName.toLowerCase() === 'input' && (inputField.type === 'checkbox' || inputField.type === 'radio')) {
+              const fieldSetField = inputField.closest('fieldset');
+              if (fieldSetField) {
+                bodyComponent.appendChild(fieldSetField);
+              } else {
+                bodyComponent.appendChild(inputField);
+              }
+            } else {
+              bodyComponent.appendChild(inputField);
             }
-            bodyComponent.appendChild(inputField);
 
-            // Insere os componentes no forminp
+            bodyComponent.appendChild(pDescriptionField);
+
+
+            const targetComponentNames = {
+              'woo_better_min_free_shipping_value': 'woo_better_enable_min_free_shipping',
+              'woo_better_hidden_cart_address': 'woo_better_calc_cep_required'
+            };
+
             forminp.innerHTML = ''; // Limpa o conteúdo original
             forminp.appendChild(headerComponent);
             forminp.appendChild(bodyComponent);
-          });
+
+            if (inputField.name && targetComponentNames[inputField.name]) {
+              const recieveComponentname = targetComponentNames[inputField.name];
+              const recieveComponent = document.querySelector(`[name="${recieveComponentname}"]`);
+              if (recieveComponent) {
+                const forminpRecieveBody = recieveComponent.closest('.woo-forminp-body');
+                if (forminpRecieveBody) {
+                  bodyComponent.style.minHeight = 'auto'
+                  forminp.style.padding = '15px 0px'
+                  forminp.style.marginTop = '10px';
+                  forminpRecieveBody.appendChild(forminp);
+                  row.remove()
+                }
+              }
+            }
+          }
         }
       });
 
@@ -172,13 +251,10 @@
       const descId = 'woo_better_calc_title_' + subtitleSlug + '-description';
       const descDiv = document.getElementById(descId);
       if (descDiv && !table.querySelector('.lkn-description-row')) {
-        // Cria o tr/td só se ainda não foi inserido
+        //Cria o tr / td só se ainda não foi inserido
         const tr = document.createElement('tr');
         tr.className = 'lkn-description-row';
-        const td = document.createElement('td');
-        td.colSpan = 2;
-        td.appendChild(descDiv);
-        tr.appendChild(td);
+        tr.appendChild(descDiv);
         let tbody = table.querySelector('tbody');
         if (!tbody) {
           tbody = document.createElement('tbody');

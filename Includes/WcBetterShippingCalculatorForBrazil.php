@@ -339,6 +339,33 @@ class WcBetterShippingCalculatorForBrazil
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 'all'
             );
+
+            wp_enqueue_style(
+                'wc-better-calc-style-admin-card-settings',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/css/WcBetterShippingCalculatorForBrazilAdminCard.css',
+                array(),
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                'all'
+            );
+
+            $versions = 'Woo Better v' . $this->version . ' | WooCommerce v' . WC()->version;
+            ;
+
+            wc_get_template(
+                'WcBetterShippingCalculatorForBrazilAdminSettingsCard.php',
+                array(
+                        'backgrounds' => array(
+                            'right' => plugin_dir_url(__FILE__) . 'assets/icons/backgroundCardRight.svg',
+                            'left' => plugin_dir_url(__FILE__) . 'assets/icons/backgroundCardLeft.svg'
+                        ),
+                        'logo' => plugin_dir_url(__FILE__) . 'assets/icons/linkNacionalLogo.webp',
+                        'stars' => plugin_dir_url(__FILE__) . 'assets/icons/stars.svg',
+                        'versions' => $versions
+
+                    ),
+                'woocommerce/WcBetterShippingCalculatorForBrazilAdminSettingsCard/',
+                plugin_dir_path(__FILE__) . 'assets/templates/'
+            );
         }
     }
 

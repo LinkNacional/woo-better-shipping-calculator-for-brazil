@@ -2,3 +2,35 @@
 #woo_better_calc_functions-description {
     max-width: 700px;
 }
+
+.lkn-settings-tabs {
+    height: 34px;
+    margin-bottom: 30px;
+    border-bottom: 1px solid #ddd;
+}
+
+.lkn-settings-tabs .nav-tab.nav-tab-active {
+    background-color: #fff;
+    color: #000;
+}
+
+.lkn-settings-tabs .nav-tab {
+    border: none;
+    color: #6b6b6b;
+    background-color: transparent;
+    height: 34px;
+    box-sizing: border-box;
+    padding: 5px 20px;
+}
+
+@media (max-width: 1250px) {
+
+    /* Estilos para telas maiores que 1193px */
+    .lkn-settings-side {
+        width: 100%;
+    }
+
+    .lkn-settings-content {
+        min-width: 0px !important;
+    }
+}
