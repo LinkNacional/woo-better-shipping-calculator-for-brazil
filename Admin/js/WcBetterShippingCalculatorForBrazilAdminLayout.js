@@ -118,7 +118,7 @@
 
               const pElement = document.createElement('p');
               pElement.style.fontWeight = 'normal';
-              pElement.style.color = '#646970';
+              pElement.style.color = '#343B45';
 
               if (inputField.getAttribute('data-desc-tip')) {
                 pElement.textContent = inputField.getAttribute('data-desc-tip');
@@ -143,10 +143,13 @@
 
             if (labelElement) {
 
+              labelElement.style.color = '#121519'
+
               // Cria o <p> para o texto do label
               const headerText = document.createElement('p');
               headerText.classList.add('woo-forminp-header-text');
               headerText.style.fontWeight = 'bold';
+              headerText.style.color = '#121519'
 
               headerText.textContent = labelElement.textContent.trim();
 
@@ -157,7 +160,7 @@
                 spanElement.textContent = inputField.getAttribute('data-title-description');
               }
 
-              spanElement.style.color = '#888'; // Cinza suave
+              spanElement.style.color = '#343B45'; // Cinza suave
               spanElement.style.fontSize = '0.9em';
 
               // Cria o <hr> com uma linha cinza clara
@@ -189,6 +192,7 @@
 
             const pDescriptionField = document.createElement('p');
             pDescriptionField.className = 'description';
+            pDescriptionField.style.color = '#8F8F8F';
 
             if (inputField.getAttribute('data-description')) {
               pDescriptionField.textContent = inputField.getAttribute('data-description');
@@ -204,6 +208,7 @@
               inputField.style.width = '100%';
               inputField.style.maxWidth = '400px';
               inputField.style.boxSizing = 'border-box';
+              inputField.style.color = '#2C3338'
               bodyComponent.appendChild(inputField);
             } else if (inputField.tagName.toLowerCase() === 'input' && (inputField.type === 'checkbox' || inputField.type === 'radio')) {
               const fieldSetField = inputField.closest('fieldset');

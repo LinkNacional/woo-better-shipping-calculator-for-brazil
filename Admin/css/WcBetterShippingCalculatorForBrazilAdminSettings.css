@@ -11,12 +11,12 @@
 
 .lkn-settings-tabs .nav-tab.nav-tab-active {
     background-color: #fff;
-    color: #000;
+    color: #3C434A;
 }
 
 .lkn-settings-tabs .nav-tab {
     border: none;
-    color: #6b6b6b;
+    color: #9e9e9e;
     background-color: transparent;
     height: 34px;
     box-sizing: border-box;

@@ -325,8 +325,16 @@ class WcBetterShippingCalculatorForBrazil
             sanitize_text_field(wp_unslash($_GET['tab'])) === 'wc-better-calc'
         ) {
             wp_enqueue_script(
-                'wc-better-calc-footer-message',
+                'wc-better-calc-settings-layout',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/js/WcBetterShippingCalculatorForBrazilAdminLayout.js',
+                array(),
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                true
+            );
+
+            wp_enqueue_script(
+                'wc-better-calc-footer-message',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/js/WcBetterShippingCalculatorForBrazilAdminSettings.js',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true
