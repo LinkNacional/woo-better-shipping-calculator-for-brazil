@@ -17,18 +17,19 @@
     top: 120px;
 }
 
-#lknCieloWoocommerceDivLogo {
+#lknWooBetterDivLogo {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    font-family: inter;
     font-weight: 500;
     margin-bottom: 18px !important;
 }
 
-#lknCieloWoocommerceDivLogo p {
+#lknWooBetterDivLogo p {
     margin: 0;
     font-size: x-small;
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
 }
 
 #WooBetterDivContent {
@@ -47,7 +48,8 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
-    font-family: 'Inter';
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
 }
 
 #WooBetterLinkSettingsCard a {
@@ -62,7 +64,8 @@
     display: flex;
     align-items: center;
     gap: 2px;
-    font-size: small;
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
 }
 
 #WooBetterDivLinks div a {
@@ -89,10 +92,23 @@
 #WooBetterStarsDiv p {
     margin: 0;
     font-size: x-small;
-    font-family: 'Inter';
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
     width: 100%;
 }
 
 #WooBetterStarsDiv img {
     height: 10px;
+}
+
+.lkn-stars {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: fit-content;
+    width: fit-content;
+    padding: 0px;
+    margin: 0px;
+    color: #DAE300;
+    font-size: 12px;
 }

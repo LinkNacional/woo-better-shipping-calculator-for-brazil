@@ -26,7 +26,8 @@
     sideContainer.className = 'lkn-settings-side';
     sideContainer.style.display = 'flex';
     sideContainer.style.flexDirection = 'column';
-    sideContainer.style.minWidth = '400px';
+    sideContainer.style.width = '400px';
+    sideContainer.style.minWidth = '300px';
     sideContainer.style.alignItems = 'center';
     sideContainer.style.justifyContent = 'flex-start';
     sideContainer.style.padding = '32px 16px';
@@ -98,6 +99,7 @@
           forminp.style.width = 'auto'
           forminp.style.padding = '15px 25px';
           forminp.style.backgroundColor = '#fff';
+          forminp.style.border = '1px solid #dfdfdf'
           forminp.style.borderRadius = '8px';
 
           let inputField = forminp.querySelector('input, select, textarea');
@@ -105,7 +107,6 @@
           if (inputField) {
             const headerComponent = document.createElement('div');
             headerComponent.className = 'woo-forminp-header';
-            headerComponent.style.paddingLeft = '4px';
             headerComponent.style.minHeight = '44px';
 
             // Lógica para '.titledesc'
@@ -149,7 +150,8 @@
               const headerText = document.createElement('p');
               headerText.classList.add('woo-forminp-header-text');
               headerText.style.fontWeight = 'bold';
-              headerText.style.color = '#121519'
+              headerText.style.color = '#121519';
+              headerText.style.paddingLeft = '6px';
 
               headerText.textContent = labelElement.textContent.trim();
 
@@ -162,6 +164,7 @@
 
               spanElement.style.color = '#343B45'; // Cinza suave
               spanElement.style.fontSize = '0.9em';
+              spanElement.style.paddingLeft = '6px';
 
               // Cria o <hr> com uma linha cinza clara
               const hrElement = document.createElement('hr');
@@ -182,8 +185,8 @@
             bodyComponent.style.flexDirection = 'column';
             bodyComponent.style.justifyContent = 'center';
             bodyComponent.style.padding = '20px 0px';
-            bodyComponent.style.minHeight = '136px';
-            bodyComponent.style.paddingLeft = '4px';
+            bodyComponent.style.minHeight = '50px';
+            bodyComponent.style.paddingLeft = '6px';
 
             const descriptionField = inputField.closest('fieldset')?.querySelector('p.description');
             if (descriptionField) {
@@ -240,8 +243,13 @@
                 const forminpRecieveBody = recieveComponent.closest('.woo-forminp-body');
                 if (forminpRecieveBody) {
                   bodyComponent.style.minHeight = 'auto'
-                  forminp.style.padding = '15px 0px'
+                  forminp.style.padding = '0px';
+                  forminp.style.margin = '0px';
+                  forminp.style.paddingTop = '15px'
                   forminp.style.marginTop = '10px';
+                  forminp.style.border = 'none';
+                  forminp.style.marginLeft = '-6px';
+
                   forminpRecieveBody.appendChild(forminp);
                   row.remove()
                 }

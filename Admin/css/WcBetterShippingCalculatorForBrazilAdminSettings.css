@@ -25,9 +25,8 @@
 
 @media (max-width: 1250px) {
 
-    /* Estilos para telas maiores que 1193px */
     .lkn-settings-side {
-        width: 100%;
+        width: 100% !important;
     }
 
     .lkn-settings-content {
