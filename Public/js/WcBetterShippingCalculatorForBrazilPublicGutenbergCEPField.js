@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     if (!requestRepeated) {
                         requestRepeated = true
-                        const apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+                        const apiUrl = wpApiSettings.root + `lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
 
                         const controller = new AbortController();
                         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', function () {
     async function batchRequest() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
-        const apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+        const apiUrl = wpApiSettings.root + `lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
 
         addressSummary.addEventListener('click', blockInteraction, true);
         addressSummary.classList.add('lkn-wc-shipping-address-summary');
@@ -507,7 +507,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         wooNonce = wcBlocksMiddlewareConfig.storeApiNonce
                     }
 
-                    fetch('https://wordpress.local/wp-json/wc/store/v1/batch?_locale=site', {
+                    fetch(wpApiSettings.root + '/wc/store/v1/batch?_locale=site', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
