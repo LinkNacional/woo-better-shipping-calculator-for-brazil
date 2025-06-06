@@ -192,7 +192,7 @@ class WcBetterShippingCalculatorForBrazil
 
                 $rates['free_shipping_min'] = new \WC_Shipping_Rate(
                     'free_shipping_min',
-                    __('Free Shipping', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Frete Gratuito', 'woo-better-shipping-calculator-for-brazil'),
                     0,
                     array(),
                     'free_shipping'

@@ -27,12 +27,12 @@
 
 		if (minValue <= 0) {
 			percent = 100;
-			message = 'Congratulations! You have free shipping!';
+			message = 'Parabéns! Você tem frete grátis!';
 		} else {
 			percent = Math.min((cartTotal / minValue) * 100, 100);
 			message = cartTotal >= minValue
-				? 'Congratulations! You have free shipping!'
-				: 'Add R$ ' + (minValue - cartTotal).toFixed(2) + ' more for free shipping!';
+				? 'Parabéns! Você tem frete grátis!'
+				: 'Falta(m) apenas mais ' + (minValue - cartTotal).toFixed(2) + ' em compra para FRETE GRÀTIS';
 		}
 
 		let progressBar = document.querySelector('.wc-better-shipping-progress-bar');
