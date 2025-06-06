@@ -5,7 +5,7 @@ on:
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
-  TITLE: "Remoção do campo bairro"
+  TITLE: "Opção para definir um valor mínimo para frete gratuito e novo layout"
   VERSION: "4.2.0"
 
 jobs:
