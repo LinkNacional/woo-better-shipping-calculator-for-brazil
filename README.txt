@@ -87,6 +87,9 @@ add_filter(
 
 == Changelog ==
 
+= 4.2.0 - 06/06/2025 =
+* Addition: Option to set a minimum cart value for free shipping.
+
 = 4.1.6 - 02/06/2025 =
 * Adjustment: fix in the address auto-fill field.
 
