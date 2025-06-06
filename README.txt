@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.8
 Requires PHP: 7.3
-Stable tag: 4.1.6
+Stable tag: 4.2.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -27,6 +27,11 @@ Improved shipping calculator for Brazilian stores, making it easier and improvin
 - Number field (complementing the address via `checkbox` or `text-input`).
 - Hiding address fields.
 - Compatibility with Legacy and Blocks (Gutenberg) mode.
+
+> Additional Features:
+
+- Option to set a minimum cart value for free shipping.
+- Fully customizable through the plugin settings.
 
 Some of these features can be modified or disabled using hooks. More details in the [Frequently Asked Questions (FAQ)](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
 
@@ -57,6 +62,10 @@ If you find any errors or have suggestions, open an issue in our [GitHub reposit
 4. New cart screen using the WooCommerce shortcode.
 6. Number field using the Gutenberg block editor.
 7. Number field using the WooCommerce shortcode.
+8. Progress bar in Gutenberg cart.
+9. Progress bar in Gutenberg checkout.
+10. Progress bar in Legacy cart.
+11. Progress bar in Legacy checkout.
 
 == Frequently Asked Questions ==
 
@@ -81,6 +90,9 @@ add_filter(
 );
 
 == Changelog ==
+
+= 4.2.0 - 06/06/2025 =
+* Addition: Option to set a minimum cart value for free shipping.
 
 = 4.1.6 - 02/06/2025 =
 * Adjustment: fix in the address auto-fill field.

@@ -1,3 +1,18 @@
+# 4.2.0 - 06/06/25
+* Adição: Opção para definir um valor mínimo para frete gratuito.
+
+![Página de carrinho - Legacy](https://github.com/user-attachments/assets/60804b1f-6316-4727-a140-a97f84f1e2c7)
+
+![Página de checkout - Legacy](https://github.com/user-attachments/assets/8a2507d3-20ad-4f5c-b5e6-28f237fa5ad0)
+
+![Página de carrinho - Gutenberg](https://github.com/user-attachments/assets/018a1cce-2e7a-4d8a-a3f5-34844332dacb)
+
+![Página de checkout - Gutenberg](https://github.com/user-attachments/assets/20afcdb5-ddf2-42f8-b19c-59d46e71f756)
+
+- Novo layout para página de configuração do plugin:
+
+![image](https://github.com/user-attachments/assets/d7494318-78f5-4bc6-9d59-832113f3a3a5)
+
 # 4.1.6 - 02/06/25
 * Ajuste: correção no campo de autopreenchimento de endereço.
 
