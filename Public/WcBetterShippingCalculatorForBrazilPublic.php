@@ -162,7 +162,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
         }
 
-        if ((has_block('woocommerce/checkout') || has_block('woocommerce/cart')) && $enable_min === 'yes') {
+        if ((has_block('woocommerce/checkout') || has_block('woocommerce/cart') || (function_exists('is_cart') && is_cart()) ||  (function_exists('is_checkout') && is_checkout())) && $enable_min === 'yes') {
             wp_enqueue_script(
                 $this->plugin_name . '-progress-bar',
                 plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilProgressBar.js',
