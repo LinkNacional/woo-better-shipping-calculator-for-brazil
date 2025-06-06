@@ -28,6 +28,11 @@ Improved shipping calculator for Brazilian stores, making it easier and improvin
 - Hiding address fields.
 - Compatibility with Legacy and Blocks (Gutenberg) mode.
 
+> Additional Features:
+
+- Option to set a minimum cart value for free shipping.
+- Fully customizable through the plugin settings.
+
 Some of these features can be modified or disabled using hooks. More details in the [Frequently Asked Questions (FAQ)](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
 
 = Help and Support =

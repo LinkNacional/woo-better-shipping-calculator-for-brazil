@@ -16,25 +16,25 @@ if (!defined('ABSPATH')) {
     <div id="WooBetterDivContent">
         <div id="WooBetterDivLinks">
             <div>
-                <a target="_blank" href=<?php echo esc_url('https://www.linknacional.com.br/wordpress/woocommerce/rede/?utm=plugin'); ?>>
-                    <b>•</b><?php echo esc_attr_e('Documentation', 'lkn-wc-gateway-cielo'); ?>
+                <a target="_blank" href=<?php echo esc_url('https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil/'); ?>>
+                    <b>•</b><?php echo esc_attr_e('Documentation', 'woo-better-shipping-calculator-for-brazil'); ?>
                 </a>
                 <a target="_blank" href=<?php echo esc_url('https://www.linknacional.com.br/wordpress/planos/?utm=plugin'); ?>>
-                    <b>•</b><?php echo esc_attr_e('WordPress VIP', 'lkn-wc-gateway-cielo'); ?>
+                    <b>•</b><?php echo esc_attr_e('WordPress VIP', 'woo-better-shipping-calculator-for-brazil'); ?>
                 </a>
             </div>
             <div>
                 <a target="_blank" href=<?php echo esc_url('https://t.me/wpprobr'); ?>>
-                    <b>•</b><?php echo esc_attr_e('Support via Telegram', 'lkn-wc-gateway-cielo'); ?>
+                    <b>•</b><?php echo esc_attr_e('Support via Telegram', 'woo-better-shipping-calculator-for-brazil'); ?>
                 </a>
-                <a target="_blank" href=<?php echo esc_url('https://cliente.linknacional.com.br/solicitar/wordpress-woo-gratis/?utm=plugin'); ?>>
-                    <b>•</b><?php echo esc_attr_e('WP Hosting', 'lkn-wc-gateway-cielo'); ?>
+                <a target="_blank" href=<?php echo esc_url('https://wordpress.org/plugins/woo-better-shipping-calculator-for-brazil/'); ?>>
+                    <b>•</b><?php echo esc_attr_e('WP Plugin', 'woo-better-shipping-calculator-for-brazil'); ?>
                 </a>
             </div>
         </div>
         <div id="WooBetterStarsDiv">
-            <a target="_blank" href=<?php echo esc_url('https://wordpress.org/support/plugin/lkn-wc-gateway-cielo/reviews/#new-post'); ?>>
-                <p><?php echo esc_attr_e('Rate Plugin', 'lkn-wc-gateway-cielo'); ?></p>
+            <a target="_blank" href=<?php echo esc_url('https://br.wordpress.org/plugins/woo-better-shipping-calculator-for-brazil/#reviews'); ?>>
+                <p><?php echo esc_attr_e('Rate Plugin', 'woo-better-shipping-calculator-for-brazil'); ?></p>
                 <div>
                     <?php //phpcs:disable PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage ?>
                     <img src=<?php echo esc_url($stars); ?> alt="Logo">

@@ -39,6 +39,11 @@ Calculadora de frete melhorada para lojas brasileiras, facilitando e melhorando 
 - Ocultação de campos de endereço.
 - Compatibilidade com o modo Legacy e Blocos (Gutenberg).
 
+> Funcionalidades Adicionais:
+
+- Opção para definir um valor mínimo no carrinho para frete grátis.
+- Totalmente personalizável através das configurações do plugin.
+
 ## Como instalar?
 
 1. Acesse o painel de administração do WordPress e vá para **Plugins > Adicionar Novo**.
