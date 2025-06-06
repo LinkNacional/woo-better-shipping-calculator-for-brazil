@@ -32,7 +32,7 @@
 			percent = Math.min((cartTotal / minValue) * 100, 100);
 			message = cartTotal >= minValue
 				? 'Parabéns! Você tem frete grátis!'
-				: 'Falta(m) apenas mais ' + (minValue - cartTotal).toFixed(2) + ' em compra para FRETE GRÀTIS';
+				: 'Falta(m) apenas mais R$' + (minValue - cartTotal).toFixed(2) + ' em compra para FRETE GRÀTIS';
 		}
 
 		let progressBar = document.querySelector('.wc-better-shipping-progress-bar');
