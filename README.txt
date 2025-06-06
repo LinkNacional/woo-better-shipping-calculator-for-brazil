@@ -62,6 +62,10 @@ If you find any errors or have suggestions, open an issue in our [GitHub reposit
 4. New cart screen using the WooCommerce shortcode.
 6. Number field using the Gutenberg block editor.
 7. Number field using the WooCommerce shortcode.
+8. Progress bar in Gutenberg cart.
+9. Progress bar in Gutenberg checkout.
+10. Progress bar in Legacy cart.
+11. Progress bar in Legacy checkout.
 
 == Frequently Asked Questions ==
 

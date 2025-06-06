@@ -73,6 +73,18 @@ Calculadora de frete melhorada para lojas brasileiras, facilitando e melhorando 
 
 <img src="Includes/assets/images/gutenbergNumberField.png" alt="Campo número no checkout do shortcode" width="600" />
 
+### Barra de progresso em Legacy(Cart / Checkout):
+
+<img src="Includes/assets/images/progressBarInLegacyCart.png" alt="Barra de progresso em carrinho legacy" width="600" />
+
+<img src="Includes/assets/images/progressBarInLegacyCheckout.png" alt="Barra de progresso em checkout legacy" width="600" />
+
+### Barra de progresso em Gutenberg(Cart / Checkout):
+
+<img src="Includes/assets/images/progressBarInGutenbergCart.png" alt="Barra de progresso em carrinho do Gutenberg" width="600" />
+
+<img src="Includes/assets/images/progressBarInGutenbergCheckout.png" alt="Barra de progresso em checkout do Gutenberg" width="600" />
+
 
 **OBS:** Os dados utilizados nas screenshots são meramente ilustrativos.
 
