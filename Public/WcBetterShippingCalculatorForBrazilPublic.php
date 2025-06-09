@@ -143,6 +143,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     wp_localize_script($this->plugin_name . '-gutenberg-cep-field', 'WooBetterData', [
                         'wooVersion' => $woo_version_type,
                         'wooHiddenAddress' => $hidden_address,
+                        'wooUrl' => home_url()
                     ]);
                 }
             }
