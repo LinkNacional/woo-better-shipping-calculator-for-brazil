@@ -47,10 +47,14 @@ if (!defined('ABSPATH')) {
             </div>
             <div class="WooBetterContactLinks">
                 <a href=<?php echo esc_url('https://t.me/wpprobr'); ?> target="_blank">
+                    <?php //phpcs:disable PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage ?>
                     <img src="<?php echo esc_url($whatsapp); ?>" alt="Whatsapp Icon" class="WooBetterContactIcon">
+                    <?php //phpcs:enable ?>
                 </a>
                 <a href=<?php echo esc_url('https://t.me/wpprobr'); ?> target="_blank">
+                    <?php //phpcs:disable PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage ?>
                     <img src="<?php echo esc_url($telegram); ?>" alt="Telegram Icon" class="WooBetterContactIcon">
+                    <?php //phpcs:enable ?>
                 </a>
             </div>
         </div>
