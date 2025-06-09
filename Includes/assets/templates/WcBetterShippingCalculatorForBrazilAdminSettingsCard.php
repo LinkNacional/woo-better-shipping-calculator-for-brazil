@@ -32,17 +32,27 @@ if (!defined('ABSPATH')) {
                 </a>
             </div>
         </div>
-        <div id="WooBetterStarsDiv">
-            <a target="_blank" href=<?php echo esc_url('https://br.wordpress.org/plugins/woo-better-shipping-calculator-for-brazil/#reviews'); ?>>
-                <p><?php echo esc_attr_e('Rate Plugin', 'woo-better-shipping-calculator-for-brazil'); ?></p>
-                <div style="display: flex;">
-                    <span class="dashicons dashicons-star-filled lkn-stars"></span>
-                    <span class="dashicons dashicons-star-filled lkn-stars"></span>
-                    <span class="dashicons dashicons-star-filled lkn-stars"></span>
-                    <span class="dashicons dashicons-star-filled lkn-stars"></span>
-                    <span class="dashicons dashicons-star-filled lkn-stars"></span>
-                </div>
-            </a>
+        <div class="WooBetterSupportLinks">
+            <div id="WooBetterStarsDiv">
+                <a target="_blank" href=<?php echo esc_url('https://br.wordpress.org/plugins/woo-better-shipping-calculator-for-brazil/#reviews'); ?>>
+                    <p><?php echo esc_attr_e('Rate Plugin', 'woo-better-shipping-calculator-for-brazil'); ?></p>
+                    <div style="display: flex;">
+                        <span class="dashicons dashicons-star-filled lkn-stars"></span>
+                        <span class="dashicons dashicons-star-filled lkn-stars"></span>
+                        <span class="dashicons dashicons-star-filled lkn-stars"></span>
+                        <span class="dashicons dashicons-star-filled lkn-stars"></span>
+                        <span class="dashicons dashicons-star-filled lkn-stars"></span>
+                    </div>
+                </a>
+            </div>
+            <div class="WooBetterContactLinks">
+                <a href=<?php echo esc_url('https://t.me/wpprobr'); ?> target="_blank">
+                    <img src="<?php echo esc_url($whatsapp); ?>" alt="Whatsapp Icon" class="WooBetterContactIcon">
+                </a>
+                <a href=<?php echo esc_url('https://t.me/wpprobr'); ?> target="_blank">
+                    <img src="<?php echo esc_url($telegram); ?>" alt="Telegram Icon" class="WooBetterContactIcon">
+                </a>
+            </div>
         </div>
     </div>
 </div>

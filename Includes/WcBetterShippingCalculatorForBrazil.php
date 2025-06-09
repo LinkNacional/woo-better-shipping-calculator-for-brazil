@@ -367,6 +367,8 @@ class WcBetterShippingCalculatorForBrazil
                             'left' => plugin_dir_url(__FILE__) . 'assets/icons/backgroundCardLeft.svg'
                         ),
                         'logo' => plugin_dir_url(__FILE__) . 'assets/icons/linkNacionalLogo.webp',
+                        'whatsapp' => plugin_dir_url(__FILE__) . 'assets/icons/whatsapp.svg',
+                        'telegram' => plugin_dir_url(__FILE__) . 'assets/icons/telegram.svg',
                         'stars' => plugin_dir_url(__FILE__) . 'assets/icons/stars.svg',
                         'versions' => $versions
 

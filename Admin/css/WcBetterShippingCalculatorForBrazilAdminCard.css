@@ -101,6 +101,25 @@
     height: 10px;
 }
 
+.WooBetterSupportLinks {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.WooBetterContactLinks {
+    display: flex;
+    gap: 4px;
+}
+
+.WooBetterContactIcon {
+    width: 24px;
+    height: 24px;
+    filter: brightness(0) invert(1);
+}
+
 .lkn-stars {
     display: flex;
     align-items: center;
