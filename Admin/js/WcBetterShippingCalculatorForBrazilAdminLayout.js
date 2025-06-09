@@ -89,7 +89,9 @@
         th.setAttribute('scope', 'row');
         const label = document.createElement('label');
         label.setAttribute('for', descId);
-        label.textContent = subtitleSlug;
+        const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+        const capitalizedSubtitleSlug = capitalize(subtitleSlug);
+        label.textContent = capitalizedSubtitleSlug
         th.appendChild(label);
 
         const td = document.createElement('td');
