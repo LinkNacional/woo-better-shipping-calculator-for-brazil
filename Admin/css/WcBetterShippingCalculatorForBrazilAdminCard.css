@@ -10,7 +10,7 @@
     display: flex;
     margin: 0px !important;
     flex-direction: column;
-    padding: 15px 45px 15px 20px;
+    padding: 15px 25px 15px 25px;
     box-sizing: border-box;
     gap: 25px;
     position: sticky;
@@ -107,6 +107,11 @@
     width: 100%;
     justify-content: space-between;
     align-items: center;
+}
+
+.WooBetterStars {
+    display: flex;
+    width: 100%;
 }
 
 .WooBetterContactLinks {

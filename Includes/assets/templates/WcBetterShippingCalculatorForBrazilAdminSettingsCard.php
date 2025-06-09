@@ -35,8 +35,8 @@ if (!defined('ABSPATH')) {
         <div class="WooBetterSupportLinks">
             <div id="WooBetterStarsDiv">
                 <a target="_blank" href=<?php echo esc_url('https://br.wordpress.org/plugins/woo-better-shipping-calculator-for-brazil/#reviews'); ?>>
-                    <p><?php echo esc_attr_e('Rate Plugin', 'woo-better-shipping-calculator-for-brazil'); ?></p>
-                    <div style="display: flex;">
+                    <p><?php echo esc_attr_e('Avaliar o plugin', 'woo-better-shipping-calculator-for-brazil'); ?></p>
+                    <div class="WooBetterStars">
                         <span class="dashicons dashicons-star-filled lkn-stars"></span>
                         <span class="dashicons dashicons-star-filled lkn-stars"></span>
                         <span class="dashicons dashicons-star-filled lkn-stars"></span>
