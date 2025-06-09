@@ -5,8 +5,8 @@ on:
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
-  TITLE: "Opção para definir um valor mínimo para frete gratuito e novo layout"
-  VERSION: "4.2.0"
+  TITLE: "Correção na URL dinâmica, barra de progresso e melhorias de performance"
+  VERSION: "4.2.1"
 
 jobs:
   send-email:

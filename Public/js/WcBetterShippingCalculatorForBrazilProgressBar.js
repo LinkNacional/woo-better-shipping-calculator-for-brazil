@@ -16,7 +16,22 @@
 			el = document.querySelector('.cart-subtotal .woocommerce-Price-amount.amount bdi');
 		}
 		if (!el) return 0;
-		let value = el.textContent.replace(/[^\d,.-]/g, '').replace('.', '').replace(',', '.');
+
+		// Obtém as configurações de moeda do WooCommerce
+		const currencySettings = window.wcSettings?.currency || {};
+		const decimalSeparator = currencySettings.decimalSeparator || ',';
+		const thousandSeparator = currencySettings.thousandSeparator || '.';
+
+		// Força os separadores padrão se forem diferentes
+		const effectiveDecimalSeparator = decimalSeparator === '.' || decimalSeparator === ',' ? decimalSeparator : ',';
+		const effectiveThousandSeparator = thousandSeparator === '.' || thousandSeparator === ',' ? thousandSeparator : '.';
+
+		// Converte o valor do texto para número
+		let value = el.textContent
+			.replace(new RegExp(`\\${effectiveThousandSeparator}`, 'g'), '') // Remove o separador de milhar
+			.replace(new RegExp(`\\${effectiveDecimalSeparator}`), '.') // Substitui o separador decimal por '.'
+			.replace(/[^\d.-]/g, ''); // Remove caracteres não numéricos
+
 		return parseFloat(value) || 0;
 	}
 
@@ -32,7 +47,7 @@
 			percent = Math.min((cartTotal / minValue) * 100, 100);
 			message = cartTotal >= minValue
 				? 'Parabéns! Você tem frete grátis!'
-				: 'Falta(m) apenas mais R$' + (minValue - cartTotal).toFixed(2) + ' em compra para FRETE GRÀTIS';
+				: 'Falta(m) apenas mais R$' + (minValue - cartTotal).toFixed(2) + ' para obter FRETE GRÀTIS';
 		}
 
 		let progressBar = document.querySelector('.wc-better-shipping-progress-bar');
@@ -71,7 +86,7 @@
 			progressBarContainer.appendChild(progressBarWrapper);
 			progressBarContainer.appendChild(progressBarText);
 
-			let targets = document.querySelectorAll('.cart_totals.calculated_shipping h2');
+			let targets = document.querySelectorAll('.cart-collaterals .cart_totals h2');
 			if (targets.length > 0) {
 				progressBarContainer.style.padding = '0px';
 				targets.forEach(function (target) {

@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', function () {
     let stateData = ''
     let cityData = ''
 
-    let responseText = '';
     let blockObserver = null
     let enableRequest = null
 
@@ -242,7 +241,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     if (!requestRepeated) {
                         requestRepeated = true
-                        const apiUrl = wpApiSettings.root + `lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+                        let apiUrl = ''
+                        if (typeof wpApiSettings !== 'undefined' && wpApiSettings.root) {
+                            apiUrl = wpApiSettings.root + `lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+                        } else {
+                            if (typeof WooBetterData !== 'undefined' && WooBetterData.wooUrl !== '') {
+                                apiUrl = WooBetterData.wooUrl + `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+                            } else {
+                                apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+                            }
+                        }
 
                         const controller = new AbortController();
                         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos
@@ -291,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                     }
                                 } else {
                                     alert('Erro: ' + data.message);
+                                    postcodeError = true;
                                     removeLoading(addressSummary);
                                     addressSummary.removeEventListener('click', blockInteraction, true);
                                     if (iconSummary) {
@@ -442,7 +451,15 @@ document.addEventListener('DOMContentLoaded', function () {
     async function batchRequest() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
-        const apiUrl = wpApiSettings.root + `lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+        if (typeof wpApiSettings !== 'undefined' && wpApiSettings.root) {
+            apiUrl = wpApiSettings.root + `lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+        } else {
+            if (typeof WooBetterData !== 'undefined' && WooBetterData.wooUrl !== '') {
+                apiUrl = WooBetterData.wooUrl + `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+            } else {
+                apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcodeValue}`;
+            }
+        }
 
         addressSummary.addEventListener('click', blockInteraction, true);
         addressSummary.classList.add('lkn-wc-shipping-address-summary');
@@ -507,7 +524,20 @@ document.addEventListener('DOMContentLoaded', function () {
                         wooNonce = wcBlocksMiddlewareConfig.storeApiNonce
                     }
 
-                    fetch(wpApiSettings.root + '/wc/store/v1/batch?_locale=site', {
+                    let batchUrl = ''
+
+                    if (typeof wpApiSettings !== 'undefined' && wpApiSettings.root) {
+                        batchUrl = wpApiSettings.root + `/wc/store/v1/batch?_locale=site`;
+                    } else {
+                        batchUrl = window.location.origin + `/wp-json/wc/store/v1/batch?_locale=site`;
+                        if (typeof WooBetterData !== 'undefined' && WooBetterData.wooUrl !== '') {
+                            apiUrl = WooBetterData.wooUrl + `/wp-json/wc/store/v1/batch?_locale=site`;
+                        } else {
+                            apiUrl = `/wp-json/wc/store/v1/batch?_locale=site`;
+                        }
+                    }
+
+                    fetch(batchUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -558,6 +588,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else {
                     alert('Erro: ' + data.message);
                     removeLoading(addressSummary);
+                    postcodeError = true;
                     addressSummary.removeEventListener('click', blockInteraction, true);
                     if (iconSummary) {
                         iconSummary.removeEventListener('click', blockInteraction, true);

@@ -6,7 +6,7 @@ on:
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
   PHP_VERSION: "7.4"
-  DEPLOY_TAG: "4.2.0"
+  DEPLOY_TAG: "4.2.1"
 
 jobs:
   deploy-to-wp:

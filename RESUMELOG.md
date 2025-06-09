@@ -1,3 +1,8 @@
+# 4.2.1 - 09/06/25
+* Correção: Separador de decimal.
+* Correção: URL dinâmica.
+* Correção: Barra de progresso na página legacy do carrinho.
+
 # 4.2.0 - 06/06/25
 * Adição: Opção para definir um valor mínimo para frete gratuito.
 

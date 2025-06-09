@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.8
 Requires PHP: 7.3
-Stable tag: 4.2.0
+Stable tag: 4.2.1
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -90,6 +90,11 @@ add_filter(
 );
 
 == Changelog ==
+
+= 4.2.1 - 09/06/2025 =
+* Fix: Decimal separator.
+* Fix: Dynamic URL.
+* Fix: Progress bar on the legacy cart page.
 
 = 4.2.0 - 06/06/2025 =
 * Addition: Option to set a minimum cart value for free shipping.
