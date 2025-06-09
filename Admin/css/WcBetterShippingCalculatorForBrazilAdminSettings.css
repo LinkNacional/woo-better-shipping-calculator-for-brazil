@@ -4,7 +4,9 @@
 }
 
 .lkn-settings-tabs {
-    height: 34px;
+    display: flex;
+    flex-wrap: wrap;
+    min-height: 34px;
     margin-bottom: 30px;
     border-bottom: 1px solid #ddd;
 }
@@ -27,9 +29,18 @@
 
     .lkn-settings-side {
         width: 100% !important;
+        padding: 32px 0px !important;
     }
 
     .lkn-settings-content {
         min-width: 0px !important;
+    }
+
+    .lkn-settings-tabs {
+        margin-bottom: 0px !important;
+    }
+
+    .titledesc {
+        padding-top: 40px !important;
     }
 }
