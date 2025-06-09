@@ -1,0 +1,139 @@
+#WooBetterLinkSettingsCard {
+    color: white;
+    max-width: 370px;
+    width: 100%;
+    height: fit-content;
+    background-color: #121519;
+    border-radius: 10px;
+    background-position: right bottom, left top calc(15px);
+    background-repeat: no-repeat;
+    display: flex;
+    margin: 0px !important;
+    flex-direction: column;
+    padding: 15px 25px 15px 25px;
+    box-sizing: border-box;
+    gap: 25px;
+    position: sticky;
+    top: 120px;
+}
+
+#lknWooBetterDivLogo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-weight: 500;
+    margin-bottom: 18px !important;
+}
+
+#lknWooBetterDivLogo p {
+    margin: 0;
+    font-size: x-small;
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
+}
+
+#WooBetterDivContent {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#WooBetterDivLinks {
+    display: flex;
+    justify-content: space-between;
+    padding-right: 30px;
+    gap: 6%;
+}
+
+#WooBetterDivLinks div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
+}
+
+#WooBetterLinkSettingsCard a {
+    text-decoration: none;
+    color: inherit;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
+}
+
+#WooBetterDivLinks div a {
+    white-space: nowrap;
+}
+
+#WooBetterDivLinks a b {
+    color: #D1D838;
+    font-size: small;
+}
+
+#WooBetterLinkSettingsCard img {
+    height: 25px;
+}
+
+#WooBetterStarsDiv {
+    width: fit-content;
+}
+
+#WooBetterStarsDiv a {
+    flex-direction: column;
+}
+
+#WooBetterStarsDiv p {
+    margin: 0;
+    font-size: x-small;
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
+    width: 100%;
+}
+
+#WooBetterStarsDiv img {
+    height: 10px;
+}
+
+.WooBetterSupportLinks {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.WooBetterStars {
+    display: flex;
+    width: 100%;
+}
+
+.WooBetterContactLinks {
+    display: flex;
+    gap: 4px;
+}
+
+.WooBetterContactIcon {
+    width: 24px;
+    height: 24px;
+    filter: brightness(0) invert(1);
+}
+
+.lkn-stars {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: fit-content;
+    width: fit-content;
+    padding: 0px;
+    margin: 0px;
+    color: #DAE300;
+    font-size: 12px;
+}

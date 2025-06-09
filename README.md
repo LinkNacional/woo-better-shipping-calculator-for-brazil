@@ -9,7 +9,7 @@
 * Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 * Testado até: 6.8
 * Requer PHP: 7.3
-* Tag estável: 4.1.6
+* Tag estável: 4.2.0
 * Licença: GPLv2 ou posterior
 * URI da licença: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -39,6 +39,11 @@ Calculadora de frete melhorada para lojas brasileiras, facilitando e melhorando 
 - Ocultação de campos de endereço.
 - Compatibilidade com o modo Legacy e Blocos (Gutenberg).
 
+> Funcionalidades Adicionais:
+
+- Opção para definir um valor mínimo no carrinho para frete grátis.
+- Totalmente personalizável através das configurações do plugin.
+
 ## Como instalar?
 
 1. Acesse o painel de administração do WordPress e vá para **Plugins > Adicionar Novo**.
@@ -67,6 +72,18 @@ Calculadora de frete melhorada para lojas brasileiras, facilitando e melhorando 
 <img src="Includes/assets/images/shortcodeNumberField.png" alt="Campo número no checkout do shortcode" width="600" />
 
 <img src="Includes/assets/images/gutenbergNumberField.png" alt="Campo número no checkout do shortcode" width="600" />
+
+### Barra de progresso em Legacy(Cart / Checkout):
+
+<img src="Includes/assets/images/progressBarInLegacyCart.png" alt="Barra de progresso em carrinho legacy" width="600" />
+
+<img src="Includes/assets/images/progressBarInLegacyCheckout.png" alt="Barra de progresso em checkout legacy" width="600" />
+
+### Barra de progresso em Gutenberg(Cart / Checkout):
+
+<img src="Includes/assets/images/progressBarInGutenbergCart.png" alt="Barra de progresso em carrinho do Gutenberg" width="600" />
+
+<img src="Includes/assets/images/progressBarInGutenbergCheckout.png" alt="Barra de progresso em checkout do Gutenberg" width="600" />
 
 
 **OBS:** Os dados utilizados nas screenshots são meramente ilustrativos.

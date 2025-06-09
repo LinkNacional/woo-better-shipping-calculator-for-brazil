@@ -1,3 +1,6 @@
+# 4.2.0 - 06/06/25
+* Adição: Opção para definir um valor mínimo para frete gratuito.
+
 # 4.1.6 - 02/06/25
 * Ajuste: correção no campo de autopreenchimento de endereço.
 
