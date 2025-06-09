@@ -91,6 +91,11 @@ add_filter(
 
 == Changelog ==
 
+= 4.2.1 - 09/06/2025 =
+* Fix: Decimal separator.
+* Fix: Dynamic URL.
+* Fix: Progress bar on the legacy cart page.
+
 = 4.2.0 - 06/06/2025 =
 * Addition: Option to set a minimum cart value for free shipping.
 
