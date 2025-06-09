@@ -75,6 +75,39 @@
       subTitle.remove();
     });
 
+    tables.forEach((table, idx) => {
+      // Monta o slug do subTitle igual ao href/hash
+      const subtitleSlug = tabLinks[idx].textContent.replace(/\s+/g, '-').toLowerCase();
+      const descId = 'woo_better_calc_title_' + subtitleSlug + '-description';
+      const descDiv = document.getElementById(descId);
+      if (descDiv && !table.querySelector('.lkn-description-row')) {
+        //Cria o tr / td só se ainda não foi inserido
+        const tr = document.createElement('tr');
+
+        const th = document.createElement('th');
+        th.className = 'titledesc wooBetterCustomTitle';
+        th.setAttribute('scope', 'row');
+        const label = document.createElement('label');
+        label.setAttribute('for', descId);
+        label.textContent = subtitleSlug;
+        th.appendChild(label);
+
+        const td = document.createElement('td');
+        td.className = 'forminp';
+        td.appendChild(descDiv);
+
+        tr.appendChild(th);
+        tr.appendChild(td);
+
+        let tbody = table.querySelector('tbody');
+        if (!tbody) {
+          tbody = document.createElement('tbody');
+          table.appendChild(tbody);
+        }
+        tbody.insertBefore(tr, tbody.firstChild);
+      }
+    })
+
     // Ativa a primeira tab
     tabLinks[0].className = 'nav-tab nav-tab-active';
 
@@ -101,6 +134,75 @@
           forminp.style.backgroundColor = '#fff';
           forminp.style.border = '1px solid #dfdfdf'
           forminp.style.borderRadius = '8px';
+
+          const titleDesc = row.querySelector('.wooBetterCustomTitle');
+          if (titleDesc) {
+            const pElement = document.createElement('p');
+            pElement.textContent = "Use shortcodes para adicionar funcionalidades específicas em temas clássicos."
+            pElement.style.fontWeight = 'normal';
+            pElement.style.color = '#343B45';
+
+            titleDesc.style.paddingLeft = '.5em';
+
+            titleDesc.style.fontSize = '20px';
+            titleDesc.appendChild(pElement);
+
+            const customLabel = titleDesc.querySelector('label');
+            if (customLabel) {
+
+              const headerComponent = document.createElement('div');
+              headerComponent.className = 'woo-forminp-header';
+              headerComponent.style.minHeight = '44px';
+
+              customLabel.style.color = '#121519'
+
+              // Cria o <p> para o texto do label
+              const headerText = document.createElement('p');
+              headerText.classList.add('woo-forminp-header-text');
+              headerText.style.fontWeight = 'bold';
+              headerText.style.color = '#121519';
+              headerText.style.paddingLeft = '6px';
+
+              headerText.textContent = customLabel.textContent.trim();
+
+              // Cria o <span> logo abaixo do <hr>
+              const spanElement = document.createElement('span');
+              spanElement.textContent = "Shortcodes são úteis para temas que não utilizam o editor de blocos Gutenberg."
+
+              spanElement.style.color = '#343B45'; // Cinza suave
+              spanElement.style.fontSize = '0.9em';
+              spanElement.style.paddingLeft = '6px';
+
+              // Cria o <hr> com uma linha cinza clara
+              const hrElement = document.createElement('hr');
+              hrElement.style.border = 'none';
+              hrElement.style.borderTop = '1px solid #ddd'; // Linha cinza clara
+              hrElement.style.margin = '8px 0';
+
+              // Adiciona os elementos na ordem correta
+              headerComponent.appendChild(headerText);
+              headerComponent.appendChild(spanElement);
+              headerComponent.appendChild(hrElement);
+
+              // Cria o componente woo-forminp-body
+              const bodyComponent = document.createElement('div');
+              bodyComponent.className = 'woo-forminp-body';
+              bodyComponent.style.display = 'flex';
+              bodyComponent.style.flexDirection = 'column';
+              bodyComponent.style.justifyContent = 'center';
+              bodyComponent.style.padding = '20px 0px';
+              bodyComponent.style.minHeight = '50px';
+              bodyComponent.style.paddingLeft = '6px';
+
+              while (forminp.firstChild) {
+                bodyComponent.appendChild(forminp.firstChild);
+              }
+
+              forminp.innerHTML = ''; // Limpa o conteúdo original
+              forminp.appendChild(headerComponent);
+              forminp.appendChild(bodyComponent);
+            }
+          }
 
           let inputField = forminp.querySelector('input, select, textarea');
           let labelElement = ''
@@ -258,23 +360,6 @@
           }
         }
       });
-
-      // Monta o slug do subTitle igual ao href/hash
-      const subtitleSlug = tabLinks[idx].textContent.replace(/\s+/g, '-').toLowerCase();
-      const descId = 'woo_better_calc_title_' + subtitleSlug + '-description';
-      const descDiv = document.getElementById(descId);
-      if (descDiv && !table.querySelector('.lkn-description-row')) {
-        //Cria o tr / td só se ainda não foi inserido
-        const tr = document.createElement('tr');
-        tr.className = 'lkn-description-row';
-        tr.appendChild(descDiv);
-        let tbody = table.querySelector('tbody');
-        if (!tbody) {
-          tbody = document.createElement('tbody');
-          table.appendChild(tbody);
-        }
-        tbody.insertBefore(tr, tbody.firstChild);
-      }
     });
 
     // Função para mostrar/esconder tabelas dinamicamente
