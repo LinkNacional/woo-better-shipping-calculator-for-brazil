@@ -58,12 +58,17 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 )
             ),
             'enable_min_free_shipping' => array(
-                'title'    => __('Ativar valor mínimo para frete grátis', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Frete grátis', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,
                 'id'       => 'woo_better_enable_min_free_shipping',
                 'default'  => 'no',
-                'type'     => 'checkbox',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
                 'custom_attributes' => array(
+                    'data-subtitle' => __('Habilitar valor mínimo para frete grátis', 'woo-better-shipping-calculator-for-brazil'),
                     'data-desc-tip' => __('Permite definir um valor mínimo para ativar o frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Habilite esta opção para configurar um valor mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Configuração de frete grátis.', 'woo-better-shipping-calculator-for-brazil')
@@ -134,7 +139,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             'shortcodes_section' => array(
                 'title' => __('Shortcodes', 'woo-better-shipping-calculator-for-brazil'),
                 'desc'  => __(
-                    'O uso de shortcodes abaixo é aplicável principalmente em temas clássicos. Em temas baseados em blocos, como o Gutenberg, não há necessidade de utilizar shortcodes, pois o editor de blocos oferece funcionalidades nativas que substituem essa necessidade.<br><br><strong>Carrinho:</strong> <code>[woocommerce_cart]</code><br><br><strong>Finalização de compra:</strong> <code>[woocommerce_checkout]</code><br><br><strong>Próximas funcionalidades:</strong> Gerador de etiqueta, Shortcode cálculo de CEP, Autopreenchimento de cep e muitos mais. <a href="https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil/issues/new" target="_blank">Participe envie sua sugestão.</a>',
+                    'O uso de shortcodes abaixo é aplicável principalmente em temas clássicos. Em temas baseados em blocos, como o Gutenberg, não há necessidade de utilizar shortcodes, pois o editor de blocos oferece funcionalidades nativas que substituem essa necessidade.<br><br><strong>Carrinho:</strong> <code>[woocommerce_cart]</code><br><br><strong>Finalização de compra:</strong> <code>[woocommerce_checkout]</code>',
                     'woo-better-shipping-calculator-for-brazil'
                 ),
                 'type'  => 'title',

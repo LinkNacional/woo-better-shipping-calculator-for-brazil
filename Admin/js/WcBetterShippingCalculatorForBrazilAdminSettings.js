@@ -5,28 +5,32 @@ document.addEventListener('DOMContentLoaded', function () {
         const numberField = document.querySelectorAll('input[name="woo_better_calc_number_required"]');
         const hiddenField = document.querySelectorAll('input[name="woo_better_hidden_cart_address"]');
         const requirePostcode = document.querySelectorAll('input[name="woo_better_calc_cep_required"]');
-        const minimumFreeShipping = document.getElementById('woo_better_enable_min_free_shipping');
+        const minimumFreeShippingRadios = document.querySelectorAll('input[name="woo_better_enable_min_free_shipping"]');
 
-        if (minimumFreeShipping) {
+        if (minimumFreeShippingRadios.length > 0) {
             const minimumFreeShippingValue = document.getElementById('woo_better_min_free_shipping_value');
             if (minimumFreeShippingValue) {
-                if (!minimumFreeShipping.checked) {
-                    minimumFreeShippingValue.disabled = true;
-                    minimumFreeShippingValue.style.backgroundColor = '#f1f1f1';
-                    minimumFreeShippingValue.style.cursor = 'not-allowed';
-                    minimumFreeShippingValue.value = 0;
-                }
-                minimumFreeShipping.addEventListener('change', function () {
-                    if (minimumFreeShipping.checked) {
+                function updateMinimumFreeShippingValue() {
+                    const selectedOption = Array.from(minimumFreeShippingRadios).find(radio => radio.checked)?.value;
+
+                    if (selectedOption === 'yes') {
                         minimumFreeShippingValue.disabled = false;
                         minimumFreeShippingValue.style.backgroundColor = '';
                         minimumFreeShippingValue.style.cursor = '';
-                    } else {
+                    } else if (selectedOption === 'no') {
                         minimumFreeShippingValue.value = 0;
                         minimumFreeShippingValue.disabled = true;
                         minimumFreeShippingValue.style.backgroundColor = '#f1f1f1';
                         minimumFreeShippingValue.style.cursor = 'not-allowed';
                     }
+                }
+
+                // Atualiza o estado inicial com base na seleção atual
+                updateMinimumFreeShippingValue();
+
+                // Adiciona o evento de mudança para cada botão de rádio
+                minimumFreeShippingRadios.forEach(radio => {
+                    radio.addEventListener('change', updateMinimumFreeShippingValue);
                 });
             }
         }
@@ -153,6 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const div = document.createElement('div');
         div.innerHTML = `
             <p>
+                <strong>Próximas funcionalidades:</strong> Gerador de etiqueta, Shortcode cálculo de CEP, Ratreio de pedido e muitos mais. <a href="https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil/issues/new">Participe envie sua sugestão</a>.<br>
                 Quer conhecer mais sobre nossos plugins? Suporte WordPress 24h:
                 <a href="https://www.linknacional.com.br/wordpress" target="_blank">Link Nacional</a>
                 | Avalie nosso plugin

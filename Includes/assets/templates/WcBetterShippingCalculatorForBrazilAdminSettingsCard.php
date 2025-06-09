@@ -27,8 +27,8 @@ if (!defined('ABSPATH')) {
                 <a target="_blank" href=<?php echo esc_url('https://www.linknacional.com.br/wordpress/plugins/'); ?>>
                     <b>•</b><?php echo esc_attr_e('WP Plugin', 'woo-better-shipping-calculator-for-brazil'); ?>
                 </a>
-                <a target="_blank" href=<?php echo esc_url('https://t.me/wpprobr'); ?>>
-                    <b>•</b><?php echo esc_attr_e('Suporte Wpp/Telegram', 'woo-better-shipping-calculator-for-brazil'); ?>
+                <a target="_blank" href=<?php echo esc_url('https://www.linknacional.com.br/wordpress/suporte/'); ?>>
+                    <b>•</b><?php echo esc_attr_e('Suporte WP', 'woo-better-shipping-calculator-for-brazil'); ?>
                 </a>
             </div>
         </div>
@@ -46,7 +46,7 @@ if (!defined('ABSPATH')) {
                 </a>
             </div>
             <div class="WooBetterContactLinks">
-                <a href=<?php echo esc_url('https://t.me/wpprobr'); ?> target="_blank">
+                <a href=<?php echo esc_url('https://chat.whatsapp.com/IjzHhDXwmzGLDnBfOibJKO'); ?> target="_blank">
                     <?php //phpcs:disable PluginCheck.CodeAnalysis.ImageFunctions.NonEnqueuedImage ?>
                     <img src="<?php echo esc_url($whatsapp); ?>" alt="Whatsapp Icon" class="WooBetterContactIcon">
                     <?php //phpcs:enable ?>

@@ -41,6 +41,7 @@
 #WooBetterDivLinks {
     display: flex;
     justify-content: space-between;
+    padding-right: 30px;
     gap: 6%;
 }
 

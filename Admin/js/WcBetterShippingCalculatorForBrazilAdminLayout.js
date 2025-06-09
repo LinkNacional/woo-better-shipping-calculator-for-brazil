@@ -257,7 +257,12 @@
               headerText.style.color = '#121519';
               headerText.style.paddingLeft = '6px';
 
-              headerText.textContent = labelElement.textContent.trim();
+              if (inputField.getAttribute('data-subtitle')) {
+                headerText.textContent = inputField.getAttribute('data-subtitle');
+              } else {
+                headerText.textContent = labelElement.textContent.trim();
+              }
+
 
               // Cria o <span> logo abaixo do <hr>
               const spanElement = document.createElement('span');
