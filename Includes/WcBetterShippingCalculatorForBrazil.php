@@ -159,16 +159,15 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_cart_needs_shipping_address', $this, 'lkn_custom_disable_shipping', 10, 1);
 
         $this->loader->add_filter('woocommerce_package_rates', $this, 'lkn_simular_frete_playground', 10, 2);
-
     }
 
     public function lkn_simular_frete_playground($rates, $package)
     {
-        $environment = wp_get_environment_type();
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
         $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
 
-        if ($environment === 'local' || $environment === 'development' || strpos(home_url(), 'playground.wordpress.net') !== false) {
+
+        if (strpos(home_url(), 'playground.wordpress.net') !== false) {
             $rates = [];
 
             $rate = new \WC_Shipping_Rate(
@@ -568,14 +567,19 @@ class WcBetterShippingCalculatorForBrazil
         ));
     }
 
+    /**
+     * Endpoint para receber o CEP via API personalizada.
+     *
+     * @param \WP_REST_Request $request Objeto da requisição REST contendo o parâmetro `postcode`.
+     * 
+     * @return \WP_REST_Response Retorna uma resposta com o status e o CEP recebido.
+     */
     public function lkn_get_cep_info(\WP_REST_Request $request)
     {
         // Pega o parâmetro cep da requisição
         $cep = $request->get_param('postcode');
 
-        $environment = wp_get_environment_type();
-
-        if ($environment === 'local' || $environment === 'development' || strpos(home_url(), 'playground.wordpress.net') !== false) {
+        if (strpos(home_url(), 'playground.wordpress.net') !== false) {
             return new \WP_REST_Response(
                 array(
                     'status' => true,

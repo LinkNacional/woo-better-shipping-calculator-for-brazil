@@ -220,6 +220,22 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
         }
 
+        if (
+            has_block('woocommerce/cart') || 
+            has_block('woocommerce/checkout') || 
+            has_block('woocommerce/product') ||
+            (function_exists('is_product') && is_product())
+        ) {
+            wp_enqueue_script(
+                'woo-better-custom-postcode',
+                plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilCustomPostcode.js',
+                array(),
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                true 
+            );
+        }
+
+
         if (function_exists('is_checkout') && is_checkout()) {
             $number_field = get_option('woo_better_calc_number_required', 'no');
 

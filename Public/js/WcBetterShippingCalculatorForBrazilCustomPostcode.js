@@ -1,0 +1,312 @@
+document.addEventListener('DOMContentLoaded', function () {
+    let containerFound = false;
+    // Função para criar o formulário
+    function createForm() {
+        const form = document.createElement('form');
+        form.id = 'custom-postcode-form';
+        form.style.marginTop = '20px';
+
+        // Adiciona um campo de entrada
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'custom_postcode';
+        input.placeholder = 'Digite o CEP';
+        input.style.marginRight = '10px';
+
+        input.addEventListener('input', function (e) {
+            let value = e.target.value;
+
+            // Remove todos os caracteres não numéricos, exceto o '-'
+            value = value.replace(/[^\d-]/g, '');
+
+            // Garante que o '-' só pode estar na posição 5
+            if (value.includes('-')) {
+                const parts = value.split('-');
+
+                // Remove o hífen se ele estiver antes da posição 5 ou se houver mais de um hífen
+                if (parts.length > 2 || parts[0].length > 5) {
+                    value = parts[0].slice(0, 5) + '-' + parts[1]?.slice(0, 3);
+                } else if (parts[0].length < 5) {
+                    value = parts[0]; // Remove o hífen se ele for digitado antes da posição 5
+                }
+            }
+
+            // Adiciona o hífen automaticamente se o comprimento for maior que 5 e o hífen não estiver presente
+            if (value.length > 5 && !value.includes('-')) {
+                value = value.slice(0, 5) + '-' + value.slice(5);
+            }
+
+            // Limita o tamanho do CEP a 9 caracteres (XXXXX-XXX)
+            if (value.length > 9) {
+                value = value.slice(0, 9);
+            }
+
+            // Atualiza o valor do campo de texto
+            e.target.value = value;
+        });
+
+        // Adiciona um botão de envio
+        const button = document.createElement('button');
+        button.type = 'submit';
+        button.textContent = 'Atualizar';
+        button.style.cursor = 'pointer';
+
+        // Adiciona os elementos ao formulário
+        form.appendChild(input);
+        form.appendChild(button);
+
+        // Adiciona o evento de envio ao formulário
+        form.addEventListener('submit', function (e) {
+            e.preventDefault(); // Impede o envio padrão do formulário
+
+            const postcode = input.value.trim();
+
+            // Verifica se o CEP está no formato válido (XXXXX-XXX)
+            const cepRegex = /^\d{5}-\d{3}$/;
+            if (!cepRegex.test(postcode)) {
+                alert('Por favor, insira um CEP válido no formato XXXXX-XXX.');
+                return; // Interrompe o envio se o CEP for inválido
+            }
+
+            // Remove o componente de resultados anterior, se existir
+            const resultsContainer = document.getElementById('shipping-rates-results');
+            if (resultsContainer) {
+                resultsContainer.remove();
+            }
+
+            // Se o CEP for válido, faz a requisição via fetch
+            sendCEP(postcode);
+        });
+
+        return form;
+    }
+
+    // Configura o MutationObserver para monitorar alterações no DOM
+    const observer = new MutationObserver(function (mutationsList, observer) {
+        mutationsList.forEach((mutation) => {
+            if (mutation.type === 'childList') {
+                const targetElement = document.querySelector('[data-block-name="woocommerce/product-price"]'); // Altere o seletor conforme necessário
+                if (targetElement && !containerFound) {
+                    containerFound = true; // Marca que o contêiner foi encontrado
+                    const form = createForm();
+                    targetElement.appendChild(form);
+                    observer.disconnect(); // Para o observer após inserir o formulário
+                }
+            }
+        });
+    });
+
+    async function sendCEP(postcode) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        if (typeof wpApiSettings !== 'undefined' && wpApiSettings.root) {
+            apiUrl = wpApiSettings.root + `lknwcbettershipping/v1/cep/?postcode=${postcode}`;
+        } else {
+            if (typeof WooBetterData !== 'undefined' && WooBetterData.wooUrl !== '') {
+                apiUrl = WooBetterData.wooUrl + `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcode}`;
+            } else {
+                apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcode}`;
+            }
+        }
+
+        await fetch(apiUrl, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                clearTimeout(timeoutId);
+
+                if (data.status === true) {
+                    if (!data.address || !data.state_sigla || !data.city) {
+                        postcodeError = true
+                        if (addressSummary) {
+                            removeLoading(addressSummary);
+                            addressSummary.removeEventListener('click', blockInteraction, true);
+                            if (iconSummary) {
+
+                            }
+                            iconSummary.removeEventListener('click', blockInteraction, true);
+                        }
+
+                        if (!data.address) {
+                            return alert('Erro: Endereço inválido.');
+                        }
+
+                        if (!data.state_sigla) {
+                            return alert('Erro: Estado inválido.');
+                        }
+
+                        if (!data.city) {
+                            return alert('Erro: Cidade inválida.');
+                        }
+                    } else {
+                        postcodeError = false
+                    }
+
+                    postcodeValue = postcode
+                    addressData = data.address;
+                    stateData = data.state_sigla;
+                    cityData = data.city;
+
+                    let wooNonce = ''
+                    let wpNonce = ''
+
+                    if (typeof wpApiSettings !== 'undefined' && wpApiSettings?.nonce) {
+                        wpNonce = wpApiSettings.nonce
+                    }
+
+                    if (wcBlocksMiddlewareConfig) {
+                        wooNonce = wcBlocksMiddlewareConfig.storeApiNonce
+                    }
+
+                    let batchUrl = ''
+
+                    if (typeof wpApiSettings !== 'undefined' && wpApiSettings.root) {
+                        batchUrl = wpApiSettings.root + `/wc/store/v1/batch?_locale=site`;
+                    } else {
+                        batchUrl = window.location.origin + `/wp-json/wc/store/v1/batch?_locale=site`;
+                        if (typeof WooBetterData !== 'undefined' && WooBetterData.wooUrl !== '') {
+                            apiUrl = WooBetterData.wooUrl + `/wp-json/wc/store/v1/batch?_locale=site`;
+                        } else {
+                            apiUrl = `/wp-json/wc/store/v1/batch?_locale=site`;
+                        }
+                    }
+
+                    fetch(batchUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Nonce': wooNonce,
+                            'x-wp-nonce': wpNonce
+                        },
+                        body: JSON.stringify({
+                            requests: [
+                                {
+                                    method: 'POST',
+                                    path: '/wc/store/v1/cart/update-customer',
+                                    body: {
+                                        shipping_address: {
+                                            postcode: postcodeValue,
+                                            address_1: addressData,
+                                            state: stateData,
+                                            city: cityData
+                                        },
+                                        billing_address: {
+                                            postcode: postcodeValue,
+                                            address_1: addressData,
+                                            state: stateData,
+                                            city: cityData
+                                        }
+                                    },
+                                    data: {
+                                        shipping_address: {
+                                            postcode: postcodeValue,
+                                            address_1: addressData,
+                                            state: stateData,
+                                            city: cityData
+                                        },
+                                        billing_address: {
+                                            postcode: postcodeValue,
+                                            address_1: addressData,
+                                            state: stateData,
+                                            city: cityData
+                                        }
+                                    },
+                                    headers: {
+                                        'Nonce': wooNonce
+                                    },
+                                    cache: 'no-store'
+                                }
+                            ]
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            processShippingRates(data);
+                        })
+                        .catch(error => {
+                            console.error('Erro ao buscar os dados da API:', error);
+                        });
+                } else {
+                    alert('Erro: ' + data.message);
+                }
+            })
+            .catch(error => {
+                clearTimeout(timeoutId); // Também limpa o timeout no erro
+                if (error.name === 'AbortError') {
+                    alert('Erro: Tempo limite de resposta excedido.');
+                } else {
+                    console.error(error);
+                }
+            });
+    }
+
+    function processShippingRates(response) {
+        try {
+            const shippingRates = response?.responses?.[0]?.body?.shipping_rates?.[0]?.shipping_rates;
+
+            if (!shippingRates || !Array.isArray(shippingRates)) {
+                console.error('Nenhuma taxa de envio encontrada.');
+                return;
+            }
+
+            // Seleciona o formulário
+            const form = document.getElementById('custom-postcode-form');
+
+            // Remove o componente de resultados anterior, se existir
+            let resultsContainer = document.getElementById('shipping-rates-results');
+            if (resultsContainer) {
+                resultsContainer.remove();
+            }
+
+            // Cria um novo contêiner para os resultados
+            resultsContainer = document.createElement('div');
+            resultsContainer.id = 'shipping-rates-results';
+            resultsContainer.style.marginTop = '20px';
+            resultsContainer.style.padding = '10px';
+            resultsContainer.style.border = '1px solid #ccc';
+            resultsContainer.style.borderRadius = '5px';
+            resultsContainer.style.backgroundColor = '#f9f9f9';
+
+            // Adiciona um título ao contêiner
+            const title = document.createElement('h4');
+            title.textContent = 'Opções de Envio Disponíveis:';
+            title.style.marginBottom = '10px';
+            resultsContainer.appendChild(title);
+
+            // Cria uma lista para exibir as taxas de envio
+            const list = document.createElement('ul');
+            list.style.listStyleType = 'none';
+            list.style.padding = '0';
+
+            shippingRates.forEach(rate => {
+                const name = rate.name;
+                const price = `${rate.currency_prefix}${(rate.price / 100).toFixed(rate.currency_minor_unit)}`;
+
+                // Cria um item de lista para cada taxa de envio
+                const listItem = document.createElement('li');
+                listItem.textContent = `${name}: ${price}`;
+                listItem.style.marginBottom = '5px';
+                list.appendChild(listItem);
+            });
+
+            // Adiciona a lista ao contêiner de resultados
+            resultsContainer.appendChild(list);
+
+            // Adiciona o contêiner de resultados abaixo do formulário
+            form.insertAdjacentElement('afterend', resultsContainer);
+        } catch (error) {
+            console.error('Erro ao processar as taxas de envio:', error);
+        }
+    }
+
+    // Observa o corpo do documento
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+    });
+});
