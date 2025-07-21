@@ -25,6 +25,67 @@
     padding: 5px 20px;
 }
 
+/* Currency style */
+.woo-better-container-current-style {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.woo-better-input-button-group-current-style {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.woo-better-input-wrapper-current-style {
+    position: relative;
+    width: 100%;
+    max-width: 220px;
+    height: 50px !important;
+}
+
+.woo-better-input-current-style {
+    width: 220px !important;
+    height: 50px !important;
+    box-sizing: border-box !important;
+}
+
+.woo-better-icon-current-style {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.woo-better-button-current-style {
+    width: 100px !important;
+    height: 50px !important;
+    cursor: pointer;
+}
+
+.woo-better-link-current-style {
+    font-size: 14px;
+    color: #0073aa;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.woo-better-link-current-style:hover {
+    color: #005f8d;
+}
+
+.woo-better-color-field {
+    height: 50px !important;
+    width: 50px !important;
+    cursor: pointer;
+}
+
 @media (max-width: 1250px) {
 
     .lkn-settings-side {
@@ -42,5 +103,19 @@
 
     .titledesc {
         padding-top: 40px !important;
+    }
+}
+
+@media (max-width: 540px) {
+    .woo-better-input-wrapper-current-style {
+        max-width: 100% !important;
+    }
+
+    .woo-better-input-current-style {
+        width: 100% !important;
+    }
+
+    .woo-better-button-current-style {
+        width: 100% !important;
     }
 }
