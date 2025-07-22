@@ -1,17 +1,38 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const WooBetterData = window.WooBetterData || {}; // Dados localizados do PHP
     let containerFound = false;
+    let blockPosition = '.wp-block-woocommerce-cart-order-summary-heading-block' // Posição padrão é 'top'
+
     // Função para criar o formulário
     function createForm() {
         const form = document.createElement('form');
         form.id = 'custom-postcode-form';
         form.style.marginTop = '20px';
 
+        const containerDiv = document.createElement('div');
+        containerDiv.classList.add('woo-better-container-current-style');
+
+        // Cria a div para agrupar o input com ícone e o botão
+        const inputButtonGroup = document.createElement('div');
+        inputButtonGroup.classList.add('woo-better-input-button-group-current-style');
+
+        // Cria a div para o input e o ícone
+        const inputWrapper = document.createElement('div');
+        inputWrapper.classList.add('woo-better-input-wrapper-current-style');
+
         // Adiciona um campo de entrada
         const input = document.createElement('input');
         input.type = 'text';
-        input.name = 'custom_postcode';
-        input.placeholder = 'Digite o CEP';
-        input.style.marginRight = '10px';
+        input.name = 'woo_better_custom_cart_postcode';
+        input.placeholder = WooBetterData.placeholder || 'Digite o CEP';
+        input.classList.add('woo-better-input-current-style');
+        input.autocomplete = 'postal-code';
+
+        // Aplica os estilos do input
+        const inputStyles = WooBetterData.inputStyles || {};
+        Object.keys(inputStyles).forEach(styleProperty => {
+            input.style[styleProperty] = inputStyles[styleProperty];
+        });
 
         input.addEventListener('input', function (e) {
             let value = e.target.value;
@@ -45,15 +66,44 @@ document.addEventListener('DOMContentLoaded', function () {
             e.target.value = value;
         });
 
+        // Cria o ícone
+        const icon = document.createElement('img');
+        icon.src = WooBetterData.icon // Define um ícone padrão da variável global
+        icon.alt = 'Ícone de entrega';
+        icon.classList.add('woo-better-icon-current-style');
+        icon.classList.add(WooBetterData.iconColor || 'black-icon');
+
+        inputWrapper.appendChild(input);
+        inputWrapper.appendChild(icon);
+
         // Adiciona um botão de envio
         const button = document.createElement('button');
         button.type = 'submit';
-        button.textContent = 'Atualizar';
-        button.style.cursor = 'pointer';
+        button.textContent = 'CONSULTAR';
+        button.classList.add('woo-better-button-current-style');
+
+        // Aplica os estilos do botão
+        const buttonStyles = WooBetterData.buttonStyles || {};
+        Object.keys(buttonStyles).forEach(styleProperty => {
+            button.style[styleProperty] = buttonStyles[styleProperty];
+        });
+
+        inputButtonGroup.appendChild(inputWrapper);
+        inputButtonGroup.appendChild(button);
+
+        containerDiv.appendChild(inputButtonGroup);
+
+        const linkText = document.createElement('a');
+        linkText.href = 'https://buscacepinter.correios.com.br/app/endereco/index.php';
+        linkText.textContent = 'Não sei meu CEP';
+        linkText.classList.add('woo-better-link-current-style');
+        linkText.target = '_blank';
+
+        // Adiciona o texto ao container
+        containerDiv.appendChild(linkText);
 
         // Adiciona os elementos ao formulário
-        form.appendChild(input);
-        form.appendChild(button);
+        form.appendChild(containerDiv);
 
         // Adiciona o evento de envio ao formulário
         form.addEventListener('submit', function (e) {
@@ -81,11 +131,23 @@ document.addEventListener('DOMContentLoaded', function () {
         return form;
     }
 
+    function setPosition() {
+        const position = WooBetterData.position || 'top'; // Posição padrão é 'top'
+        if (position === 'middle') {
+            blockPosition = '.wp-block-woocommerce-cart-order-summary-totals-block'
+        } else if (position === 'bottom') {
+            blockPosition = '.wp-block-woocommerce-cart-order-summary-block';
+        }
+
+        return blockPosition
+    }
+
     // Configura o MutationObserver para monitorar alterações no DOM
     const observer = new MutationObserver(function (mutationsList, observer) {
         mutationsList.forEach((mutation) => {
             if (mutation.type === 'childList') {
-                const targetElement = document.querySelector('[data-block-name="woocommerce/product-price"]'); // Altere o seletor conforme necessário
+                const targetClass = setPosition();
+                const targetElement = document.querySelector(targetClass);
                 if (targetElement && !containerFound) {
                     containerFound = true; // Marca que o contêiner foi encontrado
                     const form = createForm();
@@ -166,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     let batchUrl = ''
 
                     if (typeof wpApiSettings !== 'undefined' && wpApiSettings.root) {
-                        batchUrl = wpApiSettings.root + `/wc/store/v1/batch?_locale=site`;
+                        batchUrl = wpApiSettings.root + `wc/store/v1/batch?_locale=site`;
                     } else {
                         batchUrl = window.location.origin + `/wp-json/wc/store/v1/batch?_locale=site`;
                         if (typeof WooBetterData !== 'undefined' && WooBetterData.wooUrl !== '') {

@@ -329,7 +329,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'title'    => __('Cor da Borda (Botão)', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_cart_button_border_color_field',
                 'type'     => 'color',
-                'default'  => 'transparent',
+                'default'  => '#0073aa',
                 'custom_attributes' => array(
                     'data-desc-tip' => __('Defina a cor da borda do botão.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Escolha a cor da borda para o botão.', 'woo-better-shipping-calculator-for-brazil'),
@@ -379,12 +379,32 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Ícone do Campo.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'cart_input_icon_color' => array(
+                'title'    => __('Cor do Ícone', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_cart_input_icon_color',
+                'type'     => 'select',
+                'options'  => array(
+                    'black-icon'    => __('Preto', 'woo-better-shipping-calculator-for-brazil'),
+                    'white-icon' => __('Branco', 'woo-better-shipping-calculator-for-brazil'),
+                    'red-icon' => __('Vermelho', 'woo-better-shipping-calculator-for-brazil'),
+                    'pink-icon' => __('Rosa', 'woo-better-shipping-calculator-for-brazil'),
+                    'green-icon' => __('Verde', 'woo-better-shipping-calculator-for-brazil'),
+                    'blue-icon' => __('Azul', 'woo-better-shipping-calculator-for-brazil'),
+                ),
+                'default'  => 'blue-icon',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Defina a cor do ícone.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Escolha a cor para o ícone.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Escolha a cor no qual será utilizada para definir a cor do icone do input.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'cart_input_position' => array(
                 'title'    => __('Posição do Campo', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_cart_input_position',
                 'type'     => 'select',
                 'options'  => array(
                     'top'    => __('Topo', 'woo-better-shipping-calculator-for-brazil'),
+                    'middle' => __('Meio', 'woo-better-shipping-calculator-for-brazil'),
                     'bottom' => __('Base', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'default'  => 'top',

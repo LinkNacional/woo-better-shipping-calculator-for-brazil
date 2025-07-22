@@ -365,8 +365,25 @@
               textInput.id = 'woo_better_calc_cart_input_current_style_postcode_fake_custom';
               textInput.placeholder = placeholderInput ? placeholderInput.value : 'Insira seu CEP';
               textInput.classList.add('woo-better-input-current-style');
-              textInput.disabled = true; // Desabilitado
+              textInput.style.cursor = 'pointer';
               textInput.readOnly = true; // Somente leitura
+
+              // Adiciona o evento de clique
+              textInput.addEventListener('click', function (e) {
+                e.preventDefault(); // Evita o comportamento padrão
+                e.stopPropagation(); // Impede a propagação do evento
+
+                // Seleciona o elemento de destino
+                const targetElement = document.getElementById('woo_better_calc_cart_input_background_color_field_input');
+
+                if (targetElement) {
+                  // Faz o scroll suave até o componente
+                  targetElement.scrollIntoView({
+                    behavior: 'smooth', // Animação suave
+                    block: 'center' // Centraliza o elemento na tela
+                  });
+                }
+              });
 
               // Aplica os valores de estilo dos campos ao textInput
               Object.keys(styleComponents).forEach(componentId => {
@@ -386,6 +403,31 @@
               icon.src = WCBetterCalcIcons['transit']; // Define um ícone padrão da variável global
               icon.alt = 'Ícone padrão';
               icon.classList.add('woo-better-icon-current-style');
+              icon.classList.add('woo-better-input-icon');
+
+              // Seleciona o dropdown de cor
+              const colorSelect = document.getElementById('woo_better_calc_cart_input_icon_color');
+
+              if (colorSelect) {
+                // Adiciona um evento para atualizar a classe do ícone com base na cor selecionada
+                colorSelect.addEventListener('change', function () {
+                  const selectedColor = colorSelect.value; // Obtém o valor selecionado no dropdown
+
+                  // Seleciona todos os elementos com a classe 'woo-better-icon-current-style'
+                  const icons = document.querySelectorAll('.woo-better-input-icon');
+
+                  icons.forEach(icon => {
+                    // Remove todas as classes de cor existentes
+                    icon.classList.remove('black-icon', 'white-icon', 'red-icon', 'pink-icon', 'green-icon', 'blue-icon');
+
+                    // Adiciona a classe correspondente à cor selecionada
+                    icon.classList.add(selectedColor);
+                  });
+                });
+
+                // Define a classe inicial com base no valor padrão do select
+                icon.classList.add(colorSelect.value);
+              }
 
               // Adiciona o ícone ao DOM (adicione ao local desejado)
               const iconContainer = document.querySelector('.woo-better-input-wrapper-current-style'); // Ajuste o seletor conforme necessário
@@ -446,6 +488,16 @@
               button.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
+
+                const targetElement = document.getElementById('woo_better_calc_cart_button_background_color_field_input');
+
+                if (targetElement) {
+                  // Faz o scroll suave até o componente
+                  targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                  });
+                }
               });
 
               // Adiciona o inputWrapper e o botão ao grupo
@@ -529,7 +581,8 @@
               'woo_better_calc_cart_button_border_style': 'woo_better_calc_cart_button_background_color_field',
               'woo_better_calc_cart_button_border_color_field': 'woo_better_calc_cart_button_background_color_field',
               'woo_better_calc_cart_button_border_radius': 'woo_better_calc_cart_button_background_color_field',
-              'woo_better_calc_cart_input_icon': 'woo_better_calc_cart_input_placeholder'
+              'woo_better_calc_cart_input_icon': 'woo_better_calc_cart_input_placeholder',
+              'woo_better_calc_cart_input_icon_color': 'woo_better_calc_cart_input_placeholder'
             };
 
             forminp.innerHTML = ''; // Limpa o conteúdo original
@@ -686,6 +739,9 @@
           img.style.width = '40px';
           img.style.height = '40px';
           img.style.marginLeft = '10px';
+          img.classList.add('woo-better-input-icon');
+          const colorSelect = document.getElementById('woo_better_calc_cart_input_icon_color');
+          img.classList.add(colorSelect ? colorSelect.value : 'black-icon'); // Adiciona a classe de cor inicial
 
           // Remove o texto do label e adiciona a imagem
           const label = option.closest('label');
@@ -709,22 +765,25 @@
 
     // Itera sobre os IDs
     targetIds.forEach(id => {
-      const targetElement = document.getElementById(id);
+      const targetElement = document.getElementById('woo_better_calc_cart_input_current_style_postcode_fake_custom'); // Componente de destino fixo
 
       if (targetElement) {
         // Encontra o elemento pai com a classe .woo-forminp-body
-        const parentForminpBody = targetElement.closest('.woo-forminp-body');
+        const parentForminpBody = document.getElementById(id)?.closest('.woo-forminp-body');
 
         if (parentForminpBody) {
           // Cria o link
           const link = document.createElement('a');
           link.href = `#woo_better_calc_cart_input_current_style_postcode_fake_custom`; // Aponta para o ID do componente
-          link.textContent = `Ir para o componente relacionado`;
+          link.textContent = `Ir para o componente de CEP`;
 
           // Estiliza o link
           link.style.display = 'flex';
           link.style.color = '#0073aa';
           link.style.textDecoration = 'none';
+          link.style.width = 'fit-content';
+          link.style.outline = 'none';
+          link.style.boxShadow = 'none';
 
           // Adiciona o evento de clique para a animação de movimento
           link.addEventListener('click', function (e) {
@@ -746,11 +805,101 @@
             }, 1000);
           });
 
-          // Adiciona o link ao final do .woo-forminp-body
-          parentForminpBody.appendChild(link);
+          // Cria o elemento <td>
+          const td = document.createElement('td');
+          td.style.padding = '0px';
+          td.appendChild(link); // Adiciona o link dentro do <td>
+
+          // Adiciona o <td> ao final do .woo-forminp-body
+          parentForminpBody.appendChild(td);
         }
       }
     });
+
+    // Seleciona o input color
+    const colorPicker = document.getElementById('woo_better_calc_cart_input_icon_color_field_input'); // Substitua pelo ID correto do input color
+
+    if (colorPicker) {
+      // Adiciona um evento para atualizar o filtro do ícone com base na cor selecionada
+      colorPicker.addEventListener('input', function () {
+        const selectedColor = colorPicker.value; // Obtém o valor hexadecimal da cor selecionada
+
+        const icon = document.querySelector('.woo-better-icon-current-style'); // Seleciona o ícone
+
+        if (icon) {
+          // Gera o filtro com base na cor selecionada
+          const filter = generateFilter(selectedColor);
+
+          console.log('Filtro gerado:', filter);
+
+          // Aplica o filtro ao ícone
+          icon.style.filter = filter;
+        }
+      });
+    }
+
+    // Função para gerar o filtro CSS com base no valor hexadecimal
+    function generateFilter(hex) {
+      const rgb = hexToRgb(hex);
+
+      // Ajusta os valores para o filtro
+      const r = rgb.r / 255;
+      const g = rgb.g / 255;
+      const b = rgb.b / 255;
+
+      // Filtro ajustado para transformar preto em outras cores
+      return `brightness(0) saturate(100%) invert(${calculateInvert(r, g, b)}) sepia(1) saturate(7458%) hue-rotate(${calculateHue(rgb)}deg) brightness(${calculateBrightness(r, g, b)}) contrast(1.05)`;
+    }
+
+    // Função para calcular o valor de invert com base nos valores RGB
+    function calculateInvert(r, g, b) {
+      console.log('Valores RGB:', r, g, b);
+
+      // Ajusta o valor de invert para aproximar a cor desejada
+      const invertValue = 0.9 + (r - Math.min(r, g, b)) / 2; // Usa a mesma fórmula de calculateBrightness
+
+      console.log('Valor de invert calculado (decimal):', invertValue);
+
+      // Converte para um valor percentual e adiciona o símbolo '%'
+      return `${(invertValue * 10).toFixed(0)}%`; // Retorna o valor em porcentagem como string
+    }
+
+    // Função para calcular o brilho com base nos valores RGB
+    function calculateBrightness(r, g, b) {
+      // Ajusta o brilho para considerar todos os tons, com mais peso para vermelho e verde
+      const brightnessValue = 0.9 + (0.6 * r + 0.3 * g + 0.1 * b); // Dá mais peso ao vermelho e verde
+      return brightnessValue * 2;
+    }
+
+    // Função para converter hexadecimal em RGB
+    function hexToRgb(hex) {
+      const bigint = parseInt(hex.slice(1), 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+
+      return { r, g, b };
+    }
+
+    // Função para calcular o hue com base nos valores RGB
+    function calculateHue({ r, g, b }) {
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+
+      let hue = 0;
+
+      if (max === min) {
+        hue = 0; // Sem cor
+      } else if (max === r) {
+        hue = (60 * ((g - b) / (max - min)) + 360) % 360;
+      } else if (max === g) {
+        hue = (60 * ((b - r) / (max - min)) + 120) % 360;
+      } else if (max === b) {
+        hue = (60 * ((r - g) / (max - min)) + 240) % 360;
+      }
+
+      return hue;
+    }
 
     // Função para mostrar/esconder tabelas dinamicamente
     function showTable(activeIdx) {
