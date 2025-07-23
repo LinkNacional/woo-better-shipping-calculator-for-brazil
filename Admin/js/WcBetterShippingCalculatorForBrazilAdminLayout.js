@@ -64,31 +64,71 @@
     const greenMessageText = document.createElement('span');
     greenMessageText.textContent = 'Nova funcionalidade: agora é possível adicionar um componente de busca de CEP nas páginas de carrinho e produto. Essa funcionalidade automatiza o preenchimento do endereço e permite personalizar essas as páginas de carrinho e produto no Gutenberg de forma prática e eficiente.';
 
-    // Cria a mensagem de aviso
-    const cartMessage = document.createElement('div');
-    cartMessage.className = 'cart-feature-message';
-    cartMessage.style.display = 'flex';
-    cartMessage.style.alignItems = 'center';
-    cartMessage.style.padding = '10px';
-    cartMessage.style.marginTop = '20px';
-    cartMessage.style.border = '1px solid #ffcc00';
-    cartMessage.style.borderLeftWidth = '5px';
-    cartMessage.style.borderLeftColor = '#ffcc00';
-    cartMessage.style.borderRadius = '5px';
-    cartMessage.style.backgroundColor = '#fff8e1';
-    cartMessage.style.color = '#ff9800';
-    cartMessage.style.fontSize = '14px';
-    cartMessage.style.lineHeight = '1.5';
+    const inputElement = document.querySelector('input[name="woo_better_calc_enable_cart_page"]');
 
-    // Adiciona o ícone de alerta
-    const alertIcon = document.createElement('span');
-    alertIcon.textContent = '⚠️'; // Ícone de alerta
-    alertIcon.style.marginRight = '10px';
-    alertIcon.style.fontSize = '16px';
+    if (inputElement) {
+      // Busca o elemento <tbody> mais próximo
+      const closestTbody = inputElement.closest('tbody');
 
-    // Adiciona o texto da mensagem
-    const messageText = document.createElement('span');
-    messageText.textContent = 'Funcionalidade de carrinho disponível apenas a partir da versão 10.0.0+ do WooCommerce.';
+      if (closestTbody) {
+        // Cria um novo <tr> vazio
+        const spacerTr = document.createElement('tr');
+
+        // Cria um <th> vazio
+        const spacerTh = document.createElement('th');
+        spacerTh.textContent = ''; // Deixe vazio ou adicione texto, se necessário
+        spacerTh.style.paddingTop = '50px'; // Espaço no topo
+        spacerTh.style.paddingBottom = '50px'; // Espaço na parte inferior
+
+        // Cria um <td> vazio dentro do <tr>
+        const spacerTd = document.createElement('td');
+        spacerTd.style.padding = '0px'; // Espaço no topo
+
+        // Adiciona o <td> ao <tr>
+        spacerTr.appendChild(spacerTh);
+        spacerTr.appendChild(spacerTd);
+
+        // Insere o <tr> vazio no início do <tbody>
+        closestTbody.insertBefore(spacerTr, closestTbody.firstChild);
+
+        // Cria o elemento de mensagem
+        const cartMessage = document.createElement('div');
+        cartMessage.className = 'cart-feature-message';
+        cartMessage.style.position = 'absolute'; // Define como absoluto
+        cartMessage.style.top = '20px'; // Ajuste a posição vertical
+        cartMessage.style.zIndex = '1000'; // Garante que fique acima de outros elementos
+        cartMessage.style.display = 'flex';
+        cartMessage.style.alignItems = 'center';
+        cartMessage.style.padding = '10px';
+        cartMessage.style.border = '1px solid #ffcc00';
+        cartMessage.style.borderLeftWidth = '5px';
+        cartMessage.style.borderLeftColor = '#ffcc00';
+        cartMessage.style.borderRadius = '5px';
+        cartMessage.style.backgroundColor = '#fff8e1';
+        cartMessage.style.color = '#ff9800';
+        cartMessage.style.fontSize = '14px';
+        cartMessage.style.lineHeight = '1.5';
+
+        // Adiciona o ícone de alerta
+        const alertIcon = document.createElement('span');
+        alertIcon.textContent = '⚠️'; // Ícone de alerta
+        alertIcon.style.marginRight = '10px';
+        alertIcon.style.fontSize = '16px';
+
+        // Adiciona o texto da mensagem
+        const messageText = document.createElement('span');
+        messageText.textContent = 'Funcionalidade da aba de carrinho disponível apenas a partir da versão 10.0.0+ do WooCommerce.';
+
+        closestTbody.style.position = "relative"
+
+        // Adiciona o ícone e o texto ao componente de mensagem
+        cartMessage.appendChild(alertIcon);
+        cartMessage.appendChild(messageText);
+
+        // Adiciona a mensagem ao <tbody>
+        closestTbody.appendChild(cartMessage);
+      }
+    }
 
     const settingsCard = document.querySelector('#WooBetterLinkSettingsCard');
     if (settingsCard) {
@@ -103,13 +143,6 @@
 
       // Adiciona a mensagem ao sideContainer
       stickyContainer.appendChild(greenMessage);
-
-      // Adiciona o ícone e o texto ao componente de mensagem
-      cartMessage.appendChild(alertIcon);
-      cartMessage.appendChild(messageText);
-
-      // Adiciona a mensagem ao sideContainer
-      stickyContainer.appendChild(cartMessage)
 
       sideContainer.appendChild(stickyContainer);
     }
@@ -246,7 +279,7 @@
               spanElement.textContent = "Shortcodes são úteis para temas que não utilizam o editor de blocos Gutenberg."
 
               spanElement.style.color = '#343B45'; // Cinza suave
-              spanElement.style.fontSize = '0.9em';
+              spanElement.style.fontSize = '13px';
               spanElement.style.paddingLeft = '6px';
 
               // Cria o <hr> com uma linha cinza clara
@@ -346,7 +379,7 @@
               }
 
               spanElement.style.color = '#343B45'; // Cinza suave
-              spanElement.style.fontSize = '0.9em';
+              spanElement.style.fontSize = '13px';
               spanElement.style.paddingLeft = '6px';
 
               // Cria o <hr> com uma linha cinza clara
@@ -410,6 +443,7 @@
             bodyComponent.appendChild(pDescriptionField);
 
             if (inputField.id.includes('postcode_current_style')) {
+              const styleName = inputField.id.includes('cart') ? 'cart' : 'product';
               // Cria a div que conterá o input, botão e texto
               const containerDiv = document.createElement('div');
               containerDiv.classList.add('woo-better-container-current-style');
@@ -423,20 +457,20 @@
               inputWrapper.classList.add('woo-better-input-wrapper-current-style');
 
               const styleComponents = {
-                'woo_better_calc_cart_input_background_color_field': 'backgroundColor',
-                'woo_better_calc_cart_input_color_field': 'color',
-                'woo_better_calc_cart_input_border_width': 'borderWidth',
-                'woo_better_calc_cart_input_border_style': 'borderStyle',
-                'woo_better_calc_cart_input_border_color_field': 'borderColor',
-                'woo_better_calc_cart_input_border_radius': 'borderRadius'
+                [`woo_better_calc_${styleName}_input_background_color_field`]: 'backgroundColor',
+                [`woo_better_calc_${styleName}_input_color_field`]: 'color',
+                [`woo_better_calc_${styleName}_input_border_width`]: 'borderWidth',
+                [`woo_better_calc_${styleName}_input_border_style`]: 'borderStyle',
+                [`woo_better_calc_${styleName}_input_border_color_field`]: 'borderColor',
+                [`woo_better_calc_${styleName}_input_border_radius`]: 'borderRadius'
               };
 
-              const placeholderInput = document.getElementById('woo_better_calc_cart_input_placeholder');
+              const placeholderInput = document.getElementById(`woo_better_calc_${styleName}_input_placeholder`);
 
               // Cria o input de texto
               const textInput = document.createElement('input');
               textInput.type = 'text';
-              textInput.id = 'woo_better_calc_cart_input_current_style_postcode_fake_custom';
+              textInput.id = `woo_better_calc_${styleName}_input_current_style_postcode_fake_custom`;
               textInput.placeholder = placeholderInput ? placeholderInput.value : 'Insira seu CEP';
               textInput.classList.add('woo-better-input-current-style');
               textInput.style.cursor = 'pointer';
@@ -448,7 +482,7 @@
                 e.stopPropagation(); // Impede a propagação do evento
 
                 // Seleciona o elemento de destino
-                const targetElement = document.getElementById('woo_better_calc_cart_input_background_color_field_input');
+                const targetElement = document.getElementById(`woo_better_calc_${styleName}_input_background_color_field_input`);
 
                 if (targetElement) {
                   // Faz o scroll suave até o componente
@@ -470,7 +504,7 @@
                 }
               });
 
-              const radioOptions = document.querySelectorAll('input[name="woo_better_calc_cart_input_icon"]');
+              const radioOptions = document.querySelectorAll(`input[name="woo_better_calc_${styleName}_input_icon"]`);
 
               // Cria o ícone
               const icon = document.createElement('img');
@@ -480,7 +514,7 @@
               icon.classList.add('woo-better-input-icon');
 
               // Seleciona o dropdown de cor
-              const colorSelect = document.getElementById('woo_better_calc_cart_input_icon_color');
+              const colorSelect = document.getElementById(`woo_better_calc_${styleName}_input_icon_color`);
 
               if (colorSelect) {
                 // Adiciona um evento para atualizar a classe do ícone com base na cor selecionada
@@ -535,17 +569,18 @@
               inputWrapper.appendChild(icon);
 
               const buttonStyleComponents = {
-                'woo_better_calc_cart_button_background_color_field': 'backgroundColor',
-                'woo_better_calc_cart_button_color_field': 'color',
-                'woo_better_calc_cart_button_border_width': 'borderWidth',
-                'woo_better_calc_cart_button_border_style': 'borderStyle',
-                'woo_better_calc_cart_button_border_color_field': 'borderColor',
-                'woo_better_calc_cart_button_border_radius': 'borderRadius'
+                [`woo_better_calc_${styleName}_button_background_color_field`]: 'backgroundColor',
+                [`woo_better_calc_${styleName}_button_color_field`]: 'color',
+                [`woo_better_calc_${styleName}_button_border_width`]: 'borderWidth',
+                [`woo_better_calc_${styleName}_button_border_style`]: 'borderStyle',
+                [`woo_better_calc_${styleName}_button_border_color_field`]: 'borderColor',
+                [`woo_better_calc_${styleName}_button_border_radius`]: 'borderRadius'
               };
 
               // Cria o botão
               const button = document.createElement('button');
               button.textContent = 'CONSULTAR';
+              button.id = `woo_better_calc_${styleName}_button_current_style_postcode_fake_custom`;
               button.classList.add('woo-better-button-current-style');
 
               // Aplica os valores de estilo dos campos ao botão
@@ -563,7 +598,7 @@
                 e.preventDefault();
                 e.stopPropagation();
 
-                const targetElement = document.getElementById('woo_better_calc_cart_button_background_color_field_input');
+                const targetElement = document.getElementById(`woo_better_calc_${styleName}_button_background_color_field_input`);
 
                 if (targetElement) {
                   // Faz o scroll suave até o componente
@@ -645,6 +680,8 @@
             const targetComponentCartNames = {
               'woo_better_min_free_shipping_value': 'woo_better_enable_min_free_shipping',
               'woo_better_hidden_cart_address': 'woo_better_calc_cep_required',
+
+              //Cart
               'woo_better_calc_cart_input_border_width': 'woo_better_calc_cart_input_background_color_field',
               'woo_better_calc_cart_input_color_field': 'woo_better_calc_cart_input_background_color_field',
               'woo_better_calc_cart_input_border_style': 'woo_better_calc_cart_input_background_color_field',
@@ -656,7 +693,21 @@
               'woo_better_calc_cart_button_border_color_field': 'woo_better_calc_cart_button_background_color_field',
               'woo_better_calc_cart_button_border_radius': 'woo_better_calc_cart_button_background_color_field',
               'woo_better_calc_cart_input_icon': 'woo_better_calc_cart_input_placeholder',
-              'woo_better_calc_cart_input_icon_color': 'woo_better_calc_cart_input_placeholder'
+              'woo_better_calc_cart_input_icon_color': 'woo_better_calc_cart_input_placeholder',
+
+              //Product
+              'woo_better_calc_product_input_border_width': 'woo_better_calc_product_input_background_color_field',
+              'woo_better_calc_product_input_color_field': 'woo_better_calc_product_input_background_color_field',
+              'woo_better_calc_product_input_border_style': 'woo_better_calc_product_input_background_color_field',
+              'woo_better_calc_product_input_border_color_field': 'woo_better_calc_product_input_background_color_field',
+              'woo_better_calc_product_input_border_radius': 'woo_better_calc_product_input_background_color_field',
+              'woo_better_calc_product_button_color_field': 'woo_better_calc_product_button_background_color_field',
+              'woo_better_calc_product_button_border_width': 'woo_better_calc_product_button_background_color_field',
+              'woo_better_calc_product_button_border_style': 'woo_better_calc_product_button_background_color_field',
+              'woo_better_calc_product_button_border_color_field': 'woo_better_calc_product_button_background_color_field',
+              'woo_better_calc_product_button_border_radius': 'woo_better_calc_product_button_background_color_field',
+              'woo_better_calc_product_input_icon': 'woo_better_calc_product_input_placeholder',
+              'woo_better_calc_product_input_icon_color': 'woo_better_calc_product_input_placeholder'
             };
 
             forminp.innerHTML = ''; // Limpa o conteúdo original
@@ -687,208 +738,225 @@
       });
     });
 
-    const styleComponents = {
-      'woo_better_calc_cart_input_background_color_field_input': { property: 'background-color', default: '#ffffff' },
-      'woo_better_calc_cart_input_color_field_input': { property: 'color', default: '#2C3338' },
-      'woo_better_calc_cart_input_border_width': { property: 'border-width', default: '1px' },
-      'woo_better_calc_cart_input_border_style': { property: 'border-style', default: 'solid' },
-      'woo_better_calc_cart_input_border_color_field_input': { property: 'border-color', default: '#ccc' },
-      'woo_better_calc_cart_input_border_radius': { property: 'border-radius', default: '4px' }
-    };
+    function startEvenst(styleName) {
+      const styleComponents = {
+        [`woo_better_calc_${styleName}_input_background_color_field_input`]: { property: 'background-color', default: '#ffffff' },
+        [`woo_better_calc_${styleName}_input_color_field_input`]: { property: 'color', default: '#2C3338' },
+        [`woo_better_calc_${styleName}_input_border_width`]: { property: 'border-width', default: '1px' },
+        [`woo_better_calc_${styleName}_input_border_style`]: { property: 'border-style', default: 'solid' },
+        [`woo_better_calc_${styleName}_input_border_color_field_input`]: { property: 'border-color', default: '#ccc' },
+        [`woo_better_calc_${styleName}_input_border_radius`]: { property: 'border-radius', default: '4px' }
+      };
 
-    // Lista de unidades CSS válidas
-    const validInputCssUnits = ['px', '%', 'em', 'rem', 'vh', 'vw', 'vmin', 'vmax', 'cm', 'mm', 'in', 'pt', 'pc', 'ex', 'ch'];
+      // Lista de unidades CSS válidas
+      const validInputCssUnits = ['px', '%', 'em', 'rem', 'vh', 'vw', 'vmin', 'vmax', 'cm', 'mm', 'in', 'pt', 'pc', 'ex', 'ch'];
 
-    // Seleciona o componente principal que será estilizado
-    const targetComponent = document.getElementById('woo_better_calc_cart_input_current_style_postcode_fake_custom');
+      // Seleciona o componente principal que será estilizado
+      const targetComponent = document.getElementById(`woo_better_calc_${styleName}_input_current_style_postcode_fake_custom`);
 
-    if (targetComponent) {
-      // Itera sobre os controles de estilo
-      Object.keys(styleComponents).forEach(componentId => {
-        const { property, default: defaultValue } = styleComponents[componentId];
-        const controlElement = document.getElementById(componentId);
+      if (targetComponent) {
+        // Itera sobre os controles de estilo
+        Object.keys(styleComponents).forEach(componentId => {
+          const { property, default: defaultValue } = styleComponents[componentId];
+          const controlElement = document.getElementById(componentId);
 
-        if (controlElement) {
-          // Adiciona um evento de input ou change para atualizar os estilos dinamicamente
-          controlElement.addEventListener('change', function () {
-            const value = controlElement.value;
+          if (controlElement) {
+            // Adiciona um evento de input ou change para atualizar os estilos dinamicamente
+            controlElement.addEventListener('change', function () {
+              const value = controlElement.value;
 
-            // Verifica se o controle é do tipo texto e se o valor está no formato correto
-            if (controlElement.type === 'text') {
-              const regex = new RegExp(`^\\d+(\\.\\d+)?(${validInputCssUnits.join('|')})$`);
-              if (!regex.test(value)) {
-                controlElement.value = defaultValue; // Reverte para o valor padrão
-                targetComponent.style.setProperty(property, defaultValue, 'important'); // Aplica o valor padrão
-                return;
+              // Verifica se o controle é do tipo texto e se o valor está no formato correto
+              if (controlElement.type === 'text') {
+                const regex = new RegExp(`^\\d+(\\.\\d+)?(${validInputCssUnits.join('|')})$`);
+                if (!regex.test(value)) {
+                  controlElement.value = defaultValue; // Reverte para o valor padrão
+                  targetComponent.style.setProperty(property, defaultValue, 'important'); // Aplica o valor padrão
+                  return;
+                }
               }
-            }
 
-            // Aplica o estilo no componente principal com !important
-            targetComponent.style.setProperty(property, value, 'important');
-          });
-
-          // Aplica o valor padrão inicial ao componente
-          targetComponent.style.setProperty(property, defaultValue, 'important');
-        }
-      });
-    }
-
-    const buttonStyleComponents = {
-      'woo_better_calc_cart_button_background_color_field_input': { property: 'background-color', default: '#0073aa' },
-      'woo_better_calc_cart_button_color_field_input': { property: 'color', default: '#ffffff' },
-      'woo_better_calc_cart_button_border_width': { property: 'border-width', default: '1px' },
-      'woo_better_calc_cart_button_border_style': { property: 'border-style', default: 'none' },
-      'woo_better_calc_cart_button_border_color_field_input': { property: 'border-color', default: 'transparent' },
-      'woo_better_calc_cart_button_border_radius': { property: 'border-radius', default: '4px' }
-    };
-
-    const validCssButtonUnits = ['px', '%', 'em', 'rem', 'vh', 'vw', 'vmin', 'vmax', 'cm', 'mm', 'in', 'pt', 'pc', 'ex', 'ch'];
-
-    // Seleciona o botão que será estilizado
-    const targetButton = document.querySelector('.woo-better-button-current-style');
-
-    if (targetButton) {
-      // Itera sobre os controles de estilo
-      Object.keys(buttonStyleComponents).forEach(componentId => {
-        const { property, default: defaultValue } = buttonStyleComponents[componentId];
-        const controlElement = document.getElementById(componentId);
-
-        if (controlElement) {
-          // Adiciona um evento de input ou change para atualizar os estilos dinamicamente
-          controlElement.addEventListener('change', function () {
-            const value = controlElement.value;
-
-            // Verifica se o controle é do tipo texto e se o valor está no formato correto
-            if (controlElement.type === 'text') {
-              const regex = new RegExp(`^\\d+(\\.\\d+)?(${validCssButtonUnits.join('|')})$`);
-              if (!regex.test(value)) {
-                controlElement.value = defaultValue; // Reverte para o valor padrão
-                targetButton.style.setProperty(property, defaultValue, 'important'); // Aplica o valor padrão
-                return;
-              }
-            }
-
-            // Aplica o estilo no botão com !important
-            targetButton.style.setProperty(property, value, 'important');
-          });
-        }
-      });
-    }
-
-    const placeholderInput = document.getElementById('woo_better_calc_cart_input_placeholder');
-
-    // Seleciona o componente de texto
-    const textInput = document.getElementById('woo_better_calc_cart_input_current_style_postcode_fake_custom');
-
-    if (placeholderInput && textInput) {
-      // Adiciona o evento change ao componente de placeholder
-      placeholderInput.addEventListener('change', function () {
-        const placeholderValue = placeholderInput.value;
-
-        // Atualiza o placeholder do componente de texto
-        textInput.placeholder = placeholderValue;
-      });
-    }
-
-    const iconMap = {
-      'transit': WCBetterCalcIcons['transit'],
-      'bill': WCBetterCalcIcons['bill'],
-      'truck': WCBetterCalcIcons['truck'],
-      'postcode': WCBetterCalcIcons['postcode'],
-      'zipcode': WCBetterCalcIcons['zipcode']
-    };
-
-    // Seleciona todos os inputs do tipo radio pelo atributo name
-    const radioOptions = document.querySelectorAll('input[name="woo_better_calc_cart_input_icon"]');
-
-    if (radioOptions.length > 0) {
-      radioOptions.forEach(option => {
-        const value = option.value;
-
-        if (iconMap[value]) {
-          // Cria o elemento de imagem
-          const img = document.createElement('img');
-          img.src = iconMap[value];
-          img.alt = value;
-          img.style.width = '40px';
-          img.style.height = '40px';
-          img.style.marginLeft = '10px';
-          img.classList.add('woo-better-input-icon');
-          const colorSelect = document.getElementById('woo_better_calc_cart_input_icon_color');
-          img.classList.add(colorSelect ? colorSelect.value : 'black-icon'); // Adiciona a classe de cor inicial
-
-          // Remove o texto do label e adiciona a imagem
-          const label = option.closest('label');
-          if (label) {
-            label.textContent = ''; // Remove o texto
-            label.appendChild(option); // Reinsere o input radio
-            label.appendChild(img); // Adiciona a imagem
-            label.style.display = 'flex';
-            label.style.alignItems = 'center';
-            label.style.setProperty('margin', '14px 0', 'important');
-          }
-        }
-      });
-    }
-
-    const targetIds = [
-      'woo_better_calc_cart_input_background_color_field',
-      'woo_better_calc_cart_button_background_color_field',
-      'woo_better_calc_cart_input_placeholder'
-    ];
-
-    // Itera sobre os IDs
-    targetIds.forEach(id => {
-      const targetElement = document.getElementById('woo_better_calc_cart_input_current_style_postcode_fake_custom'); // Componente de destino fixo
-
-      if (targetElement) {
-        // Encontra o elemento pai com a classe .woo-forminp-body
-        const parentForminpBody = document.getElementById(id)?.closest('.woo-forminp-body');
-
-        if (parentForminpBody) {
-          // Cria o link
-          const link = document.createElement('a');
-          link.href = `#woo_better_calc_cart_input_current_style_postcode_fake_custom`; // Aponta para o ID do componente
-          link.textContent = `Ir para o componente de CEP`;
-
-          // Estiliza o link
-          link.style.display = 'flex';
-          link.style.color = '#0073aa';
-          link.style.textDecoration = 'none';
-          link.style.width = 'fit-content';
-          link.style.outline = 'none';
-          link.style.boxShadow = 'none';
-
-          // Adiciona o evento de clique para a animação de movimento
-          link.addEventListener('click', function (e) {
-            e.preventDefault(); // Evita o comportamento padrão do link
-
-            // Faz o scroll suave até o componente
-            targetElement.scrollIntoView({
-              behavior: 'smooth',
-              block: 'center'
+              // Aplica o estilo no componente principal com !important
+              targetComponent.style.setProperty(property, value, 'important');
             });
 
-            // Adiciona um destaque temporário ao componente
-            targetElement.style.transition = 'box-shadow 0.3s ease';
-            targetElement.style.boxShadow = '0 0 10px 2px #0073aa';
+            // Aplica o valor padrão inicial ao componente
+            targetComponent.style.setProperty(property, defaultValue, 'important');
+          }
+        });
+      }
 
-            // Remove o destaque após 1 segundo
-            setTimeout(() => {
-              targetElement.style.boxShadow = 'none';
-            }, 1000);
+      const buttonStyleComponents = {
+        [`woo_better_calc_${styleName}_button_background_color_field_input`]: { property: 'background-color', default: '#0073aa' },
+        [`woo_better_calc_${styleName}_button_color_field_input`]: { property: 'color', default: '#ffffff' },
+        [`woo_better_calc_${styleName}_button_border_width`]: { property: 'border-width', default: '1px' },
+        [`woo_better_calc_${styleName}_button_border_style`]: { property: 'border-style', default: 'none' },
+        [`woo_better_calc_${styleName}_button_border_color_field_input`]: { property: 'border-color', default: 'transparent' },
+        [`woo_better_calc_${styleName}_button_border_radius`]: { property: 'border-radius', default: '4px' }
+      };
+
+      const validCssButtonUnits = ['px', '%', 'em', 'rem', 'vh', 'vw', 'vmin', 'vmax', 'cm', 'mm', 'in', 'pt', 'pc', 'ex', 'ch'];
+
+      // Seleciona o botão que será estilizado
+      const targetButton = document.querySelector(`#woo_better_calc_${styleName}_button_current_style_postcode_fake_custom`);
+
+      if (targetButton) {
+        // Itera sobre os controles de estilo
+        Object.keys(buttonStyleComponents).forEach(componentId => {
+          const { property, default: defaultValue } = buttonStyleComponents[componentId];
+          const controlElement = document.getElementById(componentId);
+
+          if (controlElement) {
+            // Adiciona um evento de input ou change para atualizar os estilos dinamicamente
+            controlElement.addEventListener('change', function () {
+              const value = controlElement.value;
+
+              // Verifica se o controle é do tipo texto e se o valor está no formato correto
+              if (controlElement.type === 'text') {
+                const regex = new RegExp(`^\\d + (\\.\\d +) ? (${validCssButtonUnits.join('|')
+                  })$`);
+                if (!regex.test(value)) {
+                  controlElement.value = defaultValue; // Reverte para o valor padrão
+                  targetButton.style.setProperty(property, defaultValue, 'important'); // Aplica o valor padrão
+                  return;
+                }
+              }
+
+              // Aplica o estilo no botão com !important
+              targetButton.style.setProperty(property, value, 'important');
+            });
+          }
+        });
+      }
+
+      const placeholderInput = document.getElementById(`woo_better_calc_${styleName}_input_placeholder`);
+
+      // Seleciona o componente de texto
+      const textInput = document.getElementById(`woo_better_calc_${styleName}_input_current_style_postcode_fake_custom`);
+
+      if (placeholderInput && textInput) {
+        // Adiciona o evento change ao componente de placeholder
+        placeholderInput.addEventListener('change', function () {
+          const placeholderValue = placeholderInput.value;
+
+          // Atualiza o placeholder do componente de texto
+          textInput.placeholder = placeholderValue;
+        });
+      }
+
+      const iconMap = {
+        'transit': WCBetterCalcIcons['transit'],
+        'bill': WCBetterCalcIcons['bill'],
+        'truck': WCBetterCalcIcons['truck'],
+        'postcode': WCBetterCalcIcons['postcode'],
+        'zipcode': WCBetterCalcIcons['zipcode']
+      };
+
+      // Seleciona todos os inputs do tipo radio pelo atributo name
+      const radioOptions = document.querySelectorAll(`input[name="woo_better_calc_${styleName}_input_icon"]`);
+
+      if (radioOptions.length > 0) {
+        radioOptions.forEach(option => {
+          const value = option.value;
+
+          if (iconMap[value]) {
+            // Cria o elemento de imagem
+            const img = document.createElement('img');
+            img.src = iconMap[value];
+            img.alt = value;
+            img.style.width = '40px';
+            img.style.height = '40px';
+            img.style.marginLeft = '10px';
+            img.classList.add('woo-better-input-icon');
+            const colorSelect = document.getElementById(`woo_better_calc_${styleName}_input_icon_color`);
+            img.classList.add(colorSelect ? colorSelect.value : 'black-icon'); // Adiciona a classe de cor inicial
+
+            // Remove o texto do label e adiciona a imagem
+            const label = option.closest('label');
+            if (label) {
+              label.textContent = ''; // Remove o texto
+              label.appendChild(option); // Reinsere o input radio
+              label.appendChild(img); // Adiciona a imagem
+              label.style.display = 'flex';
+              label.style.alignItems = 'center';
+              label.style.setProperty('margin', '14px 0', 'important');
+            }
+          }
+        });
+      }
+    }
+
+    startEvenst('cart');
+    startEvenst('product');
+
+    // Cria a div que conterá o ícone
+    const floatingIconContainer = document.createElement('div');
+    floatingIconContainer.style.position = 'fixed';
+    floatingIconContainer.style.bottom = '40px';
+    floatingIconContainer.style.right = '60px';
+    floatingIconContainer.style.width = '80px';
+    floatingIconContainer.style.height = '80px';
+    floatingIconContainer.style.borderRadius = '50%';
+    floatingIconContainer.style.cursor = 'pointer';
+    floatingIconContainer.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+    floatingIconContainer.style.boxSizing = 'border-box';
+    floatingIconContainer.style.zIndex = '1000';
+    floatingIconContainer.style.backgroundColor = '#ffffff';
+    floatingIconContainer.style.display = 'flex';
+    floatingIconContainer.style.alignItems = 'center';
+    floatingIconContainer.style.justifyContent = 'center';
+
+    // Cria o ícone dentro da div
+    const floatingIcon = document.createElement('img');
+    floatingIcon.src = WCBetterCalcIcons.consult; // Substitua pela URL do ícone desejado
+    floatingIcon.alt = 'Ir para o componente';
+    floatingIcon.title = 'Ir para o componente';
+    floatingIcon.style.width = '60px';
+    floatingIcon.style.height = '60px';
+    floatingIcon.style.objectFit = 'cover';
+    floatingIcon.style.objectPosition = 'center';
+
+    // Adiciona o evento de clique à div
+    floatingIconContainer.addEventListener('click', function () {
+      // Verifica a URL para determinar o contexto (cart ou product)
+      const hash = window.location.hash;
+      let styleName = '';
+
+      if (hash.includes('carrinho')) {
+        styleName = 'cart';
+      } else if (hash.includes('produto')) {
+        styleName = 'product';
+      }
+
+      if (styleName) {
+        // Seleciona o componente de destino
+        const targetElement = document.getElementById(`woo_better_calc_${styleName}_input_current_style_postcode_fake_custom`);
+
+        if (targetElement) {
+          // Faz o scroll suave até o componente
+          targetElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
           });
 
-          // Cria o elemento <td>
-          const td = document.createElement('td');
-          td.style.padding = '0px';
-          td.appendChild(link); // Adiciona o link dentro do <td>
+          // Adiciona um destaque temporário ao componente
+          targetElement.style.transition = 'box-shadow 0.3s ease';
+          targetElement.style.boxShadow = '0 0 10px 2px #0073aa';
 
-          // Adiciona o <td> ao final do .woo-forminp-body
-          parentForminpBody.appendChild(td);
+          // Remove o destaque após 1 segundo
+          setTimeout(() => {
+            targetElement.style.boxShadow = 'none';
+          }, 1000);
         }
+      } else {
+        alert('Componente disponível apenas nas abas de Carrinho ou Produto.');
       }
     });
+
+    // Adiciona a imagem dentro da div
+    floatingIconContainer.appendChild(floatingIcon);
+
+    // Adiciona a div ao body
+    document.body.appendChild(floatingIconContainer);
 
     // Função para mostrar/esconder tabelas dinamicamente
     function showTable(activeIdx) {

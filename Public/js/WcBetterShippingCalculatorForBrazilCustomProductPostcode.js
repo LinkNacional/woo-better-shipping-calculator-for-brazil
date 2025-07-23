@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const WooBetterData = window.WooBetterData || {}; // Dados localizados do PHP
     let containerFound = false;
-    let blockPosition = '.wp-block-woocommerce-cart-order-summary-heading-block' // Posição padrão é 'top'
+    let blockPosition = '.wp-block-post-title' // Posição padrão é 'top'
 
     // Função para criar o formulário
     function createForm() {
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Adiciona um campo de entrada
         const input = document.createElement('input');
         input.type = 'text';
-        input.name = 'woo_better_custom_cart_postcode';
+        input.name = 'woo_better_custom_product_postcode';
         input.placeholder = WooBetterData.placeholder || 'Digite o CEP';
         input.classList.add('woo-better-input-current-style');
         input.autocomplete = 'postal-code';
@@ -166,9 +166,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function setPosition() {
         const position = WooBetterData.position || 'top'; // Posição padrão é 'top'
         if (position === 'middle') {
-            blockPosition = '.wp-block-woocommerce-cart-order-summary-totals-block'
+            blockPosition = '.wc-block-components-product-price'
         } else if (position === 'bottom') {
-            blockPosition = '.wp-block-woocommerce-cart-order-summary-block';
+            blockPosition = '.wp-block-add-to-cart-form';
         }
 
         return blockPosition

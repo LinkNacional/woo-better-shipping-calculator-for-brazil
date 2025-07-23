@@ -337,6 +337,7 @@ class WcBetterShippingCalculatorForBrazil
                 'transit' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/transit.svg',
                 'zipcode' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/zipcode.svg',
                 'truck' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/truck.svg',
+                'consult' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/postcodeConsult.svg',
             );
 
             // Passa os dados para o JavaScript
