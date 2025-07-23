@@ -359,6 +359,14 @@ class WcBetterShippingCalculatorForBrazil
             );
 
             wp_enqueue_style(
+                'wc-better-calc-style-postcode',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/css/WcBetterShippingCalculatorForBrazilAdminCustomPostcode.css',
+                array(),
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                'all'
+            );
+
+            wp_enqueue_style(
                 'wc-better-calc-style-admin-card-settings',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/css/WcBetterShippingCalculatorForBrazilAdminCard.css',
                 array(),

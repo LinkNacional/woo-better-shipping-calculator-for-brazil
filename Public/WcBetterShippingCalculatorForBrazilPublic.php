@@ -130,7 +130,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                 ));
             }
 
-            if ($cep_required === 'yes') {
+            if ($cep_required === 'yes' && defined('WC_VERSION') && version_compare(WC_VERSION, '10.0.0', '<')) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-cep-field',
                     plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergCEPField.js',
@@ -256,11 +256,12 @@ class WcBetterShippingCalculatorForBrazilPublic
                 ),
                 'icon' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/postcodeOptions/' . $cart_custom_icon . '.svg',
                 'iconColor' => get_option('woo_better_calc_cart_input_icon_color', '#000000'),
+                'wooUrl' => home_url()
             ));
 
             wp_enqueue_style(
-                'woo-better-cart-custom-style', 
-                plugin_dir_url(dirname(__FILE__)) . 'Admin/css/WcBetterShippingCalculatorForBrazilAdminSettings.css',
+                'woo-better-cart-custom-postcode', 
+                plugin_dir_url(dirname(__FILE__)) . 'Admin/css/WcBetterShippingCalculatorForBrazilAdminCustomPostcode.css',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION, 
                 'all'

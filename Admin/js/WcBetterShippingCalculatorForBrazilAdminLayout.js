@@ -33,11 +33,85 @@
     sideContainer.style.padding = '32px 16px';
     sideContainer.style.boxSizing = 'border-box';
 
+    const stickyContainer = document.createElement('div');
+    stickyContainer.className = 'sticky-container';
+    stickyContainer.style.position = 'sticky';
+    stickyContainer.style.top = '314px';
+
+    // Cria a mensagem update
+    const greenMessage = document.createElement('div');
+    greenMessage.className = 'custom-feature-message';
+    greenMessage.style.display = 'flex';
+    greenMessage.style.alignItems = 'center';
+    greenMessage.style.padding = '10px';
+    greenMessage.style.marginTop = '20px';
+    greenMessage.style.border = '1px solid #4caf50';
+    greenMessage.style.borderLeftWidth = '5px';
+    greenMessage.style.borderLeftColor = '#4caf50';
+    greenMessage.style.borderRadius = '5px';
+    greenMessage.style.backgroundColor = '#e8f5e9';
+    greenMessage.style.color = '#388e3c';
+    greenMessage.style.fontSize = '14px';
+    greenMessage.style.lineHeight = '1.5';
+
+    // Adiciona o ícone de informação
+    const infoIcon = document.createElement('span');
+    infoIcon.textContent = 'ℹ️'; // Ícone de informação
+    infoIcon.style.marginRight = '10px';
+    infoIcon.style.fontSize = '16px';
+
+    // Adiciona o texto da mensagem
+    const greenMessageText = document.createElement('span');
+    greenMessageText.textContent = 'Nova funcionalidade: agora é possível adicionar um componente de busca de CEP nas páginas de carrinho e produto. Essa funcionalidade automatiza o preenchimento do endereço e permite personalizar essas as páginas de carrinho e produto no Gutenberg de forma prática e eficiente.';
+
+    // Cria a mensagem de aviso
+    const cartMessage = document.createElement('div');
+    cartMessage.className = 'cart-feature-message';
+    cartMessage.style.display = 'flex';
+    cartMessage.style.alignItems = 'center';
+    cartMessage.style.padding = '10px';
+    cartMessage.style.marginTop = '20px';
+    cartMessage.style.border = '1px solid #ffcc00';
+    cartMessage.style.borderLeftWidth = '5px';
+    cartMessage.style.borderLeftColor = '#ffcc00';
+    cartMessage.style.borderRadius = '5px';
+    cartMessage.style.backgroundColor = '#fff8e1';
+    cartMessage.style.color = '#ff9800';
+    cartMessage.style.fontSize = '14px';
+    cartMessage.style.lineHeight = '1.5';
+
+    // Adiciona o ícone de alerta
+    const alertIcon = document.createElement('span');
+    alertIcon.textContent = '⚠️'; // Ícone de alerta
+    alertIcon.style.marginRight = '10px';
+    alertIcon.style.fontSize = '16px';
+
+    // Adiciona o texto da mensagem
+    const messageText = document.createElement('span');
+    messageText.textContent = 'Funcionalidade de carrinho disponível apenas a partir da versão 10.0.0+ do WooCommerce.';
+
     const settingsCard = document.querySelector('#WooBetterLinkSettingsCard');
     if (settingsCard) {
       settingsCard.style.display = 'block'
+
       // Move o componente para o sideContainer
       sideContainer.appendChild(settingsCard);
+
+      // Adiciona o ícone e o texto ao componente de mensagem
+      greenMessage.appendChild(infoIcon);
+      greenMessage.appendChild(greenMessageText);
+
+      // Adiciona a mensagem ao sideContainer
+      stickyContainer.appendChild(greenMessage);
+
+      // Adiciona o ícone e o texto ao componente de mensagem
+      cartMessage.appendChild(alertIcon);
+      cartMessage.appendChild(messageText);
+
+      // Adiciona a mensagem ao sideContainer
+      stickyContainer.appendChild(cartMessage)
+
+      sideContainer.appendChild(stickyContainer);
     }
 
     mainContainer.appendChild(contentContainer);
@@ -418,7 +492,7 @@
 
                   icons.forEach(icon => {
                     // Remove todas as classes de cor existentes
-                    icon.classList.remove('black-icon', 'white-icon', 'red-icon', 'pink-icon', 'green-icon', 'blue-icon');
+                    icon.classList.remove('black-icon', 'gray-icon', 'red-icon', 'pink-icon', 'green-icon', 'blue-icon');
 
                     // Adiciona a classe correspondente à cor selecionada
                     icon.classList.add(selectedColor);
@@ -815,91 +889,6 @@
         }
       }
     });
-
-    // Seleciona o input color
-    const colorPicker = document.getElementById('woo_better_calc_cart_input_icon_color_field_input'); // Substitua pelo ID correto do input color
-
-    if (colorPicker) {
-      // Adiciona um evento para atualizar o filtro do ícone com base na cor selecionada
-      colorPicker.addEventListener('input', function () {
-        const selectedColor = colorPicker.value; // Obtém o valor hexadecimal da cor selecionada
-
-        const icon = document.querySelector('.woo-better-icon-current-style'); // Seleciona o ícone
-
-        if (icon) {
-          // Gera o filtro com base na cor selecionada
-          const filter = generateFilter(selectedColor);
-
-          console.log('Filtro gerado:', filter);
-
-          // Aplica o filtro ao ícone
-          icon.style.filter = filter;
-        }
-      });
-    }
-
-    // Função para gerar o filtro CSS com base no valor hexadecimal
-    function generateFilter(hex) {
-      const rgb = hexToRgb(hex);
-
-      // Ajusta os valores para o filtro
-      const r = rgb.r / 255;
-      const g = rgb.g / 255;
-      const b = rgb.b / 255;
-
-      // Filtro ajustado para transformar preto em outras cores
-      return `brightness(0) saturate(100%) invert(${calculateInvert(r, g, b)}) sepia(1) saturate(7458%) hue-rotate(${calculateHue(rgb)}deg) brightness(${calculateBrightness(r, g, b)}) contrast(1.05)`;
-    }
-
-    // Função para calcular o valor de invert com base nos valores RGB
-    function calculateInvert(r, g, b) {
-      console.log('Valores RGB:', r, g, b);
-
-      // Ajusta o valor de invert para aproximar a cor desejada
-      const invertValue = 0.9 + (r - Math.min(r, g, b)) / 2; // Usa a mesma fórmula de calculateBrightness
-
-      console.log('Valor de invert calculado (decimal):', invertValue);
-
-      // Converte para um valor percentual e adiciona o símbolo '%'
-      return `${(invertValue * 10).toFixed(0)}%`; // Retorna o valor em porcentagem como string
-    }
-
-    // Função para calcular o brilho com base nos valores RGB
-    function calculateBrightness(r, g, b) {
-      // Ajusta o brilho para considerar todos os tons, com mais peso para vermelho e verde
-      const brightnessValue = 0.9 + (0.6 * r + 0.3 * g + 0.1 * b); // Dá mais peso ao vermelho e verde
-      return brightnessValue * 2;
-    }
-
-    // Função para converter hexadecimal em RGB
-    function hexToRgb(hex) {
-      const bigint = parseInt(hex.slice(1), 16);
-      const r = (bigint >> 16) & 255;
-      const g = (bigint >> 8) & 255;
-      const b = bigint & 255;
-
-      return { r, g, b };
-    }
-
-    // Função para calcular o hue com base nos valores RGB
-    function calculateHue({ r, g, b }) {
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-
-      let hue = 0;
-
-      if (max === min) {
-        hue = 0; // Sem cor
-      } else if (max === r) {
-        hue = (60 * ((g - b) / (max - min)) + 360) % 360;
-      } else if (max === g) {
-        hue = (60 * ((b - r) / (max - min)) + 120) % 360;
-      } else if (max === b) {
-        hue = (60 * ((r - g) / (max - min)) + 240) % 360;
-      }
-
-      return hue;
-    }
 
     // Função para mostrar/esconder tabelas dinamicamente
     function showTable(activeIdx) {

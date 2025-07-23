@@ -25,94 +25,6 @@
     padding: 5px 20px;
 }
 
-/* Currency style */
-.woo-better-container-current-style {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 15px;
-}
-
-.woo-better-input-button-group-current-style {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-}
-
-.woo-better-input-wrapper-current-style {
-    position: relative;
-    width: 100%;
-    max-width: 220px;
-    height: 50px !important;
-}
-
-.woo-better-input-current-style {
-    width: 220px !important;
-    height: 50px !important;
-    padding: 0 8px !important;
-    font-size: 16px !important;
-    box-sizing: border-box !important;
-}
-
-.woo-better-icon-current-style {
-    position: absolute;
-    width: 25px;
-    height: 25px;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.woo-better-button-current-style {
-    width: 100px !important;
-    height: 50px !important;
-    cursor: pointer;
-}
-
-.woo-better-link-current-style {
-    font-size: 14px !important;
-    color: #0073aa !important;
-    text-decoration: underline;
-    transition: color 0.3s ease;
-    font-weight: normal !important;
-    text-transform: none !important;
-}
-
-.woo-better-link-current-style:hover {
-    color: #005f8d;
-}
-
-.woo-better-color-field {
-    height: 50px !important;
-    width: 50px !important;
-    cursor: pointer;
-}
-
-.black-icon {
-    filter: brightness(0) saturate(100%) invert(0) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(0%) contrast(100%);
-}
-
-.white-icon {
-    filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);
-}
-
-.red-icon {
-    filter: brightness(0) saturate(100%) invert(14%) sepia(100%) saturate(7458%) hue-rotate(1deg) brightness(96%) contrast(105%);
-}
-
-.pink-icon {
-    filter: brightness(0) saturate(100%) invert(50%) sepia(100%) saturate(3000%) hue-rotate(300deg) brightness(95%) contrast(105%);
-}
-
-.green-icon {
-    filter: brightness(0) saturate(100%) invert(39%) sepia(100%) saturate(2000%) hue-rotate(90deg) brightness(90%) contrast(100%);
-}
-
-.blue-icon {
-    filter: brightness(0) saturate(100%) invert(30%) sepia(100%) saturate(2000%) hue-rotate(200deg) brightness(90%) contrast(100%);
-}
-
 @media (max-width: 1250px) {
 
     .lkn-settings-side {
@@ -125,24 +37,10 @@
     }
 
     .lkn-settings-tabs {
-        margin-bottom: 0px !important;
+        margin-bottom: 10px !important;
     }
 
     .titledesc {
         padding-top: 40px !important;
-    }
-}
-
-@media (max-width: 540px) {
-    .woo-better-input-wrapper-current-style {
-        max-width: 100% !important;
-    }
-
-    .woo-better-input-current-style {
-        width: 100% !important;
-    }
-
-    .woo-better-button-current-style {
-        width: 100% !important;
     }
 }

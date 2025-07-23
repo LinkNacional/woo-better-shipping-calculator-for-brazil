@@ -118,14 +118,46 @@ document.addEventListener('DOMContentLoaded', function () {
                 return; // Interrompe o envio se o CEP for inválido
             }
 
+            // Desabilita o botão e o input
+            button.disabled = true;
+            input.disabled = true;
+
+            // Salva o texto original do botão
+            const originalButtonText = button.textContent;
+
+            // Substitui o texto do botão por um ícone de carregamento
+            button.textContent = '';
+            const loadingIcon = document.createElement('span');
+            loadingIcon.classList.add('loading-icon'); // Usa a classe definida no CSS
+            button.appendChild(loadingIcon);
+
+            // Adiciona estilos de desabilitado ao input e botão
+            input.style.backgroundColor = '#f0f0f0';
+            input.style.cursor = 'not-allowed';
+            button.style.backgroundColor = '#ccc';
+            button.style.cursor = 'not-allowed';
+
             // Remove o componente de resultados anterior, se existir
             const resultsContainer = document.getElementById('shipping-rates-results');
             if (resultsContainer) {
                 resultsContainer.remove();
             }
 
-            // Se o CEP for válido, faz a requisição via fetch
-            sendCEP(postcode);
+            // Faz a requisição via fetch
+            sendCEP(postcode).finally(() => {
+                // Reabilita o botão e o input após a conclusão da requisição
+                button.disabled = false;
+                input.disabled = false;
+
+                // Restaura o texto original do botão
+                button.textContent = originalButtonText;
+
+                // Remove os estilos de desabilitado
+                input.style.backgroundColor = WooBetterData.inputStyles.backgroundColor || '#fff';
+                input.style.cursor = '';
+                button.style.backgroundColor = WooBetterData.buttonStyles.backgroundColor || '#0073aa';
+                button.style.cursor = '';
+            });
         });
 
         return form;
@@ -330,9 +362,10 @@ document.addEventListener('DOMContentLoaded', function () {
             resultsContainer.id = 'shipping-rates-results';
             resultsContainer.style.marginTop = '20px';
             resultsContainer.style.padding = '10px';
-            resultsContainer.style.border = '1px solid #ccc';
-            resultsContainer.style.borderRadius = '5px';
-            resultsContainer.style.backgroundColor = '#f9f9f9';
+            resultsContainer.style.border = WooBetterData.inputStyles.borderWidth + ' ' + WooBetterData.inputStyles.borderStyle + ' ' + WooBetterData.inputStyles.borderColor;
+            resultsContainer.style.borderRadius = WooBetterData.inputStyles.borderRadius;
+            resultsContainer.style.backgroundColor = WooBetterData.inputStyles.backgroundColor;
+            resultsContainer.style.color = WooBetterData.inputStyles.color;
 
             // Adiciona um título ao contêiner
             const title = document.createElement('h4');
@@ -351,8 +384,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Cria um item de lista para cada taxa de envio
                 const listItem = document.createElement('li');
-                listItem.textContent = `${name}: ${price}`;
                 listItem.style.marginBottom = '5px';
+
+                // Adiciona o nome e o preço com destaque
+                listItem.innerHTML = `<strong>${name}</strong>: ${price.replace('.', ',')}`;
                 list.appendChild(listItem);
             });
 

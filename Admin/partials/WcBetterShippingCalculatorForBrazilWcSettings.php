@@ -219,7 +219,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'default'  => '1px',
                 'custom_attributes' => array(
                     'data-desc-tip' => __('Defina a largura da borda do campo de entrada.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Insira a largura da borda em pixels.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Insira a largura da borda em pixels(recomendado) ou outra unidade.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Largura da Borda (Input).', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
@@ -263,7 +263,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'default'  => '4px',
                 'custom_attributes' => array(
                     'data-desc-tip' => __('Defina o raio da borda do campo de entrada.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Insira o raio da borda em pixels.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Insira o raio da borda em pixels(recomendado) ou outra unidade.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Raio da Borda (Input).', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
@@ -299,7 +299,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'default'  => '1px',
                 'custom_attributes' => array(
                     'data-desc-tip' => __('Defina a largura da borda do botão.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Insira a largura da borda em pixels.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Insira a largura da borda em pixels(recomendado) ou outra unidade.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Largura da Borda (Botão).', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
@@ -343,7 +343,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'default'  => '4px',
                 'custom_attributes' => array(
                     'data-desc-tip' => __('Defina o raio da borda do botão.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Insira o raio da borda em pixels.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Insira o raio da borda em pixels(recomendado) ou outra unidade.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Raio da Borda (Botão).', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
@@ -376,7 +376,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'custom_attributes' => array(
                     'data-desc-tip' => __('Escolha um ícone para o campo de entrada.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Selecione um ícone para exibir no campo de entrada.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Ícone do Campo.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-title-description' => __('Ícone do input de CEP.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'cart_input_icon_color' => array(
@@ -385,7 +385,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'type'     => 'select',
                 'options'  => array(
                     'black-icon'    => __('Preto', 'woo-better-shipping-calculator-for-brazil'),
-                    'white-icon' => __('Branco', 'woo-better-shipping-calculator-for-brazil'),
+                    'gray-icon' => __('Cinza', 'woo-better-shipping-calculator-for-brazil'),
                     'red-icon' => __('Vermelho', 'woo-better-shipping-calculator-for-brazil'),
                     'pink-icon' => __('Rosa', 'woo-better-shipping-calculator-for-brazil'),
                     'green-icon' => __('Verde', 'woo-better-shipping-calculator-for-brazil'),
@@ -410,7 +410,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'default'  => 'top',
                 'custom_attributes' => array(
                     'data-desc-tip' => __('Defina a posição do campo na página.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Escolha se o campo será exibido no topo ou na base.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Escolha se o campo será exibido no topo, meio ou na base do componente.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Posição do Campo.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
