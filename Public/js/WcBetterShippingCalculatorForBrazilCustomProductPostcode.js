@@ -1,13 +1,20 @@
 document.addEventListener('DOMContentLoaded', function () {
     const WooBetterData = window.WooBetterData || {}; // Dados localizados do PHP
     let containerFound = false;
-    let blockPosition = '.wp-block-post-title' // Posição padrão é 'top'
+    let blockPosition = 'h1[class*="title"]' // Posição padrão é 'top'
+    let postcodeValue = '';
+    let cacheShippingRates = '';
 
     // Função para criar o formulário
     function createForm() {
         const form = document.createElement('form');
         form.id = 'custom-postcode-form';
         form.style.marginTop = '20px';
+        form.style.padding = '0px';
+
+        if (cacheShippingRates) {
+            form.style.display = 'none';
+        }
 
         const containerDiv = document.createElement('div');
         containerDiv.classList.add('woo-better-container-current-style');
@@ -27,6 +34,10 @@ document.addEventListener('DOMContentLoaded', function () {
         input.placeholder = WooBetterData.placeholder || 'Digite o CEP';
         input.classList.add('woo-better-input-current-style');
         input.autocomplete = 'postal-code';
+
+        if (cacheShippingRates) {
+            input.value = cacheShippingRates.postcode || '';
+        }
 
         // Aplica os estilos do input
         const inputStyles = WooBetterData.inputStyles || {};
@@ -166,9 +177,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function setPosition() {
         const position = WooBetterData.position || 'top'; // Posição padrão é 'top'
         if (position === 'middle') {
-            blockPosition = '.wc-block-components-product-price'
+            blockPosition = 'div[class*="price"], p[class*="price"]';
         } else if (position === 'bottom') {
-            blockPosition = '.wp-block-add-to-cart-form';
+            blockPosition = 'form[class*="cart"]';
         }
 
         return blockPosition
@@ -181,9 +192,115 @@ document.addEventListener('DOMContentLoaded', function () {
                 const targetClass = setPosition();
                 const targetElement = document.querySelector(targetClass);
                 if (targetElement && !containerFound) {
-                    containerFound = true; // Marca que o contêiner foi encontrado
+                    containerFound = true;
+                    cacheShippingRates = getCachedShippingRates();
+
                     const form = createForm();
-                    targetElement.appendChild(form);
+                    targetElement.insertAdjacentElement('afterend', form);
+
+                    if (cacheShippingRates) {
+                        const addNewCepContainer = document.createElement('div');
+                        addNewCepContainer.style.width = '100%';
+                        addNewCepContainer.style.textAlign = 'left';
+                        addNewCepContainer.style.margin = '0px';
+
+                        // Cria o "link" estilizado
+                        const addNewCepButton = document.createElement('a');
+                        addNewCepButton.textContent = 'Adicionar novo CEP';
+                        addNewCepButton.classList.add('woo-better-add-new-cep-button');
+                        addNewCepButton.style.display = 'inline-block';
+                        addNewCepButton.style.width = 'fit-content';
+                        addNewCepButton.style.cursor = 'pointer';
+                        addNewCepButton.style.color = '#0073aa';
+                        addNewCepButton.style.textDecoration = 'underline';
+                        addNewCepButton.style.fontSize = '16px';
+                        addNewCepButton.style.fontFamily = 'poppins, sans-serif';
+
+                        if (WooBetterData.position !== 'top') {
+                            addNewCepButton.style.marginTop = '10px';
+                        }
+
+                        // Adiciona evento ao "link" para exibir o formulário
+                        addNewCepButton.addEventListener('click', function (e) {
+                            e.preventDefault(); // Evita o comportamento padrão do link
+                            form.style.display = 'block'; // Exibe o formulário
+                            addNewCepContainer.style.display = 'none'; // Oculta o link
+                        });
+
+                        // Adiciona o "link" à div
+                        addNewCepContainer.appendChild(addNewCepButton);
+
+                        form.insertAdjacentElement('afterend', addNewCepContainer);
+
+                        const shippingRates = cacheShippingRates.rates;
+
+                        if (!shippingRates || !Array.isArray(shippingRates)) {
+                            console.error('Nenhuma taxa de envio encontrada.');
+                        } else {
+                            // Remove o componente de resultados anterior, se existir
+                            let resultsContainer = document.getElementById('shipping-rates-results');
+                            if (resultsContainer) {
+                                resultsContainer.remove();
+                            }
+
+                            // Cria um novo contêiner para os resultados
+                            resultsContainer = document.createElement('div');
+                            resultsContainer.id = 'shipping-rates-results';
+                            resultsContainer.style.marginTop = '20px';
+                            resultsContainer.style.marginBottom = '20px';
+                            resultsContainer.style.padding = '10px';
+                            resultsContainer.style.border = WooBetterData.inputStyles.borderWidth + ' ' + WooBetterData.inputStyles.borderStyle + ' ' + WooBetterData.inputStyles.borderColor;
+                            resultsContainer.style.borderRadius = WooBetterData.inputStyles.borderRadius;
+                            resultsContainer.style.backgroundColor = WooBetterData.inputStyles.backgroundColor;
+                            resultsContainer.style.color = WooBetterData.inputStyles.color;
+                            resultsContainer.style.width = 'fit-content';
+
+                            // Adiciona um título ao contêiner
+                            const title = document.createElement('h4');
+                            title.textContent = 'Opções de Envio:';
+                            title.style.marginTop = '0px';
+                            title.style.marginBottom = '10px';
+                            title.style.fontSize = '18px'
+                            title.style.fontFamily = 'poppins, sans-serif';
+                            resultsContainer.appendChild(title);
+
+                            // Cria uma lista para exibir as taxas de envio
+                            const list = document.createElement('ul');
+                            list.style.listStyleType = 'none';
+                            list.style.padding = '0';
+                            list.style.marginTop = '20px';
+                            list.style.marginBottom = '0px';
+
+                            shippingRates.forEach(rate => {
+                                const name = rate.label;
+                                const cost = parseFloat(rate.cost);
+                                const price = `${rate.currency}${(cost).toFixed(rate.currency_minor_unit)}`;
+
+                                // Cria um item de lista para cada taxa de envio
+                                const listItem = document.createElement('li');
+                                title.style.margin = '0px';
+                                listItem.style.fontSize = '16px';
+                                listItem.style.fontFamily = 'poppins, sans-serif';
+
+                                if (shippingRates.length > 1) {
+                                    listItem.style.marginBottom = '5px';
+                                } else {
+                                    listItem.style.margin = '0px';
+                                }
+
+                                // Adiciona o nome e o preço com destaque
+                                listItem.innerHTML = `<strong>${name}</strong>: ${price.replace('.', ',')}`;
+                                list.appendChild(listItem);
+                            });
+
+                            // Adiciona a lista ao contêiner de resultados
+                            resultsContainer.appendChild(list);
+
+                            // Adiciona o contêiner de resultados abaixo do formulário
+                            addNewCepContainer.insertAdjacentElement('afterend', resultsContainer);
+                        }
+                    }
+
                     observer.disconnect(); // Para o observer após inserir o formulário
                 }
             }
@@ -246,84 +363,42 @@ document.addEventListener('DOMContentLoaded', function () {
                     stateData = data.state_sigla;
                     cityData = data.city;
 
-                    let wooNonce = ''
-                    let wpNonce = ''
-
-                    if (typeof wpApiSettings !== 'undefined' && wpApiSettings?.nonce) {
-                        wpNonce = wpApiSettings.nonce
-                    }
-
-                    if (wcBlocksMiddlewareConfig) {
-                        wooNonce = wcBlocksMiddlewareConfig.storeApiNonce
-                    }
-
-                    let batchUrl = ''
+                    let addressAPIUrl = ''
 
                     if (typeof wpApiSettings !== 'undefined' && wpApiSettings.root) {
-                        batchUrl = wpApiSettings.root + `wc/store/v1/batch?_locale=site`;
+                        addressAPIUrl = wpApiSettings.root + 'lknwcbettershipping/v1/register-address/';
                     } else {
-                        batchUrl = window.location.origin + `/wp-json/wc/store/v1/batch?_locale=site`;
+                        addressAPIUrl = window.location.origin + '/wp-json/lknwcbettershipping/v1/register-address/';
                         if (typeof WooBetterData !== 'undefined' && WooBetterData.wooUrl !== '') {
-                            apiUrl = WooBetterData.wooUrl + `/wp-json/wc/store/v1/batch?_locale=site`;
-                        } else {
-                            apiUrl = `/wp-json/wc/store/v1/batch?_locale=site`;
+                            addressAPIUrl = WooBetterData.wooUrl + '/wp-json/lknwcbettershipping/v1/register-address/';
                         }
                     }
 
-                    fetch(batchUrl, {
+                    fetch(addressAPIUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Nonce': wooNonce,
-                            'x-wp-nonce': wpNonce
                         },
                         body: JSON.stringify({
-                            requests: [
-                                {
-                                    method: 'POST',
-                                    path: '/wc/store/v1/cart/update-customer',
-                                    body: {
-                                        shipping_address: {
-                                            postcode: postcodeValue,
-                                            address_1: addressData,
-                                            state: stateData,
-                                            city: cityData
-                                        },
-                                        billing_address: {
-                                            postcode: postcodeValue,
-                                            address_1: addressData,
-                                            state: stateData,
-                                            city: cityData
-                                        }
-                                    },
-                                    data: {
-                                        shipping_address: {
-                                            postcode: postcodeValue,
-                                            address_1: addressData,
-                                            state: stateData,
-                                            city: cityData
-                                        },
-                                        billing_address: {
-                                            postcode: postcodeValue,
-                                            address_1: addressData,
-                                            state: stateData,
-                                            city: cityData
-                                        }
-                                    },
-                                    headers: {
-                                        'Nonce': wooNonce
-                                    },
-                                    cache: 'no-store'
-                                }
-                            ]
-                        })
+                            shipping: {
+                                address_1: addressData,
+                                city: cityData,
+                                state: stateData,
+                                postcode: postcodeValue,
+                                country: 'BR',
+                            }
+                        }),
                     })
                         .then(response => response.json())
                         .then(data => {
-                            processShippingRates(data);
+                            if (data.status) {
+                                processShippingRates(data.shipping_rates);
+                            } else {
+                                console.error('Erro:', data.message);
+                            }
                         })
                         .catch(error => {
-                            console.error('Erro ao buscar os dados da API:', error);
+                            console.error('Erro na requisição:', error);
                         });
                 } else {
                     alert('Erro: ' + data.message);
@@ -341,12 +416,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function processShippingRates(response) {
         try {
-            const shippingRates = response?.responses?.[0]?.body?.shipping_rates?.[0]?.shipping_rates;
+            const shippingRates = response;
 
-            if (!shippingRates || !Array.isArray(shippingRates)) {
-                console.error('Nenhuma taxa de envio encontrada.');
+            if (!shippingRates || !Array.isArray(shippingRates) || shippingRates.length === 0) {
+                // Exibe uma mensagem informando que o carrinho está vazio
+                const form = document.getElementById('custom-postcode-form');
+                let resultsContainer = document.getElementById('shipping-rates-results');
+                if (resultsContainer) {
+                    resultsContainer.remove();
+                }
+
+                resultsContainer = document.createElement('div');
+                resultsContainer.id = 'shipping-rates-results';
+                resultsContainer.style.marginTop = '20px';
+                resultsContainer.style.marginBottom = '20px';
+                resultsContainer.style.padding = '10px';
+                resultsContainer.style.border = WooBetterData.inputStyles.borderWidth + ' ' + WooBetterData.inputStyles.borderStyle + ' ' + WooBetterData.inputStyles.borderColor;
+                resultsContainer.style.borderRadius = WooBetterData.inputStyles.borderRadius;
+                resultsContainer.style.backgroundColor = WooBetterData.inputStyles.backgroundColor;
+                resultsContainer.style.color = WooBetterData.inputStyles.color;
+                resultsContainer.style.width = 'fit-content';
+
+                const emptyMessage = document.createElement('p');
+                emptyMessage.textContent = 'O carrinho está vazio ou nenhuma taxa de envio foi encontrada.';
+                emptyMessage.style.margin = '10px 0px';
+                resultsContainer.appendChild(emptyMessage);
+
+                form.insertAdjacentElement('afterend', resultsContainer);
                 return;
             }
+
+            // Armazena os resultados no cache
+            const cacheKey = `woo_better_shippingRates`;
+            const cacheData = {
+                postcode: postcodeValue,
+                rates: shippingRates,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(cacheKey, JSON.stringify(cacheData));
 
             // Seleciona o formulário
             const form = document.getElementById('custom-postcode-form');
@@ -361,6 +468,7 @@ document.addEventListener('DOMContentLoaded', function () {
             resultsContainer = document.createElement('div');
             resultsContainer.id = 'shipping-rates-results';
             resultsContainer.style.marginTop = '20px';
+            resultsContainer.style.marginBottom = '20px';
             resultsContainer.style.padding = '10px';
             resultsContainer.style.border = WooBetterData.inputStyles.borderWidth + ' ' + WooBetterData.inputStyles.borderStyle + ' ' + WooBetterData.inputStyles.borderColor;
             resultsContainer.style.borderRadius = WooBetterData.inputStyles.borderRadius;
@@ -370,22 +478,36 @@ document.addEventListener('DOMContentLoaded', function () {
             // Adiciona um título ao contêiner
             const title = document.createElement('h4');
             title.textContent = 'Opções de Envio:';
-            title.style.margin = '10px 0px';
+            title.style.marginTop = '0px';
+            title.style.marginBottom = '10px';
+            title.style.fontSize = '18px'
+            title.style.fontFamily = 'poppins, sans-serif';
+
             resultsContainer.appendChild(title);
 
             // Cria uma lista para exibir as taxas de envio
             const list = document.createElement('ul');
             list.style.listStyleType = 'none';
             list.style.padding = '0';
-            list.style.margin = '20px 0px';
+            list.style.marginTop = '20px';
+            list.style.marginBottom = '0px';
 
             shippingRates.forEach(rate => {
-                const name = rate.name;
-                const price = `${rate.currency_prefix}${(rate.price / 100).toFixed(rate.currency_minor_unit)}`;
+                const name = rate.label;
+                const cost = parseFloat(rate.cost);
+                const price = `${rate.currency}${(cost).toFixed(rate.currency_minor_unit)}`;
 
                 // Cria um item de lista para cada taxa de envio
                 const listItem = document.createElement('li');
-                listItem.style.marginBottom = '5px';
+                listItem.style.margin = '0px';
+                listItem.style.fontSize = '16px';
+                listItem.style.fontFamily = 'poppins, sans-serif';
+
+                if (shippingRates.length > 1) {
+                    listItem.style.marginBottom = '5px';
+                } else {
+                    listItem.style.margin = '0px';
+                }
 
                 // Adiciona o nome e o preço com destaque
                 listItem.innerHTML = `<strong>${name}</strong>: ${price.replace('.', ',')}`;
@@ -399,7 +521,30 @@ document.addEventListener('DOMContentLoaded', function () {
             form.insertAdjacentElement('afterend', resultsContainer);
         } catch (error) {
             console.error('Erro ao processar as taxas de envio:', error);
+
+            const cacheKey = 'woo_better_shippingRates';
+            if (localStorage.getItem(cacheKey)) {
+                localStorage.removeItem(cacheKey);
+            }
         }
+    }
+
+    function getCachedShippingRates() {
+        const cacheKey = 'woo_better_shippingRates'; // Chave fixa
+        const cachedData = localStorage.getItem(cacheKey);
+
+        if (cachedData) {
+            const parsedData = JSON.parse(cachedData);
+
+            const oneMonth = 30 * 24 * 60 * 60 * 1000;
+            if (Date.now() - parsedData.timestamp < oneMonth) {
+                return parsedData;
+            } else {
+                localStorage.removeItem(cacheKey);
+            }
+        }
+
+        return null; // Retorna null se não houver cache válido
     }
 
     // Observa o corpo do documento

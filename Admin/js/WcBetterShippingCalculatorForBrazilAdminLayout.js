@@ -21,6 +21,71 @@
     contentContainer.style.minWidth = '500px';
     contentContainer.style.boxSizing = 'border-box';
 
+    // Mensagem de Waning na versão do WooCommerce
+    if (WCBetterCalcWooVersion.status === 'invalid') {
+      const inputElement = document.querySelector('input[name="woo_better_calc_enable_cart_page"]');
+
+      if (inputElement) {
+        // Busca o elemento <tbody> mais próximo
+        const closestTbody = inputElement.closest('tbody');
+
+        if (closestTbody) {
+          // Cria um novo <tr>
+          const spacerTr = document.createElement('tr');
+
+          // Cria um <th> vazio
+          const spacerTh = document.createElement('th');
+          spacerTh.className = 'lkn-woo-spacer-row';
+          spacerTh.textContent = '';
+
+          // Cria um <td> para a mensagem
+          const spacerTd = document.createElement('td');
+          spacerTd.style.padding = '0px';
+
+          // Cria o elemento de mensagem
+          const cartMessage = document.createElement('div');
+          cartMessage.className = 'cart-warning-message';
+          cartMessage.style.display = 'flex';
+          cartMessage.style.alignItems = 'center';
+          cartMessage.style.padding = '10px';
+          cartMessage.style.border = '1px solid #ffcc00';
+          cartMessage.style.borderLeftWidth = '5px';
+          cartMessage.style.borderLeftColor = '#ffcc00';
+          cartMessage.style.borderRadius = '5px';
+          cartMessage.style.backgroundColor = '#fff8e1';
+          cartMessage.style.color = '#ff9800';
+          cartMessage.style.fontSize = '14px';
+          cartMessage.style.lineHeight = '1.5';
+          cartMessage.style.verticalAlign = 'top';
+          cartMessage.style.marginBottom = '10px';
+
+          // Adiciona o ícone de alerta
+          const alertIcon = document.createElement('span');
+          alertIcon.textContent = '⚠️'; // Ícone de alerta
+          alertIcon.style.marginRight = '10px';
+          alertIcon.style.fontSize = '16px';
+
+          // Adiciona o texto da mensagem
+          const messageText = document.createElement('span');
+          messageText.textContent = 'Personalização do campo do CEP está disponível a partir do WooCommerce 10+. Faça o download da versão mais recente para adquirir todas as novas funcionalidades.';
+
+          // Adiciona o ícone e o texto ao componente de mensagem
+          cartMessage.appendChild(alertIcon);
+          cartMessage.appendChild(messageText);
+
+          // Adiciona a mensagem ao <td>
+          spacerTd.appendChild(cartMessage);
+
+          // Adiciona o <th> e o <td> ao <tr>
+          spacerTr.appendChild(spacerTh);
+          spacerTr.appendChild(spacerTd);
+
+          // Insere o <tr> no início do <tbody>
+          closestTbody.insertBefore(spacerTr, closestTbody.firstChild);
+        }
+      }
+    }
+
     // Lateral (logo/empresa)
     const sideContainer = document.createElement('div');
     sideContainer.className = 'lkn-settings-side';
@@ -37,98 +102,47 @@
     stickyContainer.className = 'sticky-container';
     stickyContainer.style.position = 'sticky';
     stickyContainer.style.top = '314px';
+    stickyContainer.style.maxWidth = '370px';
 
-    // Cria a mensagem update
-    const greenMessage = document.createElement('div');
-    greenMessage.className = 'custom-feature-message';
-    greenMessage.style.display = 'flex';
-    greenMessage.style.alignItems = 'center';
-    greenMessage.style.padding = '10px';
-    greenMessage.style.marginTop = '20px';
-    greenMessage.style.border = '1px solid #4caf50';
-    greenMessage.style.borderLeftWidth = '5px';
-    greenMessage.style.borderLeftColor = '#4caf50';
-    greenMessage.style.borderRadius = '5px';
-    greenMessage.style.backgroundColor = '#e8f5e9';
-    greenMessage.style.color = '#388e3c';
-    greenMessage.style.fontSize = '14px';
-    greenMessage.style.lineHeight = '1.5';
+    function createFeatureMessage(iconText, messageLines) {
+      const featureMessage = document.createElement('div');
+      featureMessage.className = 'custom-feature-message'; // Classe reutilizável para estilização
 
-    // Adiciona o ícone de informação
-    const infoIcon = document.createElement('span');
-    infoIcon.textContent = 'ℹ️'; // Ícone de informação
-    infoIcon.style.marginRight = '10px';
-    infoIcon.style.fontSize = '16px';
+      // Adiciona o ícone de informação
+      const infoIcon = document.createElement('span');
+      infoIcon.textContent = iconText; // Ícone de informação
+      infoIcon.style.marginRight = '10px';
+      infoIcon.style.fontSize = '16px';
 
-    // Adiciona o texto da mensagem
-    const greenMessageText = document.createElement('span');
-    greenMessageText.textContent = 'Nova funcionalidade: agora é possível adicionar um componente de busca de CEP nas páginas de carrinho e produto. Essa funcionalidade automatiza o preenchimento do endereço e permite personalizar essas as páginas de carrinho e produto no Gutenberg de forma prática e eficiente.';
+      // Adiciona o texto da mensagem
+      const textContainer = document.createElement('div');
+      textContainer.style.display = 'flex';
+      textContainer.style.flexDirection = 'column';
 
-    const inputElement = document.querySelector('input[name="woo_better_calc_enable_cart_page"]');
+      // Adiciona as linhas de texto
+      messageLines.forEach(line => {
+        const messageLine = document.createElement('span');
+        messageLine.innerHTML = line;
+        messageLine.style.marginBottom = '5px'; // Espaço entre as linhas
+        textContainer.appendChild(messageLine);
+      });
 
-    if (inputElement) {
-      // Busca o elemento <tbody> mais próximo
-      const closestTbody = inputElement.closest('tbody');
+      // Adiciona o ícone e o texto ao componente de mensagem
+      featureMessage.appendChild(infoIcon);
+      featureMessage.appendChild(textContainer);
 
-      if (closestTbody) {
-        // Cria um novo <tr> vazio
-        const spacerTr = document.createElement('tr');
-
-        // Cria um <th> vazio
-        const spacerTh = document.createElement('th');
-        spacerTh.textContent = ''; // Deixe vazio ou adicione texto, se necessário
-        spacerTh.style.paddingTop = '50px'; // Espaço no topo
-        spacerTh.style.paddingBottom = '50px'; // Espaço na parte inferior
-
-        // Cria um <td> vazio dentro do <tr>
-        const spacerTd = document.createElement('td');
-        spacerTd.style.padding = '0px'; // Espaço no topo
-
-        // Adiciona o <td> ao <tr>
-        spacerTr.appendChild(spacerTh);
-        spacerTr.appendChild(spacerTd);
-
-        // Insere o <tr> vazio no início do <tbody>
-        closestTbody.insertBefore(spacerTr, closestTbody.firstChild);
-
-        // Cria o elemento de mensagem
-        const cartMessage = document.createElement('div');
-        cartMessage.className = 'cart-feature-message';
-        cartMessage.style.position = 'absolute'; // Define como absoluto
-        cartMessage.style.top = '20px'; // Ajuste a posição vertical
-        cartMessage.style.zIndex = '1000'; // Garante que fique acima de outros elementos
-        cartMessage.style.display = 'flex';
-        cartMessage.style.alignItems = 'center';
-        cartMessage.style.padding = '10px';
-        cartMessage.style.border = '1px solid #ffcc00';
-        cartMessage.style.borderLeftWidth = '5px';
-        cartMessage.style.borderLeftColor = '#ffcc00';
-        cartMessage.style.borderRadius = '5px';
-        cartMessage.style.backgroundColor = '#fff8e1';
-        cartMessage.style.color = '#ff9800';
-        cartMessage.style.fontSize = '14px';
-        cartMessage.style.lineHeight = '1.5';
-
-        // Adiciona o ícone de alerta
-        const alertIcon = document.createElement('span');
-        alertIcon.textContent = '⚠️'; // Ícone de alerta
-        alertIcon.style.marginRight = '10px';
-        alertIcon.style.fontSize = '16px';
-
-        // Adiciona o texto da mensagem
-        const messageText = document.createElement('span');
-        messageText.textContent = 'Funcionalidade da aba de carrinho disponível apenas a partir da versão 10.0.0+ do WooCommerce.';
-
-        closestTbody.style.position = "relative"
-
-        // Adiciona o ícone e o texto ao componente de mensagem
-        cartMessage.appendChild(alertIcon);
-        cartMessage.appendChild(messageText);
-
-        // Adiciona a mensagem ao <tbody>
-        closestTbody.appendChild(cartMessage);
-      }
+      return featureMessage;
     }
+
+    const featureMessage1 = createFeatureMessage('✔️', [
+      '<strong>NOVO:</strong> Adicione a busca de CEP nas páginas de carrinho e/ou produto.'
+    ]);
+
+    // Cria o segundo bloco de mensagem
+    const featureMessage2 = createFeatureMessage('✔️', [
+      '<strong>NOVO:</strong> O CEP informado pelo usuário é preservado até a finalização da compra e preenche automaticamente o endereço.'
+    ]);
+
 
     const settingsCard = document.querySelector('#WooBetterLinkSettingsCard');
     if (settingsCard) {
@@ -137,12 +151,8 @@
       // Move o componente para o sideContainer
       sideContainer.appendChild(settingsCard);
 
-      // Adiciona o ícone e o texto ao componente de mensagem
-      greenMessage.appendChild(infoIcon);
-      greenMessage.appendChild(greenMessageText);
-
-      // Adiciona a mensagem ao sideContainer
-      stickyContainer.appendChild(greenMessage);
+      stickyContainer.appendChild(featureMessage1);
+      stickyContainer.appendChild(featureMessage2);
 
       sideContainer.appendChild(stickyContainer);
     }
@@ -170,6 +180,18 @@
       tab.className = 'nav-tab';
       tab.onclick = (e) => {
         e.preventDefault();
+
+        const floatingComponent = document.querySelector('.woo-better-floating-icon-container');
+        if (tab.textContent === 'Carrinho' || tab.textContent === 'Produto') {
+          if (floatingComponent) {
+            floatingComponent.style.display = 'flex';
+          }
+        } else {
+          if (floatingComponent) {
+            floatingComponent.style.display = 'none';
+          }
+        }
+
         tabLinks.forEach((el, i) => {
           el.className = i === idx ? 'nav-tab nav-tab-active' : 'nav-tab';
         });
@@ -888,32 +910,29 @@
     startEvenst('cart');
     startEvenst('product');
 
+    if (WCBetterCalcWooVersion.status === 'invalid') {
+      // Seleciona todos os inputs e selects com o padrão de name que contenham "cart" ou "product"
+      const inputsToDisable = document.querySelectorAll(
+        'input[name*="enable_cart"], input[name*="cart_input"], select[name*="cart_input"], select[name*="cart_button"], input[name*="cart_button"]'
+      );
+
+      // Itera sobre os elementos encontrados e desabilita todos
+      inputsToDisable.forEach(input => {
+        input.disabled = true;
+        input.style.cursor = 'not-allowed';
+      });
+    }
+
     // Cria a div que conterá o ícone
     const floatingIconContainer = document.createElement('div');
-    floatingIconContainer.style.position = 'fixed';
-    floatingIconContainer.style.bottom = '40px';
-    floatingIconContainer.style.right = '60px';
-    floatingIconContainer.style.width = '80px';
-    floatingIconContainer.style.height = '80px';
-    floatingIconContainer.style.borderRadius = '50%';
-    floatingIconContainer.style.cursor = 'pointer';
-    floatingIconContainer.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-    floatingIconContainer.style.boxSizing = 'border-box';
-    floatingIconContainer.style.zIndex = '1000';
-    floatingIconContainer.style.backgroundColor = '#ffffff';
-    floatingIconContainer.style.display = 'flex';
-    floatingIconContainer.style.alignItems = 'center';
-    floatingIconContainer.style.justifyContent = 'center';
+    floatingIconContainer.className = 'woo-better-floating-icon-container';
 
     // Cria o ícone dentro da div
     const floatingIcon = document.createElement('img');
-    floatingIcon.src = WCBetterCalcIcons.consult; // Substitua pela URL do ícone desejado
+    floatingIcon.src = WCBetterCalcIcons.consult;
     floatingIcon.alt = 'Ir para o componente';
     floatingIcon.title = 'Ir para o componente';
-    floatingIcon.style.width = '60px';
-    floatingIcon.style.height = '60px';
-    floatingIcon.style.objectFit = 'cover';
-    floatingIcon.style.objectPosition = 'center';
+    floatingIcon.className = 'woo-better-floating-icon';
 
     // Adiciona o evento de clique à div
     floatingIconContainer.addEventListener('click', function () {

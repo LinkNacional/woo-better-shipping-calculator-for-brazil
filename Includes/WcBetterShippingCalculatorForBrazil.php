@@ -231,6 +231,10 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_set_country_brasil()
     {
+        if (!function_exists('WC')) {
+            return;
+        }
+
         $customer = WC()->customer;
 
         $cep_required = get_option('woo_better_calc_cep_required', 'yes');
@@ -337,11 +341,19 @@ class WcBetterShippingCalculatorForBrazil
                 'transit' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/transit.svg',
                 'zipcode' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/zipcode.svg',
                 'truck' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/truck.svg',
-                'consult' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/postcodeConsult.svg',
+                'consult' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/textFieldConsult.svg',
             );
 
             // Passa os dados para o JavaScript
             wp_localize_script('wc-better-calc-settings-layout', 'WCBetterCalcIcons', $icons);
+
+            // Verifica a versão do WooCommerce
+            $woo_version_valid = version_compare(WC_VERSION, '10.0.0', '>=') ? 'valid' : 'invalid';
+
+            // Passa os dados para o JavaScript
+            wp_localize_script('wc-better-calc-settings-layout', 'WCBetterCalcWooVersion', array(
+                'status' => $woo_version_valid,
+            ));
 
             wp_enqueue_script(
                 'wc-better-calc-footer-message',
@@ -585,6 +597,114 @@ class WcBetterShippingCalculatorForBrazil
                 )
             ),
         ));
+
+        register_rest_route('lknwcbettershipping/v1', '/register-address/', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'lkn_register_shipping_address'),
+            'permission_callback' => '__return_true', // Permite acesso público
+        ));
+    }
+
+    function lkn_register_shipping_address(\WP_REST_Request $request) {
+        // Verifica se WooCommerce está carregado
+        if (!function_exists('WC')) {
+            return new \WP_REST_Response(array(
+                'status' => false,
+                'message' => 'WooCommerce não está carregado.',
+            ), 500);
+        }
+
+        // Inicializa a sessão do WooCommerce, se necessário
+        if (!WC()->session) {
+            WC()->initialize_session();
+        }
+
+        // Inicializa o cliente e o carrinho
+        WC()->initialize_cart();
+        $customer = WC()->customer;
+
+        // Obtém o parâmetro `shipping` da requisição
+        $shipping = $request->get_param('shipping');
+
+        // Verifica se o parâmetro foi enviado
+        if (empty($shipping) || !is_array($shipping)) {
+            return new \WP_REST_Response(array(
+                'status' => false,
+                'message' => 'O parâmetro "shipping" é obrigatório e deve ser um array.',
+            ), 400);
+        }
+
+        // Define os valores padrão como `null` para os campos ausentes
+        $shipping_data = array(
+            'first_name'  => $shipping['first_name'] ?? null,
+            'last_name'   => $shipping['last_name'] ?? null,
+            'company'     => $shipping['company'] ?? null,
+            'address_1'   => $shipping['address_1'] ?? null,
+            'address_2'   => $shipping['address_2'] ?? null,
+            'city'        => $shipping['city'] ?? null,
+            'state'       => $shipping['state'] ?? null,
+            'postcode'    => $shipping['postcode'] ?? null,
+            'country'     => $shipping['country'] ?? null,
+            'phone'       => $shipping['phone'] ?? null,
+        );
+
+        // Define as propriedades do cliente com os dados de envio e replica para cobrança
+        $customer->set_props(
+            array(
+                'shipping_first_name' => $shipping_data['first_name'],
+                'shipping_last_name'  => $shipping_data['last_name'],
+                'shipping_company'    => $shipping_data['company'],
+                'shipping_address_1'  => $shipping_data['address_1'],
+                'shipping_address_2'  => $shipping_data['address_2'],
+                'shipping_city'       => $shipping_data['city'],
+                'shipping_state'      => $shipping_data['state'],
+                'shipping_postcode'   => $shipping_data['postcode'],
+                'shipping_country'    => $shipping_data['country'],
+                'shipping_phone'      => $shipping_data['phone'],
+                'billing_first_name'  => $shipping_data['first_name'],
+                'billing_last_name'   => $shipping_data['last_name'],
+                'billing_company'     => $shipping_data['company'],
+                'billing_address_1'   => $shipping_data['address_1'],
+                'billing_address_2'   => $shipping_data['address_2'],
+                'billing_city'        => $shipping_data['city'],
+                'billing_state'       => $shipping_data['state'],
+                'billing_postcode'    => $shipping_data['postcode'],
+                'billing_country'     => $shipping_data['country'],
+                'billing_phone'       => $shipping_data['phone'],
+            )
+        );
+
+        // Salva os dados do cliente
+        $customer->save();
+
+        // Recalcula o carrinho e os pacotes de envio
+        WC()->cart->calculate_shipping();
+        $packages = WC()->shipping()->get_packages();
+
+        $shipping_rates = array();
+
+        $currency_symbol = get_woocommerce_currency_symbol();
+        $currency_minor_unit = wc_get_price_decimals();
+
+        foreach ($packages as $package) {
+            if (!empty($package['rates'])) {
+                foreach ($package['rates'] as $rate) {
+                    $shipping_rates[] = array(
+                        'id'    => $rate->get_id(),
+                        'label' => $rate->get_label(),
+                        'cost'  => $rate->get_cost(),
+                        'currency' => $currency_symbol,
+                        'currency_minor_unit' => $currency_minor_unit
+                    );
+                }
+            }
+        }
+
+        return new \WP_REST_Response(array(
+            'status' => true,
+            'message' => 'Endereço de envio registrado com sucesso e replicado para cobrança.',
+            'shipping_rates' => $shipping_rates,
+        ), 200);
     }
 
     /**
@@ -737,12 +857,11 @@ class WcBetterShippingCalculatorForBrazil
      */
     private function define_public_hooks()
     {
-
         $plugin_public = new WcBetterShippingCalculatorForBrazilPublic($this->get_plugin_name(), $this->get_version());
 
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts', 900);
-    }
+    } 
 
     /**
      * Run the loader to execute all of the hooks with WordPress.

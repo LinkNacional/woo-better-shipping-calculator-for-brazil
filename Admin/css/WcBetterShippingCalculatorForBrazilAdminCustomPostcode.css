@@ -25,6 +25,8 @@
     height: 50px !important;
     padding: 0 8px !important;
     font-size: 16px !important;
+    font-family: poppins, sans-serif;
+    font-family: poppins, sans-serif;
     box-sizing: border-box !important;
     vertical-align: top !important;
 }
@@ -39,8 +41,13 @@
 }
 
 .woo-better-button-current-style {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     width: 100px !important;
     height: 50px !important;
+    font-size: 12px !important;
+    font-family: poppins, sans-serif;
     cursor: pointer;
 }
 
