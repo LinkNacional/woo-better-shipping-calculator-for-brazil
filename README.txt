@@ -91,6 +91,11 @@ add_filter(
 
 == Changelog ==
 
+= 4.2.1 - 29/07/2025 =
+* Addition: New custom ZIP code verification components.
+* Addition: ZIP code component for the product page.
+* Addition: ZIP code component for the Woo cart page
+
 = 4.2.1 - 09/06/2025 =
 * Fix: Decimal separator.
 * Fix: Dynamic URL.
