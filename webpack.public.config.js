@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 // Função para gerar entradas dinâmicas com base nos arquivos em uma pasta
 function generateEntries(sourceDir, extension) {
@@ -9,27 +10,23 @@ function generateEntries(sourceDir, extension) {
         files.forEach(file => {
             if (file.endsWith(extension)) {
                 const name = path.basename(file, extension); // Nome base do arquivo
-                entries[`${sourceDir}/${name}`] = path.join(sourceDir, file);
+                entries[name] = path.join(sourceDir, file); // Caminho completo do arquivo
             }
         });
     }
     return entries;
 }
 
-// Diretórios de entrada
+// Diretório de entrada
 const publicJsSourceDir = path.resolve(__dirname, 'Public/js');
-const adminJsSourceDir = path.resolve(__dirname, 'Admin/js');
 
-// Configuração do Webpack para JavaScript
+// Configuração do Webpack
 module.exports = {
     mode: 'production', // Modo de produção para compactação
-    entry: {
-        ...generateEntries(publicJsSourceDir, '.js'),
-        ...generateEntries(adminJsSourceDir, '.js'),
-    },
+    entry: generateEntries(publicJsSourceDir, '.js'),
     output: {
-        path: path.resolve(__dirname), // Diretório base para saída
-        filename: '[name].COMPILED.js', // Nome do arquivo de saída para JS
+        path: path.resolve(__dirname, 'Public/jsCompiled'), // Diretório de saída
+        filename: '[name].COMPILED.js', // Nome do arquivo de saída
     },
     module: {
         rules: [
@@ -45,4 +42,11 @@ module.exports = {
             },
         ],
     },
+    plugins: [
+        new CleanWebpackPlugin({
+            cleanOnceBeforeBuildPatterns: [
+                path.resolve(__dirname, 'Public/jsCompiled/*'),
+            ],
+        }), // Limpa o diretório de saída antes de gerar novos arquivos
+    ],
 };

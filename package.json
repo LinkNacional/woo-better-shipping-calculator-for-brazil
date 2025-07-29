@@ -18,15 +18,17 @@
     "url": "https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil/issues"
   },
   "scripts": {
-    "build:js": "webpack --config webpack.js.config.js",
+    "build:public": "webpack --config webpack.public.config.js",
+    "build:admin": "webpack --config webpack.admin.config.js",
     "build:css": "webpack --config webpack.css.config.js",
-    "build": "npm run build:js && npm run build:css"
+    "build": "npm run build:public && npm run build:admin && npm run build:css"
   },
   "homepage": "https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil",
   "devDependencies": {
     "@babel/core": "^7.28.0",
     "@babel/preset-env": "^7.28.0",
     "babel-loader": "^10.0.0",
+    "clean-webpack-plugin": "^4.0.0",
     "css-loader": "^7.1.2",
     "css-minimizer-webpack-plugin": "^7.0.2",
     "eslint": "^8.34.0",

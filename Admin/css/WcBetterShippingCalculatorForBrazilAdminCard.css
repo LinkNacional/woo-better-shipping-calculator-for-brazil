@@ -126,6 +126,7 @@
     filter: brightness(0) invert(1);
 }
 
+
 .lkn-stars {
     display: flex;
     align-items: center;

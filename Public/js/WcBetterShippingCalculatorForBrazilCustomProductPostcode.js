@@ -506,15 +506,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (data.status === true) {
                     if (!data.address || !data.state_sigla || !data.city) {
-                        postcodeError = true
-                        if (addressSummary) {
-                            removeLoading(addressSummary);
-                            addressSummary.removeEventListener('click', blockInteraction, true);
-                            if (iconSummary) {
+                        const button = document.querySelector('.woo-better-button-current-style');
+                        const input = document.querySelector('.woo-better-input-current-style');
 
-                            }
-                            iconSummary.removeEventListener('click', blockInteraction, true);
+                        // Reabilita o botão e o input após a conclusão da requisição
+                        button.disabled = false;
+                        input.disabled = false;
+
+                        // Restaura o texto original do botão
+                        button.textContent = originalButtonText;
+
+                        const cepBlock = document.querySelector('.woo-better-current-postcode-block');
+                        if (cepBlock) {
+                            // Atualiza o texto do bloco de CEP atual
+                            cepBlock.style.display = 'flex';
                         }
+
+                        // Remove os estilos de desabilitado
+                        input.style.backgroundColor = WooBetterData.inputStyles.backgroundColor || '#fff';
+                        input.style.cursor = '';
+                        button.style.backgroundColor = WooBetterData.buttonStyles.backgroundColor || '#0073aa';
+                        button.style.cursor = '';
 
                         if (!data.address) {
                             return alert('Erro: Endereço inválido.');
@@ -527,8 +539,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (!data.city) {
                             return alert('Erro: Cidade inválida.');
                         }
-                    } else {
-                        postcodeError = false
                     }
 
                     postcodeValue = postcode
@@ -601,17 +611,39 @@ document.addEventListener('DOMContentLoaded', function () {
                                     })
                                     .catch(error => {
                                         console.error('Erro:', error);
-                                        alert('Erro: ' + error.message || error);
+                                        alert('Nenhuma taxa de envio foi encontrada.');
                                     })
                             } else {
-                                console.error('Erro:', response.message);
+                                console.error('Nenhuma taxa de envio foi encontrada.');
                             }
                         })
                         .catch(error => {
                             console.error('Erro na requisição:', error);
                         });
                 } else {
-                    alert('Erro: ' + data.message);
+                    const button = document.querySelector('.woo-better-button-current-style');
+                    const input = document.querySelector('.woo-better-input-current-style');
+
+                    // Reabilita o botão e o input após a conclusão da requisição
+                    button.disabled = false;
+                    input.disabled = false;
+
+                    // Restaura o texto original do botão
+                    button.textContent = originalButtonText;
+
+                    const cepBlock = document.querySelector('.woo-better-current-postcode-block');
+                    if (cepBlock) {
+                        // Atualiza o texto do bloco de CEP atual
+                        cepBlock.style.display = 'flex';
+                    }
+
+                    // Remove os estilos de desabilitado
+                    input.style.backgroundColor = WooBetterData.inputStyles.backgroundColor || '#fff';
+                    input.style.cursor = '';
+                    button.style.backgroundColor = WooBetterData.buttonStyles.backgroundColor || '#0073aa';
+                    button.style.cursor = '';
+
+                    alert('Nenhuma taxa de envio foi encontrada.');
                 }
             })
             .catch(error => {

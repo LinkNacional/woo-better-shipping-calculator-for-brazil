@@ -381,7 +381,7 @@ class WcBetterShippingCalculatorForBrazil
 
             wp_enqueue_style(
                 'wc-better-calc-style-admin-card-settings',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdmin.COMPILED.css',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminCard.COMPILED.css',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 'all'
