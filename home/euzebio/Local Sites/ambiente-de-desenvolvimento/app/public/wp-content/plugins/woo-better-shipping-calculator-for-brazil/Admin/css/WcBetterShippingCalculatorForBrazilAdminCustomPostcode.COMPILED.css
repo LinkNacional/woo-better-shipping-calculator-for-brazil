@@ -97,7 +97,7 @@
 }
 
 .woo-better-parent-container {
-    max-width: 360px;
+    max-width: 330px;
 }
 
 .woo-better-toggle-postcode-wrapper {
@@ -234,10 +234,5 @@
 
     .woo-better-button-current-style {
         width: 100% !important;
-    }
-
-    .woo-better-parent-container {
-        width: 100%;
-        max-width: 100%;
     }
 }
