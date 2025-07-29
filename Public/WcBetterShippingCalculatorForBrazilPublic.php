@@ -83,7 +83,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             $cep_required = get_option('woo_better_calc_cep_required', 'yes');
 
             if ($cep_required === 'yes') {
-                wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/WcBetterShippingCalculatorForBrazilPublic.css', array(), $this->version, 'all');
+                wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPublic.COMPILED.css', array(), $this->version, 'all');
             }
         }
     }
@@ -121,7 +121,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             if (current_user_can('manage_options')) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-cep-settings-link',
-                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergSettingsLink.js',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergSettingsLink.COMPILED.js',
                     array(),
                     $this->version,
                     false
@@ -135,7 +135,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             if ($cep_required === 'yes' && defined('WC_VERSION') && version_compare(WC_VERSION, '10.0.0', '<')) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-cep-field',
-                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergCEPField.js',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergCEPField.COMPILED.js',
                     array(),
                     $this->version,
                     false
@@ -155,7 +155,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             if ($cep_required === 'yes' && $hidden_address === 'yes') {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-hidden-address',
-                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergHiddenAddress.js',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergHiddenAddress.COMPILED.js',
                     array(),
                     $this->version,
                     false
@@ -170,7 +170,7 @@ class WcBetterShippingCalculatorForBrazilPublic
         if ((has_block('woocommerce/checkout') || has_block('woocommerce/cart') || (function_exists('is_cart') && is_cart()) ||  (function_exists('is_checkout') && is_checkout())) && $enable_min === 'yes') {
             wp_enqueue_script(
                 $this->plugin_name . '-progress-bar',
-                plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilProgressBar.js',
+                plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilProgressBar.COMPILED.js',
                 array(),
                 $this->version,
                 false
@@ -206,7 +206,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-number-field',
-                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicGutenbergNumberField.js',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergNumberField.COMPILED.js',
                     array(),
                     $this->version,
                     false
@@ -216,7 +216,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-disabled-shipping',
-                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicDiabledFields.js',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicDiabledFields.COMPILED.js',
                     array(),
                     $this->version,
                     false
@@ -231,7 +231,7 @@ class WcBetterShippingCalculatorForBrazilPublic
         ) {
             wp_enqueue_script(
                 'woo-better-cart-custom-postcode',
-                plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilCustomCartPostcode.js',
+                plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCustomCartPostcode.COMPILED.js',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true 
@@ -280,7 +280,7 @@ class WcBetterShippingCalculatorForBrazilPublic
 
             wp_enqueue_style(
                 'woo-better-cart-custom-postcode', 
-                plugin_dir_url(dirname(__FILE__)) . 'Admin/css/WcBetterShippingCalculatorForBrazilAdminCustomPostcode.css',
+                plugin_dir_url(dirname(__FILE__)) . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminCustomPostcode.COMPILED.css',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION, 
                 'all'
@@ -293,7 +293,7 @@ class WcBetterShippingCalculatorForBrazilPublic
         ) {
             wp_enqueue_script(
                 'woo-better-product-custom-postcode',
-                plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilCustomProductPostcode.js',
+                plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCustomProductPostcode.COMPILED.js',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true 
@@ -338,7 +338,7 @@ class WcBetterShippingCalculatorForBrazilPublic
 
             wp_enqueue_style(
                 'woo-better-product-custom-postcode', 
-                plugin_dir_url(dirname(__FILE__)) . 'Admin/css/WcBetterShippingCalculatorForBrazilAdminCustomPostcode.css',
+                plugin_dir_url(dirname(__FILE__)) . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminCustomPostcode.COMPILED.css',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION, 
                 'all'
@@ -367,7 +367,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
                 wp_enqueue_script(
                     $this->plugin_name . '-short-number-field',
-                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicShortNumberField.js',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortNumberField.COMPILED.js',
                     array(),
                     $this->version,
                     false
@@ -377,7 +377,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-disabled-shipping',
-                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilPublicDiabledFields.js',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicDiabledFields.COMPILED.js',
                     array(),
                     $this->version,
                     false
@@ -389,7 +389,7 @@ class WcBetterShippingCalculatorForBrazilPublic
 
             wp_enqueue_script(
                 $this->plugin_name . '-frontend',
-                plugin_dir_url(__FILE__) . "js/WcBetterShippingCalculatorForBrazilPublicCEPField.js",
+                plugin_dir_url(__FILE__) . "jsCompiled/WcBetterShippingCalculatorForBrazilPublicCEPField.COMPILED.js",
                 [ 'jquery', 'wc-cart' ],
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true
