@@ -267,6 +267,10 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'cart' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/product.svg',
                     'quantity' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/quantity.svg',
                 ),
+                'display_icon' => array(
+                    'up' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/upButton.svg',
+                    'down' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/downButton.svg',
+                ),
                 'wooUrl' => home_url(),
                 'nonce'   => wp_create_nonce('woo_better_register_cart_address'),
                 'ajaxurl' => admin_url('admin-ajax.php'),
@@ -320,6 +324,10 @@ class WcBetterShippingCalculatorForBrazilPublic
                 'details_icon' => array(
                     'product' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/product.svg',
                     'quantity' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/quantity.svg',
+                ),
+                'display_icon' => array(
+                    'up' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/upButton.svg',
+                    'down' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/downButton.svg',
                 ),
                 'wooUrl' => home_url(),
                 'nonce'   => wp_create_nonce('woo_better_register_product_address'),

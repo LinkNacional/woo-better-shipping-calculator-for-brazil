@@ -16,10 +16,57 @@ document.addEventListener('DOMContentLoaded', function () {
         const currentPostcodeBlock = document.createElement('div');
         currentPostcodeBlock.classList.add('woo-better-current-postcode-block');
 
+        // Cria uma div para agrupar o botão de expandir/contrair e o texto do CEP
+        const toggleAndPostcodeWrapper = document.createElement('div');
+        toggleAndPostcodeWrapper.classList.add('woo-better-toggle-postcode-wrapper'); // Classe para estilização, se necessário
+
+        // Botão para expandir/contrair o bloco
+        const toggleButton = document.createElement('button');
+        toggleButton.type = 'button';
+        displayButton(toggleButton, 'up', 'Esconder detalhes de entrega');
+        toggleButton.classList.add('woo-better-toggle-button');
+
         // Texto com o CEP atual
         const postcodeText = document.createElement('span');
         postcodeText.innerHTML = `<strong>CEP</strong>: ${postcode}`;
         postcodeText.classList.add('woo-better-current-postcode-text');
+
+        toggleButton.addEventListener('click', () => {
+            const contentBlock = document.querySelector('.woo-better-content-block');
+            if (contentBlock) {
+                if (contentBlock.classList.contains('expanded')) {
+                    // Recolhe o bloco
+                    contentBlock.style.height = `${contentBlock.scrollHeight}px`; // Define a altura atual
+                    requestAnimationFrame(() => {
+                        contentBlock.style.height = '0'; // Transição para altura 0
+                    });
+                    contentBlock.classList.remove('expanded');
+                    toggleButton.innerHTML = '';
+                    displayButton(toggleButton, 'down', 'Exibir detalhes de entrega');
+                } else {
+                    // Expande o bloco
+                    contentBlock.style.height = `${contentBlock.scrollHeight}px`; // Define a altura para o conteúdo completo
+                    contentBlock.classList.add('expanded');
+                    toggleButton.innerHTML = '';
+                    displayButton(toggleButton, 'up', 'Esconder detalhes de entrega');
+
+                    // Mantém a altura calculada após a transição
+                    contentBlock.addEventListener(
+                        'transitionend',
+                        () => {
+                            if (contentBlock.classList.contains('expanded')) {
+                                contentBlock.style.height = `${contentBlock.scrollHeight}px`; // Mantém a altura calculada
+                            }
+                        },
+                        { once: true }
+                    );
+                }
+            }
+        });
+
+        // Adiciona o botão e o texto do CEP à div agrupadora
+        toggleAndPostcodeWrapper.appendChild(toggleButton);
+        toggleAndPostcodeWrapper.appendChild(postcodeText);
 
         // Botão para alterar o CEP
         const changeButton = document.createElement('button');
@@ -28,11 +75,15 @@ document.addEventListener('DOMContentLoaded', function () {
         changeButton.classList.add('woo-better-change-postcode-button');
 
         changeButton.addEventListener('click', () => {
-            currentPostcodeBlock.style.display = 'none'; // Esconde o bloco atual
+            const infoBlock = document.querySelector('.woo-better-info-block');
+            if (infoBlock) {
+                infoBlock.style.display = 'none'; // Esconde o bloco atual
+            }
             form.style.display = 'block'; // Exibe o formulário
         });
 
-        currentPostcodeBlock.appendChild(postcodeText);
+        // Adiciona a div agrupadora e o botão "Alterar" ao bloco principal
+        currentPostcodeBlock.appendChild(toggleAndPostcodeWrapper);
         currentPostcodeBlock.appendChild(changeButton);
 
         return currentPostcodeBlock;
@@ -66,11 +117,9 @@ document.addEventListener('DOMContentLoaded', function () {
         // Define os estilos dinamicamente com base nos valores localizados
         const css = `
             .woo-better-info-block {
-                background-color: ${originalColor} !important;
                 color: ${WooBetterData.inputStyles.color} !important;
-                border: ${WooBetterData.inputStyles.borderWidth} ${WooBetterData.inputStyles.borderStyle} ${WooBetterData.inputStyles.borderColor} !important;
                 border-radius: ${WooBetterData.inputStyles.borderRadius} !important;
-                padding: 10px !important;
+                padding: 0px !important;
                 margin: 20px 0px !important;
                 font-family: 'Poppins', sans-serif !important;
                 font-size: 14px !important;
@@ -80,11 +129,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                margin-top: 10px;
-                padding: 10px;
+                padding: 15px;
                 border: 1px solid #ddd;
                 border-radius: 5px;
                 background-color: ${darkerColor} !important;
+            }
+
+            .woo-better-content-block {
+                margin-top: -3px;
+                padding: 0px 20px;
+                background-color: ${originalColor} !important;
+                border: none;
+                height: 0;
+                overflow: hidden;
+                transition: height 0.3s ease;
+                box-shadow: none;
+            }
+
+            .woo-better-content-block.expanded {
+                height: auto; 
+                padding: 10px 20px;
+                border-bottom-right-radius: ${WooBetterData.inputStyles.borderRadius} !important;
+                border-bottom-left-radius: ${WooBetterData.inputStyles.borderRadius} !important;
+                border: ${WooBetterData.inputStyles.borderWidth} ${WooBetterData.inputStyles.borderStyle} ${WooBetterData.inputStyles.borderColor} !important;
+                border-top: 0px !important;
             }
         `;
 
@@ -95,6 +163,15 @@ document.addEventListener('DOMContentLoaded', function () {
         document.head.appendChild(style);
     }
 
+    function displayButton(component, name, text) {
+        const toggleIcon = document.createElement('img');
+        toggleIcon.src = WooBetterData.display_icon[name];
+        toggleIcon.alt = text;
+        toggleIcon.classList.add('woo-better-toggle-icon');
+        toggleIcon.classList.add(WooBetterData.iconColor || 'black-icon');
+        component.appendChild(toggleIcon);
+    }
+
     function createInfoBlock(cartInfo, shippingRates, postcode, form) {
         const infoBlock = document.createElement('div');
         infoBlock.classList.add('woo-better-info-block');
@@ -102,12 +179,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!poscodeCache) {
             infoBlock.style.display = 'none';
         }
-
-        // Botão para expandir/contrair o bloco
-        const toggleButton = document.createElement('button');
-        toggleButton.type = 'button';
-        toggleButton.textContent = 'Esconder detalhes de entrega';
-        toggleButton.classList.add('woo-better-toggle-button');
 
         // Conteúdo do bloco (inicialmente escondido)
         const contentBlock = document.createElement('div');
@@ -179,18 +250,6 @@ document.addEventListener('DOMContentLoaded', function () {
         contentBlock.appendChild(cartName);
         contentBlock.appendChild(cartQuantity);
         contentBlock.appendChild(shippingMethods);
-
-        toggleButton.addEventListener('click', () => {
-            if (contentBlock.style.display === 'none') {
-                contentBlock.style.display = 'block';
-                toggleButton.textContent = 'Esconder detalhes de entrega';
-            } else {
-                contentBlock.style.display = 'none';
-                toggleButton.textContent = 'Exibir detalhes de entrega';
-            }
-        });
-
-        infoBlock.appendChild(toggleButton);
 
         const currentPostcodeBlock = createCurrentPostcodeBlock(postcode, form);
         infoBlock.appendChild(currentPostcodeBlock);
@@ -529,12 +588,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
                                         const toggleButton = infoBlock.querySelector('.woo-better-toggle-button');
                                         if (toggleButton) {
-                                            toggleButton.textContent = 'Esconder detalhes de entrega';
+                                            toggleButton.innerHTML = '';
+
+                                            displayButton(toggleButton, 'up', 'Esconder detalhes de entrega');
                                         }
 
                                         if (poscodeCache) {
                                             const contentInfoBlock = infoBlock.querySelector('.woo-better-content-block');
                                             if (contentInfoBlock) {
+                                                contentInfoBlock.classList.add('expanded');
                                                 contentInfoBlock.style.display = 'block';
                                             }
                                         }

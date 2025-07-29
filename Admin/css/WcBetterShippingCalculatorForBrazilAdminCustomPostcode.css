@@ -100,24 +100,20 @@
     max-width: 330px;
 }
 
+.woo-better-toggle-postcode-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .woo-better-toggle-button {
+    display: flex;
     background: none !important;
     border: none !important;
-    color: #0073aa !important;
-    text-decoration: underline !important;
     cursor: pointer !important;
-    font-size: 14px !important;
-    font-family: 'Poppins', sans-serif !important;
+    height: 25px !important;
+    width: 25px !important;
     padding: 0 !important;
-}
-
-.woo-better-toggle-button:hover {
-    color: #005f8d !important;
-    text-decoration: none !important;
-}
-
-.woo-better-content-block {
-    margin-top: 10px;
 }
 
 .woo-better-product-name,
