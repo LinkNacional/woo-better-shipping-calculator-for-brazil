@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.8
 Requires PHP: 7.3
-Stable tag: 4.2.1
+Stable tag: 4.3.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -93,7 +93,7 @@ add_filter(
 
 == Changelog ==
 
-= 4.2.1 - 29/07/2025 =
+= 4.3.0 - 29/07/2025 =
 * Addition: New custom ZIP code verification components.
 * Addition: ZIP code component for the product page.
 * Addition: ZIP code component for the Woo cart page
