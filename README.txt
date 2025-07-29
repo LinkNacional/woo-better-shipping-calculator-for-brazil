@@ -66,6 +66,8 @@ If you find any errors or have suggestions, open an issue in our [GitHub reposit
 9. Progress bar in Gutenberg checkout.
 10. Progress bar in Legacy cart.
 11. Progress bar in Legacy checkout.
+12. New postcode component.
+13. New layout for postcode component.
 
 == Frequently Asked Questions ==
 
