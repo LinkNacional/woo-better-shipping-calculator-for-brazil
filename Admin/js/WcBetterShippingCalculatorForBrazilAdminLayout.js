@@ -716,6 +716,8 @@
               'woo_better_calc_cart_button_border_radius': 'woo_better_calc_cart_button_background_color_field',
               'woo_better_calc_cart_input_icon': 'woo_better_calc_cart_input_placeholder',
               'woo_better_calc_cart_input_icon_color': 'woo_better_calc_cart_input_placeholder',
+              'woo_better_calc_cart_custom_position': 'woo_better_calc_cart_input_position',
+              'woo_better_calc_cart_custom_remove': 'woo_better_calc_cart_custom_quantity',
 
               //Product
               'woo_better_calc_product_input_border_width': 'woo_better_calc_product_input_background_color_field',
@@ -729,7 +731,8 @@
               'woo_better_calc_product_button_border_color_field': 'woo_better_calc_product_button_background_color_field',
               'woo_better_calc_product_button_border_radius': 'woo_better_calc_product_button_background_color_field',
               'woo_better_calc_product_input_icon': 'woo_better_calc_product_input_placeholder',
-              'woo_better_calc_product_input_icon_color': 'woo_better_calc_product_input_placeholder'
+              'woo_better_calc_product_input_icon_color': 'woo_better_calc_product_input_placeholder',
+              'woo_better_calc_product_custom_position': 'woo_better_calc_product_input_position',
             };
 
             forminp.innerHTML = ''; // Limpa o conteúdo original
@@ -907,8 +910,44 @@
       }
     }
 
+    function handleCustomPosition(styleName) {
+      const customPosition = document.getElementById(`woo_better_calc_${styleName}_custom_position`);
+      const selectPosition = document.getElementById(`woo_better_calc_${styleName}_input_position`);
+
+      if (customPosition && selectPosition) {
+        const forminp = customPosition.closest('.forminp');
+        if (forminp) {
+          if (selectPosition.value === 'custom') {
+            forminp.style.display = 'flex';
+          } else {
+            forminp.style.display = 'none';
+          }
+        }
+      }
+
+      if (selectPosition) {
+        selectPosition.addEventListener('change', function () {
+          const selectedValue = selectPosition.value;
+
+          if (customPosition) {
+            const forminp = customPosition.closest('.forminp');
+            if (forminp) {
+              if (selectedValue === 'custom') {
+                forminp.style.display = 'flex';
+              } else {
+                forminp.style.display = 'none';
+              }
+            }
+          }
+        });
+      }
+    }
+
     startEvenst('cart');
     startEvenst('product');
+
+    handleCustomPosition('cart');
+    handleCustomPosition('product');
 
     if (WCBetterCalcWooVersion.status === 'invalid') {
       // Seleciona todos os inputs e selects com o padrão de name que contenham "cart" ou "product"

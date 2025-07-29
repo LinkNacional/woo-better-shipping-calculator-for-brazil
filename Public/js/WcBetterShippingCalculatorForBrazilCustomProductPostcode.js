@@ -352,14 +352,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function setPosition() {
-        const position = WooBetterData.position || 'top'; // Posição padrão é 'top'
-        if (position === 'middle') {
-            blockPosition = 'div[class*="price"], p[class*="price"]';
-        } else if (position === 'bottom') {
-            blockPosition = 'form[class*="cart"]';
-        }
+        if (WooBetterData.position === 'custom') {
+            blockPosition = WooBetterData.custom_position || 'h1[class*="title"]'; // Posição personalizada definida pelo usuário
+        } else {
+            const position = WooBetterData.position || 'top'; // Posição padrão é 'top'
+            if (position === 'middle') {
+                blockPosition = 'div[class*="price"], p[class*="price"]';
+            } else if (position === 'bottom') {
+                blockPosition = 'form[class*="cart"]';
+            }
 
-        return blockPosition
+            return blockPosition
+        }
     }
 
     createDynamicStyles();

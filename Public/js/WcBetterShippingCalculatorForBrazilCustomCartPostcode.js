@@ -352,11 +352,15 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function setPosition() {
-        const position = WooBetterData.position || 'top'; // Posição padrão é 'top'
-        if (position === 'middle') {
-            blockPosition = 'div[class*="shipping-block"]';
-        } else if (position === 'bottom') {
-            blockPosition = 'div[class*="totals-footer"]';
+        if (WooBetterData.position === 'custom') {
+            blockPosition = WooBetterData.custom_position || 'h2[class*="order"]'; // Posição personalizada definida pelo usuário
+        } else {
+            const position = WooBetterData.position || 'top'; // Posição padrão é 'top'
+            if (position === 'middle') {
+                blockPosition = 'div[class*="shipping-block"]';
+            } else if (position === 'bottom') {
+                blockPosition = 'div[class*="totals-footer"]';
+            }
         }
 
         return blockPosition
@@ -619,7 +623,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function observeQuantitySelector() {
-        const targetClass = '.wc-block-components-quantity-selector__input';
+        let targetClass = '.wc-block-components-quantity-selector__input';
+
+        if (WooBetterData.custom_class.quantity !== '') {
+            targetClass = WooBetterData.custom_class.quantity;
+        }
+        // Seleciona todos os elementos que correspondem à classe especificada
         const targetElements = document.querySelectorAll(targetClass);
 
         targetElements.forEach((targetElement) => {
@@ -650,7 +659,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function observeRemoveLink() {
-        const targetClass = '.wc-block-cart-item__remove-link';
+        let targetClass = '.wc-block-cart-item__remove-link';
+
+        if (WooBetterData.custom_class.remove !== '') {
+            targetClass = WooBetterData.custom_class.remove;
+        }
+
         const targetElements = document.querySelectorAll(targetClass);
 
         targetElements.forEach((targetElement) => {
