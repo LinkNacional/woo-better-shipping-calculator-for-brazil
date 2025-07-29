@@ -761,6 +761,19 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_nopriv_register_cart_address', $this, 'lkn_register_cart_address');
     } 
 
+    /**
+     * Registers the shipping address and calculates shipping rates for a product.
+     *
+     * @since 1.0.0
+     * @access public
+     *
+     * @param intern Address and Nonce.
+     *
+     * @return void Outputs a JSON response with:
+     * - message (string): Success or error message.
+     * - product (array): Product information (name, quantity, currency, etc.).
+     * - shipping_rates (array): Calculated shipping rates.
+     */
     public function lkn_register_product_address(): void
     {
         // Captura e sanitiza o nonce do cabeçalho
@@ -913,6 +926,19 @@ class WcBetterShippingCalculatorForBrazil
         ));
     }
 
+    /**
+     * Processes the cart and calculates shipping rates for the items in the cart.
+     *
+     * @since 1.0.0
+     * @access public
+     *
+     * @param intern Address and Nonce.
+     *
+     * @return void Outputs a JSON response with:
+     * - message (string): Success or error message.
+     * - cart (array): Cart details including products, quantities, and totals.
+     * - shipping_rates (array): Calculated shipping rates for the cart.
+     */
     public function lkn_register_cart_address(): void
     {
         // Captura e sanitiza o nonce do cabeçalho
