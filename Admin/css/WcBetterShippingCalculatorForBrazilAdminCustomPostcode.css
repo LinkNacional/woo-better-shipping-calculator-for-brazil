@@ -52,24 +52,125 @@
 }
 
 .woo-better-link-current-style {
-    width: fit-content !important;
-    margin-top: 4px !important;
-    font-size: 14px !important;
+    background: none !important;
+    border: none !important;
     color: #0073aa !important;
-    text-decoration: underline;
-    transition: color 0.3s ease;
-    font-weight: normal !important;
-    text-transform: none !important;
+    text-decoration: underline !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-family: 'Poppins', sans-serif !important;
+    padding: 0 !important;
 }
 
 .woo-better-link-current-style:hover {
-    color: #005f8d;
+    color: #005f8d !important;
+    text-decoration: none !important;
+}
+
+/* Bloco de Info */
+
+.woo-better-current-postcode-text {
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.woo-better-change-postcode-button {
+    background: none !important;
+    border: none !important;
+    color: #0073aa !important;
+    text-decoration: underline !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-family: 'Poppins', sans-serif !important;
+    padding: 0 !important;
+}
+
+.woo-better-change-postcode-button:hover {
+    color: #005f8d !important;
+    text-decoration: none !important;
 }
 
 .woo-better-color-field {
     height: 50px !important;
     width: 50px !important;
     cursor: pointer;
+}
+
+.woo-better-parent-container {
+    max-width: 330px;
+}
+
+.woo-better-toggle-button {
+    background: none !important;
+    border: none !important;
+    color: #0073aa !important;
+    text-decoration: underline !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-family: 'Poppins', sans-serif !important;
+    padding: 0 !important;
+}
+
+.woo-better-toggle-button:hover {
+    color: #005f8d !important;
+    text-decoration: none !important;
+}
+
+.woo-better-content-block {
+    margin-top: 10px;
+}
+
+.woo-better-product-name,
+.woo-better-product-quantity,
+.woo-better-cart-name,
+.woo-better-cart-quantity {
+    margin: 5px 0;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.woo-better-shipping-methods {
+    margin-top: 20px;
+}
+
+.woo-better-shipping-methods p {
+    margin-bottom: 10px;
+}
+
+.woo-better-shipping-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.woo-better-shipping-list li {
+    margin: 5px 0;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.woo-better-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.woo-better-add-postcode-link {
+    background: none !important;
+    border: none !important;
+    color: #0073aa !important;
+    text-decoration: underline !important;
+    cursor: pointer;
+    font-size: 14px !important;
+    font-family: 'Poppins', sans-serif !important;
+    padding: 0 !important;
+}
+
+.woo-better-add-postcode-link:hover {
+    color: #005f8d !important;
+    background-color: none !important;
+    text-decoration: none !important;
 }
 
 .black-icon {

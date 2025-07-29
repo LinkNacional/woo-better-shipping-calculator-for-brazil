@@ -258,7 +258,15 @@ class WcBetterShippingCalculatorForBrazilPublic
                 ),
                 'icon' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/postcodeOptions/' . $cart_custom_icon . '.svg',
                 'iconColor' => get_option('woo_better_calc_cart_input_icon_color', '#000000'),
-                'wooUrl' => home_url()
+                'details_icon' => array(
+                    'cart' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/product.svg',
+                    'quantity' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/quantity.svg',
+                ),
+                'wooUrl' => home_url(),
+                'nonce'   => wp_create_nonce('woo_better_register_cart_address'),
+                'ajaxurl' => admin_url('admin-ajax.php'),
+                'product_id' => get_the_ID(),
+                'quantity' => WC_BETTER_SHIPPING_PRODUCT_QUANTITY,
             ));
 
             wp_enqueue_style(
@@ -302,8 +310,16 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'borderRadius' => get_option('woo_better_calc_product_button_border_radius', '4px'),
                 ),
                 'icon' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/postcodeOptions/' . $product_custom_icon . '.svg',
-                'iconColor' => get_option('woo_better_calc_product_input_icon_color', '#000000'),
-                'wooUrl' => home_url()
+                'iconColor' => get_option('woo_better_calc_product_input_icon_color', 'black-icon'),
+                'details_icon' => array(
+                    'product' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/product.svg',
+                    'quantity' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/quantity.svg',
+                ),
+                'wooUrl' => home_url(),
+                'nonce'   => wp_create_nonce('woo_better_register_product_address'),
+                'ajaxurl' => admin_url('admin-ajax.php'),
+                'product_id' => get_the_ID(),
+                'quantity' => WC_BETTER_SHIPPING_PRODUCT_QUANTITY,
             ));
 
             wp_enqueue_style(
