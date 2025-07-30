@@ -608,7 +608,6 @@ document.addEventListener('DOMContentLoaded', function () {
                                         if (poscodeCache) {
                                             const contentInfoBlock = infoBlock.querySelector('.woo-better-content-block');
                                             if (contentInfoBlock) {
-                                                contentInfoBlock.style.height = `${contentInfoBlock.scrollHeight}px`; // Define a altura para o conteúdo completo
                                                 contentInfoBlock.classList.add('expanded');
                                                 contentInfoBlock.style.display = 'block';
                                             }
