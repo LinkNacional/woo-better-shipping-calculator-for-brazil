@@ -12,6 +12,30 @@ document.addEventListener('DOMContentLoaded', function () {
         return parentContainer;
     }
 
+    function enablePostcodeForm() {
+        const button = document.querySelector('.woo-better-button-current-style');
+        const input = document.querySelector('.woo-better-input-current-style');
+
+        // Reabilita o botão e o input após a conclusão da requisição
+        button.disabled = false;
+        input.disabled = false;
+
+        // Restaura o texto original do botão
+        button.textContent = originalButtonText;
+
+        const cepBlock = document.querySelector('.woo-better-current-postcode-block');
+        if (cepBlock) {
+            // Atualiza o texto do bloco de CEP atual
+            cepBlock.style.display = 'flex';
+        }
+
+        // Remove os estilos de desabilitado
+        input.style.backgroundColor = WooBetterData.inputStyles.backgroundColor || '#fff';
+        input.style.cursor = '';
+        button.style.backgroundColor = WooBetterData.buttonStyles.backgroundColor || '#0073aa';
+        button.style.cursor = '';
+    }
+
     function createCurrentPostcodeBlock(postcode, form) {
         const currentPostcodeBlock = document.createElement('div');
         currentPostcodeBlock.classList.add('woo-better-current-postcode-block');
@@ -197,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         productName.appendChild(productIcon);
 
-        const productText = document.createTextNode(` Carrinho`);
+        const productText = document.createTextNode(` Produto`);
         productName.appendChild(productText);
 
         productName.classList.add('woo-better-product-name');
@@ -506,27 +530,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (data.status === true) {
                     if (!data.address || !data.state_sigla || !data.city) {
-                        const button = document.querySelector('.woo-better-button-current-style');
-                        const input = document.querySelector('.woo-better-input-current-style');
-
-                        // Reabilita o botão e o input após a conclusão da requisição
-                        button.disabled = false;
-                        input.disabled = false;
-
-                        // Restaura o texto original do botão
-                        button.textContent = originalButtonText;
-
-                        const cepBlock = document.querySelector('.woo-better-current-postcode-block');
-                        if (cepBlock) {
-                            // Atualiza o texto do bloco de CEP atual
-                            cepBlock.style.display = 'flex';
-                        }
-
-                        // Remove os estilos de desabilitado
-                        input.style.backgroundColor = WooBetterData.inputStyles.backgroundColor || '#fff';
-                        input.style.cursor = '';
-                        button.style.backgroundColor = WooBetterData.buttonStyles.backgroundColor || '#0073aa';
-                        button.style.cursor = '';
+                        enablePostcodeForm();
 
                         if (!data.address) {
                             return alert('Erro: Endereço inválido.');
@@ -604,49 +608,76 @@ document.addEventListener('DOMContentLoaded', function () {
                                         if (poscodeCache) {
                                             const contentInfoBlock = infoBlock.querySelector('.woo-better-content-block');
                                             if (contentInfoBlock) {
+                                                contentInfoBlock.style.height = `${contentInfoBlock.scrollHeight}px`; // Define a altura para o conteúdo completo
                                                 contentInfoBlock.classList.add('expanded');
                                                 contentInfoBlock.style.display = 'block';
                                             }
                                         }
                                     })
                                     .catch(error => {
+                                        enablePostcodeForm();
                                         console.error('Erro:', error);
-                                        alert('Nenhuma taxa de envio foi encontrada.');
+                                        alert(error || 'Erro ao processar as taxas de envio.');
                                     })
                             } else {
-                                console.error('Nenhuma taxa de envio foi encontrada.');
+                                if (response.data.digital) {
+                                    const infoBlock = document.querySelector('.woo-better-info-block');
+                                    const form = document.querySelector('#custom-postcode-form');
+
+                                    if (form) {
+                                        form.style.display = 'none'; // Esconde o bloco de informações
+                                    }
+
+                                    const productName = infoBlock.querySelector('.woo-better-product-name');
+                                    if (productName) {
+                                        const productTextNode = productName.childNodes[1]; // O nó de texto está na posição 1
+                                        if (productTextNode && productTextNode.nodeType === Node.TEXT_NODE) {
+                                            productTextNode.textContent = ` Produto: ${response.data.product_name}`;
+                                        }
+                                    }
+
+                                    if (infoBlock) {
+                                        const postcodeText = infoBlock.querySelector('.woo-better-current-postcode-text');
+                                        const shippingList = infoBlock.querySelector('.woo-better-shipping-list');
+
+                                        if (postcodeText) {
+                                            postcodeText.innerHTML = `<strong>CEP</strong>: ${postcodeValue}`;
+                                        }
+
+                                        if (shippingList) {
+                                            shippingList.innerHTML = '<li>Produto digital, não há taxas de envio.</li>';
+                                        }
+
+                                        infoBlock.style.display = 'block'; // Exibe o bloco de informações
+                                        const contentBlock = infoBlock.querySelector('.woo-better-content-block');
+                                        if (contentBlock) {
+                                            contentBlock.classList.add('expanded');
+                                            contentBlock.style.display = 'block';
+                                        }
+                                    }
+
+                                    console.warn(response.data.message || 'Produto digital, não há taxas de envio.');
+                                    alert(response.data.message || 'Produto digital, não há taxas de envio.');
+                                    enablePostcodeForm();
+                                } else {
+                                    alert(response.data.message || 'Erro ao processar as taxas de envio.');
+                                    console.error(response.data.message || 'Erro ao processar as taxas de envio.');
+                                    enablePostcodeForm();
+                                }
                             }
                         })
                         .catch(error => {
+                            alert(error.message || 'Erro ao processar as taxas de envio.');
                             console.error('Erro na requisição:', error);
+                            enablePostcodeForm();
                         });
                 } else {
-                    const button = document.querySelector('.woo-better-button-current-style');
-                    const input = document.querySelector('.woo-better-input-current-style');
-
-                    // Reabilita o botão e o input após a conclusão da requisição
-                    button.disabled = false;
-                    input.disabled = false;
-
-                    // Restaura o texto original do botão
-                    button.textContent = originalButtonText;
-
-                    const cepBlock = document.querySelector('.woo-better-current-postcode-block');
-                    if (cepBlock) {
-                        // Atualiza o texto do bloco de CEP atual
-                        cepBlock.style.display = 'flex';
-                    }
-
-                    // Remove os estilos de desabilitado
-                    input.style.backgroundColor = WooBetterData.inputStyles.backgroundColor || '#fff';
-                    input.style.cursor = '';
-                    button.style.backgroundColor = WooBetterData.buttonStyles.backgroundColor || '#0073aa';
-                    button.style.cursor = '';
-
-                    alert('Nenhuma taxa de envio foi encontrada.');
+                    enablePostcodeForm();
+                    alert('Houve um erro ao consultar o CEP.');
                 }
             })
             .catch(error => {
+                enablePostcodeForm();
                 clearTimeout(timeoutId); // Também limpa o timeout no erro
                 if (error.name === 'AbortError') {
                     alert('Erro: Tempo limite de resposta excedido.');

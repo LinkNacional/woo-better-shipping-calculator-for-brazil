@@ -869,6 +869,16 @@ class WcBetterShippingCalculatorForBrazil
             ), 400);
         }
 
+        // Verifica se o produto é digital (virtual ou para download)
+        if ($product->is_virtual() || $product->is_downloadable()) {
+            wp_send_json_error(array(
+                'status' => false,
+                'digital' => true,
+                'product_name' => $product->get_name(),
+                'message' => 'O produto é digital ou baixável e não requer cálculo de frete.',
+            ), 400);
+        }
+
         // Cria um pacote de envio personalizado
         $package = array(
             'contents' => array(
@@ -1021,6 +1031,31 @@ class WcBetterShippingCalculatorForBrazil
             wp_send_json_error(array(
                 'status' => false,
                 'message' => 'O carrinho está vazio.',
+            ), 400);
+        }
+
+        $only_digital = true;
+        foreach ($cart_items as $cart_item) {
+            $product = $cart_item['data'];
+            if (!$product->is_virtual() && !$product->is_downloadable()) {
+                $only_digital = false;
+                break;
+            }
+        }
+
+        if ($only_digital) {
+            $cart_count = WC()->cart->get_cart_contents_count();
+
+            // Define a mensagem com base na quantidade de produtos
+            $message = $cart_count === 1
+                ? 'O produto no carrinho é digital ou baixável e não requer cálculo de frete.'
+                : 'Todos os produtos no carrinho são digitais ou baixáveis e não requerem cálculo de frete.';
+
+            wp_send_json_error(array(
+                'status' => false,
+                'digital' => true,
+                'cart_count' => $cart_count,
+                'message' => $message,
             ), 400);
         }
 

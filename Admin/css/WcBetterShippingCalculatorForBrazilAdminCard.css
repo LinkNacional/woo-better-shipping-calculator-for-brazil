@@ -135,6 +135,6 @@
     width: fit-content;
     padding: 0px;
     margin: 0px;
-    color: #DAE300;
+    color: #DAE300 !important;
     font-size: 12px;
 }
