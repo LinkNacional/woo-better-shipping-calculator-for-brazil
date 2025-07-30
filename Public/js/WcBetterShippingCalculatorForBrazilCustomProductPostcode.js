@@ -656,7 +656,6 @@ document.addEventListener('DOMContentLoaded', function () {
                                     }
 
                                     console.warn(response.data.message || 'Produto digital, não há taxas de envio.');
-                                    alert(response.data.message || 'Produto digital, não há taxas de envio.');
                                     enablePostcodeForm();
                                 } else {
                                     alert(response.data.message || 'Erro ao processar as taxas de envio.');
