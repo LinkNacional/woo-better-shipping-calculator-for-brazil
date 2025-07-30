@@ -796,7 +796,14 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // Obtém os dados de envio enviados pela requisição
-        $shipping = isset($_POST['shipping']) ? wp_unslash($_POST['shipping']) : array();
+        $shipping = isset($_POST['shipping']) && is_array($_POST['shipping']) 
+            ? array_map('sanitize_text_field', wp_unslash($_POST['shipping'])) 
+            : array();
+
+        // Sanitiza os dados do array de envio
+        if (is_array($shipping)) {
+            $shipping = array_map('sanitize_text_field', $shipping);
+        }
 
         // Verifica se os dados de envio estão presentes e são válidos
         if (empty($shipping) || !is_array($shipping)) {
@@ -971,7 +978,9 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // Obtém os dados de envio enviados pela requisição
-        $shipping = isset($_POST['shipping']) ? wp_unslash($_POST['shipping']) : array();
+        $shipping = isset($_POST['shipping']) && is_array($_POST['shipping']) 
+            ? array_map('sanitize_text_field', wp_unslash($_POST['shipping'])) 
+            : array();
 
         // Verifica se os dados de envio estão presentes e são válidos
         if (empty($shipping) || !is_array($shipping)) {
