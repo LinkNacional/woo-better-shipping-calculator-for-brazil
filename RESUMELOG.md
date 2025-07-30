@@ -1,3 +1,8 @@
+# 4.3.0 - 29/07/25
+* Adição: Novos componentes de verificação de CEP personalizados.
+* Adição: Componente de CEP para página de produto.
+* Adição: Componente de CEP para página de carrinho Woo 10+
+
 # 4.2.1 - 09/06/25
 * Correção: Separador de decimal.
 * Correção: URL dinâmica.

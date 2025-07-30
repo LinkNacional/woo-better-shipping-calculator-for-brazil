@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.8
 Requires PHP: 7.3
-Stable tag: 4.2.1
+Stable tag: 4.3.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -66,6 +66,8 @@ If you find any errors or have suggestions, open an issue in our [GitHub reposit
 9. Progress bar in Gutenberg checkout.
 10. Progress bar in Legacy cart.
 11. Progress bar in Legacy checkout.
+12. New postcode component.
+13. New layout for postcode component.
 
 == Frequently Asked Questions ==
 
@@ -90,6 +92,11 @@ add_filter(
 );
 
 == Changelog ==
+
+= 4.3.0 - 29/07/2025 =
+* Addition: New custom ZIP code verification components.
+* Addition: ZIP code component for the product page.
+* Addition: ZIP code component for the Woo cart page
 
 = 4.2.1 - 09/06/2025 =
 * Fix: Decimal separator.

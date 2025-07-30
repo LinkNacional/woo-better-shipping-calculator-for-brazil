@@ -79,7 +79,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.2.1';
+            $this->version = '4.3.0';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -159,16 +159,15 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_cart_needs_shipping_address', $this, 'lkn_custom_disable_shipping', 10, 1);
 
         $this->loader->add_filter('woocommerce_package_rates', $this, 'lkn_simular_frete_playground', 10, 2);
-
     }
 
     public function lkn_simular_frete_playground($rates, $package)
     {
-        $environment = wp_get_environment_type();
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
         $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
 
-        if ($environment === 'local' || $environment === 'development' || strpos(home_url(), 'playground.wordpress.net') !== false) {
+
+        if (strpos(home_url(), 'playground.wordpress.net') !== false) {
             $rates = [];
 
             $rate = new \WC_Shipping_Rate(
@@ -232,6 +231,10 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_set_country_brasil()
     {
+        if (!function_exists('WC')) {
+            return;
+        }
+
         $customer = WC()->customer;
 
         $cep_required = get_option('woo_better_calc_cep_required', 'yes');
@@ -326,15 +329,35 @@ class WcBetterShippingCalculatorForBrazil
         ) {
             wp_enqueue_script(
                 'wc-better-calc-settings-layout',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/js/WcBetterShippingCalculatorForBrazilAdminLayout.js',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true
             );
 
+            $icons = array(
+                'bill' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/bill.svg',
+                'postcode' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/postcode.svg',
+                'transit' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/transit.svg',
+                'zipcode' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/zipcode.svg',
+                'truck' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/truck.svg',
+                'consult' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/textFieldConsult.svg',
+            );
+
+            // Passa os dados para o JavaScript
+            wp_localize_script('wc-better-calc-settings-layout', 'WCBetterCalcIcons', $icons);
+
+            // Verifica a versão do WooCommerce
+            $woo_version_valid = version_compare(WC_VERSION, '10.0.0', '>=') ? 'valid' : 'invalid';
+
+            // Passa os dados para o JavaScript
+            wp_localize_script('wc-better-calc-settings-layout', 'WCBetterCalcWooVersion', array(
+                'status' => $woo_version_valid,
+            ));
+
             wp_enqueue_script(
                 'wc-better-calc-footer-message',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/js/WcBetterShippingCalculatorForBrazilAdminSettings.js',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.js',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true
@@ -342,7 +365,15 @@ class WcBetterShippingCalculatorForBrazil
 
             wp_enqueue_style(
                 'wc-better-calc-style-settings',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/css/WcBetterShippingCalculatorForBrazilAdminSettings.css',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.css',
+                array(),
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                'all'
+            );
+
+            wp_enqueue_style(
+                'wc-better-calc-style-postcode',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminCustomPostcode.COMPILED.css',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 'all'
@@ -350,7 +381,7 @@ class WcBetterShippingCalculatorForBrazil
 
             wp_enqueue_style(
                 'wc-better-calc-style-admin-card-settings',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/css/WcBetterShippingCalculatorForBrazilAdminCard.css',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminCard.COMPILED.css',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 'all'
@@ -568,14 +599,19 @@ class WcBetterShippingCalculatorForBrazil
         ));
     }
 
+    /**
+     * Endpoint para receber o CEP via API personalizada.
+     *
+     * @param \WP_REST_Request $request Objeto da requisição REST contendo o parâmetro `postcode`.
+     * 
+     * @return \WP_REST_Response Retorna uma resposta com o status e o CEP recebido.
+     */
     public function lkn_get_cep_info(\WP_REST_Request $request)
     {
         // Pega o parâmetro cep da requisição
         $cep = $request->get_param('postcode');
 
-        $environment = wp_get_environment_type();
-
-        if ($environment === 'local' || $environment === 'development' || strpos(home_url(), 'playground.wordpress.net') !== false) {
+        if (strpos(home_url(), 'playground.wordpress.net') !== false) {
             return new \WP_REST_Response(
                 array(
                     'status' => true,
@@ -713,11 +749,377 @@ class WcBetterShippingCalculatorForBrazil
      */
     private function define_public_hooks()
     {
-
         $plugin_public = new WcBetterShippingCalculatorForBrazilPublic($this->get_plugin_name(), $this->get_version());
 
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
         $this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts', 900);
+
+        $this->loader->add_action('wp_ajax_register_product_address', $this, 'lkn_register_product_address');
+        $this->loader->add_action('wp_ajax_nopriv_register_product_address', $this, 'lkn_register_product_address');
+
+        $this->loader->add_action('wp_ajax_register_cart_address', $this, 'lkn_register_cart_address');
+        $this->loader->add_action('wp_ajax_nopriv_register_cart_address', $this, 'lkn_register_cart_address');
+    } 
+
+    /**
+     * Registers the shipping address and calculates shipping rates for a product.
+     *
+     * @since 1.0.0
+     * @access public
+     *
+     * @param intern Address and Nonce.
+     *
+     * @return void Outputs a JSON response with:
+     * - message (string): Success or error message.
+     * - product (array): Product information (name, quantity, currency, etc.).
+     * - shipping_rates (array): Calculated shipping rates.
+     */
+    public function lkn_register_product_address(): void
+    {
+        // Captura e sanitiza o nonce do cabeçalho
+        $nonce = isset($_SERVER['HTTP_NONCE']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_NONCE'])) : '';
+
+        // Valida o nonce
+        if (!wp_verify_nonce($nonce, 'woo_better_register_product_address')) {
+            wp_send_json_error(array(
+                'status' => false,
+                'message' => 'Requisição não autorizada.',
+            ), 403);
+        }
+
+        // Verifica se WooCommerce está carregado
+        if (!function_exists('WC')) {
+            wp_send_json_error(array(
+                'status' => false,
+                'message' => 'WooCommerce não está carregado.',
+            ), 500);
+        }
+
+        // Obtém os dados de envio enviados pela requisição
+        $shipping = isset($_POST['shipping']) && is_array($_POST['shipping']) 
+            ? array_map('sanitize_text_field', wp_unslash($_POST['shipping'])) 
+            : array();
+
+        // Sanitiza os dados do array de envio
+        if (is_array($shipping)) {
+            $shipping = array_map('sanitize_text_field', $shipping);
+        }
+
+        // Verifica se os dados de envio estão presentes e são válidos
+        if (empty($shipping) || !is_array($shipping)) {
+            wp_send_json_error(array(
+                'status' => false,
+                'message' => 'O parâmetro "shipping" é obrigatório e deve ser um array.',
+            ), 400);
+        }
+
+        // Sanitiza os dados de envio
+        $shipping_data = array(
+            'first_name'  => isset($shipping['first_name']) ? sanitize_text_field($shipping['first_name']) : null,
+            'last_name'   => isset($shipping['last_name']) ? sanitize_text_field($shipping['last_name']) : null,
+            'company'     => isset($shipping['company']) ? sanitize_text_field($shipping['company']) : null,
+            'address_1'   => isset($shipping['address_1']) ? sanitize_text_field($shipping['address_1']) : null,
+            'address_2'   => isset($shipping['address_2']) ? sanitize_text_field($shipping['address_2']) : null,
+            'city'        => isset($shipping['city']) ? sanitize_text_field($shipping['city']) : null,
+            'state'       => isset($shipping['state']) ? sanitize_text_field($shipping['state']) : null,
+            'postcode'    => isset($shipping['postcode']) ? sanitize_text_field($shipping['postcode']) : null,
+            'country'     => isset($shipping['country']) ? sanitize_text_field($shipping['country']) : 'BR',
+            'phone'       => isset($shipping['phone']) ? sanitize_text_field($shipping['phone']) : null,
+        );
+
+        // Define as propriedades do cliente com os dados de envio e replica para cobrança
+        WC()->customer->set_props(
+            array(
+                'shipping_first_name' => $shipping_data['first_name'],
+                'shipping_last_name'  => $shipping_data['last_name'],
+                'shipping_company'    => $shipping_data['company'],
+                'shipping_address_1'  => $shipping_data['address_1'],
+                'shipping_address_2'  => $shipping_data['address_2'],
+                'shipping_city'       => $shipping_data['city'],
+                'shipping_state'      => $shipping_data['state'],
+                'shipping_postcode'   => $shipping_data['postcode'],
+                'shipping_country'    => $shipping_data['country'],
+                'shipping_phone'      => $shipping_data['phone'],
+                'billing_first_name'  => $shipping_data['first_name'],
+                'billing_last_name'   => $shipping_data['last_name'],
+                'billing_company'     => $shipping_data['company'],
+                'billing_address_1'   => $shipping_data['address_1'],
+                'billing_address_2'   => $shipping_data['address_2'],
+                'billing_city'        => $shipping_data['city'],
+                'billing_state'       => $shipping_data['state'],
+                'billing_postcode'    => $shipping_data['postcode'],
+                'billing_country'     => $shipping_data['country'],
+                'billing_phone'       => $shipping_data['phone'],
+            )
+        );
+
+        // Salva os dados do cliente
+        WC()->customer->save();
+
+        // Obtém o ID do produto da página atual
+        $product_id = isset($_POST['product_id']) ? absint($_POST['product_id']) : 0;
+
+        if (!$product_id || !get_post($product_id)) {
+            wp_send_json_error(array(
+                'status' => false,
+                'message' => 'Produto inválido ou não encontrado.',
+            ), 400);
+        }
+
+        // Obtém o produto
+        $product = wc_get_product($product_id);
+
+        if (!$product) {
+            wp_send_json_error(array(
+                'status' => false,
+                'message' => 'Produto não encontrado.',
+            ), 400);
+        }
+
+        // Verifica se o produto é digital (virtual ou para download)
+        if ($product->is_virtual() || $product->is_downloadable()) {
+            wp_send_json_error(array(
+                'status' => false,
+                'digital' => true,
+                'product_name' => $product->get_name(),
+                'message' => 'O produto é digital ou baixável e não requer cálculo de frete.',
+            ), 400);
+        }
+
+        // Cria um pacote de envio personalizado
+        $package = array(
+            'contents' => array(
+                $product_id => array(
+                    'product_id' => $product_id,
+                    'quantity'   => WC_BETTER_SHIPPING_PRODUCT_QUANTITY,
+                    'data'       => $product,
+                ),
+            ),
+            'destination' => array(
+                'country'   => $shipping_data['country'],
+                'state'     => $shipping_data['state'],
+                'postcode'  => $shipping_data['postcode'],
+                'city'      => $shipping_data['city'],
+                'address'   => $shipping_data['address_1'],
+                'address_2' => $shipping_data['address_2'],
+            ),
+        );
+
+        // Calcula o frete para o pacote
+        $shipping_instance = new \WC_Shipping();
+        $shipping_methods = $shipping_instance->load_shipping_methods($package);
+
+        $shipping_rates = array();
+        $currency_symbol = get_woocommerce_currency_symbol();
+        $currency_minor_unit = wc_get_price_decimals();
+
+        $product_info = array(
+            'name'     => $product->get_name(),
+            'quantity' => WC_BETTER_SHIPPING_PRODUCT_QUANTITY, 
+            'currency' => $currency_symbol,
+            'currency_minor_unit' => $currency_minor_unit,
+        );
+
+        // Itera pelos métodos de envio e calcula as taxas
+        foreach ($shipping_methods as $method) {
+            if ($method->supports('shipping-zones')) {
+                $rates = $method->get_rates_for_package($package);
+
+                foreach ($rates as $rate) {
+                    $shipping_rates[] = array(
+                        'id'    => $rate->get_id(),
+                        'label' => $rate->get_label(),
+                        'cost'  => $rate->get_cost(),
+                    );
+                }
+            }
+        }
+
+        // Retorna os valores calculados
+        wp_send_json_success(array(
+            'message' => 'Endereço de envio registrado com sucesso e frete calculado.',
+            'product' => $product_info, // Informações do produto
+            'shipping_rates' => $shipping_rates, // Taxas de envio
+        ));
+    }
+
+    /**
+     * Processes the cart and calculates shipping rates for the items in the cart.
+     *
+     * @since 1.0.0
+     * @access public
+     *
+     * @param intern Address and Nonce.
+     *
+     * @return void Outputs a JSON response with:
+     * - message (string): Success or error message.
+     * - cart (array): Cart details including products, quantities, and totals.
+     * - shipping_rates (array): Calculated shipping rates for the cart.
+     */
+    public function lkn_register_cart_address(): void
+    {
+        // Captura e sanitiza o nonce do cabeçalho
+        $nonce = isset($_SERVER['HTTP_NONCE']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_NONCE'])) : '';
+
+        // Valida o nonce
+        if (!wp_verify_nonce($nonce, 'woo_better_register_cart_address')) {
+            wp_send_json_error(array(
+                'status' => false,
+                'message' => 'Requisição não autorizada.',
+            ), 403);
+        }
+
+        // Verifica se WooCommerce está carregado
+        if (!function_exists('WC')) {
+            wp_send_json_error(array(
+                'status' => false,
+                'message' => 'WooCommerce não está carregado.',
+            ), 500);
+        }
+
+        // Obtém os dados de envio enviados pela requisição
+        $shipping = isset($_POST['shipping']) && is_array($_POST['shipping']) 
+            ? array_map('sanitize_text_field', wp_unslash($_POST['shipping'])) 
+            : array();
+
+        // Verifica se os dados de envio estão presentes e são válidos
+        if (empty($shipping) || !is_array($shipping)) {
+            wp_send_json_error(array(
+                'status' => false,
+                'message' => 'O parâmetro "shipping" é obrigatório e deve ser um array.',
+            ), 400);
+        }
+
+        // Sanitiza os dados de envio
+        $shipping_data = array(
+            'first_name'  => isset($shipping['first_name']) ? sanitize_text_field($shipping['first_name']) : null,
+            'last_name'   => isset($shipping['last_name']) ? sanitize_text_field($shipping['last_name']) : null,
+            'company'     => isset($shipping['company']) ? sanitize_text_field($shipping['company']) : null,
+            'address_1'   => isset($shipping['address_1']) ? sanitize_text_field($shipping['address_1']) : null,
+            'address_2'   => isset($shipping['address_2']) ? sanitize_text_field($shipping['address_2']) : null,
+            'city'        => isset($shipping['city']) ? sanitize_text_field($shipping['city']) : null,
+            'state'       => isset($shipping['state']) ? sanitize_text_field($shipping['state']) : null,
+            'postcode'    => isset($shipping['postcode']) ? sanitize_text_field($shipping['postcode']) : null,
+            'country'     => isset($shipping['country']) ? sanitize_text_field($shipping['country']) : 'BR',
+            'phone'       => isset($shipping['phone']) ? sanitize_text_field($shipping['phone']) : null,
+        );
+
+        // Define as propriedades do cliente com os dados de envio e replica para cobrança
+        WC()->customer->set_props(
+            array(
+                'shipping_first_name' => $shipping_data['first_name'],
+                'shipping_last_name'  => $shipping_data['last_name'],
+                'shipping_company'    => $shipping_data['company'],
+                'shipping_address_1'  => $shipping_data['address_1'],
+                'shipping_address_2'  => $shipping_data['address_2'],
+                'shipping_city'       => $shipping_data['city'],
+                'shipping_state'      => $shipping_data['state'],
+                'shipping_postcode'   => $shipping_data['postcode'],
+                'shipping_country'    => $shipping_data['country'],
+                'shipping_phone'      => $shipping_data['phone'],
+                'billing_first_name'  => $shipping_data['first_name'],
+                'billing_last_name'   => $shipping_data['last_name'],
+                'billing_company'     => $shipping_data['company'],
+                'billing_address_1'   => $shipping_data['address_1'],
+                'billing_address_2'   => $shipping_data['address_2'],
+                'billing_city'        => $shipping_data['city'],
+                'billing_state'       => $shipping_data['state'],
+                'billing_postcode'    => $shipping_data['postcode'],
+                'billing_country'     => $shipping_data['country'],
+                'billing_phone'       => $shipping_data['phone'],
+            )
+        );
+
+        // Salva os dados do cliente
+        WC()->customer->save();
+
+        // Obtém os itens do carrinho
+        $cart_items = WC()->cart->get_cart();
+
+        if (empty($cart_items)) {
+            wp_send_json_error(array(
+                'status' => false,
+                'message' => 'O carrinho está vazio.',
+            ), 400);
+        }
+
+        $only_digital = true;
+        foreach ($cart_items as $cart_item) {
+            $product = $cart_item['data'];
+            if (!$product->is_virtual() && !$product->is_downloadable()) {
+                $only_digital = false;
+                break;
+            }
+        }
+
+        if ($only_digital) {
+            $cart_count = WC()->cart->get_cart_contents_count();
+
+            // Define a mensagem com base na quantidade de produtos
+            $message = $cart_count === 1
+                ? 'O produto no carrinho é digital ou baixável e não requer cálculo de frete.'
+                : 'Todos os produtos no carrinho são digitais ou baixáveis e não requerem cálculo de frete.';
+
+            wp_send_json_error(array(
+                'status' => false,
+                'digital' => true,
+                'cart_count' => $cart_count,
+                'message' => $message,
+            ), 400);
+        }
+
+        // Cria um pacote de envio personalizado com os itens do carrinho
+        $package = array(
+            'contents' => $cart_items,
+            'destination' => array(
+                'country'   => $shipping_data['country'],
+                'state'     => $shipping_data['state'],
+                'postcode'  => $shipping_data['postcode'],
+                'city'      => $shipping_data['city'],
+                'address'   => $shipping_data['address_1'],
+                'address_2' => $shipping_data['address_2'],
+            ),
+        );
+
+        // Calcula o frete para o pacote
+        $shipping_instance = new \WC_Shipping();
+        $shipping_methods = $shipping_instance->load_shipping_methods($package);
+
+        $shipping_rates = array();
+        $currency_symbol = get_woocommerce_currency_symbol();
+        $currency_minor_unit = wc_get_price_decimals();
+
+        // Itera pelos métodos de envio e calcula as taxas
+        foreach ($shipping_methods as $method) {
+            if ($method->supports('shipping-zones')) {
+                $rates = $method->get_rates_for_package($package);
+
+                foreach ($rates as $rate) {
+                    $shipping_rates[] = array(
+                        'id'    => $rate->get_id(),
+                        'label' => $rate->get_label(),
+                        'cost'  => $rate->get_cost(),
+                    );
+                }
+            }
+        }
+
+        $total_quantity = 0;
+
+        foreach (WC()->cart->get_cart() as $cart_item) {
+            $total_quantity += $cart_item['quantity'];
+        }
+
+        // Retorna os valores calculados
+        wp_send_json_success(array(
+            'message' => 'Endereço de envio registrado com sucesso e frete calculado.',
+            'cart' => array(
+                'currency_symbol' => $currency_symbol,
+                'currency_minor_unit' => $currency_minor_unit,
+                'quantity' => $total_quantity
+            ),
+            'shipping_rates' => $shipping_rates, // Taxas de envio
+        ));
     }
 
     /**
