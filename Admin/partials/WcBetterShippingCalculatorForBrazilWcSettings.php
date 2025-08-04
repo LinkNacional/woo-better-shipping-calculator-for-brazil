@@ -185,6 +185,34 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Estilo Atual (Input).', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'cart_input_position' => array(
+                'title'    => __('Posição do Campo', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_cart_input_position',
+                'type'     => 'select',
+                'options'  => array(
+                    'top'    => __('Topo', 'woo-better-shipping-calculator-for-brazil'),
+                    'middle' => __('Meio', 'woo-better-shipping-calculator-for-brazil'),
+                    'bottom' => __('Base', 'woo-better-shipping-calculator-for-brazil'),
+                    'custom' => __('Personalizado', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'default'  => 'top',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Defina a posição do campo na página.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Escolha se o campo será exibido no topo, meio ou na base do componente.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Posição do Campo.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'cart_input_custom_position' => array(
+                'title'    => __('Posição personalizada', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_cart_custom_position',
+                'type'     => 'text',
+                'default'  => '',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Personalize a posição de exibição do CEP.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Insira a classe(.class) ou id(#id) do componente para inseri-lo em um local personalizado.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Definia um local personalizado de sua escolha.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
 
             // Input style block
             'cart_input_background_color_field' => array(
@@ -398,34 +426,6 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Escolha a cor no qual será utilizada para definir a cor do icone do input.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
-            'cart_input_position' => array(
-                'title'    => __('Posição do Campo', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_calc_cart_input_position',
-                'type'     => 'select',
-                'options'  => array(
-                    'top'    => __('Topo', 'woo-better-shipping-calculator-for-brazil'),
-                    'middle' => __('Meio', 'woo-better-shipping-calculator-for-brazil'),
-                    'bottom' => __('Base', 'woo-better-shipping-calculator-for-brazil'),
-                    'custom' => __('Personalizado', 'woo-better-shipping-calculator-for-brazil')
-                ),
-                'default'  => 'top',
-                'custom_attributes' => array(
-                    'data-desc-tip' => __('Defina a posição do campo na página.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Escolha se o campo será exibido no topo, meio ou na base do componente.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Posição do Campo.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-            'cart_input_custom_position' => array(
-                'title'    => __('Posição personalizada', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_calc_cart_custom_position',
-                'type'     => 'text',
-                'default'  => '',
-                'custom_attributes' => array(
-                    'data-desc-tip' => __('Personalize a posição de exibição do CEP.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Insira a classe(.class) ou id(#id) do componente para inseri-lo em um local personalizado.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Definia um local personalizado de sua escolha.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
             'cart_input_custom_quantity' => array(
                 'title'    => __('Classes de controle do carrinho', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_cart_custom_quantity',
@@ -487,6 +487,35 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-desc-tip' => __('Exibe o estilo atual aplicado ao campo de entrada.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Este campo é apenas informativo e exibe o estilo atual.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Estilo Atual (Input).', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'product_input_position' => array(
+                'title'    => __('Posição do Campo', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_product_input_position',
+                'type'     => 'select',
+                'options'  => array(
+                    'top'    => __('Topo', 'woo-better-shipping-calculator-for-brazil'),
+                    'middle' => __('Meio', 'woo-better-shipping-calculator-for-brazil'),
+                    'bottom' => __('Base', 'woo-better-shipping-calculator-for-brazil'),
+                    'custom' => __('Personalizado', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'default'  => 'top',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Defina a posição do campo na página.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Escolha se o campo será exibido no topo, meio ou na base do componente.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Posição do Campo.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            
+            'product_input_custom_position' => array(
+                'title'    => __('Posição personalizada', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_product_custom_position',
+                'type'     => 'text',
+                'default'  => '',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Personalize a posição de exibição do CEP.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Insira a classe(.class) ou id(#id) do componente para inseri-lo em um local personalizado.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Definia um local personalizado de sua escolha.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
 
@@ -709,36 +738,6 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-desc-tip' => __('Defina a cor do ícone.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Escolha a cor para o ícone.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Escolha a cor no qual será utilizada para definir a cor do ícone do input.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-
-            'product_input_position' => array(
-                'title'    => __('Posição do Campo', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_calc_product_input_position',
-                'type'     => 'select',
-                'options'  => array(
-                    'top'    => __('Topo', 'woo-better-shipping-calculator-for-brazil'),
-                    'middle' => __('Meio', 'woo-better-shipping-calculator-for-brazil'),
-                    'bottom' => __('Base', 'woo-better-shipping-calculator-for-brazil'),
-                    'custom' => __('Personalizado', 'woo-better-shipping-calculator-for-brazil')
-                ),
-                'default'  => 'top',
-                'custom_attributes' => array(
-                    'data-desc-tip' => __('Defina a posição do campo na página.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Escolha se o campo será exibido no topo, meio ou na base do componente.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Posição do Campo.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-            
-            'product_input_custom_position' => array(
-                'title'    => __('Posição personalizada', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_calc_product_custom_position',
-                'type'     => 'text',
-                'default'  => '',
-                'custom_attributes' => array(
-                    'data-desc-tip' => __('Personalize a posição de exibição do CEP.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Insira a classe(.class) ou id(#id) do componente para inseri-lo em um local personalizado.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Definia um local personalizado de sua escolha.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
 
