@@ -1,3 +1,9 @@
+# 4.3.1 - 05/08/25
+* Ajuste: Opção que define a posição do componente fica num nível mais elevado, tanto pra página de produto, quanto carrinho.
+* Correção: Ao definir a posição do componente de CEP em uma página de produto de modo personalizado, ele não exibia conforme o esperado.
+* Correção: Valor padrão da cor do ícone.
+* Adição: Link que leva para página de configuração agora se encontra disponível na página de produto quando o usuário for administrador da página.
+
 # 4.3.0 - 29/07/25
 * Adição: Novos componentes de verificação de CEP personalizados.
 * Adição: Componente de CEP para página de produto.

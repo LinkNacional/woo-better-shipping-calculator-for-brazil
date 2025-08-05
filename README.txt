@@ -93,6 +93,12 @@ add_filter(
 
 == Changelog ==
 
+= 4.3.1 - 05/08/2025 =
+* Adjustment: Option that defines the component position is now at a higher level, for both product page and cart.
+* Fix: When defining the CEP component position on a product page in custom mode, it did not display as expected.
+* Fix: Default icon color value.
+* Addition: Link that leads to configuration page is now available on the product page when the user is a page administrator.
+
 = 4.3.0 - 29/07/2025 =
 * Addition: New custom ZIP code verification components.
 * Addition: ZIP code component for the product page.
