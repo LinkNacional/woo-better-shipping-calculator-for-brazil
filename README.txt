@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.8
 Requires PHP: 7.3
-Stable tag: 4.3.0
+Stable tag: 4.3.1
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -92,6 +92,12 @@ add_filter(
 );
 
 == Changelog ==
+
+= 4.3.1 - 05/08/2025 =
+* Adjustment: Option that defines the component position is now at a higher level, for both product page and cart.
+* Fix: When defining the CEP component position on a product page in custom mode, it did not display as expected.
+* Fix: Default icon color value.
+* Addition: Link that leads to configuration page is now available on the product page when the user is a page administrator.
 
 = 4.3.0 - 29/07/2025 =
 * Addition: New custom ZIP code verification components.

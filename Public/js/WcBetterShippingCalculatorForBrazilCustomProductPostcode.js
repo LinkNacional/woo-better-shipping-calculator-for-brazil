@@ -444,9 +444,8 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (position === 'bottom') {
                 blockPosition = 'form[class*="cart"]';
             }
-
-            return blockPosition
         }
+        return blockPosition
     }
 
     createDynamicStyles();

@@ -116,8 +116,9 @@ class WcBetterShippingCalculatorForBrazilPublic
         $product_custom_postcode = get_option('woo_better_calc_enable_product_page', 'yes');
         $product_custom_icon = get_option('woo_better_calc_product_input_icon', 'transit');
 
-        if (has_block('woocommerce/cart')) {
-
+        if((has_block('woocommerce/product') || 
+        (function_exists('is_product') && is_product())) || 
+        has_block('woocommerce/cart')) {
             if (current_user_can('manage_options')) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-cep-settings-link',
@@ -126,11 +127,14 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->version,
                     false
                 );
-
+    
                 wp_localize_script($this->plugin_name . '-gutenberg-cep-settings-link', 'lknCartData', array(
                     'settingsUrl' => admin_url('admin.php?page=wc-settings&tab=wc-better-calc'),
                 ));
             }
+        }
+
+        if (has_block('woocommerce/cart')) {
 
             if ($cep_required === 'yes' && defined('WC_VERSION') && version_compare(WC_VERSION, '10.0.0', '<')) {
                 wp_enqueue_script(
@@ -262,7 +266,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'borderRadius' => get_option('woo_better_calc_cart_button_border_radius', '4px'),
                 ),
                 'icon' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/postcodeOptions/' . $cart_custom_icon . '.svg',
-                'iconColor' => get_option('woo_better_calc_cart_input_icon_color', '#000000'),
+                'iconColor' => get_option('woo_better_calc_cart_input_icon_color', 'blue-icon'),
                 'details_icon' => array(
                     'cart' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/product.svg',
                     'quantity' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/quantity.svg',
@@ -320,7 +324,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'borderRadius' => get_option('woo_better_calc_product_button_border_radius', '4px'),
                 ),
                 'icon' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/postcodeOptions/' . $product_custom_icon . '.svg',
-                'iconColor' => get_option('woo_better_calc_product_input_icon_color', 'black-icon'),
+                'iconColor' => get_option('woo_better_calc_product_input_icon_color', 'blue-icon'),
                 'details_icon' => array(
                     'product' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/product.svg',
                     'quantity' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/quantity.svg',

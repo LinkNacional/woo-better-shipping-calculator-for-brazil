@@ -1,14 +1,22 @@
 function insertSettingsLink() {
     let submitBlockFound = false
     const submitBlock = document.querySelector('.wc-block-cart__submit');
+    const cartForm = document.querySelector('form.cart');
 
-    if (!submitBlock) {
+    // Verifica se pelo menos um dos elementos existe
+    if (!submitBlock && !cartForm) {
         submitBlockFound = false;
         return;
     }
 
+    // Usa o elemento que estiver disponível (prioriza submitBlock)
+    const targetElement = submitBlock || cartForm;
+
+    // Verifica se já existe o link no DOM (não apenas dentro do targetElement)
+    const existingLink = document.querySelector('.lkn-settings-link');
+
     // Garante que o elemento existe e evita duplicação do link
-    if (submitBlock && typeof lknCartData !== 'undefined' && !submitBlock.querySelector('.lkn-settings-link') && !submitBlockFound) {
+    if (targetElement && typeof lknCartData !== 'undefined' && !existingLink && !submitBlockFound) {
         submitBlockFound = true;
         const link = document.createElement('a');
         link.href = lknCartData.settingsUrl;
@@ -19,7 +27,12 @@ function insertSettingsLink() {
         link.style.color = '#0073aa';
         link.style.textDecoration = 'none';
 
-        submitBlock.appendChild(link);
+        // Se for o cartForm, insere após o formulário; se for submitBlock, insere dentro
+        if (targetElement === cartForm) {
+            targetElement.parentNode.insertBefore(link, targetElement.nextSibling);
+        } else {
+            targetElement.appendChild(link);
+        }
     }
 }
 
