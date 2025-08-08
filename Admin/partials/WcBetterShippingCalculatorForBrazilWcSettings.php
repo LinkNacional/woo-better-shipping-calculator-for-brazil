@@ -17,7 +17,8 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
 
     public function get_settings()
     {
-        $settings = array(
+        $settings = array();
+        $generalSettings = array(
             // TAB 1: Geral
             'geral_section' => array(
                 'title' => __('Geral', 'woo-better-shipping-calculator-for-brazil'),
@@ -87,6 +88,22 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Valor mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'enable_settings_link' => array(
+                'title'    => __('Link de configuração', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_calc_enable_settings_link',
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Exibe um link para as configurações nas páginas de carrinho e produto quando o usuário for administrador.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite esta opção para mostrar um link de configuração nas páginas frontend para usuários administradores.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Link de configuração para administradores.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'geral_section_end' => array(
                 'type' => 'sectionend',
                 'id'   => 'woo_better_calc_geral'
@@ -105,9 +122,12 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             'shortcodes_section_end' => array(
                 'type' => 'sectionend',
                 'id'   => 'woo_better_calc_shortcodes'
-            ),
+            )
+        );
 
-            // TAB 3: Configurações Gutenberg
+        
+        // TAB 3: Configurações Gutenberg
+        $gutenbergSettings = array(
             'gutenberg_section' => array(
                 'title' => __('Configurações Gutenberg', 'woo-better-shipping-calculator-for-brazil'),
                 'type'  => 'title',
@@ -117,7 +137,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'title'    => __('CEP obrigatório no carrinho', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,
                 'id'       => 'woo_better_calc_cep_required',
-                'default'  => 'yes',
+                'default'  => 'no',
                 'type'     => 'radio',
                 'options'  => array(
                     'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
@@ -133,7 +153,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'title'    => __('Ocultar campos de endereço na página de carrinho', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,
                 'id'       => 'woo_better_hidden_cart_address',
-                'default'  => 'yes',
+                'default'  => 'no',
                 'type'     => 'radio',
                 'options'  => array(
                     'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
@@ -148,8 +168,10 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             'gutenberg_section_end' => array(
                 'type' => 'sectionend',
                 'id'   => 'woo_better_calc_gutenberg'
-            ),
+            )
+        );
 
+        $cartSettings = array(
             // TAB 4: Configurações do Carrinho
             'cart_page_settings' => array(
                 'title' => __('Carrinho', 'woo-better-shipping-calculator-for-brazil'),
@@ -452,8 +474,10 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             'cart_page_settings_end' => array(
                 'type' => 'sectionend',
                 'id'   => 'woo_better_calc_cart_page_settings'
-            ),
+            )
+        );
 
+        $productSettings = array(
             // TAB 5: Configurações do Produto
             'product_page_settings' => array(
                 'title' => __('Produto', 'woo-better-shipping-calculator-for-brazil'),
@@ -746,6 +770,8 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'id'   => 'woo_better_calc_product_page_settings'
             ),
         );
+
+        $settings = array_merge($settings, $generalSettings, $gutenbergSettings, $cartSettings, $productSettings);
 
         return apply_filters('woocommerce_get_settings_' . $this->id, $settings);
     }

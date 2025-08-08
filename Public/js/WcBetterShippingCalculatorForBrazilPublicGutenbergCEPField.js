@@ -268,34 +268,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                                 if (data.status === true) {
                                     if (options && options.body) {
-                                        if (!data.address || !data.state_sigla || !data.city) {
-                                            postcodeError = true
-                                            if (addressSummary) {
-                                                removeLoading(addressSummary);
-                                                addressSummary.removeEventListener('click', blockInteraction, true);
-                                            }
-                                            if (iconSummary) {
-                                                iconSummary.removeEventListener('click', blockInteraction, true);
-                                            }
-
-                                            if (!data.address) {
-                                                return alert('Erro: Endereço inválido.');
-                                            }
-
-                                            if (!data.state_sigla) {
-                                                return alert('Erro: Estado inválido.');
-                                            }
-
-                                            if (!data.city) {
-                                                return alert('Erro: Cidade inválida.');
-                                            }
-                                        } else {
-                                            postcodeError = false
-                                        }
-
-                                        addressData = data.address;
-                                        stateData = data.state_sigla;
-                                        cityData = data.city;
+                                        addressData = data.address || '';
+                                        stateData = data.state_sigla || '';
+                                        cityData = data.city || '';
                                     }
                                 } else {
                                     alert('Erro: ' + data.message);
@@ -333,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     if (updateCustomerRequest) {
 
-                        if (addressData !== '' && WooBetterData.wooHiddenAddress === 'yes' && !postcodeError) {
+                        if (WooBetterData.wooHiddenAddress === 'yes' && !postcodeError) {
                             updateCustomerRequest.data.shipping_address.address_1 = addressData
                             updateCustomerRequest.body.shipping_address.address_1 = addressData
                             if (!updateCustomerRequest.data.billing_address) {
@@ -346,14 +321,14 @@ document.addEventListener('DOMContentLoaded', function () {
                             updateCustomerRequest.body.billing_address.address_1 = addressData
                         }
 
-                        if (stateData !== '' && WooBetterData.wooHiddenAddress === 'yes') {
+                        if (WooBetterData.wooHiddenAddress === 'yes') {
                             updateCustomerRequest.data.shipping_address.state = stateData
                             updateCustomerRequest.body.shipping_address.state = stateData
                             updateCustomerRequest.data.billing_address.state = stateData
                             updateCustomerRequest.body.billing_address.state = stateData
                         }
 
-                        if (cityData !== '' && WooBetterData.wooHiddenAddress === 'yes') {
+                        if (WooBetterData.wooHiddenAddress === 'yes') {
                             updateCustomerRequest.data.shipping_address.city = cityData
                             updateCustomerRequest.body.shipping_address.city = cityData
                             updateCustomerRequest.data.billing_address.city = cityData
@@ -483,35 +458,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 clearTimeout(timeoutId);
 
                 if (data.status === true) {
-                    if (!data.address || !data.state_sigla || !data.city) {
-                        postcodeError = true
-                        if (addressSummary) {
-                            removeLoading(addressSummary);
-                            addressSummary.removeEventListener('click', blockInteraction, true);
-                            if (iconSummary) {
-
-                            }
-                            iconSummary.removeEventListener('click', blockInteraction, true);
-                        }
-
-                        if (!data.address) {
-                            return alert('Erro: Endereço inválido.');
-                        }
-
-                        if (!data.state_sigla) {
-                            return alert('Erro: Estado inválido.');
-                        }
-
-                        if (!data.city) {
-                            return alert('Erro: Cidade inválida.');
-                        }
-                    } else {
-                        postcodeError = false
-                    }
-
-                    addressData = data.address;
-                    stateData = data.state_sigla;
-                    cityData = data.city;
+                    addressData = data.address || '';
+                    stateData = data.state_sigla || '';
+                    cityData = data.city || '';
 
                     let wooNonce = ''
                     let wpNonce = ''
@@ -527,11 +476,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     let batchUrl = ''
 
                     if (typeof wpApiSettings !== 'undefined' && wpApiSettings.root) {
-                        batchUrl = wpApiSettings.root + `/wc/store/v1/batch?_locale=site`;
+                        batchUrl = wpApiSettings.root + `wc/store/v1/batch?_locale=site`;
                     } else {
-                        batchUrl = window.location.origin + `/wp-json/wc/store/v1/batch?_locale=site`;
+                        batchUrl = window.location.origin + `wp-json/wc/store/v1/batch?_locale=site`;
                         if (typeof WooBetterData !== 'undefined' && WooBetterData.wooUrl !== '') {
-                            apiUrl = WooBetterData.wooUrl + `/wp-json/wc/store/v1/batch?_locale=site`;
+                            apiUrl = WooBetterData.wooUrl + `wp-json/wc/store/v1/batch?_locale=site`;
                         } else {
                             apiUrl = `/wp-json/wc/store/v1/batch?_locale=site`;
                         }

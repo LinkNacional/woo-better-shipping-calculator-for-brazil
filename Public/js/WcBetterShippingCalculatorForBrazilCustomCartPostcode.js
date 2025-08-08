@@ -531,26 +531,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 clearTimeout(timeoutId);
 
                 if (data.status === true) {
-                    if (!data.address || !data.state_sigla || !data.city) {
-                        enablePostcodeForm();
-
-                        if (!data.address) {
-                            return alert('Erro: Endereço inválido.');
-                        }
-
-                        if (!data.state_sigla) {
-                            return alert('Erro: Estado inválido.');
-                        }
-
-                        if (!data.city) {
-                            return alert('Erro: Cidade inválida.');
-                        }
-                    }
-
                     postcodeValue = postcode
-                    addressData = data.address;
-                    stateData = data.state_sigla;
-                    cityData = data.city;
+                    addressData = data.address || '';
+                    stateData = data.state_sigla || '';
+                    cityData = data.city || '';
 
                     const addressAPIUrl = WooBetterData.ajaxurl;
 

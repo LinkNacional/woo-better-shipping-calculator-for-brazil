@@ -21,67 +21,87 @@
     contentContainer.style.minWidth = '500px';
     contentContainer.style.boxSizing = 'border-box';
 
-    // Mensagem de Waning na versão do WooCommerce
+    // Função para criar uma mensagem de warning
+    function createWarningMessage(text) {
+      // Cria um novo <tr>
+      const spacerTr = document.createElement('tr');
+
+      // Cria um <th> vazio
+      const spacerTh = document.createElement('th');
+      spacerTh.className = 'lkn-woo-spacer-row';
+      spacerTh.textContent = '';
+
+      // Cria um <td> para a mensagem
+      const spacerTd = document.createElement('td');
+      spacerTd.style.padding = '0px';
+
+      // Cria o elemento de mensagem
+      const warningMessage = document.createElement('div');
+      warningMessage.className = 'warning-message';
+      warningMessage.style.display = 'flex';
+      warningMessage.style.alignItems = 'center';
+      warningMessage.style.padding = '10px';
+      warningMessage.style.border = '1px solid #ffcc00';
+      warningMessage.style.borderLeftWidth = '5px';
+      warningMessage.style.borderLeftColor = '#ffcc00';
+      warningMessage.style.borderRadius = '5px';
+      warningMessage.style.backgroundColor = '#fff8e1';
+      warningMessage.style.color = '#000';
+      warningMessage.style.fontSize = '14px';
+      warningMessage.style.lineHeight = '1.5';
+      warningMessage.style.verticalAlign = 'top';
+      warningMessage.style.marginBottom = '10px';
+
+      // Adiciona o ícone de alerta
+      const alertIcon = document.createElement('span');
+      alertIcon.textContent = '⚠️'; // Ícone de alerta
+      alertIcon.style.marginRight = '10px';
+      alertIcon.style.fontSize = '16px';
+
+      // Adiciona o texto da mensagem
+      const messageText = document.createElement('span');
+      messageText.textContent = text;
+
+      // Adiciona o ícone e o texto ao componente de mensagem
+      warningMessage.appendChild(alertIcon);
+      warningMessage.appendChild(messageText);
+
+      // Adiciona a mensagem ao <td>
+      spacerTd.appendChild(warningMessage);
+
+      // Adiciona o <th> e o <td> ao <tr>
+      spacerTr.appendChild(spacerTh);
+      spacerTr.appendChild(spacerTd);
+
+      return spacerTr;
+    }
+
+    if (WCBetterCalcWooVersion.status === 'valid') {
+      const gutenbergElement = document.querySelector('input[name="woo_better_calc_cep_required"]');
+
+      if (gutenbergElement) {
+        const closestTbody = gutenbergElement.closest('tbody');
+        if (closestTbody) {
+          const gutenbergWarning = createWarningMessage('Configuração indisponível para o seu tema em blocos.');
+
+          // Insere o <tr> no início do <tbody>
+          closestTbody.insertBefore(gutenbergWarning, closestTbody.firstChild);
+        }
+      }
+    }
+
+    // Mensagem de Warning na versão do WooCommerce
     if (WCBetterCalcWooVersion.status === 'invalid') {
       const inputElement = document.querySelector('input[name="woo_better_calc_enable_cart_page"]');
-
       if (inputElement) {
         // Busca o elemento <tbody> mais próximo
         const closestTbody = inputElement.closest('tbody');
 
         if (closestTbody) {
-          // Cria um novo <tr>
-          const spacerTr = document.createElement('tr');
-
-          // Cria um <th> vazio
-          const spacerTh = document.createElement('th');
-          spacerTh.className = 'lkn-woo-spacer-row';
-          spacerTh.textContent = '';
-
-          // Cria um <td> para a mensagem
-          const spacerTd = document.createElement('td');
-          spacerTd.style.padding = '0px';
-
-          // Cria o elemento de mensagem
-          const cartMessage = document.createElement('div');
-          cartMessage.className = 'cart-warning-message';
-          cartMessage.style.display = 'flex';
-          cartMessage.style.alignItems = 'center';
-          cartMessage.style.padding = '10px';
-          cartMessage.style.border = '1px solid #ffcc00';
-          cartMessage.style.borderLeftWidth = '5px';
-          cartMessage.style.borderLeftColor = '#ffcc00';
-          cartMessage.style.borderRadius = '5px';
-          cartMessage.style.backgroundColor = '#fff8e1';
-          cartMessage.style.color = '#ff9800';
-          cartMessage.style.fontSize = '14px';
-          cartMessage.style.lineHeight = '1.5';
-          cartMessage.style.verticalAlign = 'top';
-          cartMessage.style.marginBottom = '10px';
-
-          // Adiciona o ícone de alerta
-          const alertIcon = document.createElement('span');
-          alertIcon.textContent = '⚠️'; // Ícone de alerta
-          alertIcon.style.marginRight = '10px';
-          alertIcon.style.fontSize = '16px';
-
-          // Adiciona o texto da mensagem
-          const messageText = document.createElement('span');
-          messageText.textContent = 'Personalização do campo do CEP está disponível a partir do WooCommerce 10+. Faça o download da versão mais recente para adquirir todas as novas funcionalidades.';
-
-          // Adiciona o ícone e o texto ao componente de mensagem
-          cartMessage.appendChild(alertIcon);
-          cartMessage.appendChild(messageText);
-
-          // Adiciona a mensagem ao <td>
-          spacerTd.appendChild(cartMessage);
-
-          // Adiciona o <th> e o <td> ao <tr>
-          spacerTr.appendChild(spacerTh);
-          spacerTr.appendChild(spacerTd);
+          const cartWarning = createWarningMessage('Personalização do campo do CEP está disponível a partir do WooCommerce 10+. Faça o download da versão mais recente para adquirir todas as novas funcionalidades.');
 
           // Insere o <tr> no início do <tbody>
-          closestTbody.insertBefore(spacerTr, closestTbody.firstChild);
+          closestTbody.insertBefore(cartWarning, closestTbody.firstChild);
         }
       }
     }

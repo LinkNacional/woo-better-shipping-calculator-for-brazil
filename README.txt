@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.8
 Requires PHP: 7.3
-Stable tag: 4.3.1
+Stable tag: 4.3.2
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -92,6 +92,11 @@ add_filter(
 );
 
 == Changelog ==
+
+= 4.3.2 - 08/08/2025 =
+* Fix: Component display issue.
+* Adjustment: Message in Gutenberg fields.
+* Addition: Link configuration field.
 
 = 4.3.1 - 05/08/2025 =
 * Adjustment: Option that defines the component position is now at a higher level, for both product page and cart.
