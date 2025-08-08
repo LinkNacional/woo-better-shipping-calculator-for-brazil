@@ -105,10 +105,10 @@ class WcBetterShippingCalculatorForBrazilAdmin
 
         $notice_dismissed = get_user_meta(get_current_user_id(), 'woo_better_calc_notice_dismissed', true);
 
-        if (!$notice_dismissed && isset($_GET['tab']) && 'wc-better-calc' === sanitize_text_field(wp_unslash($_GET['tab']))) {
+        if (!$notice_dismissed) {
             wp_enqueue_script(
                 'woo-better-calc-admin-notice',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/js/WcBetterShippingCalculatorForBrazilAdminNotice.COMPILED.js',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminNotice.COMPILED.js',
                 array('jquery'),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true 

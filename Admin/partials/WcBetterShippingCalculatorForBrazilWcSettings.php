@@ -182,7 +182,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             'enable_cart_page' => array(
                 'title'    => __('Habilitar na página de carrinho', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_enable_cart_page',
-                'default'  => 'no',
+                'default'  => 'yes',
                 'type'     => 'radio',
                 'options'  => array(
                     'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
@@ -487,7 +487,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             'enable_product_page' => array(
                 'title'    => __('Habilitar na página de produto', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_enable_product_page',
-                'default'  => 'no',
+                'default'  => 'yes',
                 'type'     => 'radio',
                 'options'  => array(
                     'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),

@@ -476,11 +476,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     let batchUrl = ''
 
                     if (typeof wpApiSettings !== 'undefined' && wpApiSettings.root) {
-                        batchUrl = wpApiSettings.root + `/wc/store/v1/batch?_locale=site`;
+                        batchUrl = wpApiSettings.root + `wc/store/v1/batch?_locale=site`;
                     } else {
-                        batchUrl = window.location.origin + `/wp-json/wc/store/v1/batch?_locale=site`;
+                        batchUrl = window.location.origin + `wp-json/wc/store/v1/batch?_locale=site`;
                         if (typeof WooBetterData !== 'undefined' && WooBetterData.wooUrl !== '') {
-                            apiUrl = WooBetterData.wooUrl + `/wp-json/wc/store/v1/batch?_locale=site`;
+                            apiUrl = WooBetterData.wooUrl + `wp-json/wc/store/v1/batch?_locale=site`;
                         } else {
                             apiUrl = `/wp-json/wc/store/v1/batch?_locale=site`;
                         }
