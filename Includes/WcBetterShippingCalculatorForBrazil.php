@@ -159,6 +159,63 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_cart_needs_shipping_address', $this, 'lkn_custom_disable_shipping', 10, 1);
 
         $this->loader->add_filter('woocommerce_package_rates', $this, 'lkn_simular_frete_playground', 10, 2);
+
+        $this->loader->add_action('admin_notices', $this, 'lkn_show_admin_notice');
+        $this->loader->add_action('wp_ajax_woo_better_calc_dismiss_notice', $this, 'lkn_dismiss_admin_notice');
+    }
+
+    public function lkn_show_admin_notice()
+    {
+        // Verifica se é a área admin
+        if (!is_admin()) {
+            return;
+        }
+
+        // Verifica se o usuário pode gerenciar opções
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        // Checa se o notice já foi dispensado permanentemente
+        $notice_dismissed = get_user_meta(get_current_user_id(), 'woo_better_calc_notice_dismissed', true);
+        
+        if ($notice_dismissed || isset($_GET['tab']) && 'wc-better-calc' === sanitize_text_field(wp_unslash($_GET['tab']))) {
+            return;
+        }
+
+        // URL dinâmica para configurações
+        $settings_url = admin_url('admin.php?page=wc-settings&tab=wc-better-calc');
+        
+        ?>
+        <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
+            <p>
+                <strong>🚀 Calculadora de Frete para o Brasil</strong><br>
+                Veja as novas funcionalidades implementadas! Caso seja novo por aqui, 
+                <a href="<?php echo esc_url($settings_url); ?>" class="button button-primary" style="margin-left: 10px;">
+                    Configure o plugin de acordo com sua necessidade
+                </a>
+            </p>
+        </div>
+        <?php
+    }
+
+    /**
+     * AJAX handler para dispensar o notice permanentemente
+     */
+    public function lkn_dismiss_admin_notice()
+    {
+        if (!wp_verify_nonce($_POST['nonce'], 'woo_better_calc_dismiss_notice')) {
+            wp_die('Unauthorized');
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
+
+        // Salva como dispensado para o usuário atual (permanente)
+        update_user_meta(get_current_user_id(), 'woo_better_calc_notice_dismissed', true);
+        
+        wp_send_json_success();
     }
 
     public function lkn_simular_frete_playground($rates, $package)
@@ -237,8 +294,8 @@ class WcBetterShippingCalculatorForBrazil
 
         $customer = WC()->customer;
 
-        $cep_required = get_option('woo_better_calc_cep_required', 'yes');
-        $hidden_address = get_option('woo_better_hidden_cart_address', 'yes');
+        $cep_required = get_option('woo_better_calc_cep_required', 'no');
+        $hidden_address = get_option('woo_better_hidden_cart_address', 'no');
 
         // Verificar se o cliente está definido
         if (is_a($customer, 'WC_Customer')) {

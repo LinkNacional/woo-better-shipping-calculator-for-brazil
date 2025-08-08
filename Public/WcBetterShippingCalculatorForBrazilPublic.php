@@ -80,7 +80,7 @@ class WcBetterShippingCalculatorForBrazilPublic
          */
 
         if (has_block('woocommerce/cart')) {
-            $cep_required = get_option('woo_better_calc_cep_required', 'yes');
+            $cep_required = get_option('woo_better_calc_cep_required', 'no');
 
             if ($cep_required === 'yes') {
                 wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPublic.COMPILED.css', array(), $this->version, 'all');
@@ -95,7 +95,6 @@ class WcBetterShippingCalculatorForBrazilPublic
      */
     public function enqueue_scripts()
     {
-
         /**
          * This function is provided for demonstration purposes only.
          *
@@ -108,18 +107,19 @@ class WcBetterShippingCalculatorForBrazilPublic
          * class.
          */
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
-        $hidden_address = get_option('woo_better_hidden_cart_address', 'yes');
-        $cep_required = get_option('woo_better_calc_cep_required', 'yes');
+        $hidden_address = get_option('woo_better_hidden_cart_address', 'no');
+        $cep_required = get_option('woo_better_calc_cep_required', 'no');
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
-        $cart_custom_postcode = get_option('woo_better_calc_enable_cart_page', 'yes');
+        $cart_custom_postcode = get_option('woo_better_calc_enable_cart_page', 'no');
         $cart_custom_icon = get_option('woo_better_calc_cart_input_icon', 'transit');
-        $product_custom_postcode = get_option('woo_better_calc_enable_product_page', 'yes');
+        $product_custom_postcode = get_option('woo_better_calc_enable_product_page', 'no');
         $product_custom_icon = get_option('woo_better_calc_product_input_icon', 'transit');
+        $link_config = get_option('woo_better_calc_enable_settings_link', 'no');
 
         if((has_block('woocommerce/product') || 
         (function_exists('is_product') && is_product())) || 
         has_block('woocommerce/cart')) {
-            if (current_user_can('manage_options')) {
+            if (current_user_can('manage_options') && $link_config === 'yes') {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-cep-settings-link',
                     plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergSettingsLink.COMPILED.js',
@@ -135,7 +135,6 @@ class WcBetterShippingCalculatorForBrazilPublic
         }
 
         if (has_block('woocommerce/cart')) {
-
             if ($cep_required === 'yes' && defined('WC_VERSION') && version_compare(WC_VERSION, '10.0.0', '<')) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-cep-field',
