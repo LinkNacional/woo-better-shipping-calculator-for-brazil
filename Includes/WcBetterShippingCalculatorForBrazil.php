@@ -204,7 +204,7 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function lkn_dismiss_admin_notice()
     {
-        if (!wp_verify_nonce($_POST['nonce'], 'woo_better_calc_dismiss_notice')) {
+        if (isset($_POST['nonce']) && !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'woo_better_calc_dismiss_notice')) {
             wp_die('Unauthorized');
         }
 
