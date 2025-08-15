@@ -857,8 +857,7 @@
 
               // Verifica se o controle é do tipo texto e se o valor está no formato correto
               if (controlElement.type === 'text') {
-                const regex = new RegExp(`^\\d + (\\.\\d +) ? (${validCssButtonUnits.join('|')
-                  })$`);
+                const regex = new RegExp(`^\\d+(\\.\\d+)?(${validCssButtonUnits.join('|')})$`);
                 if (!regex.test(value)) {
                   controlElement.value = defaultValue; // Reverte para o valor padrão
                   targetButton.style.setProperty(property, defaultValue, 'important'); // Aplica o valor padrão

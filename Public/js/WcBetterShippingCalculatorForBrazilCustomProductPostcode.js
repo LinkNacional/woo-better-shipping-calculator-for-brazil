@@ -5,11 +5,35 @@ document.addEventListener('DOMContentLoaded', function () {
     let postcodeValue = '';
     let poscodeCache = '';
     let originalButtonText = '';
+    let productNonce = '';
 
     function createParentContainer() {
         const parentContainer = document.createElement('div');
         parentContainer.classList.add('woo-better-parent-container');
         return parentContainer;
+    }
+
+    // Função para buscar o nonce via AJAX
+    function fetchProductNonce(callback) {
+        const formData = new FormData();
+        formData.append('action', 'wc_better_calc_get_nonce');
+        formData.append('action_nonce', 'woo_better_register_product_address');
+
+        fetch(WooBetterData.ajaxurl, {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data && data.data.nonce) {
+                    productNonce = data.data.nonce;
+                }
+                callback();
+            })
+            .catch(() => {
+                // Em caso de erro, segue normalmente
+                callback();
+            });
     }
 
     function enablePostcodeForm() {
@@ -265,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         shippingRates.forEach(rate => {
             const listItem = document.createElement('li');
-            listItem.innerHTML = `<strong>${rate.currency} ${parseFloat(rate.cost).toFixed(rate.currency_minor_unit).replace('.', ',')}</strong> - ${rate.label}`;
+            listItem.innerHTML = `<strong>${productInfo.currency_symbol} ${parseFloat(rate.cost).toFixed(productInfo.currency_minor_unit).replace('.', ',')}</strong> - ${rate.label}`;
             shippingList.appendChild(listItem);
         });
 
@@ -466,7 +490,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         product: {
                             name: '*******',
                             quantity: WooBetterData.quantity,
-                            currency: 'R$',
+                            currency_symbol: 'R$',
                             currency_minor_unit: 2,
                         },
                         shipping_rates: [
@@ -487,18 +511,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     targetElement.insertAdjacentElement('afterend', parentContainer);
 
-                    poscodeCache = getPoscodeCached();
-
-                    if (poscodeCache) {
-                        const checkPostcode = document.querySelector('.woo-better-button-current-style');
-                        const inputPostcode = document.querySelector('.woo-better-input-current-style');
-                        if (checkPostcode && inputPostcode) {
-                            inputPostcode.value = poscodeCache.postcode || '';
-                            checkPostcode.click()
+                    // Chama a função para buscar o nonce e depois executa a lógica do cache
+                    fetchProductNonce(function () {
+                        poscodeCache = getPoscodeCached();
+                        if (poscodeCache) {
+                            const checkPostcode = document.querySelector('.woo-better-button-current-style');
+                            const inputPostcode = document.querySelector('.woo-better-input-current-style');
+                            if (checkPostcode && inputPostcode) {
+                                inputPostcode.value = poscodeCache.postcode || '';
+                                checkPostcode.click();
+                            }
                         }
-                    }
-
-                    observer.disconnect();
+                        observer.disconnect();
+                    });
                 }
             }
         });
@@ -548,7 +573,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     fetch(addressAPIUrl, {
                         method: 'POST',
                         headers: {
-                            'nonce': WooBetterData.nonce,
+                            'nonce': productNonce,
                         },
                         body: formData,
                     })
@@ -717,8 +742,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Popula a lista com os métodos de envio
                 shippingRates.shipping_rates.forEach(rate => {
                     const listItem = document.createElement('li');
-                    const cost = parseFloat(rate.cost).toFixed(2).replace('.', ',');
-                    listItem.innerHTML = `<strong>R$ ${cost}</strong> - ${rate.label}`;
+                    const cost = parseFloat(rate.cost).toFixed(shippingRates.product.currency_minor_unit).replace('.', ',');
+                    listItem.innerHTML = `<strong>${shippingRates.product.currency_symbol} ${cost}</strong> - ${rate.label}`;
                     shippingList.appendChild(listItem);
                 });
 
