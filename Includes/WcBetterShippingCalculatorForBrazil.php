@@ -816,6 +816,7 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('wp_ajax_register_cart_address', $this, 'lkn_register_cart_address');
         $this->loader->add_action('wp_ajax_nopriv_register_cart_address', $this, 'lkn_register_cart_address');
+
         $this->loader->add_action('wp_ajax_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
     }
@@ -997,7 +998,7 @@ class WcBetterShippingCalculatorForBrazil
         $product_info = array(
             'name'     => $product->get_name(),
             'quantity' => WC_BETTER_SHIPPING_PRODUCT_QUANTITY, 
-            'currency' => $currency_symbol,
+            'currency_symbol' => $currency_symbol,
             'currency_minor_unit' => $currency_minor_unit,
         );
 
