@@ -1,3 +1,8 @@
+# 4.3.3 - 15/08/25
+* Correção: Estilos do botão.
+* Correção: Nonce.
+* Correção: Tipo da moeda e número de casa decimais.
+
 # 4.3.2 - 08/08/25
 * Correção: na exibição dos componentes.
 * Ajuste: Mensagem nos campos Gutenberg.

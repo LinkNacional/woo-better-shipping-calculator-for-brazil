@@ -93,6 +93,11 @@ add_filter(
 
 == Changelog ==
 
+= 4.3.3 - 15/08/2025 =
+* Fix: Button styles.
+* Fix: Nonce.
+* Fix: Currency type and decimal places.
+
 = 4.3.2 - 08/08/2025 =
 * Fix: Component display issue.
 * Adjustment: Message in Gutenberg fields.
