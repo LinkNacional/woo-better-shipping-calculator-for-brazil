@@ -816,7 +816,31 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('wp_ajax_register_cart_address', $this, 'lkn_register_cart_address');
         $this->loader->add_action('wp_ajax_nopriv_register_cart_address', $this, 'lkn_register_cart_address');
-    } 
+        $this->loader->add_action('wp_ajax_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
+        $this->loader->add_action('wp_ajax_nopriv_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
+    }
+
+    /**
+     * AJAX endpoint para retornar um nonce atualizado.
+     *
+     * @since 1.0.0
+     * @access public
+     * @param string $action (opcional) Nome da ação para o nonce. Default: 'woo_better_register_cart_address'.
+     * @return void JSON com o nonce gerado.
+     */
+    public function wc_better_calc_get_nonce() {
+        // Recebe o parâmetro 'action_nonce' via POST ou GET
+        if (!isset($_REQUEST['action_nonce']) || empty($_REQUEST['action_nonce'])) {
+            wp_send_json_error([
+                'error' => true,
+                'message' => 'Parâmetro action_nonce obrigatório.'
+            ], 400);
+        }
+
+        $action = sanitize_text_field(wp_unslash($_REQUEST['action_nonce']));
+        $nonce = wp_create_nonce($action);
+        wp_send_json_success(['nonce' => $nonce]);
+    }
 
     /**
      * Registers the shipping address and calculates shipping rates for a product.

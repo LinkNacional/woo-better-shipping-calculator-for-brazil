@@ -5,11 +5,35 @@ document.addEventListener('DOMContentLoaded', function () {
     let postcodeValue = '';
     let poscodeCache = '';
     let originalButtonText = '';
+    let cartNonce = '';
 
     function createParentContainer() {
         const parentContainer = document.createElement('div');
         parentContainer.classList.add('woo-better-parent-container');
         return parentContainer;
+    }
+
+    // Função para buscar o nonce via AJAX
+    function fetchCartNonce(callback) {
+        const formData = new FormData();
+        formData.append('action', 'wc_better_calc_get_nonce');
+        formData.append('action_nonce', 'woo_better_register_cart_address');
+
+        fetch(WooBetterData.ajaxurl, {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data && data.data.nonce) {
+                    cartNonce = data.data.nonce;
+                }
+                callback();
+            })
+            .catch(() => {
+                // Em caso de erro, segue normalmente
+                callback();
+            });
     }
 
     function enablePostcodeForm() {
@@ -489,16 +513,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     targetElement.insertAdjacentElement('afterend', parentContainer);
 
-                    poscodeCache = getPoscodeCached();
-
-                    if (poscodeCache) {
-                        const checkPostcode = document.querySelector('.woo-better-button-current-style');
-                        const inputPostcode = document.querySelector('.woo-better-input-current-style');
-                        if (checkPostcode && inputPostcode) {
-                            inputPostcode.value = poscodeCache.postcode || '';
-                            checkPostcode.click()
+                    // Chama a função para buscar o nonce e depois executa a lógica do cache
+                    fetchCartNonce(function () {
+                        poscodeCache = getPoscodeCached();
+                        if (poscodeCache) {
+                            const checkPostcode = document.querySelector('.woo-better-button-current-style');
+                            const inputPostcode = document.querySelector('.woo-better-input-current-style');
+                            if (checkPostcode && inputPostcode) {
+                                inputPostcode.value = poscodeCache.postcode || '';
+                                checkPostcode.click();
+                            }
                         }
-                    }
+                    });
 
                     observer.disconnect();
                 }
@@ -549,7 +575,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     fetch(addressAPIUrl, {
                         method: 'POST',
                         headers: {
-                            'nonce': WooBetterData.nonce,
+                            'nonce': cartNonce,
                         },
                         body: formData,
                     })
