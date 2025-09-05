@@ -162,6 +162,7 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('admin_notices', $this, 'lkn_show_admin_notice');
         $this->loader->add_action('wp_ajax_woo_better_calc_dismiss_notice', $this, 'lkn_dismiss_admin_notice');
+        $this->loader->add_action('wp_ajax_woo_better_calc_update_cache_token', $this, 'lkn_update_cache_token');
     }
 
     public function lkn_show_admin_notice()
@@ -216,6 +217,49 @@ class WcBetterShippingCalculatorForBrazil
         update_user_meta(get_current_user_id(), 'woo_better_calc_notice_dismissed', true);
         
         wp_send_json_success();
+    }
+
+    /**
+     * AJAX handler para atualizar o token de cache
+     */
+    public function lkn_update_cache_token()
+    {
+        // Verifica permissões
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized', 403);
+        }
+
+        // Verifica nonce se fornecido
+        if (isset($_POST['nonce']) && !empty($_POST['nonce'])) {
+            $nonce = sanitize_text_field(wp_unslash($_POST['nonce']));
+            if (!wp_verify_nonce($nonce, 'woo_better_calc_update_cache_token')) {
+                wp_send_json_error('Nonce inválido', 403);
+            }
+        }
+
+        // Verifica se o token foi enviado
+        if (!isset($_POST['token']) || empty($_POST['token'])) {
+            wp_send_json_error('Token é obrigatório', 400);
+        }
+
+        $new_token = sanitize_text_field(wp_unslash($_POST['token']));
+
+        // Valida o formato do token (WCBCB_ + 19 caracteres alfanuméricos)
+        if (!preg_match('/^WCBCB_[A-Z0-9]{19}$/', $new_token)) {
+            wp_send_json_error('Token inválido. Formato esperado: WCBCB_XXXXXXXXXXXXXXXXXXX', 400);
+        }
+
+        // Atualiza a opção no banco de dados
+        $updated = update_option('woo_better_calc_enable_auto_cache_reset', $new_token);
+
+        if ($updated) {
+            wp_send_json_success(array(
+                'message' => 'Token de cache atualizado com sucesso',
+                'token' => $new_token
+            ));
+        } else {
+            wp_send_json_error('Erro ao atualizar o token no banco de dados', 500);
+        }
     }
 
     public function lkn_simular_frete_playground($rates, $package)
@@ -391,6 +435,12 @@ class WcBetterShippingCalculatorForBrazil
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true
             );
+
+            // Adiciona ajaxurl para requisições AJAX
+            wp_localize_script('wc-better-calc-settings-layout', 'wcBetterCalcAjax', array(
+                'ajaxurl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('woo_better_calc_admin_nonce')
+            ));
 
             $icons = array(
                 'bill' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/bill.svg',

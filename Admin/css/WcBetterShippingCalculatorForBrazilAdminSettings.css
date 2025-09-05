@@ -74,6 +74,10 @@
     object-position: center;
 }
 
+.woo-better-cache-button {
+    width: fit-content;
+}
+
 @media (max-width: 1250px) {
 
     .lkn-settings-side {

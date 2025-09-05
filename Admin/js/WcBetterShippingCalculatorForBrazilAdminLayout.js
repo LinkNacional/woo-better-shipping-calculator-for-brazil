@@ -753,6 +753,10 @@
               'woo_better_calc_product_input_icon': 'woo_better_calc_product_input_placeholder',
               'woo_better_calc_product_input_icon_color': 'woo_better_calc_product_input_placeholder',
               'woo_better_calc_product_custom_position': 'woo_better_calc_product_input_position',
+
+              //Cache
+              'woo_better_calc_cache_expiration_time': 'woo_better_calc_enable_auto_postcode_search',
+              'woo_better_calc_enable_auto_cache_reset': 'woo_better_calc_enable_auto_postcode_search'
             };
 
             forminp.innerHTML = ''; // Limpa o conteúdo original
@@ -962,11 +966,163 @@
       }
     }
 
+    function handleCacheSettings() {
+      const cacheExpirationTime = document.getElementById('woo_better_calc_cache_expiration_time');
+      const autoCacheReset = document.getElementById('woo_better_calc_enable_auto_cache_reset');
+
+      if (cacheExpirationTime && autoCacheReset) {
+        const cacheExpirationForminp = cacheExpirationTime.closest('.forminp');
+        const autoCacheResetForminp = autoCacheReset.closest('.forminp');
+
+        // Função inicial para definir visibilidade baseada no valor atual
+        const selectedValue = document.querySelector('input[name="woo_better_calc_enable_auto_postcode_search"]')?.value;
+
+        if (cacheExpirationForminp && autoCacheResetForminp) {
+          if (selectedValue === 'yes') {
+            cacheExpirationForminp.style.display = 'flex';
+            autoCacheResetForminp.style.display = 'flex';
+          } else {
+            cacheExpirationForminp.style.display = 'none';
+            autoCacheResetForminp.style.display = 'none';
+          }
+        }
+
+        // Adiciona evento para todos os radios do grupo
+        const radioOptions = document.querySelectorAll('input[name="woo_better_calc_enable_auto_postcode_search"]');
+        radioOptions.forEach(radio => {
+          radio.addEventListener('change', function () {
+            const newSelectedValue = document.querySelector('input[name="woo_better_calc_enable_auto_postcode_search"]:checked')?.value;
+
+            if (cacheExpirationForminp && autoCacheResetForminp) {
+              if (newSelectedValue === 'yes') {
+                cacheExpirationForminp.style.display = 'flex';
+                autoCacheResetForminp.style.display = 'flex';
+              } else {
+                cacheExpirationForminp.style.display = 'none';
+                autoCacheResetForminp.style.display = 'none';
+              }
+            }
+          });
+        });
+      }
+    }
+
+    function handleClearCacheButton() {
+      const cacheResetInput = document.getElementById('woo_better_calc_enable_auto_cache_reset');
+
+      if (cacheResetInput) {
+        // Esconde o input original
+        cacheResetInput.style.display = 'none';
+
+        // Cria o botão "Limpar o cache"
+        const clearCacheButton = document.createElement('button');
+        clearCacheButton.type = 'button';
+        clearCacheButton.className = 'woo-better-cache-button components-button is-primary';
+        clearCacheButton.textContent = 'Limpar o cache';
+
+        // Função para gerar um novo token
+        function generateNewToken() {
+          const prefix = 'WCBCB_';
+          const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let randomPart = '';
+
+          for (let i = 0; i < 19; i++) {
+            randomPart += characters.charAt(Math.floor(Math.random() * characters.length));
+          }
+
+          return prefix + randomPart;
+        }
+
+        // Adiciona o evento de clique
+        clearCacheButton.addEventListener('click', function () {
+          const confirmMessage = 'Tem certeza de que deseja limpar o cache? Esta ação irá gerar um novo token de segurança.';
+
+          if (confirm(confirmMessage)) {
+            const newToken = generateNewToken();
+            cacheResetInput.value = newToken;
+
+            // Feedback visual - carregando
+            clearCacheButton.textContent = 'Limpando cache...';
+            clearCacheButton.disabled = true;
+            clearCacheButton.style.backgroundColor = '#007cba';
+            clearCacheButton.style.color = '#fff';
+
+            const ajaxUrl = typeof wcBetterCalcAjax !== 'undefined' ? wcBetterCalcAjax.ajaxurl : (typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php');
+
+            // Primeiro, obtém um nonce dinâmico
+            const nonceFormData = new FormData();
+            nonceFormData.append('action', 'wc_better_calc_get_nonce');
+            nonceFormData.append('action_nonce', 'woo_better_calc_update_cache_token');
+
+            fetch(ajaxUrl, {
+              method: 'POST',
+              body: nonceFormData
+            })
+              .then(response => response.json())
+              .then(nonceData => {
+                if (nonceData.success && nonceData.data && nonceData.data.nonce) {
+                  // Agora faz a requisição principal com o nonce obtido
+                  clearCacheButton.textContent = 'Limpando cache...';
+
+                  const formData = new FormData();
+                  formData.append('action', 'woo_better_calc_update_cache_token');
+                  formData.append('token', newToken);
+                  formData.append('nonce', nonceData.data.nonce);
+
+                  return fetch(ajaxUrl, {
+                    method: 'POST',
+                    body: formData
+                  });
+                } else {
+                  throw new Error('Erro ao obter nonce: ' + (nonceData.data || 'Nonce inválido'));
+                }
+              })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  // Sucesso
+                  clearCacheButton.textContent = 'Cache limpo!';
+                  clearCacheButton.style.backgroundColor = '#00a32a';
+                  clearCacheButton.style.color = '#fff';
+                } else {
+                  // Erro
+                  clearCacheButton.textContent = 'Erro ao limpar cache';
+                  clearCacheButton.style.backgroundColor = '#dc3232';
+                  clearCacheButton.style.color = '#fff';
+                  console.error('Erro ao atualizar token:', data.data);
+                }
+              })
+              .catch(error => {
+                // Erro de rede ou nonce
+                clearCacheButton.textContent = 'Erro de conexão';
+                clearCacheButton.style.backgroundColor = '#dc3232';
+                clearCacheButton.style.color = '#fff';
+                console.error('Erro:', error);
+              })
+              .finally(() => {
+                // Restaura o estado original após 2 segundos
+                setTimeout(() => {
+                  clearCacheButton.textContent = 'Limpar o cache';
+                  clearCacheButton.disabled = false;
+                  clearCacheButton.style.backgroundColor = '';
+                  clearCacheButton.style.color = '';
+                }, 2000);
+              });
+          }
+        });
+
+        // Insere o botão após o input
+        cacheResetInput.parentNode.insertBefore(clearCacheButton, cacheResetInput.nextSibling);
+      }
+    }
+
     startEvenst('cart');
     startEvenst('product');
 
     handleCustomPosition('cart');
     handleCustomPosition('product');
+    handleCacheSettings();
+    handleClearCacheButton();
 
     if (WCBetterCalcWooVersion.status === 'invalid') {
       // Seleciona todos os inputs e selects com o padrão de name que contenham "cart" ou "product"
