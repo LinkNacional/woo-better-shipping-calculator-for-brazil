@@ -58,6 +58,19 @@ document.addEventListener('DOMContentLoaded', function () {
         input.style.cursor = '';
         button.style.backgroundColor = WooBetterData.buttonStyles.backgroundColor || '#0073aa';
         button.style.cursor = '';
+
+        // Para a animação do ícone de update se estiver ativa
+        const updateIcon = document.querySelector('.woo-better-update-icon');
+        const updateIconContainer = document.querySelector('.woo-better-update-icon-container');
+        if (updateIcon && updateIcon.classList.contains('spinning')) {
+            // Adiciona um pequeno delay para garantir que a animação seja visível
+            setTimeout(() => {
+                updateIcon.classList.remove('spinning');
+                if (updateIconContainer) {
+                    updateIconContainer.classList.remove('spinning-container');
+                }
+            }, 800); // Aumentei para 800ms para dar tempo da animação ser percebida
+        }
     }
 
     function createCurrentPostcodeBlock(postcode, form) {
@@ -162,6 +175,32 @@ document.addEventListener('DOMContentLoaded', function () {
         const originalColor = WooBetterData.inputStyles.backgroundColor || '#ffffff';
         const darkerColor = darkenColor(originalColor, 10);
 
+        // Define a cor baseada na classe do ícone
+        const iconColor = WooBetterData.iconColor || 'blue-icon';
+        let themeColor = '#007cba'; // azul padrão
+
+        switch (iconColor) {
+            case 'black-icon':
+                themeColor = '#000000';
+                break;
+            case 'gray-icon':
+                themeColor = '#666666';
+                break;
+            case 'red-icon':
+                themeColor = '#dc3545';
+                break;
+            case 'pink-icon':
+                themeColor = '#e91e63';
+                break;
+            case 'green-icon':
+                themeColor = '#28a745';
+                break;
+            case 'blue-icon':
+            default:
+                themeColor = '#007cba';
+                break;
+        }
+
         // Define os estilos dinamicamente com base nos valores localizados
         const css = `
             .woo-better-info-block {
@@ -202,6 +241,120 @@ document.addEventListener('DOMContentLoaded', function () {
                 border-bottom-left-radius: ${WooBetterData.inputStyles.borderRadius} !important;
                 border: ${WooBetterData.inputStyles.borderWidth} ${WooBetterData.inputStyles.borderStyle} ${WooBetterData.inputStyles.borderColor} !important;
                 border-top: 0px !important;
+            }
+
+            .woo-better-separator {
+                border: none;
+                border-top: 1px solid #e0e0e0;
+                margin: 15px 0;
+                opacity: 0.6;
+            }
+
+            .woo-better-update-section {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-top: 10px;
+                padding: 10px 0;
+            }
+
+            .woo-better-update-icon-container {
+                flex-shrink: 0;
+                width: 44px;
+                height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                border-radius: 50%;
+                border: none;
+                background: transparent;
+                padding: 0;
+                transition: background-color 0.3s ease;
+                outline: none;
+            }
+
+            .woo-better-update-icon-container:focus {
+                outline: none;
+                box-shadow: none;
+            }
+
+            .woo-better-update-icon-container:hover {
+                background-color: ${themeColor}1a;
+            }
+
+            .woo-better-update-icon-container:hover .woo-better-update-icon {
+                opacity: 1;
+                transform: rotate(180deg);
+            }
+
+            .woo-better-update-icon {
+                width: 32px;
+                height: 32px;
+                opacity: 0.8;
+                transition: transform 0.3s ease, opacity 0.3s ease;
+            }
+
+            .woo-better-update-icon.spinning {
+                animation: woo-better-spin 1s linear infinite;
+                opacity: 1;
+            }
+
+            .woo-better-update-icon-container.spinning-container {
+                opacity: 0.8 !important;
+                cursor: not-allowed !important;
+            }
+
+            .woo-better-update-icon-container.spinning-container:hover {
+                background-color: transparent !important;
+            }
+
+            .woo-better-update-icon-container.spinning-container:hover .woo-better-update-icon {
+                transform: none !important;
+            }
+
+            @keyframes woo-better-spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+
+            .woo-better-update-text-container {
+                flex: 1;
+                line-height: 1.4;
+            }
+
+            .woo-better-update-date {
+                width: fit-content;
+                padding: 3px;
+                font-size: 13px;
+                font-weight: 600;
+                margin: 0 0 4px 0;
+                color: ${WooBetterData.inputStyles.color || '#333'};
+                opacity: 0.8;
+                transition: all 0.3s ease;
+            }
+
+            .woo-better-update-date.flash {
+                animation: woo-better-flash 2s ease-in-out;
+            }
+
+            @keyframes woo-better-flash {
+                0%, 100% { 
+                    background-color: transparent;
+                }
+                20%, 80% { 
+                    background-color: ${themeColor}26;
+                    border-radius: 4px;
+                }
+            }
+
+            .woo-better-info-text {
+                font-size: 12px;
+                padding: 3px;
+                margin: 0;
+                color: ${WooBetterData.inputStyles.color || '#333'};
+                opacity: 0.7;
+                line-height: 1.3;
             }
         `;
 
@@ -312,9 +465,88 @@ document.addEventListener('DOMContentLoaded', function () {
 
         shippingMethods.appendChild(shippingList);
 
+        // Separador visual
+        const separator = document.createElement('hr');
+        separator.classList.add('woo-better-separator');
+
+        // Seção de informações de atualização
+        const updateSection = document.createElement('div');
+        updateSection.classList.add('woo-better-update-section');
+
+        // Container para o ícone
+        const iconContainer = document.createElement('button');
+        iconContainer.type = 'button';
+        iconContainer.classList.add('woo-better-update-icon-container');
+        iconContainer.title = 'Clique para atualizar os dados de frete';
+
+        const updateIcon = document.createElement('img');
+        updateIcon.src = WooBetterData.update_icon.updates;
+        updateIcon.alt = 'Atualizado';
+        updateIcon.classList.add('woo-better-update-icon');
+        updateIcon.classList.add(WooBetterData.iconColor || 'black-icon');
+
+        // Adiciona funcionalidade de clique para atualizar dados
+        iconContainer.addEventListener('click', function () {
+            // Impede cliques múltiplos enquanto está atualizando
+            if (updateIcon.classList.contains('spinning')) {
+                return;
+            }
+
+            const currentPostcode = getLastUsedPostcode();
+            if (currentPostcode) {
+                // Adiciona classes de animação
+                updateIcon.classList.add('spinning');
+                iconContainer.classList.add('spinning-container');
+
+                // Remove cache para este produto específico para forçar nova consulta
+                const cache = getProductCache();
+                if (cache[currentPostcode] && cache[currentPostcode][WooBetterData.product_id]) {
+                    delete cache[currentPostcode][WooBetterData.product_id];
+                    localStorage.setItem('woo_better_product_cache', JSON.stringify(cache));
+                }
+
+                // Simula clique no botão de consulta para atualizar dados
+                const consultarButton = document.querySelector('.woo-better-button-current-style');
+                if (consultarButton) {
+                    // Define um valor temporário no input caso esteja vazio
+                    const inputPostcode = document.querySelector('.woo-better-input-current-style');
+                    if (inputPostcode && !inputPostcode.value) {
+                        inputPostcode.value = currentPostcode;
+                    }
+
+                    consultarButton.click();
+                }
+            }
+        });
+
+        iconContainer.appendChild(updateIcon);
+
+        // Container para os textos
+        const textContainer = document.createElement('div');
+        textContainer.classList.add('woo-better-update-text-container');
+
+        // Data de atualização (será atualizada dinamicamente)
+        const updateDate = document.createElement('p');
+        updateDate.classList.add('woo-better-update-date');
+        const currentDate = new Date().toLocaleDateString('pt-BR');
+        updateDate.textContent = `Atualizado em ${currentDate}`;
+
+        // Texto informativo
+        const infoText = document.createElement('p');
+        infoText.classList.add('woo-better-info-text');
+        infoText.textContent = 'Valor de frete estimado para este item. No carrinho, será exibido o frete total da compra.';
+
+        textContainer.appendChild(updateDate);
+        textContainer.appendChild(infoText);
+
+        updateSection.appendChild(iconContainer);
+        updateSection.appendChild(textContainer);
+
         contentBlock.appendChild(productName);
         contentBlock.appendChild(productQuantity);
         contentBlock.appendChild(shippingMethods);
+        contentBlock.appendChild(separator);
+        contentBlock.appendChild(updateSection);
 
         const currentPostcodeBlock = createCurrentPostcodeBlock(postcode, form);
         infoBlock.appendChild(currentPostcodeBlock);
@@ -458,8 +690,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const cache = getProductCache();
             const hasAnyCacheForCep = cache[postcode] && Object.keys(cache[postcode]).length > 0;
 
-            // Só esconde o bloco se não há nenhum cache para este CEP
-            if (infoBlock && !hasAnyCacheForCep) {
+            // Só esconde o bloco se não há nenhum cache para este CEP E o bloco não está visível
+            const isBlockVisible = infoBlock && (infoBlock.style.display === 'block' || getComputedStyle(infoBlock).display === 'block');
+            if (infoBlock && !hasAnyCacheForCep && !isBlockVisible) {
                 infoBlock.style.display = 'none';
             }
 
@@ -893,6 +1126,36 @@ document.addEventListener('DOMContentLoaded', function () {
                 const currentPostcodeText = infoBlock.querySelector('.woo-better-current-postcode-text');
                 currentPostcodeText.innerHTML = `<strong>CEP</strong>: ${postcode}`;
 
+                // Atualiza a data de atualização
+                const updateDate = infoBlock.querySelector('.woo-better-update-date');
+                if (updateDate) {
+                    const currentDate = new Date().toLocaleDateString('pt-BR');
+                    updateDate.textContent = `Atualizado em ${currentDate}`;
+
+                    // Adiciona a animação de flash para indicar atualização
+                    updateDate.classList.remove('flash');
+                    // Força um reflow para reiniciar a animação
+                    updateDate.offsetWidth;
+                    updateDate.classList.add('flash');
+
+                    // Remove a classe após a animação
+                    setTimeout(() => {
+                        updateDate.classList.remove('flash');
+                    }, 2000);
+                }
+
+                // Para a animação do ícone de update se estiver ativa
+                const updateIcon = infoBlock.querySelector('.woo-better-update-icon');
+                const updateIconContainer = infoBlock.querySelector('.woo-better-update-icon-container');
+                if (updateIcon && updateIcon.classList.contains('spinning')) {
+                    setTimeout(() => {
+                        updateIcon.classList.remove('spinning');
+                        if (updateIconContainer) {
+                            updateIconContainer.classList.remove('spinning-container');
+                        }
+                    }, 800);
+                }
+
                 // Resolve a Promise após a conclusão
                 resolve();
             } catch (error) {
@@ -950,6 +1213,36 @@ document.addEventListener('DOMContentLoaded', function () {
             // Atualiza o CEP no bloco de CEP atual
             const currentPostcodeText = infoBlock.querySelector('.woo-better-current-postcode-text');
             currentPostcodeText.innerHTML = `<strong>CEP</strong>: ${postcode}`;
+
+            // Atualiza a data de atualização
+            const updateDate = infoBlock.querySelector('.woo-better-update-date');
+            if (updateDate) {
+                const currentDate = new Date().toLocaleDateString('pt-BR');
+                updateDate.textContent = `Atualizado em ${currentDate}`;
+
+                // Adiciona a animação de flash para indicar atualização
+                updateDate.classList.remove('flash');
+                // Força um reflow para reiniciar a animação
+                updateDate.offsetWidth;
+                updateDate.classList.add('flash');
+
+                // Remove a classe após a animação
+                setTimeout(() => {
+                    updateDate.classList.remove('flash');
+                }, 2000);
+            }
+
+            // Para a animação do ícone de update se estiver ativa
+            const updateIcon = infoBlock.querySelector('.woo-better-update-icon');
+            const updateIconContainer = infoBlock.querySelector('.woo-better-update-icon-container');
+            if (updateIcon && updateIcon.classList.contains('spinning')) {
+                setTimeout(() => {
+                    updateIcon.classList.remove('spinning');
+                    if (updateIconContainer) {
+                        updateIconContainer.classList.remove('spinning-container');
+                    }
+                }, 800);
+            }
 
             // Garante que o bloco de informações esteja visível
             infoBlock.style.display = 'block';
