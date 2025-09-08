@@ -975,7 +975,7 @@
         const autoCacheResetForminp = autoCacheReset.closest('.forminp');
 
         // Função inicial para definir visibilidade baseada no valor atual
-        const selectedValue = document.querySelector('input[name="woo_better_calc_enable_auto_postcode_search"]')?.value;
+        const selectedValue = document.querySelector('input[name="woo_better_calc_enable_auto_postcode_search"]:checked')?.value;
 
         if (cacheExpirationForminp && autoCacheResetForminp) {
           if (selectedValue === 'yes') {

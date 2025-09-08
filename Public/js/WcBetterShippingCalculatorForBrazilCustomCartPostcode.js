@@ -1,5 +1,11 @@
 document.addEventListener('DOMContentLoaded', function () {
     const WooBetterData = window.WooBetterData || {}; // Dados localizados do PHP
+
+    // Função de log simples
+    function debugLog(...args) {
+        // Log desabilitado para produção
+    }
+
     let containerFound = false;
     let blockPosition = 'h2[class*="order"]' // Posição padrão é 'top'
     let postcodeValue = '';
@@ -29,11 +35,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Atualiza o hash atual
             const newCartHash = generateCartHash();
+            const cartChanged = newCartHash !== currentCartHash;
             currentCartHash = newCartHash;
 
-            // Verifica se há CEP salvo e busca automática habilitada
+            // Verifica se há CEP salvo e componente visível
             const lastPostcode = getLastUsedPostcode();
-            if (lastPostcode && WooBetterData.enable_search && WooBetterData.enable_search === 'yes') {
+            const infoBlock = document.querySelector('.woo-better-info-block');
+            const isComponentVisible = infoBlock && infoBlock.style.display !== 'none';
+
+            if (lastPostcode && isComponentVisible && cartChanged) {
+                // Sempre faz nova requisição quando há mudança no carrinho e componente visível
+                sendCEP(lastPostcode);
+            } else if (lastPostcode && WooBetterData.enable_search && WooBetterData.enable_search === 'yes') {
                 const form = document.querySelector('#custom-postcode-form');
                 const inputPostcode = document.querySelector('.woo-better-input-current-style');
 
@@ -563,10 +576,29 @@ document.addEventListener('DOMContentLoaded', function () {
         return blockPosition
     }
 
+    // Função para inicializar todos os observadores
+    function initializeObservers() {
+        observeQuantitySelector();
+        observeRemoveLink();
+        observeCartChanges(); // ✅ REATIVADO - agora seguro sem DOM observers
+    }
+
     createDynamicStyles();
 
     // Valida e limpa cache antigo baseado no token
     validateCacheToken();
+
+    // Tentativa imediata de encontrar elementos após o DOM estar pronto
+    setTimeout(() => {
+        if (!containerFound) {
+            const targetClass = setPosition();
+            const targetElement = document.querySelector(targetClass);
+            if (targetElement) {
+                const event = new Event('DOMContentLoaded');
+                document.dispatchEvent(event);
+            }
+        }
+    }, 1000);
 
     // Configura o MutationObserver para monitorar alterações no DOM
     const observer = new MutationObserver(function (mutationsList, observer) {
@@ -576,11 +608,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 const targetElement = document.querySelector(targetClass);
                 if (targetElement && !containerFound) {
                     containerFound = true;
-                    observeQuantitySelector();
-                    observeRemoveLink();
-                    observeCartChanges(); // Nova função para detectar produtos adicionados
 
-                    const parentContainer = createParentContainer();
+                    // Inicializa todos os observadores
+                    initializeObservers(); const parentContainer = createParentContainer();
                     const form = createForm();
 
                     const initializeData = {
@@ -682,22 +712,17 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // Sem cache válido - FAZ REQUISIÇÃO
+        // Só esconde o componente se ele não estiver já visível
+        const infoBlock = document.querySelector('.woo-better-info-block');
+        const isComponentCurrentlyVisible = infoBlock && infoBlock.style.display === 'block';
 
-
-        // Verifica se há cache para outros carrinhos/CEPs e mostra componente com dados temporários
-        const cache = getCartCache();
-        const hasOtherCache = Object.keys(cache).length > 0;
-
-        if (hasOtherCache) {
-            // Se há cache para outros casos, mantém o componente visível com dados temporários
-            const infoBlock = document.querySelector('.woo-better-info-block');
-            if (infoBlock) {
-                const shippingList = infoBlock.querySelector('.woo-better-shipping-list');
-                if (shippingList) {
-                    shippingList.innerHTML = '<li>Calculando taxas de envio...</li>';
-                }
-
-                infoBlock.style.display = 'block';
+        if (infoBlock && !isComponentCurrentlyVisible) {
+            infoBlock.style.display = 'none';
+        } else if (infoBlock && isComponentCurrentlyVisible) {
+            // Se o componente já está visível, apenas mostra estado de carregamento
+            const shippingList = infoBlock.querySelector('.woo-better-shipping-list');
+            if (shippingList) {
+                shippingList.innerHTML = '<li>Recalculando taxas de envio...</li>';
             }
         }
 
@@ -1020,119 +1045,108 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function observeQuantitySelector() {
-        let targetClass = '.wc-block-components-quantity-selector__input';
-
-        if (WooBetterData.custom_class.quantity !== '') {
-            targetClass = WooBetterData.custom_class.quantity;
-        }
-        // Seleciona todos os elementos que correspondem à classe especificada
-        const targetElements = document.querySelectorAll(targetClass);
-
-        targetElements.forEach((targetElement) => {
-            const observer = new MutationObserver(() => {
-                // Usa a função centralizada para lidar com mudanças
-                handleCartChange('quantity-selector');
-            });
-
-            // Configura o observer para monitorar alterações no valor do input
-            observer.observe(targetElement, {
-                attributes: true, // Monitora alterações nos atributos
-                attributeFilter: ['value'], // Monitora especificamente o atributo "value"
-            });
-        });
+        // Intercepta requisições para detectar quando WooCommerce atualiza o carrinho
+        setupCartInterceptor();
     }
 
-    function observeRemoveLink() {
-        let targetClass = '.wc-block-cart-item__remove-link';
+    function setupCartInterceptor() {
+        // Função simples para verificar se é operação de carrinho relevante
+        function isCartOperation(body) {
+            try {
+                if (!body) return false;
 
-        if (WooBetterData.custom_class.remove !== '') {
-            targetClass = WooBetterData.custom_class.remove;
+                const bodyString = typeof body === 'string' ? body : JSON.stringify(body);
+
+                // Verifica se contém remove-item ou update-item no path
+                return bodyString.includes('remove-item') || bodyString.includes('update-item');
+            } catch (e) {
+                return false;
+            }
         }
 
-        const targetElements = document.querySelectorAll(targetClass);
+        // Intercepta fetch requests
+        const originalFetch = window.fetch;
+        window.fetch = function (...args) {
+            const [resource, config] = args;
 
-        targetElements.forEach((targetElement) => {
-            // Adiciona um listener para o evento 'click'
-            targetElement.addEventListener('click', () => {
-                // Usa a função centralizada para lidar com mudanças
-                handleCartChange('remove-link');
-            });
-        });
+            // Verifica se é a requisição específica do WooCommerce Blocks
+            if (typeof resource === 'string' && resource.includes('/wp-json/wc/store/v1/batch')) {
+
+                // Verifica se é uma operação de carrinho relevante
+                const isRelevantOperation = isCartOperation(config?.body);
+
+                return originalFetch.apply(this, args)
+                    .then(response => {
+                        // Só processa mudanças se for operação relevante
+                        if (isRelevantOperation) {
+                            setTimeout(() => {
+                                handleCartChange('cart-operation-detected');
+                            }, 300);
+                        }
+                        return response;
+                    })
+                    .catch(error => {
+                        return Promise.reject(error);
+                    });
+            }
+
+            return originalFetch.apply(this, args);
+        };
+
+        // Também intercepta XMLHttpRequest como backup
+        const originalXHROpen = XMLHttpRequest.prototype.open;
+        const originalXHRSend = XMLHttpRequest.prototype.send;
+
+        XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+            this._url = url;
+            return originalXHROpen.call(this, method, url, ...rest);
+        };
+
+        XMLHttpRequest.prototype.send = function (...args) {
+            if (this._url && this._url.includes('/wp-json/wc/store/v1/batch')) {
+
+                // Verifica se é operação relevante para XMLHttpRequest também
+                const isRelevantOperation = isCartOperation(args[0]);
+
+                this.addEventListener('loadend', () => {
+                    if (isRelevantOperation) {
+                        setTimeout(() => {
+                            handleCartChange('xhr-cart-operation-detected');
+                        }, 300);
+                    }
+                });
+            }
+
+            return originalXHRSend.apply(this, args);
+        };
+    } function observeRemoveLink() {
+        // Remoção de itens também é detectada pela interceptação da rota /batch
+        // Não precisa de addEventListener, a interceptação já cuida disso
     }
 
     function observeCartChanges() {
-        // Observa mudanças no container do carrinho
-        const cartContainers = [
-            '.wc-block-cart-items',
-            '.cart_list',
-            '.shop_table_responsive',
-            '[class*="cart-item"]',
-            '[class*="cart_content"]'
-        ];
+        // ❌ FUNÇÃO DESABILITADA - DOM observers removidos para evitar loop infinito
+        // A detecção de mudanças no carrinho agora é feita exclusivamente via:
+        // 1. Interceptação de API requests (setupCartInterceptor)
+        // 2. Eventos AJAX específicos do WooCommerce (se necessário)
 
-        cartContainers.forEach(selector => {
-            const cartContainer = document.querySelector(selector);
-            if (cartContainer) {
-                const observer = new MutationObserver(() => {
-                    // Usa a função centralizada para lidar com mudanças
-                    handleCartChange('dom-observer');
-                });
+        debugLog('⚠️  DOM observers desabilitados - usando apenas interceptação de API');
 
-                // Observa mudanças no container do carrinho
-                observer.observe(cartContainer, {
-                    childList: true,
-                    subtree: true,
-                    attributes: true,
-                    attributeFilter: ['data-product-id', 'data-quantity', 'value']
-                });
-            }
-        });
-
-        // Observa mudanças nos fragmentos do carrinho (WooCommerce AJAX)
+        // Mantém apenas eventos AJAX críticos do WooCommerce (sem DOM observers)
         if (window.jQuery && window.jQuery.fn.on) {
-            window.jQuery(document.body).on('updated_wc_div updated_cart_totals wc_fragments_refreshed', () => {
-                // Usa a função centralizada para lidar com mudanças
-                handleCartChange('ajax-fragments');
+            debugLog('📡 Configurando listeners AJAX essenciais do WooCommerce...');
+
+            // Remove listeners anteriores para evitar duplicatas
+            window.jQuery(document.body).off('updated_cart_totals.woo_better');
+            window.jQuery(document.body).off('wc_fragments_refreshed.woo_better');
+
+            // Adiciona listeners com namespace para controle
+            window.jQuery(document.body).on('updated_cart_totals.woo_better wc_fragments_refreshed.woo_better', () => {
+                debugLog(`� Evento AJAX crítico do WooCommerce detectado`);
+                handleCartChange('ajax-critical');
             });
         }
-
-        // Observa mudanças no WooCommerce Blocks store diretamente
-        if (window.wp && window.wp.data) {
-            try {
-                const { subscribe } = window.wp.data;
-                let currentStoreHash = '';
-
-                const unsubscribe = subscribe(() => {
-                    try {
-                        const cartStore = window.wp.data.select('wc/store/cart');
-                        if (cartStore && cartStore.getCartData) {
-                            const cartItems = cartStore.getCartData().items || [];
-                            const storeHashData = cartItems.map(item => ({
-                                id: item.id,
-                                quantity: item.quantity,
-                                variation: item.variation
-                            }));
-
-                            const newStoreHash = JSON.stringify(storeHashData);
-
-                            if (currentStoreHash && newStoreHash !== currentStoreHash) {
-                                // Usa a função centralizada para lidar com mudanças
-                                handleCartChange('wc-blocks-store');
-                            }
-
-                            currentStoreHash = newStoreHash;
-                        }
-                    } catch (e) {
-                        // Ignora erros do subscribe
-                    }
-                });
-            } catch (e) {
-
-            }
-        }
-    }
-
-    function getCartCache() {
+    } function getCartCache() {
         const cacheKey = 'woo_better_cart_cache';
         const cachedData = localStorage.getItem(cacheKey);
 
@@ -1232,8 +1246,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         cartStore.getItems ? cartStore.getItems() : null;
 
                     if (cartItems && Array.isArray(cartItems) && cartItems.length > 0) {
-                        // 🔍 Dados brutos do WooCommerce store
-
                         cartData = cartItems.map(item => {
                             let variationId = item.variation_id || item.variation || 0;
                             // Normaliza arrays vazios como 0
@@ -1241,20 +1253,16 @@ document.addEventListener('DOMContentLoaded', function () {
                                 variationId = variationId.length > 0 ? variationId[0] : 0;
                             }
 
-                            // Debug detalhado para cada item
-                            // 📦 Processando item
-
                             return {
                                 id: item.id || item.product_id || item.key,
                                 quantity: parseInt(item.quantity) || 1, // Garante que seja um número
                                 variation_id: variationId
                             };
                         });
-                        // 🛒 Dados obtidos via WooCommerce Blocks store
                     }
                 }
             } catch (e) {
-                // ⚠️ Erro ao acessar store do WooCommerce
+                // Ignora erros silenciosamente
             }
         }
 
@@ -1272,7 +1280,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     variation_id: variationId
                 };
             });
-            // 🛒 Dados obtidos via wcBlocksData.cartItems (método antigo)
         }
 
         // Método 3: Tentar usar wc_cart_fragments_params
@@ -1390,7 +1397,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return a.quantity - b.quantity;
         });
 
-        // 📦 Dados finais do carrinho atual
         return cartData;
     }
 
@@ -1545,7 +1551,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const cache = getCartCache();
         const currentCartData = getCurrentCartData();
 
-        // 🧹 Limpando cache desatualizado...
+        // Se não conseguimos obter dados atuais do carrinho, não invalidamos nada
+        if (!currentCartData || currentCartData.length === 0) {
+            return;
+        }
 
         // Para cada CEP no cache, verifica se ainda bate com o carrinho atual
         Object.keys(cache).forEach(postcode => {
@@ -1553,12 +1562,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (!isCartConfigurationEqual(currentCartData, cachedData.cart_data)) {
                 delete cache[postcode];
-                // 🗑️ Removido cache para CEP (carrinho mudou)
             }
         });
 
-        localStorage.setItem(cacheKey, JSON.stringify(cache));
-        // ✨ Limpeza de cache concluída
+        // Só salva se ainda temos dados no cache
+        if (Object.keys(cache).length > 0) {
+            localStorage.setItem(cacheKey, JSON.stringify(cache));
+        }
     }
 
     // Função para validar e limpar cache baseado no token
