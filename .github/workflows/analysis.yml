@@ -54,7 +54,6 @@ jobs:
                   <file name="wc-better-shipping-calculator-for-brazil.php" />
                   <ignoreFiles>
                       <directory name="vendor" />
-                      <directory name="node_modules" />
                   </ignoreFiles>
               </projectFiles>
               <issueHandlers>
