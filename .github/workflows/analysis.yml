@@ -4,8 +4,8 @@ on:
   pull_request:
     types: [ closed ]
     branches: [ dev ]  # Executa quando PR é feito PARA a branch dev
-  push:
-    branches: [ pre-release ]
+  # push:
+  #   branches: [ pre-release ]
 env:
   PHP_VERSION: "7.4"
 
