@@ -27,7 +27,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: PHP  # Analisa JS/TS do seu plugin
+          languages: JS  # Analisa JS/TS do seu plugin
 
       # Compilação do projeto (necessária apenas se houver compilação)
       - name: Autobuild
