@@ -36,7 +36,7 @@ jobs:
         uses: github/codeql-action/analyze@v3
 
   php-security-analysis:
-    name: PHP Security & Code Quality Analysis
+    name: Psalm PHP Security & Code Quality Analysis
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release'
     steps:
