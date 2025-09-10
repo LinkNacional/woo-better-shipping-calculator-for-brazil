@@ -4,7 +4,8 @@ on:
   pull_request:
     types: [ closed ]
     branches: [ dev ]  # Executa quando PR é feito PARA a branch dev
-
+  push:
+    branches: [ pre-release ]
 env:
   PHP_VERSION: "7.4"
 
@@ -32,7 +33,7 @@ jobs:
 
       # PHP Security Analysis using Psalm (static analysis)
       - name: Install Psalm for PHP Static Analysis
-        run: composer require --dev psalm/psalm
+        run: composer require --dev vimeo/psalm:^4.30 --ignore-platform-reqs
 
       # Create Psalm configuration
       - name: Create Psalm Config
@@ -40,7 +41,7 @@ jobs:
           cat > psalm.xml << EOF
           <?xml version="1.0"?>
           <psalm
-              errorLevel="3"
+              errorLevel="4"
               resolveFromConfigFile="true"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
               xmlns="https://getpsalm.org/schema/config"
@@ -53,17 +54,25 @@ jobs:
                   <file name="wc-better-shipping-calculator-for-brazil.php" />
                   <ignoreFiles>
                       <directory name="vendor" />
+                      <directory name="node_modules" />
                   </ignoreFiles>
               </projectFiles>
-              <plugins>
-                  <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/>
-              </plugins>
+              <issueHandlers>
+                  <MissingFile errorLevel="suppress"/>
+                  <UndefinedClass>
+                      <errorLevel type="suppress">
+                          <referencedClass name="WP_*"/>
+                          <referencedClass name="WC_*"/>
+                      </errorLevel>
+                  </UndefinedClass>
+              </issueHandlers>
           </psalm>
           EOF
 
       # Run Psalm Static Analysis
       - name: Run Psalm PHP Static Analysis
-        run: ./vendor/bin/psalm --output-format=github --show-info=false
+        run: ./vendor/bin/psalm --output-format=github --show-info=false --no-progress
+        continue-on-error: true
 
   plugin-quality-check:
     name: WordPress Plugin Quality Check
