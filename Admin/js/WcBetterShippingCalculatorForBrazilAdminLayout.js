@@ -323,7 +323,9 @@
       stickyContainer.appendChild(promotionalCard);
 
       sideContainer.appendChild(stickyContainer);
-    } mainContainer.appendChild(contentContainer);
+    }
+
+    mainContainer.appendChild(contentContainer);
     mainContainer.appendChild(sideContainer);
 
     subTitles.forEach(h2 => contentContainer.appendChild(h2));
