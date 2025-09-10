@@ -198,7 +198,7 @@
 
     // Título do plugin
     const cardTitle = document.createElement('h3');
-    cardTitle.textContent = 'Plugin: Link de Pagamento de Faturas para WooCommerce';
+    cardTitle.textContent = 'Plugin Grátis: Link de Pagamento de Faturas para WooCommerce';
     cardTitle.style.cssText = `
       margin: 0 0 12px 0;
       font-size: 16px;
@@ -225,44 +225,7 @@
       flex-wrap: wrap;
     `;
 
-    // Botão Instalar
-    const installButton = document.createElement('button');
-    installButton.textContent = 'Instalar';
-    installButton.style.cssText = `
-      background: rgba(255,255,255,0.2);
-      border: 1px solid rgba(255,255,255,0.3);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(10px);
-    `;
-
-    installButton.addEventListener('mouseenter', function () {
-      this.style.background = 'rgba(255,255,255,0.3)';
-      this.style.transform = 'translateY(-1px)';
-    });
-
-    installButton.addEventListener('mouseleave', function () {
-      this.style.background = 'rgba(255,255,255,0.2)';
-      this.style.transform = 'translateY(0)';
-    });
-
-    installButton.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Usa o nonce que já está disponível no wcBetterCalcAjax
-      const installUrl = `/wp-admin/update.php?action=install-plugin&plugin=${wcBetterCalcAjax.plugin_slug}&_wpnonce=${wcBetterCalcAjax.install_nonce}`;
-
-      // Abre a página de instalação direta
-      window.open(installUrl, '_blank');
-    });
-
-    // Botão Saiba mais
+    // Botão Saiba mais (sempre primeiro)
     const learnMoreButton = document.createElement('button');
     learnMoreButton.textContent = 'Saiba mais';
     learnMoreButton.style.cssText = `
@@ -296,11 +259,50 @@
       window.open('https://br.wordpress.org/plugins/invoice-payment-for-woocommerce/', '_blank');
     });
 
-    // Adiciona os botões ao container
-    buttonsContainer.appendChild(installButton);
+    // Adiciona o botão "Saiba mais" primeiro
     buttonsContainer.appendChild(learnMoreButton);
 
-    // Monta o conteúdo do cartão
+    // Só cria o botão "Instalar" se o plugin NÃO estiver instalado
+    if (!wcBetterCalcAjax.invoice_plugin_installed) {
+      const installButton = document.createElement('button');
+      installButton.textContent = 'Instalar';
+      installButton.style.cssText = `
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+      `;
+
+      installButton.addEventListener('mouseenter', function () {
+        this.style.background = 'rgba(255,255,255,0.3)';
+        this.style.transform = 'translateY(-1px)';
+      });
+
+      installButton.addEventListener('mouseleave', function () {
+        this.style.background = 'rgba(255,255,255,0.2)';
+        this.style.transform = 'translateY(0)';
+      });
+
+      installButton.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Usa o nonce que já está disponível no wcBetterCalcAjax
+        const installUrl = `/wp-admin/update.php?action=install-plugin&plugin=${wcBetterCalcAjax.plugin_slug}&_wpnonce=${wcBetterCalcAjax.install_nonce}`;
+
+        // Abre a página de instalação direta
+        window.open(installUrl, '_blank');
+      });
+
+      // Adiciona o botão "Instalar" depois do "Saiba mais"
+      buttonsContainer.appendChild(installButton);
+    }    // Monta o conteúdo do cartão
     cardContent.appendChild(cardTitle);
     cardContent.appendChild(cardDescription);
     cardContent.appendChild(buttonsContainer);
