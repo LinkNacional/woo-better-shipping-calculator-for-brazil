@@ -160,8 +160,151 @@
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> O CEP informado pelo usuário é preservado até a finalização da compra e preenche automaticamente o endereço.'
+      '<strong>NOVO:</strong> Sistema de cache inteligente que armazena consultas de frete para acelerar consultas futuras e melhorar a experiência do usuário.'
     ]);
+
+    // Cria o cartão promocional do Plugin Link de Pagamento
+    const promotionalCard = document.createElement('div');
+    promotionalCard.className = 'woo-better-promotional-card';
+    promotionalCard.style.cssText = `
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+      color: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      position: relative;
+      overflow: hidden;
+    `;
+
+    // Adiciona um elemento de fundo decorativo
+    const backgroundDecor = document.createElement('div');
+    backgroundDecor.style.cssText = `
+      position: absolute;
+      top: -50px;
+      right: -50px;
+      width: 100px;
+      height: 100px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      pointer-events: none;
+    `;
+    promotionalCard.appendChild(backgroundDecor);
+
+    // Conteúdo do cartão
+    const cardContent = document.createElement('div');
+    cardContent.style.position = 'relative';
+    cardContent.style.zIndex = '1';
+
+    // Título do plugin
+    const cardTitle = document.createElement('h3');
+    cardTitle.textContent = 'Plugin: Link de Pagamento de Faturas para WooCommerce';
+    cardTitle.style.cssText = `
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: white;
+      line-height: 1.3;
+    `;
+
+    // Descrição do plugin
+    const cardDescription = document.createElement('p');
+    cardDescription.textContent = 'O Plugin Link de Pagamento é a solução completa para o seu negócio. Com ele, é possível gerar links de pagamento, parcelar compras em múltiplos cartões, configurar cobranças recorrentes, aplicar descontos e taxas, e criar orçamentos detalhados.';
+    cardDescription.style.cssText = `
+      margin: 0 0 16px 0;
+      font-size: 14px;
+      line-height: 1.5;
+      color: rgba(255,255,255,0.9);
+    `;
+
+    // Container dos botões
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.style.cssText = `
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    `;
+
+    // Botão Instalar
+    const installButton = document.createElement('button');
+    installButton.textContent = 'Instalar';
+    installButton.style.cssText = `
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    `;
+
+    installButton.addEventListener('mouseenter', function () {
+      this.style.background = 'rgba(255,255,255,0.3)';
+      this.style.transform = 'translateY(-1px)';
+    });
+
+    installButton.addEventListener('mouseleave', function () {
+      this.style.background = 'rgba(255,255,255,0.2)';
+      this.style.transform = 'translateY(0)';
+    });
+
+    installButton.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Usa o nonce que já está disponível no wcBetterCalcAjax
+      const installUrl = `/wp-admin/update.php?action=install-plugin&plugin=${wcBetterCalcAjax.plugin_slug}&_wpnonce=${wcBetterCalcAjax.install_nonce}`;
+
+      // Abre a página de instalação direta
+      window.open(installUrl, '_blank');
+    });
+
+    // Botão Saiba mais
+    const learnMoreButton = document.createElement('button');
+    learnMoreButton.textContent = 'Saiba mais';
+    learnMoreButton.style.cssText = `
+      background: rgba(255,255,255,0.9);
+      border: none;
+      color: #667eea;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    `;
+
+    learnMoreButton.addEventListener('mouseenter', function () {
+      this.style.background = 'white';
+      this.style.transform = 'translateY(-1px)';
+      this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+    });
+
+    learnMoreButton.addEventListener('mouseleave', function () {
+      this.style.background = 'rgba(255,255,255,0.9)';
+      this.style.transform = 'translateY(0)';
+      this.style.boxShadow = 'none';
+    });
+
+    learnMoreButton.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Abre o link do plugin no WordPress.org
+      window.open('https://br.wordpress.org/plugins/invoice-payment-for-woocommerce/', '_blank');
+    });
+
+    // Adiciona os botões ao container
+    buttonsContainer.appendChild(installButton);
+    buttonsContainer.appendChild(learnMoreButton);
+
+    // Monta o conteúdo do cartão
+    cardContent.appendChild(cardTitle);
+    cardContent.appendChild(cardDescription);
+    cardContent.appendChild(buttonsContainer);
+    promotionalCard.appendChild(cardContent);
 
 
     const settingsCard = document.querySelector('#WooBetterLinkSettingsCard');
@@ -173,6 +316,7 @@
 
       stickyContainer.appendChild(featureMessage1);
       stickyContainer.appendChild(featureMessage2);
+      stickyContainer.appendChild(promotionalCard);
 
       sideContainer.appendChild(stickyContainer);
     }
@@ -323,6 +467,7 @@
               spanElement.style.color = '#343B45'; // Cinza suave
               spanElement.style.fontSize = '13px';
               spanElement.style.paddingLeft = '6px';
+              spanElement.style.display = 'block';
 
               // Cria o <hr> com uma linha cinza clara
               const hrElement = document.createElement('hr');
@@ -423,6 +568,7 @@
               spanElement.style.color = '#343B45'; // Cinza suave
               spanElement.style.fontSize = '13px';
               spanElement.style.paddingLeft = '6px';
+              spanElement.style.display = 'block';
 
               // Cria o <hr> com uma linha cinza clara
               const hrElement = document.createElement('hr');
@@ -1035,7 +1181,7 @@
 
         // Adiciona o evento de clique
         clearCacheButton.addEventListener('click', function () {
-          const confirmMessage = 'Tem certeza de que deseja limpar o cache? Esta ação irá gerar um novo token de segurança.';
+          const confirmMessage = 'Tem certeza de que deseja limpar o cache?';
 
           if (confirm(confirmMessage)) {
             const newToken = generateNewToken();

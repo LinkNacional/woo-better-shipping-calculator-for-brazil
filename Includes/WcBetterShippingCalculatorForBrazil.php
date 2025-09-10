@@ -439,7 +439,9 @@ class WcBetterShippingCalculatorForBrazil
             // Adiciona ajaxurl para requisições AJAX
             wp_localize_script('wc-better-calc-settings-layout', 'wcBetterCalcAjax', array(
                 'ajaxurl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('woo_better_calc_admin_nonce')
+                'nonce' => wp_create_nonce('woo_better_calc_admin_nonce'),
+                'install_nonce' => wp_create_nonce('install-plugin_invoice-payment-for-woocommerce'),
+                'plugin_slug' => 'invoice-payment-for-woocommerce'
             ));
 
             $icons = array(
@@ -1018,14 +1020,29 @@ class WcBetterShippingCalculatorForBrazil
             ), 400);
         }
 
+        // Converte o preço para float para garantir que seja numérico
+        $product_price = floatval($product->get_price());
+        $quantity = WC_BETTER_SHIPPING_PRODUCT_QUANTITY;
+        $line_total = $product_price * $quantity;
+
         // Cria um pacote de envio personalizado
         $package = array(
             'contents' => array(
                 $product_id => array(
                     'product_id' => $product_id,
-                    'quantity'   => WC_BETTER_SHIPPING_PRODUCT_QUANTITY,
+                    'variation_id' => 0,
+                    'quantity'   => $quantity,
                     'data'       => $product,
+                    'line_total' => $line_total,
+                    'line_subtotal' => $line_total,
+                    'line_tax' => 0,
+                    'line_subtotal_tax' => 0,
                 ),
+            ),
+            'contents_cost' => $line_total,
+            'applied_coupons' => array(),
+            'user' => array(
+                'ID' => get_current_user_id(),
             ),
             'destination' => array(
                 'country'   => $shipping_data['country'],
@@ -1047,7 +1064,7 @@ class WcBetterShippingCalculatorForBrazil
 
         $product_info = array(
             'name'     => $product->get_name(),
-            'quantity' => WC_BETTER_SHIPPING_PRODUCT_QUANTITY, 
+            'quantity' => $quantity, 
             'currency_symbol' => $currency_symbol,
             'currency_minor_unit' => $currency_minor_unit,
         );
@@ -1200,9 +1217,20 @@ class WcBetterShippingCalculatorForBrazil
             ), 400);
         }
 
+        // Calcula o total do carrinho
+        $contents_cost = 0;
+        foreach ($cart_items as $cart_item) {
+            $contents_cost += floatval($cart_item['line_total']);
+        }
+
         // Cria um pacote de envio personalizado com os itens do carrinho
         $package = array(
             'contents' => $cart_items,
+            'contents_cost' => $contents_cost,
+            'applied_coupons' => WC()->cart->get_applied_coupons(),
+            'user' => array(
+                'ID' => get_current_user_id(),
+            ),
             'destination' => array(
                 'country'   => $shipping_data['country'],
                 'state'     => $shipping_data['state'],
