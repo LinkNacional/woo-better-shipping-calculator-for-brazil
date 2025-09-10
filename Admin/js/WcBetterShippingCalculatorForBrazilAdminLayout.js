@@ -1337,6 +1337,25 @@
     // Adiciona a div ao body
     document.body.appendChild(floatingIconContainer);
 
+    // Verifica inicialmente se deve mostrar o floating icon baseado na tab ativa atual
+    let initialActiveTab = tabLinks[0]; // Padrão é a primeira tab
+
+    // Verifica se há um hash na URL para determinar a tab ativa
+    const currentHash = window.location.hash;
+    if (currentHash) {
+      const hashIndex = tabLinks.findIndex(tab => tab.href.endsWith(currentHash));
+      if (hashIndex >= 0) {
+        initialActiveTab = tabLinks[hashIndex];
+      }
+    }
+
+    // Mostra o floating icon apenas se a tab ativa for 'Carrinho' ou 'Produto'
+    if (initialActiveTab && (initialActiveTab.textContent === 'Carrinho' || initialActiveTab.textContent === 'Produto')) {
+      floatingIconContainer.style.display = 'flex';
+    } else {
+      floatingIconContainer.style.display = 'none';
+    }
+
     // Função para mostrar/esconder tabelas dinamicamente
     function showTable(activeIdx) {
       tables.forEach((table, idx) => {
