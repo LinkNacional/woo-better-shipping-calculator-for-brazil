@@ -5,7 +5,7 @@ on:
     workflows: ["Security and Quality Analysis"]
     types:
       - completed
-    branches: [ pre-release ]
+    branches: [ dev ]  # Executa quando analysis.yml completa na branch dev
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil

@@ -3,7 +3,9 @@ name: Security and Quality Analysis
 on:
   pull_request:
     types: [ closed ]
-    branches: [ pre-release ]
+    branches: [ dev ]  # Executa quando PR é feito PARA a branch dev
+  push:
+    branches: [ pre-release ]  # Também executa em push direto na pre-release
 
 env:
   PHP_VERSION: "7.4"
@@ -12,7 +14,7 @@ jobs:
   codeql-analysis:
     name: CodeQL Security Analysis
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
+    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || github.event_name == 'push'
     permissions:
       actions: read
       contents: read
@@ -39,7 +41,7 @@ jobs:
   plugin-quality-check:
     name: WordPress Plugin Quality Check
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
+    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || github.event_name == 'push'
     needs: codeql-analysis  # Só executa após CodeQL passar
     steps:
     - uses: actions/checkout@v3
