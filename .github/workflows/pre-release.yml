@@ -1,0 +1,140 @@
+name: Generate pre-release with CodeQL Analysis
+
+on:
+  pull_request:
+    types: [ closed ]
+    branches: [ preRelease ]
+
+env:
+  PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
+  PHP_VERSION: "7.4"
+  DEPLOY_TAG: "4.3.3-rc.1"
+
+jobs:
+  codeql-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      # Etapa de checkout de código
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Configuração do CodeQL
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: php
+
+      # Compilação do projeto (necessária apenas se houver compilação)
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      # Execução da análise CodeQL
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  release-build:
+    runs-on: ubuntu-latest
+    needs: codeql-analysis  # Só executa após a análise CodeQL passar
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v3
+
+    # Run composer install and generate vendor
+    - name: Run composer install
+      uses: php-actions/composer@v6
+      with:
+        php_version: ${{ env.PHP_VERSION }}
+        working_dir: "."
+        args: --ignore-platform-reqs
+        command: install
+        dev: no
+
+    - name: Executar Plugin Check com configurações personalizadas
+      uses: wordpress/plugin-check-action@v1
+      with:
+        build-dir: './'
+        exclude-directories: 'node_modules,vendor,.eslintrc'
+        ignore-codes: |
+          WordPress.WP.I18n.TextDomainMismatch
+          WordPress.Security.NonceVerification.Missing
+          WordPress.Security.NonceVerification.Recommended
+          WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+          WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+          trademarked_term
+          textdomain_mismatch
+          hidden_files
+        categories: |
+          performance
+          accessibility
+          general
+          plugin_repo
+          security
+        strict: true
+
+    # Add plugin files to a root directory
+    - name: Prepare plugin folder
+      run: |
+        mkdir -p dist
+        mkdir -p build/${{ env.PLUGIN_NAME }}
+        mv ./Admin ./Includes ./languages ./Public *.php *.txt ./build/${{ env.PLUGIN_NAME }}
+        cp -r vendor build/${{ env.PLUGIN_NAME }}/vendor
+        find ./build -type f -exec chmod 0644 {} +
+        find ./build -type d -exec chmod 0755 {} +
+
+    - name: Archive Release
+      uses: thedoctor0/zip-release@master
+      with:
+        type: 'zip'
+        path: '.'
+        directory: 'build'
+        filename: '${{ env.PLUGIN_NAME }}.zip'
+        exclusions: '*.git* /*node_modules/* .editorconfig'
+
+    - name: Move .zip to custom location
+      run: |
+        mv ./build/${{ env.PLUGIN_NAME }}.zip ./dist/
+
+    # Update version tag
+    - name: Bump version and push tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.0
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        custom_tag: ${{ env.DEPLOY_TAG }} # Release Candidate com -rc.1
+
+    # Generate new pre-release
+    - name: Generate new Pre-Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "dist/${{ env.PLUGIN_NAME }}.zip"
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit: "preRelease"
+        prerelease: true  # Marca como pre-release
+        draft: true
+        tag: ${{ steps.tag_version.outputs.new_tag }}
+        name: Pre-Release ${{ steps.tag_version.outputs.new_tag }}
+        body: |
+          🚀 **Release Candidate - Versão de Teste**
+          
+          Esta é uma versão de pré-lançamento para testes. 
+          
+          **⚠️ Não recomendado para produção**
+          
+          ### 🔍 Análises Realizadas:
+          - ✅ CodeQL Security Analysis
+          - ✅ WordPress Plugin Check
+          - ✅ Performance & Accessibility Tests
+          
+          ### 📋 Como testar:
+          1. Baixe o arquivo `.zip` em anexo
+          2. Instale em um ambiente de teste
+          3. Reporte qualquer problema encontrado
+          
+          ---
+          *Esta versão passou por análise automatizada de segurança com CodeQL*

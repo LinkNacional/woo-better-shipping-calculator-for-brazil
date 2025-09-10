@@ -601,8 +601,8 @@ document.addEventListener('DOMContentLoaded', function () {
         input.classList.add('woo-better-input-current-style');
         input.autocomplete = 'postal-code';
 
-        if (savedPostcodeValue) {
-            input.value = savedPostcodeValue;
+        if (lastPostcode) {
+            input.value = lastPostcode;
         }
 
         const inputStyles = WooBetterData.inputStyles || {};
