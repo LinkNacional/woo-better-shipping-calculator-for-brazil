@@ -4,8 +4,6 @@ on:
   pull_request:
     types: [ closed ]
     branches: [ dev ]  # Executa quando PR é feito PARA a branch dev
-  # push:
-  #   branches: [ pre-release ]
 env:
   PHP_VERSION: "7.4"
 
@@ -13,7 +11,7 @@ jobs:
   codeql-analysis:
     name: CodeQL Security Analysis
     runs-on: ubuntu-latest
-    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || github.event_name == 'push'
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release'
     permissions:
       actions: read
       contents: read
@@ -40,7 +38,7 @@ jobs:
   php-security-analysis:
     name: PHP Security & Code Quality Analysis
     runs-on: ubuntu-latest
-    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || github.event_name == 'push'
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release'
     steps:
       # Etapa de checkout de código
       - name: Checkout code
@@ -61,6 +59,10 @@ jobs:
       # PHP Security Analysis using Psalm (static analysis)
       - name: Install Psalm for PHP Static Analysis
         run: composer require --dev vimeo/psalm:^4.30 --ignore-platform-reqs
+
+      # Install WordPress stubs for Psalm
+      - name: Install WordPress stubs
+        run: composer require --dev php-stubs/wordpress-stubs --ignore-platform-reqs
 
       # Create Psalm configuration
       - name: Create Psalm Config
@@ -83,14 +85,47 @@ jobs:
                       <directory name="vendor" />
                   </ignoreFiles>
               </projectFiles>
+              <stubs>
+                  <file name="vendor/php-stubs/wordpress-stubs/wordpress-stubs.php" />
+              </stubs>
               <issueHandlers>
                   <MissingFile errorLevel="suppress"/>
+                  <UndefinedFunction>
+                      <errorLevel type="suppress">
+                          <referencedFunction name="get_*"/>
+                          <referencedFunction name="wp_*"/>
+                          <referencedFunction name="add_*"/>
+                          <referencedFunction name="remove_*"/>
+                          <referencedFunction name="register_*"/>
+                          <referencedFunction name="is_*"/>
+                          <referencedFunction name="current_*"/>
+                          <referencedFunction name="sanitize_*"/>
+                          <referencedFunction name="esc_*"/>
+                          <referencedFunction name="__"/>
+                          <referencedFunction name="_e"/>
+                          <referencedFunction name="_x"/>
+                          <referencedFunction name="_n"/>
+                      </errorLevel>
+                  </UndefinedFunction>
                   <UndefinedClass>
                       <errorLevel type="suppress">
                           <referencedClass name="WP_*"/>
                           <referencedClass name="WC_*"/>
                       </errorLevel>
                   </UndefinedClass>
+                  <UndefinedConstant>
+                      <errorLevel type="suppress">
+                          <referencedConstant name="WP_*"/>
+                          <referencedConstant name="ABSPATH"/>
+                          <referencedConstant name="WC_*"/>
+                      </errorLevel>
+                  </UndefinedConstant>
+                  <UndefinedGlobalVariable>
+                      <errorLevel type="suppress">
+                          <referencedVariable name="wpdb"/>
+                          <referencedVariable name="wp_*"/>
+                      </errorLevel>
+                  </UndefinedGlobalVariable>
               </issueHandlers>
           </psalm>
           EOF
@@ -103,7 +138,7 @@ jobs:
   plugin-quality-check:
     name: WordPress Plugin Quality Check
     runs-on: ubuntu-latest
-    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || github.event_name == 'push'
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release'
     needs: [codeql-analysis, php-security-analysis]  # Executa após ambas análises passarem
     steps:
     - uses: actions/checkout@v3
