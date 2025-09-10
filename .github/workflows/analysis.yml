@@ -1,0 +1,98 @@
+name: Security and Quality Analysis
+
+on:
+  pull_request:
+    types: [ closed ]
+    branches: [ pre-release ]
+
+env:
+  PHP_VERSION: "7.4"
+
+jobs:
+  codeql-analysis:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      # Etapa de checkout de código
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Configuração do CodeQL
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: php
+
+      # Compilação do projeto (necessária apenas se houver compilação)
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      # Execução da análise CodeQL
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  plugin-quality-check:
+    name: WordPress Plugin Quality Check
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    needs: codeql-analysis  # Só executa após CodeQL passar
+    steps:
+    - uses: actions/checkout@v3
+
+    # Run composer install and generate vendor
+    - name: Run composer install
+      uses: php-actions/composer@v6
+      with:
+        php_version: ${{ env.PHP_VERSION }}
+        working_dir: "."
+        args: --ignore-platform-reqs
+        command: install
+        dev: no
+
+    - name: Executar Plugin Check com configurações personalizadas
+      uses: wordpress/plugin-check-action@v1
+      with:
+        build-dir: './'
+        exclude-directories: 'node_modules,vendor,.eslintrc'
+        ignore-codes: |
+          WordPress.WP.I18n.TextDomainMismatch
+          WordPress.Security.NonceVerification.Missing
+          WordPress.Security.NonceVerification.Recommended
+          WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+          WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+          trademarked_term
+          textdomain_mismatch
+          hidden_files
+        categories: |
+          performance
+          accessibility
+          general
+          plugin_repo
+          security
+        strict: true
+
+  analysis-summary:
+    name: Analysis Summary
+    runs-on: ubuntu-latest
+    needs: [codeql-analysis, plugin-quality-check]
+    if: always()
+    steps:
+    - name: Check Analysis Results
+      run: |
+        echo "🔍 Analysis Summary:"
+        echo "CodeQL Analysis: ${{ needs.codeql-analysis.result }}"
+        echo "Plugin Quality Check: ${{ needs.plugin-quality-check.result }}"
+        
+        if [[ "${{ needs.codeql-analysis.result }}" == "success" && "${{ needs.plugin-quality-check.result }}" == "success" ]]; then
+          echo "✅ All analyses passed! Pre-release workflow will be triggered."
+          echo "analysis_status=success" >> $GITHUB_OUTPUT
+        else
+          echo "❌ One or more analyses failed. Pre-release will not be triggered."
+          echo "analysis_status=failure" >> $GITHUB_OUTPUT
+          exit 1
+        fi

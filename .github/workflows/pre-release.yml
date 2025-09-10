@@ -1,9 +1,11 @@
-name: Generate pre-release with CodeQL Analysis
+name: Generate Pre-Release
 
 on:
-  pull_request:
-    types: [ closed ]
-    branches: [ preRelease ]
+  workflow_run:
+    workflows: ["Security and Quality Analysis"]
+    types:
+      - completed
+    branches: [ pre-release ]
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
@@ -11,35 +13,20 @@ env:
   DEPLOY_TAG: "4.3.3-rc.1"
 
 jobs:
-  codeql-analysis:
-    name: CodeQL Analysis
+  check-analysis-success:
+    name: Verify Analysis Success
     runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
+    if: github.event.workflow_run.conclusion == 'success'
     steps:
-      # Etapa de checkout de código
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # Configuração do CodeQL
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: php
-
-      # Compilação do projeto (necessária apenas se houver compilação)
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
-
-      # Execução da análise CodeQL
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+    - name: Analysis passed
+      run: |
+        echo "✅ Security and Quality Analysis completed successfully!"
+        echo "🚀 Proceeding with pre-release generation..."
 
   release-build:
     runs-on: ubuntu-latest
-    needs: codeql-analysis  # Só executa após a análise CodeQL passar
+    needs: check-analysis-success
+    if: github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: write
     steps:
@@ -54,28 +41,6 @@ jobs:
         args: --ignore-platform-reqs
         command: install
         dev: no
-
-    - name: Executar Plugin Check com configurações personalizadas
-      uses: wordpress/plugin-check-action@v1
-      with:
-        build-dir: './'
-        exclude-directories: 'node_modules,vendor,.eslintrc'
-        ignore-codes: |
-          WordPress.WP.I18n.TextDomainMismatch
-          WordPress.Security.NonceVerification.Missing
-          WordPress.Security.NonceVerification.Recommended
-          WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-          WordPress.DB.SlowDBQuery.slow_db_query_meta_value
-          trademarked_term
-          textdomain_mismatch
-          hidden_files
-        categories: |
-          performance
-          accessibility
-          general
-          plugin_repo
-          security
-        strict: true
 
     # Add plugin files to a root directory
     - name: Prepare plugin folder
@@ -114,7 +79,7 @@ jobs:
       with:
         artifacts: "dist/${{ env.PLUGIN_NAME }}.zip"
         token: ${{ secrets.GITHUB_TOKEN }}
-        commit: "preRelease"
+        commit: "pre-release"
         prerelease: true  # Marca como pre-release
         draft: true
         tag: ${{ steps.tag_version.outputs.new_tag }}
