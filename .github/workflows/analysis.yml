@@ -4,45 +4,72 @@ on:
   pull_request:
     types: [ closed ]
     branches: [ dev ]  # Executa quando PR é feito PARA a branch dev
-  push:
-    branches: [ pre-release ]  # Também executa em push direto na pre-release
 
 env:
   PHP_VERSION: "7.4"
 
 jobs:
-  codeql-analysis:
-    name: CodeQL Security Analysis
+  php-security-analysis:
+    name: PHP Security & Code Quality Analysis
     runs-on: ubuntu-latest
     if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || github.event_name == 'push'
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
     steps:
       # Etapa de checkout de código
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Configuração do CodeQL
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+      # Setup PHP
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          languages: php
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: curl, zip, openssl
+          tools: composer
 
-      # Compilação do projeto (necessária apenas se houver compilação)
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
+      # Install dependencies
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
-      # Execução da análise CodeQL
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+      # PHP Security Analysis using Psalm (static analysis)
+      - name: Install Psalm for PHP Static Analysis
+        run: composer require --dev psalm/psalm
+
+      # Create Psalm configuration
+      - name: Create Psalm Config
+        run: |
+          cat > psalm.xml << EOF
+          <?xml version="1.0"?>
+          <psalm
+              errorLevel="3"
+              resolveFromConfigFile="true"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns="https://getpsalm.org/schema/config"
+              xsi:schemaLocation="https://getpsalm.org/schema/config vendor/psalm/psalm/config.xsd"
+          >
+              <projectFiles>
+                  <directory name="Admin" />
+                  <directory name="Includes" />
+                  <directory name="Public" />
+                  <file name="wc-better-shipping-calculator-for-brazil.php" />
+                  <ignoreFiles>
+                      <directory name="vendor" />
+                  </ignoreFiles>
+              </projectFiles>
+              <plugins>
+                  <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/>
+              </plugins>
+          </psalm>
+          EOF
+
+      # Run Psalm Static Analysis
+      - name: Run Psalm PHP Static Analysis
+        run: ./vendor/bin/psalm --output-format=github --show-info=false
 
   plugin-quality-check:
     name: WordPress Plugin Quality Check
     runs-on: ubuntu-latest
     if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || github.event_name == 'push'
-    needs: codeql-analysis  # Só executa após CodeQL passar
+    needs: php-security-analysis  # Só executa após análise PHP passar
     steps:
     - uses: actions/checkout@v3
 
@@ -81,16 +108,16 @@ jobs:
   analysis-summary:
     name: Analysis Summary
     runs-on: ubuntu-latest
-    needs: [codeql-analysis, plugin-quality-check]
+    needs: [php-security-analysis, plugin-quality-check]
     if: always()
     steps:
     - name: Check Analysis Results
       run: |
         echo "🔍 Analysis Summary:"
-        echo "CodeQL Analysis: ${{ needs.codeql-analysis.result }}"
+        echo "PHP Security Analysis: ${{ needs.php-security-analysis.result }}"
         echo "Plugin Quality Check: ${{ needs.plugin-quality-check.result }}"
         
-        if [[ "${{ needs.codeql-analysis.result }}" == "success" && "${{ needs.plugin-quality-check.result }}" == "success" ]]; then
+        if [[ "${{ needs.php-security-analysis.result }}" == "success" && "${{ needs.plugin-quality-check.result }}" == "success" ]]; then
           echo "✅ All analyses passed! Pre-release workflow will be triggered."
           echo "analysis_status=success" >> $GITHUB_OUTPUT
         else
