@@ -93,6 +93,11 @@ add_filter(
 
 == Changelog ==
 
+= 4.4.0 - 10/09/2025 =
+* New: cache system for postal code queries.
+* New: plugin display card.
+* New: Psalm and CodeQL libraries for code
+
 = 4.3.3 - 15/08/2025 =
 * Fix: Button styles.
 * Fix: Nonce.

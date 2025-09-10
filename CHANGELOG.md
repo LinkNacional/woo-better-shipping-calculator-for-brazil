@@ -1,3 +1,8 @@
+# 4.4.0 - 10/09/25
+* Novo: sistema de cache para consulta dos CEPs.
+* Novo: cartão de exibição de plugins.
+* Novo: biliotecas Psalm e CodeQL para melhoria do código.
+
 # 4.3.3 - 15/08/25
 * Correção: Estilos do botão.
 * Correção: Nonce.
