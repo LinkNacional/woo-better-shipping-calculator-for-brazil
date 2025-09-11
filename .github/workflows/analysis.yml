@@ -1,12 +1,19 @@
 name: Security and Quality Analysis
 
-# NOTA: Push trigger é TEMPORÁRIO para testes - remover após validação
+# Workflow para análise de segurança e qualidade do código
+# Executa CodeQL, Psalm e Plugin Check
 on:
-  pull_request:
-    types: [ closed ]
-    branches: [ dev ]  # Executa quando PR é feito PARA a branch dev
-  push:  # TEMPORÁRIO: Para facilitar testes sem abrir PR
-    branches: [ pre-release, dev ]
+  workflow_call:  # Permite ser chamado por outros workflows
+    outputs:
+      analysis_status:
+        description: "Status da análise (success/failure)"
+        value: ${{ jobs.analysis-summary.outputs.analysis_status }}
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual execution"
+        required: false
+        default: "Manual security and quality analysis"
 
 env:
   PHP_VERSION: "7.4"
@@ -15,7 +22,7 @@ jobs:
   codeql-analysis:
     name: CodeQL Security Analysis
     runs-on: ubuntu-latest
-    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/pre-release'))
+    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/pre-release')) || github.event_name == 'workflow_call'
     permissions:
       actions: read
       contents: read
@@ -42,7 +49,7 @@ jobs:
   php-security-analysis:
     name: Psalm PHP Security & Code Quality Analysis
     runs-on: ubuntu-latest
-    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/pre-release'))
+    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/pre-release')) || github.event_name == 'workflow_call'
     steps:
       # Etapa de checkout de código
       - name: Checkout code
@@ -110,7 +117,7 @@ jobs:
   plugin-quality-check:
     name: WordPress Plugin Quality Check
     runs-on: ubuntu-latest
-    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/pre-release'))
+    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/pre-release')) || github.event_name == 'workflow_call'
     needs: [codeql-analysis, php-security-analysis]  # Executa após ambas análises passarem
     steps:
     - uses: actions/checkout@v4
@@ -152,6 +159,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [codeql-analysis, php-security-analysis, plugin-quality-check]
     if: always()
+    outputs:
+      analysis_status: ${{ steps.check-results.outputs.analysis_status }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
