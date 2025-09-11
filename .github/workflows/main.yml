@@ -27,28 +27,6 @@ jobs:
         command: install
         dev: no
 
-    - name: Executar Plugin Check com configurações personalizadas
-      uses: wordpress/plugin-check-action@v1
-      with:
-        build-dir: './'
-        exclude-directories: 'node_modules,vendor,.eslintrc'
-        ignore-codes: |
-          WordPress.WP.I18n.TextDomainMismatch
-          WordPress.Security.NonceVerification.Missing
-          WordPress.Security.NonceVerification.Recommended
-          WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-          WordPress.DB.SlowDBQuery.slow_db_query_meta_value
-          trademarked_term
-          textdomain_mismatch
-          hidden_files
-        categories: |
-          performance
-          accessibility
-          general
-          plugin_repo
-          security
-        strict: true
-
     # Add plugin files to a root directory
     - name: Prepare plugin folder
       run: |

@@ -1,21 +1,23 @@
-name: Security and Quality Analysis
+name: Code Analysis
 
 on:
+  workflow_call:
+    outputs:
+      analysis_status:
+        description: "Status da análise"
+        value: ${{ jobs.summary.outputs.status }}
   pull_request:
-    types: [ closed ]
-    branches: [ dev ]  # Executa quando PR é feito PARA a branch dev
-env:
-  PHP_VERSION: "7.4"
+    branches:
+      - dev
 
+env:
+  PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
+  PHP_VERSION: "7.4"
+  
 jobs:
   codeql-analysis:
-    name: CodeQL Security Analysis
+    name: CodeQL Analysis
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release'
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
     steps:
       # Etapa de checkout de código
       - name: Checkout code
@@ -25,7 +27,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: javascript  # Analisa JS/TS do seu plugin
+          languages: javascript
 
       # Compilação do projeto (necessária apenas se houver compilação)
       - name: Autobuild
@@ -35,161 +37,54 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
 
-  php-security-analysis:
-    name: Psalm PHP Security & Code Quality Analysis
+  plugin-check:
+    name: Plugin Check
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release'
     steps:
-      # Etapa de checkout de código
       - name: Checkout code
         uses: actions/checkout@v3
-
-      # Setup PHP
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - name: Run composer install
+        uses: php-actions/composer@v6
         with:
-          php-version: ${{ env.PHP_VERSION }}
-          extensions: curl, zip, openssl
-          tools: composer
+          php_version: ${{ env.PHP_VERSION }}
+          working_dir: "."
+          args: --ignore-platform-reqs
+          command: install
+          dev: no
+      - name: Executar Plugin Check com configurações personalizadas
+        uses: wordpress/plugin-check-action@v1
+        with:
+          build-dir: './'
+          exclude-directories: 'node_modules,vendor,.eslintrc'
+          ignore-codes: |
+            WordPress.WP.I18n.TextDomainMismatch
+            WordPress.Security.NonceVerification.Missing
+            WordPress.Security.NonceVerification.Recommended
+            WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+            WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+            trademarked_term
+            textdomain_mismatch
+            hidden_files
+          categories: |
+            performance
+            accessibility
+            general
+            plugin_repo
+            security
+          strict: true
 
-      # Install dependencies
-      - name: Install Composer dependencies
-        run: composer install --no-dev --optimize-autoloader --ignore-platform-reqs
-
-      # PHP Security Analysis using Psalm (static analysis)
-      - name: Install Psalm for PHP Static Analysis
-        run: composer require --dev vimeo/psalm:^4.30 --ignore-platform-reqs
-
-      # Install WordPress stubs for Psalm
-      - name: Install WordPress stubs
-        run: composer require --dev php-stubs/wordpress-stubs --ignore-platform-reqs
-
-      # Create Psalm configuration
-      - name: Create Psalm Config
-        run: |
-          cat > psalm.xml << EOF
-          <?xml version="1.0"?>
-          <psalm
-              errorLevel="4"
-              resolveFromConfigFile="true"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xmlns="https://getpsalm.org/schema/config"
-              xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
-          >
-              <projectFiles>
-                  <directory name="Admin" />
-                  <directory name="Includes" />
-                  <directory name="Public" />
-                  <file name="wc-better-shipping-calculator-for-brazil.php" />
-                  <ignoreFiles>
-                      <directory name="vendor" />
-                  </ignoreFiles>
-              </projectFiles>
-              <stubs>
-                  <file name="vendor/php-stubs/wordpress-stubs/wordpress-stubs.php" />
-              </stubs>
-              <issueHandlers>
-                  <MissingFile errorLevel="suppress"/>
-                  <UndefinedFunction errorLevel="suppress"/>
-                  <UndefinedClass errorLevel="suppress"/>
-                  <UndefinedConstant errorLevel="suppress"/>
-                  <UndefinedGlobalVariable errorLevel="suppress"/>
-              </issueHandlers>
-          </psalm>
-          EOF
-
-      # Run Psalm Static Analysis
-      - name: Run Psalm PHP Static Analysis
-        run: ./vendor/bin/psalm --output-format=github --show-info=false --no-progress
-        continue-on-error: true
-
-  plugin-quality-check:
-    name: WordPress Plugin Quality Check
+  summary:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release'
-    needs: [codeql-analysis, php-security-analysis]  # Executa após ambas análises passarem
-    steps:
-    - uses: actions/checkout@v3
-
-    # Run composer install and generate vendor
-    - name: Run composer install
-      uses: php-actions/composer@v6
-      with:
-        php_version: ${{ env.PHP_VERSION }}
-        working_dir: "."
-        args: --ignore-platform-reqs
-        command: install
-        dev: no
-
-    - name: Executar Plugin Check com configurações personalizadas
-      uses: wordpress/plugin-check-action@v1
-      with:
-        build-dir: './'
-        exclude-directories: 'node_modules,vendor,.eslintrc'
-        ignore-codes: |
-          WordPress.WP.I18n.TextDomainMismatch
-          WordPress.Security.NonceVerification.Missing
-          WordPress.Security.NonceVerification.Recommended
-          WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-          WordPress.DB.SlowDBQuery.slow_db_query_meta_value
-          trademarked_term
-          textdomain_mismatch
-          hidden_files
-        categories: |
-          performance
-          accessibility
-          general
-          plugin_repo
-          security
-        strict: true
-
-  analysis-summary:
-    name: Analysis Summary
-    runs-on: ubuntu-latest
-    needs: [codeql-analysis, php-security-analysis, plugin-quality-check]
+    needs: [codeql-analysis, plugin-check]
     if: always()
+    outputs:
+      status: ${{ steps.check.outputs.status }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Check Analysis Results
-      run: |
-        echo "🔍 Analysis Summary:"
-        echo "CodeQL Analysis: ${{ needs.codeql-analysis.result }}"
-        echo "PHP Security Analysis: ${{ needs.php-security-analysis.result }}"
-        echo "Plugin Quality Check: ${{ needs.plugin-quality-check.result }}"
-        
-        if [[ "${{ needs.codeql-analysis.result }}" == "success" && "${{ needs.php-security-analysis.result }}" == "success" && "${{ needs.plugin-quality-check.result }}" == "success" ]]; then
-          echo "✅ All analyses passed! Pre-release workflow will be triggered."
-          echo "analysis_status=success" >> $GITHUB_OUTPUT
-        else
-          echo "❌ One or more analyses failed. Pre-release will not be triggered."
-          echo "analysis_status=failure" >> $GITHUB_OUTPUT
-          exit 1
-        fi
-      id: check-results
-
-    - name: Pre-release trigger confirmation
-      if: steps.check-results.outputs.analysis_status == 'success'
-      run: |
-        echo "🚀 Analysis completed successfully!"
-        echo "Pre-release workflow will be triggered via workflow_run or can be executed manually."
-    
-    # Create analysis success marker para triggering posterior
-    - name: Create Analysis Success Marker
-      if: steps.check-results.outputs.analysis_status == 'success'
-      run: |
-        mkdir -p .github/analysis-status
-        echo "success" > .github/analysis-status/latest.txt
-        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .github/analysis-status/timestamp.txt
-        echo "${{ github.sha }}" > .github/analysis-status/commit.txt
-    
-    # Commit analysis status
-    - name: Commit Analysis Status
-      if: steps.check-results.outputs.analysis_status == 'success'
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add .github/analysis-status/
-        git commit -m "Analysis completed successfully for ${{ github.sha }}" || exit 0
-        git push
+      - id: check
+        run: |
+          if [[ "${{ needs.codeql-analysis.result }}" == "success" && "${{ needs.plugin-check.result }}" == "success" ]]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            exit 1
+          fi

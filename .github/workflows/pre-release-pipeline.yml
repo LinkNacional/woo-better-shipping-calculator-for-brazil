@@ -1,0 +1,19 @@
+name: Pre-Release Pipeline
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - pre-release
+  workflow_dispatch:
+
+jobs:
+  analysis:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'pre-release' && github.event.pull_request.head.ref == 'dev'
+    uses: ./.github/workflows/analysis.yml
+    
+  pre-release:
+    needs: analysis
+    uses: ./.github/workflows/pre-release.yml
+    with:
+      analysis_status: ${{ needs.analysis.outputs.analysis_status }}
