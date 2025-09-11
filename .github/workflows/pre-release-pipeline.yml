@@ -67,6 +67,8 @@ jobs:
         echo "────────────────────────────────────────"
         echo "Análise de Segurança: ${{ needs.security-analysis.outputs.analysis_status || 'failed' }}"
         echo "Build Pre-Release: ${{ needs.pre-release-build.result || 'skipped' }}"
+        echo "🐛 Debug - Analysis Output: '${{ needs.security-analysis.outputs.analysis_status }}'"
+        echo "🐛 Debug - Build Condition Met: ${{ needs.security-analysis.outputs.analysis_status == 'success' }}"
         echo "────────────────────────────────────────"
         
         if [[ "${{ needs.security-analysis.outputs.analysis_status }}" == "success" ]]; then

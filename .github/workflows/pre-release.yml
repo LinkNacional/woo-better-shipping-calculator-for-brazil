@@ -45,6 +45,7 @@ jobs:
 
   release-generation:
     runs-on: ubuntu-latest
+    needs: check-analysis-success
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_call' && inputs.analysis_status == 'success')
@@ -52,7 +53,15 @@ jobs:
     - name: 🚀 Checkout Repository
       uses: actions/checkout@v4
       
-    - name: 🐘 Setup PHP
+    - name: � Debug Information
+      run: |
+        echo "🐛 Debugging Pre-Release Job"
+        echo "Event name: ${{ github.event_name }}"
+        echo "Analysis status input: ${{ inputs.analysis_status }}"
+        echo "Workflow call condition: ${{ github.event_name == 'workflow_call' && inputs.analysis_status == 'success' }}"
+        echo "Manual dispatch condition: ${{ github.event_name == 'workflow_dispatch' }}"
+      
+    - name: �🐘 Setup PHP
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ env.PHP_VERSION }}
