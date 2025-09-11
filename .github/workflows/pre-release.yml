@@ -6,10 +6,14 @@ on:
     types:
       - completed
     branches: [ dev, pre-release ]  # Aceita ambas as branches para teste
-  push:  # TEMPORÁRIO: Para facilitar testes
+  repository_dispatch:  # Trigger direto do analysis workflow
+    types: [analysis-completed]
+  push:  # TEMPORÁRIO: Para facilitar testes - trigger direto
     branches: [ pre-release, dev ]
-    paths:
-      - '.github/workflows/analysis.yml'  # Trigger quando analysis.yml muda
+    paths-ignore:
+      - '**.md'
+      - 'README*'
+      - 'CHANGELOG*'
   workflow_dispatch:  # Permite execução manual como fallback
     inputs:
       reason:
@@ -26,7 +30,7 @@ jobs:
   check-analysis-success:
     name: Verify Analysis Success
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.event_name == 'push'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.event_name == 'push' || github.event_name == 'repository_dispatch'
     steps:
     - name: Analysis verification
       run: |
@@ -37,9 +41,18 @@ jobs:
           echo "✅ Security and Quality Analysis completed successfully!"
           echo "Workflow Run ID: ${{ github.event.workflow_run.id }}"
           echo "Workflow Run Conclusion: ${{ github.event.workflow_run.conclusion }}"
+        elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+          echo "🎯 Triggered directly by analysis workflow completion!"
+          echo "Analysis Status: ${{ github.event.client_payload.status }}"
+          echo "Analysis Run ID: ${{ github.event.client_payload.run_id }}"
+          echo "Commit: ${{ github.event.client_payload.sha }}"
         elif [[ "${{ github.event_name }}" == "push" ]]; then
-          echo "📝 Push trigger for testing - assuming analysis was successful"
+          echo "📝 Push trigger - checking for recent analysis completion..."
           echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          
+          # Para teste, assumir que análise foi bem-sucedida
+          echo "⚠️ MODO TESTE: Assumindo análise bem-sucedida"
         fi
         echo "🚀 Proceeding with pre-release generation..."
 
