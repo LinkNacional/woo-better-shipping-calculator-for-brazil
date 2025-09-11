@@ -14,53 +14,62 @@ env:
   DEPLOY_TAG: "4.4.0-rc.1"
 
 jobs:
-  release:
+  release-build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: inputs.analysis_status == 'success' || github.event_name == 'workflow_dispatch'
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
+    - uses: actions/checkout@v3
+
+    # Run composer install and generate vendor
+    - name: Run composer install
+      uses: php-actions/composer@v6
       with:
-        php-version: ${{ env.PHP_VERSION }}
-    - run: composer install --no-dev --optimize-autoloader
-    - name: Build Plugin
+        php_version: ${{ env.PHP_VERSION }}
+        working_dir: "."
+        args: --ignore-platform-reqs
+        command: install
+        dev: no
+
+    # Add plugin files to a root directory
+    - name: Prepare plugin folder
       run: |
-        mkdir -p build
-        rsync -av --progress . build/${{ env.PLUGIN_NAME }}/ \
-          --exclude='.git' \
-          --exclude='.github' \
-          --exclude='node_modules' \
-          --exclude='build' \
-          --exclude='tests' \
-          --exclude='composer.lock' \
-          --exclude='package-lock.json' \
-          --exclude='webpack.*.js' \
-          --exclude='.gitignore' \
-          --exclude='phpunit.xml' \
-          --exclude='psalm.xml'
-        cd build
-        zip -r "${{ env.PLUGIN_NAME }}-${{ env.DEPLOY_TAG }}.zip" ${{ env.PLUGIN_NAME }}/
-    - name: Create Release
-      uses: actions/create-release@v1
-      id: create_release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        mkdir -p dist
+        mkdir -p build/${{ env.PLUGIN_NAME }}
+        mv ./Admin ./Includes ./languages ./Public *.php *.txt ./build/${{ env.PLUGIN_NAME }}
+        cp -r vendor build/${{ env.PLUGIN_NAME }}/vendor
+        find ./build -type f -exec chmod 0644 {} +
+        find ./build -type d -exec chmod 0755 {} +
+
+    - name: Archive Release
+      uses: thedoctor0/zip-release@master
       with:
-        tag_name: ${{ env.DEPLOY_TAG }}
-        release_name: "Release Candidate ${{ env.DEPLOY_TAG }}"
-        body: |
-          Release Candidate ${{ env.DEPLOY_TAG }}
-          
-          Security and quality checks passed.
-        draft: false
-        prerelease: true
-    - name: Upload Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        type: 'zip'
+        path: '.'
+        directory: 'build'
+        filename: '${{ env.PLUGIN_NAME }}.zip'
+        exclusions: '*.git* /*node_modules/* .editorconfig'
+
+    - name: Move .zip to custom location
+      run: |
+        mv ./build/${{ env.PLUGIN_NAME }}.zip ./dist/
+
+    # Update version tag
+    - name: Bump version and push tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.0
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/${{ env.PLUGIN_NAME }}-${{ env.DEPLOY_TAG }}.zip
-        asset_name: ${{ env.PLUGIN_NAME }}-${{ env.DEPLOY_TAG }}.zip
-        asset_content_type: application/zip
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        custom_tag: ${{ env.DEPLOY_TAG }}
+
+    # Generate new release
+    - name: Generate new Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "dist/${{ env.PLUGIN_NAME }}.zip"
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit: "main"
+        draft: true
+        tag: ${{ steps.tag_version.outputs.new_tag }}
+        name: Release ${{ steps.tag_version.outputs.new_tag }}
