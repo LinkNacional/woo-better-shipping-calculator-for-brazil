@@ -24,20 +24,10 @@ jobs:
   check-analysis-success:
     name: Verify Analysis Success
     runs-on: ubuntu-latest
-    # Só executa se for manual OU se o workflow_run foi bem-sucedido OU se chamado via workflow_call
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_call' && inputs.analysis_status == 'success')
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_call' && inputs.analysis_status == 'success')
     steps:
-    - name: Download analysis artifact (if available)
-      if: github.event_name == 'workflow_run'
-      uses: actions/download-artifact@v4
-      with:
-        name: analysis-success-${{ github.event.workflow_run.head_sha }}
-        path: analysis-results/
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        repository: ${{ github.repository }}
-        run-id: ${{ github.event.workflow_run.id }}
-      continue-on-error: true
-      
     - name: Analysis verification
       run: |
         if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
@@ -59,3 +49,91 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_call' && inputs.analysis_status == 'success')
     steps:
+    - name: 🚀 Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 🐘 Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ env.PHP_VERSION }}
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, mysql, pdo_mysql
+        
+    - name: 📦 Install Composer dependencies
+      run: composer install --no-dev --optimize-autoloader
+      
+    - name: 🏗️ Build Plugin Archive
+      run: |
+        echo "🏗️ Creating plugin archive..."
+        
+        # Create build directory
+        mkdir -p build
+        
+        # Copy plugin files (exclude development files)
+        rsync -av --progress . build/${{ env.PLUGIN_NAME }}/ \
+          --exclude='.git' \
+          --exclude='.github' \
+          --exclude='node_modules' \
+          --exclude='build' \
+          --exclude='tests' \
+          --exclude='.phpunit.result.cache' \
+          --exclude='composer.lock' \
+          --exclude='package-lock.json' \
+          --exclude='webpack.*.js' \
+          --exclude='src/' \
+          --exclude='.gitignore' \
+          --exclude='.editorconfig' \
+          --exclude='phpunit.xml' \
+          --exclude='psalm.xml'
+        
+        # Create ZIP archive
+        cd build
+        zip -r "${{ env.PLUGIN_NAME }}-${{ env.DEPLOY_TAG }}.zip" ${{ env.PLUGIN_NAME }}/
+        
+        echo "📦 Archive created: ${{ env.PLUGIN_NAME }}-${{ env.DEPLOY_TAG }}.zip"
+        ls -la *.zip
+        
+    - name: 🏷️ Create Release
+      uses: actions/create-release@v1
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.DEPLOY_TAG }}
+        release_name: "Release Candidate ${{ env.DEPLOY_TAG }}"
+        body: |
+          🚀 **Release Candidate ${{ env.DEPLOY_TAG }}**
+          
+          ✅ **Análises de Segurança e Qualidade:** Aprovadas
+          📦 **Plugin WordPress:** Pronto para testes
+          
+          ### 🔍 Verificações Realizadas:
+          - CodeQL Security Analysis
+          - PHP Static Analysis (Psalm)
+          - WordPress Plugin Check
+          
+          ### 📥 Instalação:
+          1. Baixe o arquivo `${{ env.PLUGIN_NAME }}-${{ env.DEPLOY_TAG }}.zip`
+          2. Faça upload via WordPress Admin → Plugins → Adicionar Novo → Enviar Plugin
+          3. Ative o plugin
+          
+          ### ⚠️ Aviso:
+          Esta é uma versão **Release Candidate** para testes. Use apenas em ambientes de desenvolvimento ou staging.
+        draft: false
+        prerelease: true
+        
+    - name: 📤 Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./build/${{ env.PLUGIN_NAME }}-${{ env.DEPLOY_TAG }}.zip
+        asset_name: ${{ env.PLUGIN_NAME }}-${{ env.DEPLOY_TAG }}.zip
+        asset_content_type: application/zip
+        
+    - name: 🎉 Release Summary
+      run: |
+        echo "🎉 Pre-Release criado com sucesso!"
+        echo "📦 Versão: ${{ env.DEPLOY_TAG }}"
+        echo "🔗 Release: ${{ steps.create_release.outputs.html_url }}"
+        echo "📁 Arquivo: ${{ env.PLUGIN_NAME }}-${{ env.DEPLOY_TAG }}.zip"
