@@ -10,6 +10,10 @@ on:
     branches:
       - dev
 
+env:
+  PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
+  PHP_VERSION: "7.4"
+  
 jobs:
   codeql-analysis:
     name: CodeQL Analysis
@@ -39,6 +43,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Run composer install
+        uses: php-actions/composer@v6
+        with:
+          php_version: ${{ env.PHP_VERSION }}
+          working_dir: "."
+          args: --ignore-platform-reqs
+          command: install
+          dev: no
       - name: Executar Plugin Check com configurações personalizadas
         uses: wordpress/plugin-check-action@v1
         with:
