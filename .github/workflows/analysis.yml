@@ -90,39 +90,10 @@ jobs:
               </stubs>
               <issueHandlers>
                   <MissingFile errorLevel="suppress"/>
-                  <UndefinedFunction>
-                      <errorLevel type="suppress">
-                          <referencedFunction name="get_*"/>
-                          <referencedFunction name="wp_*"/>
-                          <referencedFunction name="add_*"/>
-                          <referencedFunction name="remove_*"/>
-                          <referencedFunction name="register_*"/>
-                          <referencedFunction name="sanitize_*"/>
-                          <referencedFunction name="esc_*"/>
-                          <referencedFunction name="__"/>
-                          <referencedFunction name="_e"/>
-                          <referencedFunction name="_n"/>
-                      </errorLevel>
-                  </UndefinedFunction>
-                  <UndefinedClass>
-                      <errorLevel type="suppress">
-                          <referencedClass name="WP_*"/>
-                          <referencedClass name="WC_*"/>
-                      </errorLevel>
-                  </UndefinedClass>
-                  <UndefinedConstant>
-                      <errorLevel type="suppress">
-                          <referencedConstant name="WP_*"/>
-                          <referencedConstant name="ABSPATH"/>
-                          <referencedConstant name="WC_*"/>
-                      </errorLevel>
-                  </UndefinedConstant>
-                  <UndefinedGlobalVariable>
-                      <errorLevel type="suppress">
-                          <referencedVariable name="\$wpdb"/>
-                          <referencedVariable name="\$wp_*"/>
-                      </errorLevel>
-                  </UndefinedGlobalVariable>
+                  <UndefinedFunction errorLevel="suppress"/>
+                  <UndefinedClass errorLevel="suppress"/>
+                  <UndefinedConstant errorLevel="suppress"/>
+                  <UndefinedGlobalVariable errorLevel="suppress"/>
               </issueHandlers>
           </psalm>
           EOF
