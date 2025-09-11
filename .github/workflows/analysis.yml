@@ -6,9 +6,6 @@ on:
       analysis_status:
         description: "Status da análise"
         value: ${{ jobs.summary.outputs.status }}
-  pull_request:
-    branches:
-      - dev
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
