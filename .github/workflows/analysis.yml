@@ -23,7 +23,7 @@ jobs:
     steps:
       # Etapa de checkout de código
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Configuração do CodeQL
       - name: Initialize CodeQL
@@ -46,7 +46,7 @@ jobs:
     steps:
       # Etapa de checkout de código
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Setup PHP
       - name: Setup PHP
@@ -113,7 +113,7 @@ jobs:
     if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/pre-release'))
     needs: [codeql-analysis, php-security-analysis]  # Executa após ambas análises passarem
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     # Run composer install and generate vendor
     - name: Run composer install
@@ -154,7 +154,7 @@ jobs:
     if: always()
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Check Analysis Results
       run: |
@@ -192,7 +192,7 @@ jobs:
     # Upload analysis results as artifact
     - name: Upload Analysis Results
       if: steps.check-results.outputs.analysis_status == 'success'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: analysis-success-${{ github.sha }}
         path: analysis-results/
