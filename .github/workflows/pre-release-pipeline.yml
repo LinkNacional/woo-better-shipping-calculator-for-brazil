@@ -65,10 +65,15 @@ jobs:
         echo "Versão: ${{ env.PLUGIN_VERSION }}"
         echo "Commit: ${{ github.sha }}"
         echo "────────────────────────────────────────"
+        echo "🐛 DEBUG - Outputs do Analysis:"
+        echo "  - analysis_status: '${{ needs.security-analysis.outputs.analysis_status }}'"
+        echo "  - tipo: '${{ type(needs.security-analysis.outputs.analysis_status) }}'"
+        echo "🐛 DEBUG - Resultados dos Jobs:"
+        echo "  - security-analysis.result: '${{ needs.security-analysis.result }}'"
+        echo "  - pre-release-build.result: '${{ needs.pre-release-build.result }}'"
+        echo "────────────────────────────────────────"
         echo "Análise de Segurança: ${{ needs.security-analysis.outputs.analysis_status || 'failed' }}"
         echo "Build Pre-Release: ${{ needs.pre-release-build.result || 'skipped' }}"
-        echo "🐛 Debug - Analysis Output: '${{ needs.security-analysis.outputs.analysis_status }}'"
-        echo "🐛 Debug - Build Condition Met: ${{ needs.security-analysis.outputs.analysis_status == 'success' }}"
         echo "────────────────────────────────────────"
         
         if [[ "${{ needs.security-analysis.outputs.analysis_status }}" == "success" ]]; then
