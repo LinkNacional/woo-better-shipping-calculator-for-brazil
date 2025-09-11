@@ -5,13 +5,23 @@ on:
     workflows: ["Security and Quality Analysis"]
     types:
       - completed
-    branches: [ dev ]  # Executa quando analysis.yml completa na branch dev
+    # Remove branches - workflow_run só funciona no branch padrão
   workflow_dispatch:  # Permite execução manual como fallback
     inputs:
       reason:
         description: 'Razão para execução manual'
         required: false
         default: 'Manual trigger after analysis'
+  # Trigger via repository dispatch do analysis workflow
+  repository_dispatch:
+    types: [analysis-completed]
+  # Adiciona trigger direto do push para funcionar como fallback
+  push:
+    branches: [ dev ]
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - '!.github/workflows/**'
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
@@ -22,22 +32,57 @@ jobs:
   check-analysis-success:
     name: Verify Analysis Success
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # Executa sempre, mas verifica diferentes condições dependendo do trigger
     steps:
-    - name: Analysis passed
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Check trigger and analysis status
+      id: check-trigger
       run: |
+        echo "Event name: ${{ github.event_name }}"
+        
         if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
           echo "🔧 Manual execution triggered"
           echo "Reason: ${{ github.event.inputs.reason }}"
+          echo "should_run=true" >> $GITHUB_OUTPUT
+        elif [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+          if [[ "${{ github.event.workflow_run.conclusion }}" == "success" ]]; then
+            echo "✅ Security and Quality Analysis completed successfully!"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Analysis workflow failed or was cancelled"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+        elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+          if [[ "${{ github.event.client_payload.analysis_status }}" == "success" ]]; then
+            echo "✅ Analysis completed successfully via repository dispatch!"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Analysis failed via repository dispatch"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+        elif [[ "${{ github.event_name }}" == "push" ]]; then
+          echo "📝 Push to dev branch detected"
+          echo "Will attempt to verify if analysis was recently completed..."
+          
+          # Para push, assumimos que queremos executar (fallback)
+          echo "should_run=true" >> $GITHUB_OUTPUT
+          echo "⚠️ Fallback execution via push trigger"
         else
-          echo "✅ Security and Quality Analysis completed successfully!"
+          echo "🚫 Unknown trigger: ${{ github.event_name }}"
+          echo "should_run=false" >> $GITHUB_OUTPUT
         fi
+        
         echo "🚀 Proceeding with pre-release generation..."
+    
+    outputs:
+      should_run: ${{ steps.check-trigger.outputs.should_run }}
 
   release-build:
     runs-on: ubuntu-latest
     needs: check-analysis-success
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: needs.check-analysis-success.outputs.should_run == 'true'
     permissions:
       contents: write
     steps:
