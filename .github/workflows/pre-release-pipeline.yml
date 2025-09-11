@@ -67,7 +67,7 @@ jobs:
         echo "────────────────────────────────────────"
         echo "🐛 DEBUG - Outputs do Analysis:"
         echo "  - analysis_status: '${{ needs.security-analysis.outputs.analysis_status }}'"
-        echo "  - tipo: '${{ type(needs.security-analysis.outputs.analysis_status) }}'"
+        echo "  - análise vazia?: ${{ needs.security-analysis.outputs.analysis_status == '' }}"
         echo "🐛 DEBUG - Resultados dos Jobs:"
         echo "  - security-analysis.result: '${{ needs.security-analysis.result }}'"
         echo "  - pre-release-build.result: '${{ needs.pre-release-build.result }}'"
