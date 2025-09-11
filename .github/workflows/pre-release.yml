@@ -5,23 +5,17 @@ on:
     workflows: ["Security and Quality Analysis"]
     types:
       - completed
-    # Remove branches - workflow_run só funciona no branch padrão
+    branches: [ dev ]  # Voltando a especificar branch
+  push:
+    branches: [ dev ]
+    paths:
+      - '.github/analysis-status/**'  # Trigger quando analysis status é atualizado
   workflow_dispatch:  # Permite execução manual como fallback
     inputs:
       reason:
         description: 'Razão para execução manual'
         required: false
         default: 'Manual trigger after analysis'
-  # Trigger via repository dispatch do analysis workflow
-  repository_dispatch:
-    types: [analysis-completed]
-  # Adiciona trigger direto do push para funcionar como fallback
-  push:
-    branches: [ dev ]
-    paths-ignore:
-      - '**.md'
-      - '.github/**'
-      - '!.github/workflows/**'
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
@@ -32,13 +26,12 @@ jobs:
   check-analysis-success:
     name: Verify Analysis Success
     runs-on: ubuntu-latest
-    # Executa sempre, mas verifica diferentes condições dependendo do trigger
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
       
-    - name: Check trigger and analysis status
-      id: check-trigger
+    - name: Check analysis status
+      id: check-analysis
       run: |
         echo "Event name: ${{ github.event_name }}"
         
@@ -48,36 +41,40 @@ jobs:
           echo "should_run=true" >> $GITHUB_OUTPUT
         elif [[ "${{ github.event_name }}" == "workflow_run" ]]; then
           if [[ "${{ github.event.workflow_run.conclusion }}" == "success" ]]; then
-            echo "✅ Security and Quality Analysis completed successfully!"
+            echo "✅ Security and Quality Analysis completed successfully via workflow_run!"
             echo "should_run=true" >> $GITHUB_OUTPUT
           else
             echo "❌ Analysis workflow failed or was cancelled"
             echo "should_run=false" >> $GITHUB_OUTPUT
           fi
-        elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
-          if [[ "${{ github.event.client_payload.analysis_status }}" == "success" ]]; then
-            echo "✅ Analysis completed successfully via repository dispatch!"
-            echo "should_run=true" >> $GITHUB_OUTPUT
+        elif [[ "${{ github.event_name }}" == "push" ]]; then
+          # Verifica se existe arquivo de status de análise bem-sucedida
+          if [[ -f ".github/analysis-status/latest.txt" ]]; then
+            STATUS=$(cat .github/analysis-status/latest.txt)
+            if [[ "$STATUS" == "success" ]]; then
+              echo "✅ Analysis status file indicates success!"
+              if [[ -f ".github/analysis-status/timestamp.txt" ]]; then
+                TIMESTAMP=$(cat .github/analysis-status/timestamp.txt)
+                echo "Analysis completed at: $TIMESTAMP"
+              fi
+              echo "should_run=true" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Analysis status file indicates failure"
+              echo "should_run=false" >> $GITHUB_OUTPUT
+            fi
           else
-            echo "❌ Analysis failed via repository dispatch"
+            echo "⚠️ No analysis status file found"
             echo "should_run=false" >> $GITHUB_OUTPUT
           fi
-        elif [[ "${{ github.event_name }}" == "push" ]]; then
-          echo "📝 Push to dev branch detected"
-          echo "Will attempt to verify if analysis was recently completed..."
-          
-          # Para push, assumimos que queremos executar (fallback)
-          echo "should_run=true" >> $GITHUB_OUTPUT
-          echo "⚠️ Fallback execution via push trigger"
         else
-          echo "🚫 Unknown trigger: ${{ github.event_name }}"
+          echo "� Unknown trigger: ${{ github.event_name }}"
           echo "should_run=false" >> $GITHUB_OUTPUT
         fi
         
-        echo "🚀 Proceeding with pre-release generation..."
+        echo "🚀 Analysis verification completed."
     
     outputs:
-      should_run: ${{ steps.check-trigger.outputs.should_run }}
+      should_run: ${{ steps.check-analysis.outputs.should_run }}
 
   release-build:
     runs-on: ubuntu-latest
