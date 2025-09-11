@@ -173,13 +173,23 @@ jobs:
       if: steps.check-results.outputs.analysis_status == 'success'
       run: |
         echo "🚀 Analysis completed successfully!"
-        echo "The pre-release workflow should be triggered automatically via workflow_run."
+        echo "Pre-release workflow will be triggered via workflow_run or can be executed manually."
     
-    # Trigger pre-release workflow via repository dispatch como fallback
-    - name: Trigger Pre-release Workflow
+    # Create analysis success marker para triggering posterior
+    - name: Create Analysis Success Marker
       if: steps.check-results.outputs.analysis_status == 'success'
-      uses: peter-evans/repository-dispatch@v2
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        event-type: analysis-completed
-        client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}", "analysis_status": "success"}'
+      run: |
+        mkdir -p .github/analysis-status
+        echo "success" > .github/analysis-status/latest.txt
+        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .github/analysis-status/timestamp.txt
+        echo "${{ github.sha }}" > .github/analysis-status/commit.txt
+    
+    # Commit analysis status
+    - name: Commit Analysis Status
+      if: steps.check-results.outputs.analysis_status == 'success'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .github/analysis-status/
+        git commit -m "Analysis completed successfully for ${{ github.sha }}" || exit 0
+        git push
