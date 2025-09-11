@@ -49,55 +49,6 @@ jobs:
     uses: ./.github/workflows/pre-release.yml
     with:
       analysis_status: ${{ needs.security-analysis.outputs.analysis_status }}
-on:
-  push:
-    branches: ["pre-release"]
-    paths:
-      - "**.php"
-      - "**.js"
-      - ".github/workflows/**"
-      - "composer.json"
-      - "package.json"
-      - "readme.txt"
-      - "README.md"
-      - "CHANGELOG.md"
-  pull_request:
-    branches: ["pre-release"]
-    paths:
-      - "**.php"
-      - "**.js"
-      - ".github/workflows/**"
-      - "composer.json"
-      - "package.json"
-      - "readme.txt"
-      - "README.md"
-      - "CHANGELOG.md"
-  workflow_dispatch:
-    inputs:
-      reason:
-        description: "Razão para execução manual do pipeline de pre-release"
-        required: false
-        default: "Execução manual do pipeline de pre-release"
-
-env:
-  PLUGIN_VERSION: "4.4.0-rc.1"
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-jobs:
-  security-analysis:
-    name: � Security and Quality Analysis
-    uses: ./.github/workflows/analysis.yml
-    
-  pre-release:
-    name: 📦 Pre-Release Generation
-    needs: security-analysis
-    if: needs.security-analysis.outputs.analysis_status == 'success'
-    uses: ./.github/workflows/pre-release.yml
-    with:
-      analysis_status: ${{ needs.security-analysis.outputs.analysis_status }}
       
   pipeline-summary:
     name: 📊 Relatório do Pipeline
