@@ -74,7 +74,7 @@ jobs:
               resolveFromConfigFile="true"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
               xmlns="https://getpsalm.org/schema/config"
-              xsi:schemaLocation="https://getpsalm.org/schema/config vendor/psalm/psalm/config.xsd"
+              xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
           >
               <projectFiles>
                   <directory name="Admin" />
@@ -97,13 +97,10 @@ jobs:
                           <referencedFunction name="add_*"/>
                           <referencedFunction name="remove_*"/>
                           <referencedFunction name="register_*"/>
-                          <referencedFunction name="is_*"/>
-                          <referencedFunction name="current_*"/>
                           <referencedFunction name="sanitize_*"/>
                           <referencedFunction name="esc_*"/>
                           <referencedFunction name="__"/>
                           <referencedFunction name="_e"/>
-                          <referencedFunction name="_x"/>
                           <referencedFunction name="_n"/>
                       </errorLevel>
                   </UndefinedFunction>
@@ -122,8 +119,8 @@ jobs:
                   </UndefinedConstant>
                   <UndefinedGlobalVariable>
                       <errorLevel type="suppress">
-                          <referencedVariable name="wpdb"/>
-                          <referencedVariable name="wp_*"/>
+                          <referencedVariable name="\$wpdb"/>
+                          <referencedVariable name="\$wp_*"/>
                       </errorLevel>
                   </UndefinedGlobalVariable>
               </issueHandlers>
@@ -181,6 +178,9 @@ jobs:
     needs: [codeql-analysis, php-security-analysis, plugin-quality-check]
     if: always()
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
     - name: Check Analysis Results
       run: |
         echo "🔍 Analysis Summary:"
@@ -196,3 +196,10 @@ jobs:
           echo "analysis_status=failure" >> $GITHUB_OUTPUT
           exit 1
         fi
+      id: check-results
+
+    - name: Pre-release trigger confirmation
+      if: steps.check-results.outputs.analysis_status == 'success'
+      run: |
+        echo "🚀 Analysis completed successfully!"
+        echo "The pre-release workflow should be triggered automatically via workflow_run."
