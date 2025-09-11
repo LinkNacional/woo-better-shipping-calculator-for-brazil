@@ -6,15 +6,12 @@ on:
     types:
       - completed
     branches: [ dev, pre-release ]  # Aceita ambas as branches para teste
-  repository_dispatch:  # Trigger direto do analysis workflow
-    types: [analysis-completed]
-  push:  # TEMPORÁRIO: Para facilitar testes - trigger direto
-    branches: [ pre-release, dev ]
-    paths-ignore:
-      - '**.md'
-      - 'README*'
-      - 'CHANGELOG*'
   workflow_dispatch:  # Permite execução manual como fallback
+    inputs:
+      reason:
+        description: 'Razão para execução manual'
+        required: false
+        default: 'Manual trigger after analysis'
     inputs:
       reason:
         description: 'Razão para execução manual'
@@ -30,31 +27,44 @@ jobs:
   check-analysis-success:
     name: Verify Analysis Success
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.event_name == 'push' || github.event_name == 'repository_dispatch'
+    # Só executa se for manual OU se o workflow_run foi bem-sucedido
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     steps:
+    - name: Download analysis artifact (if available)
+      if: github.event_name == 'workflow_run'
+      uses: actions/download-artifact@v4
+      with:
+        name: analysis-success-${{ github.event.workflow_run.head_sha }}
+        path: analysis-results/
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        repository: ${{ github.repository }}
+        run-id: ${{ github.event.workflow_run.id }}
+      continue-on-error: true
+      
     - name: Analysis verification
       run: |
         if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
           echo "🔧 Manual execution triggered"
           echo "Reason: ${{ github.event.inputs.reason }}"
         elif [[ "${{ github.event_name }}" == "workflow_run" ]]; then
-          echo "✅ Security and Quality Analysis completed successfully!"
+          echo "✅ Triggered by workflow_run: Security and Quality Analysis"
           echo "Workflow Run ID: ${{ github.event.workflow_run.id }}"
           echo "Workflow Run Conclusion: ${{ github.event.workflow_run.conclusion }}"
-        elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
-          echo "🎯 Triggered directly by analysis workflow completion!"
-          echo "Analysis Status: ${{ github.event.client_payload.status }}"
-          echo "Analysis Run ID: ${{ github.event.client_payload.run_id }}"
-          echo "Commit: ${{ github.event.client_payload.sha }}"
-        elif [[ "${{ github.event_name }}" == "push" ]]; then
-          echo "📝 Push trigger - checking for recent analysis completion..."
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Commit: ${{ github.sha }}"
+          echo "Head SHA: ${{ github.event.workflow_run.head_sha }}"
           
-          # Para teste, assumir que análise foi bem-sucedida
-          echo "⚠️ MODO TESTE: Assumindo análise bem-sucedida"
+          # Verifica se o artifact existe
+          if [[ -f "analysis-results/status.txt" ]]; then
+            STATUS=$(cat analysis-results/status.txt)
+            echo "Analysis artifact status: $STATUS"
+            if [[ "$STATUS" != "success" ]]; then
+              echo "❌ Analysis artifact indicates failure - stopping"
+              exit 1
+            fi
+          else
+            echo "⚠️ No analysis artifact found - proceeding based on workflow_run.conclusion"
+          fi
         fi
-        echo "🚀 Proceeding with pre-release generation..."
+        echo "🚀 All checks passed - proceeding with pre-release generation..."
 
   release-build:
     runs-on: ubuntu-latest
