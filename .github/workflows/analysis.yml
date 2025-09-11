@@ -174,3 +174,12 @@ jobs:
       run: |
         echo "🚀 Analysis completed successfully!"
         echo "The pre-release workflow should be triggered automatically via workflow_run."
+    
+    # Trigger pre-release workflow via repository dispatch como fallback
+    - name: Trigger Pre-release Workflow
+      if: steps.check-results.outputs.analysis_status == 'success'
+      uses: peter-evans/repository-dispatch@v2
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        event-type: analysis-completed
+        client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}", "analysis_status": "success"}'
