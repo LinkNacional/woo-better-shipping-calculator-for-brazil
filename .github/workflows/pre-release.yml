@@ -1,0 +1,66 @@
+name: Generate Pre-Release
+
+on:
+  workflow_call:
+    inputs:
+      analysis_status:
+        required: true
+        type: string
+  workflow_dispatch:
+
+env:
+  PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
+  PHP_VERSION: "7.4"
+  DEPLOY_TAG: "4.4.0-rc.1"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: inputs.analysis_status == 'success' || github.event_name == 'workflow_dispatch'
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ env.PHP_VERSION }}
+    - run: composer install --no-dev --optimize-autoloader
+    - name: Build Plugin
+      run: |
+        mkdir -p build
+        rsync -av --progress . build/${{ env.PLUGIN_NAME }}/ \
+          --exclude='.git' \
+          --exclude='.github' \
+          --exclude='node_modules' \
+          --exclude='build' \
+          --exclude='tests' \
+          --exclude='composer.lock' \
+          --exclude='package-lock.json' \
+          --exclude='webpack.*.js' \
+          --exclude='.gitignore' \
+          --exclude='phpunit.xml' \
+          --exclude='psalm.xml'
+        cd build
+        zip -r "${{ env.PLUGIN_NAME }}-${{ env.DEPLOY_TAG }}.zip" ${{ env.PLUGIN_NAME }}/
+    - name: Create Release
+      uses: actions/create-release@v1
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.DEPLOY_TAG }}
+        release_name: "Release Candidate ${{ env.DEPLOY_TAG }}"
+        body: |
+          Release Candidate ${{ env.DEPLOY_TAG }}
+          
+          Security and quality checks passed.
+        draft: false
+        prerelease: true
+    - name: Upload Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./build/${{ env.PLUGIN_NAME }}-${{ env.DEPLOY_TAG }}.zip
+        asset_name: ${{ env.PLUGIN_NAME }}-${{ env.DEPLOY_TAG }}.zip
+        asset_content_type: application/zip

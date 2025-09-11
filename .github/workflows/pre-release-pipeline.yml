@@ -1,0 +1,16 @@
+name: Pre-Release Pipeline
+
+on:
+  push:
+    branches: [ pre-release ]
+  workflow_dispatch:
+
+jobs:
+  analysis:
+    uses: ./.github/workflows/analysis.yml
+    
+  pre-release:
+    needs: analysis
+    uses: ./.github/workflows/pre-release.yml
+    with:
+      analysis_status: ${{ needs.analysis.outputs.analysis_status }}
