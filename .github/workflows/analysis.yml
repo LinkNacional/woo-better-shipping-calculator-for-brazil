@@ -32,25 +32,8 @@ jobs:
           php-version: ${{ env.PHP_VERSION }}
           tools: composer
       - run: composer install --no-dev --optimize-autoloader --ignore-platform-reqs
-      - run: composer require --dev vimeo/psalm:^4.30 php-stubs/wordpress-stubs --ignore-platform-reqs
-      - name: Create Psalm Config
-        run: |
-          cat > psalm.xml << 'EOF'
-          <?xml version="1.0"?>
-          <psalm errorLevel="4">
-              <projectFiles>
-                  <directory name="Admin" />
-                  <directory name="Includes" />
-                  <directory name="Public" />
-                  <file name="wc-better-shipping-calculator-for-brazil.php" />
-                  <ignoreFiles><directory name="vendor" /></ignoreFiles>
-              </projectFiles>
-              <stubs>
-                  <file name="vendor/php-stubs/wordpress-stubs/wordpress-stubs.php" />
-              </stubs>
-          </psalm>
-          EOF
-      - run: ./vendor/bin/psalm --no-progress
+      - run: composer require --dev vimeo/psalm:^4.30 php-stubs/wordpress-stubs php-stubs/woocommerce-stubs --ignore-platform-reqs
+      - run: ./vendor/bin/psalm --no-progress --clear-cache
 
   plugin-check:
     runs-on: ubuntu-latest
