@@ -6,6 +6,12 @@ on:
     types:
       - completed
     branches: [ dev ]  # Executa quando analysis.yml completa na branch dev
+  workflow_dispatch:  # Permite execução manual como fallback
+    inputs:
+      reason:
+        description: 'Razão para execução manual'
+        required: false
+        default: 'Manual trigger after analysis'
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
@@ -16,17 +22,22 @@ jobs:
   check-analysis-success:
     name: Verify Analysis Success
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     steps:
     - name: Analysis passed
       run: |
-        echo "✅ Security and Quality Analysis completed successfully!"
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          echo "🔧 Manual execution triggered"
+          echo "Reason: ${{ github.event.inputs.reason }}"
+        else
+          echo "✅ Security and Quality Analysis completed successfully!"
+        fi
         echo "🚀 Proceeding with pre-release generation..."
 
   release-build:
     runs-on: ubuntu-latest
     needs: check-analysis-success
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: write
     steps:
