@@ -6,7 +6,7 @@ on:
     types: [ closed ]
     branches: [ dev ]  # Executa quando PR é feito PARA a branch dev
   push:  # TEMPORÁRIO: Para facilitar testes sem abrir PR
-    branches: [ dev ]
+    branches: [ pre-release ]
 
 env:
   PHP_VERSION: "7.4"
