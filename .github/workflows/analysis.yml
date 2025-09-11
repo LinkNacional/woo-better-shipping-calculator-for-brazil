@@ -6,7 +6,7 @@ on:
     types: [ closed ]
     branches: [ dev ]  # Executa quando PR é feito PARA a branch dev
   push:  # TEMPORÁRIO: Para facilitar testes sem abrir PR
-    branches: [ pre-release ]
+    branches: [ pre-release, dev ]
 
 env:
   PHP_VERSION: "7.4"
@@ -15,7 +15,7 @@ jobs:
   codeql-analysis:
     name: CodeQL Security Analysis
     runs-on: ubuntu-latest
-    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && github.ref == 'refs/heads/dev')
+    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/pre-release'))
     permissions:
       actions: read
       contents: read
@@ -42,7 +42,7 @@ jobs:
   php-security-analysis:
     name: Psalm PHP Security & Code Quality Analysis
     runs-on: ubuntu-latest
-    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && github.ref == 'refs/heads/dev')
+    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/pre-release'))
     steps:
       # Etapa de checkout de código
       - name: Checkout code
@@ -110,7 +110,7 @@ jobs:
   plugin-quality-check:
     name: WordPress Plugin Quality Check
     runs-on: ubuntu-latest
-    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && github.ref == 'refs/heads/dev')
+    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/pre-release'))
     needs: [codeql-analysis, php-security-analysis]  # Executa após ambas análises passarem
     steps:
     - uses: actions/checkout@v3
