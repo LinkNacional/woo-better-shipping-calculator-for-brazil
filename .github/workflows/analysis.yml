@@ -1,9 +1,13 @@
 name: Security and Quality Analysis
 
+# NOTA: Push trigger é TEMPORÁRIO para testes - remover após validação
 on:
   pull_request:
     types: [ closed ]
     branches: [ dev ]  # Executa quando PR é feito PARA a branch dev
+  push:  # TEMPORÁRIO: Para facilitar testes sem abrir PR
+    branches: [ dev ]
+
 env:
   PHP_VERSION: "7.4"
 
@@ -11,7 +15,7 @@ jobs:
   codeql-analysis:
     name: CodeQL Security Analysis
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release'
+    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && github.ref == 'refs/heads/dev')
     permissions:
       actions: read
       contents: read
@@ -38,7 +42,7 @@ jobs:
   php-security-analysis:
     name: Psalm PHP Security & Code Quality Analysis
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release'
+    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && github.ref == 'refs/heads/dev')
     steps:
       # Etapa de checkout de código
       - name: Checkout code
@@ -106,7 +110,7 @@ jobs:
   plugin-quality-check:
     name: WordPress Plugin Quality Check
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release'
+    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'pre-release') || (github.event_name == 'push' && github.ref == 'refs/heads/dev')
     needs: [codeql-analysis, php-security-analysis]  # Executa após ambas análises passarem
     steps:
     - uses: actions/checkout@v3
@@ -173,23 +177,23 @@ jobs:
       if: steps.check-results.outputs.analysis_status == 'success'
       run: |
         echo "🚀 Analysis completed successfully!"
-        echo "Pre-release workflow will be triggered via workflow_run or can be executed manually."
+        echo "Pre-release workflow will be triggered via workflow_run."
     
-    # Create analysis success marker para triggering posterior
-    - name: Create Analysis Success Marker
+    # Create analysis success artifact
+    - name: Create Analysis Success Artifact
       if: steps.check-results.outputs.analysis_status == 'success'
       run: |
-        mkdir -p .github/analysis-status
-        echo "success" > .github/analysis-status/latest.txt
-        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .github/analysis-status/timestamp.txt
-        echo "${{ github.sha }}" > .github/analysis-status/commit.txt
+        mkdir -p analysis-results
+        echo "success" > analysis-results/status.txt
+        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > analysis-results/timestamp.txt
+        echo "${{ github.sha }}" > analysis-results/commit.txt
+        echo "${{ github.run_id }}" > analysis-results/run-id.txt
     
-    # Commit analysis status
-    - name: Commit Analysis Status
+    # Upload analysis results as artifact
+    - name: Upload Analysis Results
       if: steps.check-results.outputs.analysis_status == 'success'
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add .github/analysis-status/
-        git commit -m "Analysis completed successfully for ${{ github.sha }}" || exit 0
-        git push
+      uses: actions/upload-artifact@v3
+      with:
+        name: analysis-success-${{ github.sha }}
+        path: analysis-results/
+        retention-days: 1
