@@ -25,17 +25,17 @@ jobs:
 
       # Configuração do CodeQL
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: javascript
 
       # Compilação do projeto (necessária apenas se houver compilação)
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
+        uses: github/codeql-action/autobuild@v3
 
       # Execução da análise CodeQL
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
 
   plugin-check:
     name: Plugin Check

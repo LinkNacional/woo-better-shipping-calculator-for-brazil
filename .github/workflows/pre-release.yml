@@ -70,6 +70,7 @@ jobs:
         artifacts: "dist/${{ env.PLUGIN_NAME }}.zip"
         token: ${{ secrets.GITHUB_TOKEN }}
         commit: "main"
-        draft: true
+        draft: false
+        prerelease: true
         tag: ${{ steps.tag_version.outputs.new_tag }}
         name: Release ${{ steps.tag_version.outputs.new_tag }}
