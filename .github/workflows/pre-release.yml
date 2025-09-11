@@ -12,11 +12,6 @@ on:
         description: 'Razão para execução manual'
         required: false
         default: 'Manual trigger after analysis'
-    inputs:
-      reason:
-        description: 'Razão para execução manual'
-        required: false
-        default: 'Manual trigger after analysis'
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
