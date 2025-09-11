@@ -1,6 +1,11 @@
 name: Code Analysis
 
 on:
+  workflow_call:
+    outputs:
+      analysis_status:
+        description: "Status da análise"
+        value: ${{ jobs.summary.outputs.status }}
   pull_request:
     branches:
       - dev
@@ -55,3 +60,19 @@ jobs:
             plugin_repo
             security
           strict: true
+
+  summary:
+    runs-on: ubuntu-latest
+    needs: [codeql-analysis, plugin-check]
+    if: always()
+    outputs:
+      status: ${{ steps.check.outputs.status }}
+    steps:
+      - id: check
+        run: |
+          if [[ "${{ needs.codeql-analysis.result }}" == "success" && "${{ needs.plugin-check.result }}" == "success" ]]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            exit 1
+          fi
