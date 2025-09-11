@@ -2,14 +2,12 @@ name: Pre-Release Pipeline
 
 on:
   pull_request:
-    types: [closed]
-    branches:
-      - pre-release
-  workflow_dispatch:
+    types: [ closed ]
+    branches: [ pre-release ]
 
 jobs:
   analysis:
-    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'pre-release' && github.event.pull_request.head.ref == 'dev'
+    if: github.event.pull_request.merged == true
     uses: ./.github/workflows/analysis.yml
     
   pre-release:
