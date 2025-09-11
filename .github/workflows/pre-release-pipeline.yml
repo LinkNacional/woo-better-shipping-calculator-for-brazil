@@ -3,7 +3,7 @@ name: Pre-Release Pipeline
 on:
   pull_request:
     types: [ closed ]
-    branches: [ pre-release ]
+    branches: [ dev ]
   workflow_dispatch:
 
 jobs:
