@@ -681,10 +681,8 @@ document.addEventListener('DOMContentLoaded', function () {
             button.disabled = true;
             input.disabled = true;
 
-            const cachedData = getCachedCartShippingData(postcode);
             const infoBlock = document.querySelector('.woo-better-info-block');
-
-            if (infoBlock && !cachedData) {
+            if (infoBlock) {
                 infoBlock.style.display = 'none';
             }
 
@@ -699,7 +697,8 @@ document.addEventListener('DOMContentLoaded', function () {
             button.style.backgroundColor = '#ccc';
             button.style.cursor = 'not-allowed';
 
-            sendCEP(postcode)
+            // Sempre faz uma nova consulta, ignora o cache ao clicar no botão
+            sendCEP(postcode, true);
         });
 
         return form;
@@ -1046,8 +1045,48 @@ document.addEventListener('DOMContentLoaded', function () {
         return new Promise((resolve, reject) => {
             try {
                 const shippingRates = response;
+                let contentBlock = infoBlock.querySelector('.woo-better-content-block');
+
+                // Remove mensagem de erro anterior, se existir
+                if (contentBlock) {
+                    const oldError = contentBlock.querySelector('.woo-better-error-message');
+                    if (oldError) oldError.remove();
+                }
 
                 if (!shippingRates || !Array.isArray(shippingRates.shipping_rates) || shippingRates.shipping_rates.length === 0) {
+                    // Esconde todos os componentes filhos, exceto .woo-better-update-section
+                    if (contentBlock) {
+                        // Remove a classe 'expanded' se estiver presente
+                        if (contentBlock.classList.contains('expanded')) {
+                            contentBlock.classList.remove('expanded');
+                            contentBlock.style.height = '';
+                        }
+                        Array.from(contentBlock.children).forEach(child => {
+                            child.style.display = 'none';
+                        });
+                        // Atualiza o CEP no bloco de CEP atual
+                        const currentPostcodeText = infoBlock.querySelector('.woo-better-current-postcode-text');
+                        if (currentPostcodeText) {
+                            currentPostcodeText.innerHTML = `<strong>CEP</strong>: ${postcode}`;
+                        }
+                        // Adiciona mensagem de erro
+                        let errorMsg = contentBlock.querySelector('.woo-better-error-message');
+                        if (!errorMsg) {
+                            errorMsg = document.createElement('p');
+                            errorMsg.className = 'woo-better-error-message';
+                            errorMsg.style.color = '#222';
+                            errorMsg.style.fontWeight = '600';
+                            errorMsg.style.padding = '12px 0';
+                            errorMsg.textContent = 'Nenhum método de frete disponível para o CEP informado.';
+                            contentBlock.appendChild(errorMsg);
+                        } else {
+                            errorMsg.style.display = 'block';
+                        }
+                        contentBlock.style.display = 'block';
+                        contentBlock.classList.add('expanded');
+                    }
+                    infoBlock.style.display = 'block';
+                    form.style.display = 'none';
                     return reject('Nenhuma taxa de envio foi encontrada.');
                 }
 
@@ -1058,12 +1097,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Marca que o usuário fez uma consulta manual
                 hasUserMadeQuery = true;
 
+                // Restaura display dos componentes filhos (exceto erro)
+                if (contentBlock) {
+                    const errorMessage = contentBlock.querySelector('.woo-better-error-message');
+                    if (errorMessage) {
+                        errorMessage.remove();
+                    }
+                    Array.from(contentBlock.children).forEach(child => {
+                        if (child.classList.contains('woo-better-update-section')) {
+                            child.style.display = 'flex';
+                        } else {
+                            child.style.display = 'block';
+                        }
+                    });
+                }
+
                 // Atualiza a UI
                 form.style.display = 'none';
                 infoBlock.style.display = 'block';
-
-                // Atualiza o componente com os dados recebidos
-                const contentBlock = infoBlock.querySelector('.woo-better-content-block');
 
                 const shippingList = contentBlock.querySelector('.woo-better-shipping-list');
 
@@ -1135,7 +1186,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Expande o contentBlock com animação se não estiver expandido
                 if (contentBlock && !contentBlock.classList.contains('expanded')) {
-                    contentBlock.style.height = '0';
+                    contentBlock.style.height = '';
                     contentBlock.style.display = 'block';
 
                     // Força um reflow antes da animação

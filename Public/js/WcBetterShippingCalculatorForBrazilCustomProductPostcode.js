@@ -1121,6 +1121,43 @@ document.addEventListener('DOMContentLoaded', function () {
                 const shippingRates = response;
 
                 if (!shippingRates || !Array.isArray(shippingRates.shipping_rates) || shippingRates.shipping_rates.length === 0) {
+                    // Esconde todos os componentes filhos do bloco
+                    const contentBlock = infoBlock.querySelector('.woo-better-content-block');
+                    if (contentBlock) {
+                        // Remove a classe 'expanded' se estiver presente
+                        if (contentBlock.classList.contains('expanded')) {
+                            contentBlock.classList.remove('expanded');
+                            contentBlock.style.height = '';
+                        }
+                        // Esconde todos os filhos do bloco
+                        Array.from(contentBlock.children).forEach(child => {
+                            child.style.display = 'none';
+                        });
+                        // Atualiza o CEP no bloco de CEP atual
+                        const currentPostcodeText = infoBlock.querySelector('.woo-better-current-postcode-text');
+                        if (currentPostcodeText) {
+                            currentPostcodeText.innerHTML = `<strong>CEP</strong>: ${postcode}`;
+                        }
+                        // Adiciona mensagem de erro
+                        let errorMsg = contentBlock.querySelector('.woo-better-error-message');
+                        if (!errorMsg) {
+                            errorMsg = document.createElement('p');
+                            errorMsg.className = 'woo-better-error-message';
+                            errorMsg.style.color = '#222';
+                            errorMsg.style.fontWeight = '600';
+                            errorMsg.style.padding = '12px 0';
+                            errorMsg.textContent = 'Nenhum método de frete disponível para o CEP informado.';
+                            contentBlock.appendChild(errorMsg);
+                        } else {
+                            errorMsg.style.display = 'block';
+                        }
+
+                        // Só agora exibe o bloco e expande
+                        contentBlock.style.display = 'block';
+                        contentBlock.classList.add('expanded');
+                    }
+                    infoBlock.style.display = 'block';
+                    form.style.display = 'none';
                     return reject('Nenhuma taxa de envio foi encontrada.');
                 }
 
@@ -1166,6 +1203,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
 
+                // Restaura display dos componentes filhos do bloco (exceto erro)
+                if (contentBlock) {
+                    const errorMessage = contentBlock.querySelector('.woo-better-error-message');
+                    if (errorMessage) {
+                        errorMessage.remove();
+                    }
+                    Array.from(contentBlock.children).forEach(child => {
+                        if (child.classList.contains('woo-better-update-section')) {
+                            child.style.display = 'flex';
+                        } else {
+                            child.style.display = 'block';
+                        }
+                    });
+                }
+
                 // Limpa a lista de métodos de envio antes de popular
                 shippingList.innerHTML = '';
 
@@ -1185,7 +1237,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Atualiza o CEP no bloco de CEP atual
                 const currentPostcodeText = infoBlock.querySelector('.woo-better-current-postcode-text');
-                currentPostcodeText.innerHTML = `<strong>CEP</strong>: ${postcode}`;
+                if (currentPostcodeText) {
+                    currentPostcodeText.innerHTML = `<strong>CEP</strong>: ${postcode}`;
+                }
 
                 // Atualiza a data de atualização
                 const updateDate = infoBlock.querySelector('.woo-better-update-date');
