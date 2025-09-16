@@ -198,7 +198,7 @@
 
     // Título do plugin
     const cardTitle = document.createElement('h3');
-    cardTitle.textContent = 'Plugin Grátis: Link de Pagamento de Faturas para WooCommerce';
+    cardTitle.textContent = 'Plugin: Link de Pagamento de Faturas para WooCommerce';
     cardTitle.style.cssText = `
       margin: 0 0 12px 0;
       font-size: 16px;
@@ -225,31 +225,30 @@
       flex-wrap: wrap;
     `;
 
-    // Botão Saiba mais (sempre primeiro)
+    // Botão Saiba mais (sempre presente) - aparece primeiro
     const learnMoreButton = document.createElement('button');
     learnMoreButton.textContent = 'Saiba mais';
     learnMoreButton.style.cssText = `
-      background: rgba(255,255,255,0.9);
-      border: none;
-      color: #667eea;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
       padding: 8px 16px;
       border-radius: 6px;
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
     `;
 
     learnMoreButton.addEventListener('mouseenter', function () {
-      this.style.background = 'white';
+      this.style.background = 'rgba(255,255,255,0.3)';
       this.style.transform = 'translateY(-1px)';
-      this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
     });
 
     learnMoreButton.addEventListener('mouseleave', function () {
-      this.style.background = 'rgba(255,255,255,0.9)';
+      this.style.background = 'rgba(255,255,255,0.2)';
       this.style.transform = 'translateY(0)';
-      this.style.boxShadow = 'none';
     });
 
     learnMoreButton.addEventListener('click', function (e) {
@@ -259,34 +258,35 @@
       window.open('https://br.wordpress.org/plugins/invoice-payment-for-woocommerce/', '_blank');
     });
 
-    // Adiciona o botão "Saiba mais" primeiro
+    // Adiciona o botão Saiba mais ao container primeiro
     buttonsContainer.appendChild(learnMoreButton);
 
-    // Só cria o botão "Instalar" se o plugin NÃO estiver instalado
+    // Botão Instalar (apenas se o plugin não estiver instalado) - aparece depois
     if (!wcBetterCalcAjax.invoice_plugin_installed) {
       const installButton = document.createElement('button');
       installButton.textContent = 'Instalar';
       installButton.style.cssText = `
-        background: rgba(255,255,255,0.2);
-        border: 1px solid rgba(255,255,255,0.3);
-        color: white;
+        background: rgba(255,255,255,0.9);
+        border: none;
+        color: #667eea;
         padding: 8px 16px;
         border-radius: 6px;
         font-size: 13px;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
       `;
 
       installButton.addEventListener('mouseenter', function () {
-        this.style.background = 'rgba(255,255,255,0.3)';
+        this.style.background = 'white';
         this.style.transform = 'translateY(-1px)';
+        this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
       });
 
       installButton.addEventListener('mouseleave', function () {
-        this.style.background = 'rgba(255,255,255,0.2)';
+        this.style.background = 'rgba(255,255,255,0.9)';
         this.style.transform = 'translateY(0)';
+        this.style.boxShadow = 'none';
       });
 
       installButton.addEventListener('click', function (e) {
@@ -300,9 +300,11 @@
         window.open(installUrl, '_blank');
       });
 
-      // Adiciona o botão "Instalar" depois do "Saiba mais"
+      // Adiciona o botão Instalar ao container por segundo
       buttonsContainer.appendChild(installButton);
-    }    // Monta o conteúdo do cartão
+    }
+
+    // Monta o conteúdo do cartão
     cardContent.appendChild(cardTitle);
     cardContent.appendChild(cardDescription);
     cardContent.appendChild(buttonsContainer);

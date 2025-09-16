@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<psalm
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    errorLevel="1"
+    resolveFromConfigFile="true"
+    findUnusedBaselineEntry="true"
+    findUnusedCode="false"
+>
+    <projectFiles>
+        <directory name="." />
+        <ignoreFiles>
+            <directory name="vendor" />
+            <directory name=".git" />
+            <directory name=".github" />
+            <file name="uninstall.php" />
+        </ignoreFiles>
+    </projectFiles>
+
+    <stubs>
+        <file name="vendor/php-stubs/wordpress-stubs/wordpress-stubs.php" />
+        <file name="vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php" />
+        <file name="psalm-stubs.php" />
+    </stubs>
+
+    <issueHandlers>
+        <!-- Ignore some WordPress-specific issues -->
+        <UndefinedGlobalVariable>
+            <errorLevel type="suppress">
+                <directory name="Includes/assets/templates" />
+            </errorLevel>
+        </UndefinedGlobalVariable>
+        
+        <!-- Suppress issues with WordPress template variables -->
+        <MixedArgument>
+            <errorLevel type="suppress">
+                <directory name="Includes/assets/templates" />
+            </errorLevel>
+        </MixedArgument>
+
+        <!-- Suppress redundant conditions that are defensive programming -->
+        <RedundantCondition errorLevel="info" />
+        <TypeDoesNotContainType errorLevel="info" />
+        
+        <!-- Suppress InvalidThrow for WordPress exception handling -->
+        <InvalidThrow errorLevel="suppress" />
+        
+        <!-- Suppress ImplicitToStringCast for exception handling -->
+        <ImplicitToStringCast errorLevel="suppress" />
+        
+        <!-- Suppress MissingDependency for WooCommerce classes that exist via stubs -->
+        <MissingDependency errorLevel="suppress" />
+    </issueHandlers>
+</psalm>

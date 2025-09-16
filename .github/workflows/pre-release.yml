@@ -1,34 +1,24 @@
 name: Generate Pre-Release
 
 on:
-  workflow_run:
-    workflows: ["Security and Quality Analysis"]
-    types:
-      - completed
-    branches: [ dev ]  # Executa quando analysis.yml completa na branch dev
+  workflow_call:
+    inputs:
+      analysis_status:
+        required: true
+        type: string
+  workflow_dispatch:
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
   PHP_VERSION: "7.4"
-  DEPLOY_TAG: "4.3.3-rc.1"
+  DEPLOY_TAG: "4.4.0-rc.1"
 
 jobs:
-  check-analysis-success:
-    name: Verify Analysis Success
-    runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
-    steps:
-    - name: Analysis passed
-      run: |
-        echo "✅ Security and Quality Analysis completed successfully!"
-        echo "🚀 Proceeding with pre-release generation..."
-
   release-build:
     runs-on: ubuntu-latest
-    needs: check-analysis-success
-    if: github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: write
+    if: inputs.analysis_status == 'success' || github.event_name == 'workflow_dispatch'
     steps:
     - uses: actions/checkout@v3
 
@@ -71,35 +61,16 @@ jobs:
       uses: mathieudutour/github-tag-action@v6.0
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        custom_tag: ${{ env.DEPLOY_TAG }} # Release Candidate com -rc.1
+        custom_tag: ${{ env.DEPLOY_TAG }}
 
-    # Generate new pre-release
-    - name: Generate new Pre-Release
+    # Generate new release
+    - name: Generate new Release
       uses: ncipollo/release-action@v1
       with:
         artifacts: "dist/${{ env.PLUGIN_NAME }}.zip"
         token: ${{ secrets.GITHUB_TOKEN }}
-        commit: "pre-release"
-        prerelease: true  # Marca como pre-release
-        draft: true
+        commit: "main"
+        draft: false
+        prerelease: true
         tag: ${{ steps.tag_version.outputs.new_tag }}
-        name: Pre-Release ${{ steps.tag_version.outputs.new_tag }}
-        body: |
-          🚀 **Release Candidate - Versão de Teste**
-          
-          Esta é uma versão de pré-lançamento para testes. 
-          
-          **⚠️ Não recomendado para produção**
-          
-          ### 🔍 Análises Realizadas:
-          - ✅ CodeQL Security Analysis
-          - ✅ WordPress Plugin Check
-          - ✅ Performance & Accessibility Tests
-          
-          ### 📋 Como testar:
-          1. Baixe o arquivo `.zip` em anexo
-          2. Instale em um ambiente de teste
-          3. Reporte qualquer problema encontrado
-          
-          ---
-          *Esta versão passou por análise automatizada de segurança com CodeQL*
+        name: Release ${{ steps.tag_version.outputs.new_tag }}
