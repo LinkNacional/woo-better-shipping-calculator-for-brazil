@@ -121,7 +121,7 @@
     const stickyContainer = document.createElement('div');
     stickyContainer.className = 'sticky-container';
     stickyContainer.style.position = 'sticky';
-    stickyContainer.style.top = '314px';
+    stickyContainer.style.top = '120px';
     stickyContainer.style.maxWidth = '370px';
 
     function createFeatureMessage(iconText, messageLines) {
@@ -316,7 +316,7 @@
       settingsCard.style.display = 'block'
 
       // Move o componente para o sideContainer
-      sideContainer.appendChild(settingsCard);
+      stickyContainer.appendChild(settingsCard);
 
       stickyContainer.appendChild(featureMessage1);
       stickyContainer.appendChild(featureMessage2);
