@@ -1,19 +1,24 @@
-name: Generate new release for plugin
+name: Generate Pre-Release
 
 on:
-  pull_request:
-    types: [ closed ]
-    branches: [ main ]
+  workflow_call:
+    inputs:
+      analysis_status:
+        required: true
+        type: string
+  workflow_dispatch:
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
   PHP_VERSION: "7.4"
-  DEPLOY_TAG: "4.4.0"
+  DEPLOY_TAG: "4.4.0-rc.1"
+
 jobs:
   release-build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    if: inputs.analysis_status == 'success' || github.event_name == 'workflow_dispatch'
     steps:
     - uses: actions/checkout@v3
 
@@ -56,7 +61,7 @@ jobs:
       uses: mathieudutour/github-tag-action@v6.0
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        custom_tag: ${{ env.DEPLOY_TAG }} # // TODO caso necessário definir a tag da release manualmente
+        custom_tag: ${{ env.DEPLOY_TAG }}
 
     # Generate new release
     - name: Generate new Release
@@ -65,6 +70,7 @@ jobs:
         artifacts: "dist/${{ env.PLUGIN_NAME }}.zip"
         token: ${{ secrets.GITHUB_TOKEN }}
         commit: "main"
-        draft: true
+        draft: false
+        prerelease: true
         tag: ${{ steps.tag_version.outputs.new_tag }}
         name: Release ${{ steps.tag_version.outputs.new_tag }}

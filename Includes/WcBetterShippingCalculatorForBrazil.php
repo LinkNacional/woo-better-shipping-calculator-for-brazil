@@ -79,7 +79,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.3.3';
+            $this->version = '4.4.0';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -162,6 +162,7 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('admin_notices', $this, 'lkn_show_admin_notice');
         $this->loader->add_action('wp_ajax_woo_better_calc_dismiss_notice', $this, 'lkn_dismiss_admin_notice');
+        $this->loader->add_action('wp_ajax_woo_better_calc_update_cache_token', $this, 'lkn_update_cache_token');
     }
 
     public function lkn_show_admin_notice()
@@ -216,6 +217,49 @@ class WcBetterShippingCalculatorForBrazil
         update_user_meta(get_current_user_id(), 'woo_better_calc_notice_dismissed', true);
         
         wp_send_json_success();
+    }
+
+    /**
+     * AJAX handler para atualizar o token de cache
+     */
+    public function lkn_update_cache_token()
+    {
+        // Verifica permissões
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized', 403);
+        }
+
+        // Verifica nonce se fornecido
+        if (isset($_POST['nonce']) && !empty($_POST['nonce'])) {
+            $nonce = sanitize_text_field(wp_unslash($_POST['nonce']));
+            if (!wp_verify_nonce($nonce, 'woo_better_calc_update_cache_token')) {
+                wp_send_json_error('Nonce inválido', 403);
+            }
+        }
+
+        // Verifica se o token foi enviado
+        if (!isset($_POST['token']) || empty($_POST['token'])) {
+            wp_send_json_error('Token é obrigatório', 400);
+        }
+
+        $new_token = sanitize_text_field(wp_unslash($_POST['token']));
+
+        // Valida o formato do token (WCBCB_ + 19 caracteres alfanuméricos)
+        if (!preg_match('/^WCBCB_[A-Z0-9]{19}$/', $new_token)) {
+            wp_send_json_error('Token inválido. Formato esperado: WCBCB_XXXXXXXXXXXXXXXXXXX', 400);
+        }
+
+        // Atualiza a opção no banco de dados
+        $updated = update_option('woo_better_calc_enable_auto_cache_reset', $new_token);
+
+        if ($updated) {
+            wp_send_json_success(array(
+                'message' => 'Token de cache atualizado com sucesso',
+                'token' => $new_token
+            ));
+        } else {
+            wp_send_json_error('Erro ao atualizar o token no banco de dados', 500);
+        }
     }
 
     public function lkn_simular_frete_playground($rates, $package)
@@ -391,6 +435,18 @@ class WcBetterShippingCalculatorForBrazil
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true
             );
+
+            $plugin_path = 'invoice-payment-for-woocommerce/wc-invoice-payment.php';
+            $invoice_plugin_installed = file_exists(WP_PLUGIN_DIR . '/' . $plugin_path);
+
+            // Adiciona ajaxurl para requisições AJAX
+            wp_localize_script('wc-better-calc-settings-layout', 'wcBetterCalcAjax', array(
+                'ajaxurl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('woo_better_calc_admin_nonce'),
+                'install_nonce' => wp_create_nonce('install-plugin_invoice-payment-for-woocommerce'),
+                'plugin_slug' => 'invoice-payment-for-woocommerce',
+                'invoice_plugin_installed' => $invoice_plugin_installed
+            ));
 
             $icons = array(
                 'bill' => plugin_dir_url(__FILE__) . 'assets/icons/postcodeOptions/bill.svg',
@@ -968,14 +1024,29 @@ class WcBetterShippingCalculatorForBrazil
             ), 400);
         }
 
+        // Converte o preço para float para garantir que seja numérico
+        $product_price = floatval($product->get_price());
+        $quantity = WC_BETTER_SHIPPING_PRODUCT_QUANTITY;
+        $line_total = $product_price * $quantity;
+
         // Cria um pacote de envio personalizado
         $package = array(
             'contents' => array(
                 $product_id => array(
                     'product_id' => $product_id,
-                    'quantity'   => WC_BETTER_SHIPPING_PRODUCT_QUANTITY,
+                    'variation_id' => 0,
+                    'quantity'   => $quantity,
                     'data'       => $product,
+                    'line_total' => $line_total,
+                    'line_subtotal' => $line_total,
+                    'line_tax' => 0,
+                    'line_subtotal_tax' => 0,
                 ),
+            ),
+            'contents_cost' => $line_total,
+            'applied_coupons' => array(),
+            'user' => array(
+                'ID' => get_current_user_id(),
             ),
             'destination' => array(
                 'country'   => $shipping_data['country'],
@@ -997,7 +1068,7 @@ class WcBetterShippingCalculatorForBrazil
 
         $product_info = array(
             'name'     => $product->get_name(),
-            'quantity' => WC_BETTER_SHIPPING_PRODUCT_QUANTITY, 
+            'quantity' => $quantity, 
             'currency_symbol' => $currency_symbol,
             'currency_minor_unit' => $currency_minor_unit,
         );
@@ -1150,9 +1221,20 @@ class WcBetterShippingCalculatorForBrazil
             ), 400);
         }
 
+        // Calcula o total do carrinho
+        $contents_cost = 0;
+        foreach ($cart_items as $cart_item) {
+            $contents_cost += floatval($cart_item['line_total']);
+        }
+
         // Cria um pacote de envio personalizado com os itens do carrinho
         $package = array(
             'contents' => $cart_items,
+            'contents_cost' => $contents_cost,
+            'applied_coupons' => WC()->cart->get_applied_coupons(),
+            'user' => array(
+                'ID' => get_current_user_id(),
+            ),
             'destination' => array(
                 'country'   => $shipping_data['country'],
                 'state'     => $shipping_data['state'],

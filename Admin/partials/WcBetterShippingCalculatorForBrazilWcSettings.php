@@ -771,7 +771,74 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             ),
         );
 
-        $settings = array_merge($settings, $generalSettings, $gutenbergSettings, $cartSettings, $productSettings);
+        $cacheSettings = array(
+            // TAB 6: Cache
+            'cache_section' => array(
+                'title' => __('Cache', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'title',
+                'id'    => 'woo_better_calc_title_cache'
+            ),
+            'enable_auto_postcode_search' => array(
+                'title'    => __('Consulta automática de CEP', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_calc_enable_auto_postcode_search',
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Calcula fretes automaticamente sem necessidade de clicar em "Calcular", melhorando a experiência do usuário.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para realizar consultas de frete automaticamente nas páginas de produto e carrinho, assim que um CEP válido for detectado ou informado.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Disponível apenas no WooCommerce 10.0 ou superior. Essa funcionalidade requer uma versão compatível do WooCommerce para funcionar corretamente.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'cache_expiration_time' => array(
+                'title'    => __('Tempo de expiração do cache', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_calc_cache_expiration_time',
+                'default'  => '0',
+                'type'     => 'select',
+                'options'  => array(
+                    '0'       => __('Não Expirar', 'woo-better-shipping-calculator-for-brazil'),
+                    '10'      => __('10 minutos', 'woo-better-shipping-calculator-for-brazil'),
+                    '30'      => __('30 minutos', 'woo-better-shipping-calculator-for-brazil'),
+                    '60'      => __('1 hora', 'woo-better-shipping-calculator-for-brazil'),
+                    '120'     => __('2 horas', 'woo-better-shipping-calculator-for-brazil'),
+                    '300'     => __('5 horas', 'woo-better-shipping-calculator-for-brazil'),
+                    '720'     => __('12 horas', 'woo-better-shipping-calculator-for-brazil'),
+                    '1440'    => __('1 dia', 'woo-better-shipping-calculator-for-brazil'),
+                    '2880'    => __('2 dias', 'woo-better-shipping-calculator-for-brazil'),
+                    '10080'   => __('1 semana', 'woo-better-shipping-calculator-for-brazil'),
+                    '20160'   => __('2 semanas', 'woo-better-shipping-calculator-for-brazil'),
+                    '43200'   => __('1 mês', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Define o tempo de armazenamento do cache de CEP. Cache mais longo melhora performance, mas pode exibir dados desatualizados.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Escolha o período de validade do cache de consultas de CEP. O padrão é não expirar.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Tempo de expiração do cache de consultas de CEP.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'enable_auto_cache_reset' => array(
+                'title'    => __('Reset automático de cache', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_calc_enable_auto_cache_reset',
+                'default'  => 'WCBCB_9X2K4M7P5R8T3N6Y1Q',
+                'type'     => 'text',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Token de segurança para limpeza do cache. Use o botão "Limpar Cache" para remover todas as consultas armazenadas e forçar o recálculo de frete.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Ao clicar em "Limpar Cache", todas as consultas armazenadas serão removidas. Como consequência, os visitantes precisarão recalcular o frete ao acessar as páginas de produtos. Recomenda-se usar essa função após ajustes importantes nas configurações de entrega.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ao atualizar as regras ou valores de frete, o cache antigo pode continuar exibindo informações desatualizadas. Limpar o cache garante que todos os visitantes recebam os novos cálculos corretos.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'cache_section_end' => array(
+                'type' => 'sectionend',
+                'id'   => 'woo_better_calc_cache'
+            )
+        );
+
+        $settings = array_merge($settings, $generalSettings, $gutenbergSettings, $cartSettings, $productSettings, $cacheSettings);
 
         return apply_filters('woocommerce_get_settings_' . $this->id, $settings);
     }

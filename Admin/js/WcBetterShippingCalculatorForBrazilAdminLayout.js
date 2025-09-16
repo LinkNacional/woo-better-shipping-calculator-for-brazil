@@ -121,7 +121,7 @@
     const stickyContainer = document.createElement('div');
     stickyContainer.className = 'sticky-container';
     stickyContainer.style.position = 'sticky';
-    stickyContainer.style.top = '314px';
+    stickyContainer.style.top = '120px';
     stickyContainer.style.maxWidth = '370px';
 
     function createFeatureMessage(iconText, messageLines) {
@@ -160,8 +160,155 @@
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> O CEP informado pelo usuário é preservado até a finalização da compra e preenche automaticamente o endereço.'
+      '<strong>NOVO:</strong> Sistema de cache inteligente que armazena consultas de frete para acelerar consultas futuras e melhorar a experiência do usuário.'
     ]);
+
+    // Cria o cartão promocional do Plugin Link de Pagamento
+    const promotionalCard = document.createElement('div');
+    promotionalCard.className = 'woo-better-promotional-card';
+    promotionalCard.style.cssText = `
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+      color: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      position: relative;
+      overflow: hidden;
+    `;
+
+    // Adiciona um elemento de fundo decorativo
+    const backgroundDecor = document.createElement('div');
+    backgroundDecor.style.cssText = `
+      position: absolute;
+      top: -50px;
+      right: -50px;
+      width: 100px;
+      height: 100px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      pointer-events: none;
+    `;
+    promotionalCard.appendChild(backgroundDecor);
+
+    // Conteúdo do cartão
+    const cardContent = document.createElement('div');
+    cardContent.style.position = 'relative';
+    cardContent.style.zIndex = '1';
+
+    // Título do plugin
+    const cardTitle = document.createElement('h3');
+    cardTitle.textContent = 'Plugin: Link de Pagamento de Faturas para WooCommerce';
+    cardTitle.style.cssText = `
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: white;
+      line-height: 1.3;
+    `;
+
+    // Descrição do plugin
+    const cardDescription = document.createElement('p');
+    cardDescription.textContent = 'O Plugin Link de Pagamento é a solução completa para o seu negócio. Com ele, é possível gerar links de pagamento, parcelar compras em múltiplos cartões, configurar cobranças recorrentes, aplicar descontos e taxas, e criar orçamentos detalhados.';
+    cardDescription.style.cssText = `
+      margin: 0 0 16px 0;
+      font-size: 14px;
+      line-height: 1.5;
+      color: rgba(255,255,255,0.9);
+    `;
+
+    // Container dos botões
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.style.cssText = `
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    `;
+
+    // Botão Saiba mais (sempre presente) - aparece primeiro
+    const learnMoreButton = document.createElement('button');
+    learnMoreButton.textContent = 'Saiba mais';
+    learnMoreButton.style.cssText = `
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    `;
+
+    learnMoreButton.addEventListener('mouseenter', function () {
+      this.style.background = 'rgba(255,255,255,0.3)';
+      this.style.transform = 'translateY(-1px)';
+    });
+
+    learnMoreButton.addEventListener('mouseleave', function () {
+      this.style.background = 'rgba(255,255,255,0.2)';
+      this.style.transform = 'translateY(0)';
+    });
+
+    learnMoreButton.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Abre o link do plugin no WordPress.org
+      window.open('https://br.wordpress.org/plugins/invoice-payment-for-woocommerce/', '_blank');
+    });
+
+    // Adiciona o botão Saiba mais ao container primeiro
+    buttonsContainer.appendChild(learnMoreButton);
+
+    // Botão Instalar (apenas se o plugin não estiver instalado) - aparece depois
+    if (!wcBetterCalcAjax.invoice_plugin_installed) {
+      const installButton = document.createElement('button');
+      installButton.textContent = 'Instalar';
+      installButton.style.cssText = `
+        background: rgba(255,255,255,0.9);
+        border: none;
+        color: #667eea;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      `;
+
+      installButton.addEventListener('mouseenter', function () {
+        this.style.background = 'white';
+        this.style.transform = 'translateY(-1px)';
+        this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+      });
+
+      installButton.addEventListener('mouseleave', function () {
+        this.style.background = 'rgba(255,255,255,0.9)';
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = 'none';
+      });
+
+      installButton.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Usa o nonce que já está disponível no wcBetterCalcAjax
+        const installUrl = `/wp-admin/update.php?action=install-plugin&plugin=${wcBetterCalcAjax.plugin_slug}&_wpnonce=${wcBetterCalcAjax.install_nonce}`;
+
+        // Abre a página de instalação direta
+        window.open(installUrl, '_blank');
+      });
+
+      // Adiciona o botão Instalar ao container por segundo
+      buttonsContainer.appendChild(installButton);
+    }
+
+    // Monta o conteúdo do cartão
+    cardContent.appendChild(cardTitle);
+    cardContent.appendChild(cardDescription);
+    cardContent.appendChild(buttonsContainer);
+    promotionalCard.appendChild(cardContent);
 
 
     const settingsCard = document.querySelector('#WooBetterLinkSettingsCard');
@@ -169,10 +316,11 @@
       settingsCard.style.display = 'block'
 
       // Move o componente para o sideContainer
-      sideContainer.appendChild(settingsCard);
+      stickyContainer.appendChild(settingsCard);
 
       stickyContainer.appendChild(featureMessage1);
       stickyContainer.appendChild(featureMessage2);
+      stickyContainer.appendChild(promotionalCard);
 
       sideContainer.appendChild(stickyContainer);
     }
@@ -323,6 +471,7 @@
               spanElement.style.color = '#343B45'; // Cinza suave
               spanElement.style.fontSize = '13px';
               spanElement.style.paddingLeft = '6px';
+              spanElement.style.display = 'block';
 
               // Cria o <hr> com uma linha cinza clara
               const hrElement = document.createElement('hr');
@@ -423,6 +572,7 @@
               spanElement.style.color = '#343B45'; // Cinza suave
               spanElement.style.fontSize = '13px';
               spanElement.style.paddingLeft = '6px';
+              spanElement.style.display = 'block';
 
               // Cria o <hr> com uma linha cinza clara
               const hrElement = document.createElement('hr');
@@ -753,6 +903,10 @@
               'woo_better_calc_product_input_icon': 'woo_better_calc_product_input_placeholder',
               'woo_better_calc_product_input_icon_color': 'woo_better_calc_product_input_placeholder',
               'woo_better_calc_product_custom_position': 'woo_better_calc_product_input_position',
+
+              //Cache
+              'woo_better_calc_cache_expiration_time': 'woo_better_calc_enable_auto_postcode_search',
+              'woo_better_calc_enable_auto_cache_reset': 'woo_better_calc_enable_auto_postcode_search'
             };
 
             forminp.innerHTML = ''; // Limpa o conteúdo original
@@ -962,11 +1116,163 @@
       }
     }
 
+    function handleCacheSettings() {
+      const cacheExpirationTime = document.getElementById('woo_better_calc_cache_expiration_time');
+      const autoCacheReset = document.getElementById('woo_better_calc_enable_auto_cache_reset');
+
+      if (cacheExpirationTime && autoCacheReset) {
+        const cacheExpirationForminp = cacheExpirationTime.closest('.forminp');
+        const autoCacheResetForminp = autoCacheReset.closest('.forminp');
+
+        // Função inicial para definir visibilidade baseada no valor atual
+        const selectedValue = document.querySelector('input[name="woo_better_calc_enable_auto_postcode_search"]:checked')?.value;
+
+        if (cacheExpirationForminp && autoCacheResetForminp) {
+          if (selectedValue === 'yes') {
+            cacheExpirationForminp.style.display = 'flex';
+            autoCacheResetForminp.style.display = 'flex';
+          } else {
+            cacheExpirationForminp.style.display = 'none';
+            autoCacheResetForminp.style.display = 'none';
+          }
+        }
+
+        // Adiciona evento para todos os radios do grupo
+        const radioOptions = document.querySelectorAll('input[name="woo_better_calc_enable_auto_postcode_search"]');
+        radioOptions.forEach(radio => {
+          radio.addEventListener('change', function () {
+            const newSelectedValue = document.querySelector('input[name="woo_better_calc_enable_auto_postcode_search"]:checked')?.value;
+
+            if (cacheExpirationForminp && autoCacheResetForminp) {
+              if (newSelectedValue === 'yes') {
+                cacheExpirationForminp.style.display = 'flex';
+                autoCacheResetForminp.style.display = 'flex';
+              } else {
+                cacheExpirationForminp.style.display = 'none';
+                autoCacheResetForminp.style.display = 'none';
+              }
+            }
+          });
+        });
+      }
+    }
+
+    function handleClearCacheButton() {
+      const cacheResetInput = document.getElementById('woo_better_calc_enable_auto_cache_reset');
+
+      if (cacheResetInput) {
+        // Esconde o input original
+        cacheResetInput.style.display = 'none';
+
+        // Cria o botão "Limpar o cache"
+        const clearCacheButton = document.createElement('button');
+        clearCacheButton.type = 'button';
+        clearCacheButton.className = 'woo-better-cache-button components-button is-primary';
+        clearCacheButton.textContent = 'Limpar o cache';
+
+        // Função para gerar um novo token
+        function generateNewToken() {
+          const prefix = 'WCBCB_';
+          const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let randomPart = '';
+
+          for (let i = 0; i < 19; i++) {
+            randomPart += characters.charAt(Math.floor(Math.random() * characters.length));
+          }
+
+          return prefix + randomPart;
+        }
+
+        // Adiciona o evento de clique
+        clearCacheButton.addEventListener('click', function () {
+          const confirmMessage = 'Tem certeza de que deseja limpar o cache?';
+
+          if (confirm(confirmMessage)) {
+            const newToken = generateNewToken();
+            cacheResetInput.value = newToken;
+
+            // Feedback visual - carregando
+            clearCacheButton.textContent = 'Limpando cache...';
+            clearCacheButton.disabled = true;
+            clearCacheButton.style.backgroundColor = '#007cba';
+            clearCacheButton.style.color = '#fff';
+
+            const ajaxUrl = typeof wcBetterCalcAjax !== 'undefined' ? wcBetterCalcAjax.ajaxurl : (typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php');
+
+            // Primeiro, obtém um nonce dinâmico
+            const nonceFormData = new FormData();
+            nonceFormData.append('action', 'wc_better_calc_get_nonce');
+            nonceFormData.append('action_nonce', 'woo_better_calc_update_cache_token');
+
+            fetch(ajaxUrl, {
+              method: 'POST',
+              body: nonceFormData
+            })
+              .then(response => response.json())
+              .then(nonceData => {
+                if (nonceData.success && nonceData.data && nonceData.data.nonce) {
+                  // Agora faz a requisição principal com o nonce obtido
+                  clearCacheButton.textContent = 'Limpando cache...';
+
+                  const formData = new FormData();
+                  formData.append('action', 'woo_better_calc_update_cache_token');
+                  formData.append('token', newToken);
+                  formData.append('nonce', nonceData.data.nonce);
+
+                  return fetch(ajaxUrl, {
+                    method: 'POST',
+                    body: formData
+                  });
+                } else {
+                  throw new Error('Erro ao obter nonce: ' + (nonceData.data || 'Nonce inválido'));
+                }
+              })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  // Sucesso
+                  clearCacheButton.textContent = 'Cache limpo!';
+                  clearCacheButton.style.backgroundColor = '#00a32a';
+                  clearCacheButton.style.color = '#fff';
+                } else {
+                  // Erro
+                  clearCacheButton.textContent = 'Erro ao limpar cache';
+                  clearCacheButton.style.backgroundColor = '#dc3232';
+                  clearCacheButton.style.color = '#fff';
+                  console.error('Erro ao atualizar token:', data.data);
+                }
+              })
+              .catch(error => {
+                // Erro de rede ou nonce
+                clearCacheButton.textContent = 'Erro de conexão';
+                clearCacheButton.style.backgroundColor = '#dc3232';
+                clearCacheButton.style.color = '#fff';
+                console.error('Erro:', error);
+              })
+              .finally(() => {
+                // Restaura o estado original após 2 segundos
+                setTimeout(() => {
+                  clearCacheButton.textContent = 'Limpar o cache';
+                  clearCacheButton.disabled = false;
+                  clearCacheButton.style.backgroundColor = '';
+                  clearCacheButton.style.color = '';
+                }, 2000);
+              });
+          }
+        });
+
+        // Insere o botão após o input
+        cacheResetInput.parentNode.insertBefore(clearCacheButton, cacheResetInput.nextSibling);
+      }
+    }
+
     startEvenst('cart');
     startEvenst('product');
 
     handleCustomPosition('cart');
     handleCustomPosition('product');
+    handleCacheSettings();
+    handleClearCacheButton();
 
     if (WCBetterCalcWooVersion.status === 'invalid') {
       // Seleciona todos os inputs e selects com o padrão de name que contenham "cart" ou "product"
@@ -1034,6 +1340,25 @@
 
     // Adiciona a div ao body
     document.body.appendChild(floatingIconContainer);
+
+    // Verifica inicialmente se deve mostrar o floating icon baseado na tab ativa atual
+    let initialActiveTab = tabLinks[0]; // Padrão é a primeira tab
+
+    // Verifica se há um hash na URL para determinar a tab ativa
+    const currentHash = window.location.hash;
+    if (currentHash) {
+      const hashIndex = tabLinks.findIndex(tab => tab.href.endsWith(currentHash));
+      if (hashIndex >= 0) {
+        initialActiveTab = tabLinks[hashIndex];
+      }
+    }
+
+    // Mostra o floating icon apenas se a tab ativa for 'Carrinho' ou 'Produto'
+    if (initialActiveTab && (initialActiveTab.textContent === 'Carrinho' || initialActiveTab.textContent === 'Produto')) {
+      floatingIconContainer.style.display = 'flex';
+    } else {
+      floatingIconContainer.style.display = 'none';
+    }
 
     // Função para mostrar/esconder tabelas dinamicamente
     function showTable(activeIdx) {
