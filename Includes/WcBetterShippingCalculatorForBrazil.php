@@ -875,6 +875,74 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('wp_ajax_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
+
+        $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
+        if($fill_checkout_address === "yes")
+        {
+            $this->loader->add_filter('woocommerce_package_rates', $this, 'wc_better_calc_get_shipping_rates', 10, 2);
+        }
+        
+    }
+
+    public function wc_better_calc_get_shipping_rates($rates, $package)
+    {
+        // Consulta o CEP na API externa
+        $cep = isset($package['destination']['postcode']) ? $package['destination']['postcode'] : '';
+        $address_data = null;
+        // Chave única para o transiente, baseada no CEP
+        $transient_key = 'wc_better_calc_addr_' . md5($cep);
+
+        // Se o transiente existe, não consulta novamente
+        if (get_transient($transient_key)) {
+            // Apenas retorna as taxas normalmente
+            return $rates;
+        }
+
+        if ($cep) {
+            $response = wp_remote_get("https://brasilapi.com.br/api/cep/v2/{$cep}");
+            if (!is_wp_error($response)) {
+                $body = wp_remote_retrieve_body($response);
+                $data = json_decode($body, true);
+                if (isset($data['cep'])) {
+                    $address_data = [
+                        'city'    => $data['city'],
+                        'state'   => $data['state'],
+                        'address' => $data['street']
+                    ];
+                }
+            } else {
+                // Fallback para ViaCEP
+                $ws_response = wp_remote_get("https://viacep.com.br/ws/{$cep}/json/");
+                if (!is_wp_error($ws_response)) {
+                    $ws_body = wp_remote_retrieve_body($ws_response);
+                    $ws_data = json_decode($ws_body, true);
+                    if (isset($ws_data['cep'])) {
+                        $address_data = [
+                            'city'    => $ws_data['localidade'],
+                            'state'   => $ws_data['uf'],
+                            'address' => $ws_data['logradouro']
+                        ];
+                    }
+                }
+            }
+        }
+
+        // Se encontrou endereço, preenche no WC()->customer
+        if ($address_data && function_exists('WC') && WC()->customer) {
+            WC()->customer->set_shipping_city($address_data['city']);
+            WC()->customer->set_shipping_state($address_data['state']);
+            WC()->customer->set_shipping_address_1($address_data['address']);
+            WC()->customer->set_billing_city($address_data['city']);
+            WC()->customer->set_billing_state($address_data['state']);
+            WC()->customer->set_billing_address_1($address_data['address']);
+            WC()->customer->save();
+
+            // Seta o transiente por 2 segundos
+            set_transient($transient_key, true, 2);
+        }
+
+        // Sempre devolve os rates normalmente
+        return $rates;
     }
 
     /**

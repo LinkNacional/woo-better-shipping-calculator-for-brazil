@@ -118,6 +118,7 @@ class WcBetterShippingCalculatorForBrazilPublic
         $enable_postcode_search = get_option('woo_better_calc_enable_auto_postcode_search', 'yes');
         $cache_time = get_option('woo_better_calc_cache_expiration_time', '0');
         $cache_token = get_option('woo_better_calc_enable_auto_cache_reset', 'WCBCB_9X2K4M7P5R8T3N6Y1Q');
+        $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
 
         if((has_block('woocommerce/product') || 
         (function_exists('is_product') && is_product())) || 
@@ -379,6 +380,16 @@ class WcBetterShippingCalculatorForBrazilPublic
                 }
             }
 
+            if($fill_checkout_address === "yes")
+            {
+                wp_enqueue_script(
+                    $this->plugin_name . '-checkout',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckout.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+            }
 
             if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
                 wp_enqueue_script(
