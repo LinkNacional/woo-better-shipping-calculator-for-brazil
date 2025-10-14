@@ -157,12 +157,12 @@
     }
 
     const featureMessage1 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Adicione a busca de CEP nas páginas de carrinho e/ou produto.'
+      '<strong>NOVO:</strong> Defina uma fonte personalizada entre Poppins ou a fonte do tema nos novos componentes de consulta de CEP em PRODUTO/CARRINHO.'
     ]);
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Sistema de cache inteligente que armazena consultas de frete para acelerar consultas futuras e melhorar a experiência do usuário.'
+      '<strong>NOVO:</strong> Melhore a página de checkout com a nova opção de preenchimento automático de endereço, junto com a opção de destaque no campo de CEP/POSTCODE.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento
@@ -1277,6 +1277,42 @@
         cacheResetInput.parentNode.insertBefore(clearCacheButton, cacheResetInput.nextSibling);
       }
     }
+
+    const shortcodeElements = document.querySelectorAll('.woo-better-shortcode');
+
+    shortcodeElements.forEach(function (codeEl) {
+      // Cria o botão de copiar
+      const copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.className = 'woo-better-copy-shortcode-btn';
+      copyBtn.title = 'Copiar shortcode';
+      copyBtn.innerHTML = '📋'; // Ícone de copiar
+
+      // Estilização leve (adicione o resto no CSS)
+      copyBtn.style.marginLeft = '8px';
+      copyBtn.style.cursor = 'pointer';
+      copyBtn.style.border = 'none';
+      copyBtn.style.background = 'transparent';
+      copyBtn.style.fontSize = '16px';
+      copyBtn.style.transition = 'transform 0.2s';
+
+      // Evento de copiar
+      copyBtn.addEventListener('click', function () {
+        const shortcodeText = codeEl.textContent.trim();
+        navigator.clipboard.writeText(shortcodeText).then(function () {
+          // Animação leve
+          copyBtn.innerHTML = '✅';
+          copyBtn.style.transform = 'scale(1.2)';
+          setTimeout(function () {
+            copyBtn.innerHTML = '📋';
+            copyBtn.style.transform = 'scale(1)';
+          }, 1200);
+        });
+      });
+
+      // Insere o botão após o shortcode
+      codeEl.parentNode.insertBefore(copyBtn, codeEl.nextSibling);
+    });
 
     startEvenst('cart');
     startEvenst('product');
