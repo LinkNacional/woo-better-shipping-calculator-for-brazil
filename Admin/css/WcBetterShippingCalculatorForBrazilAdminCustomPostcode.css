@@ -1,4 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap');
+
 /* Currency style */
+.woo-better-poppins-family {
+    color: orange !important;
+    font-family: 'Poppins', sans-serif !important;
+}
+
+.woo-better-inherit-family {
+    color: green !important;
+    font-family: inherit !important;
+}
+
 .woo-better-container-current-style {
     position: relative;
     display: flex;
@@ -25,8 +37,6 @@
     height: 50px !important;
     padding: 0 8px !important;
     font-size: 16px !important;
-    font-family: poppins, sans-serif;
-    font-family: poppins, sans-serif;
     box-sizing: border-box !important;
     vertical-align: top !important;
 }
@@ -47,7 +57,6 @@
     width: 100px !important;
     height: 50px !important;
     font-size: 12px !important;
-    font-family: poppins, sans-serif;
     cursor: pointer;
 }
 
@@ -60,7 +69,6 @@
     margin-top: 4px !important;
     cursor: pointer !important;
     font-size: 14px !important;
-    font-family: 'Poppins', sans-serif !important;
     padding: 0 !important;
 }
 
@@ -73,7 +81,6 @@
 
 .woo-better-current-postcode-text {
     font-size: 14px;
-    font-family: 'Poppins', sans-serif;
 }
 
 .woo-better-change-postcode-button {
@@ -83,7 +90,6 @@
     text-decoration: underline !important;
     cursor: pointer !important;
     font-size: 14px !important;
-    font-family: 'Poppins', sans-serif !important;
     padding: 0 !important;
 }
 
@@ -124,7 +130,6 @@
 .woo-better-cart-quantity {
     margin: 5px 0;
     font-size: 14px;
-    font-family: 'Poppins', sans-serif;
 }
 
 .woo-better-shipping-methods {
@@ -144,7 +149,6 @@
 .woo-better-shipping-list li {
     margin: 5px 0;
     font-size: 14px;
-    font-family: 'Poppins', sans-serif;
 }
 
 .woo-better-icon {
@@ -161,7 +165,6 @@
     text-decoration: underline !important;
     cursor: pointer;
     font-size: 14px !important;
-    font-family: 'Poppins', sans-serif !important;
     padding: 0 !important;
 }
 

@@ -75,7 +75,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'title'    => __('Fonte Utilizada', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,
                 'id'       => 'woo_better_calc_font_source',
-                'default'  => 'no',
+                'default'  => 'yes',
                 'type'     => 'radio',
                 'options'  => array(
                     'yes' => __('Fonte Poppins (recomendada)', 'woo-better-shipping-calculator-for-brazil'),

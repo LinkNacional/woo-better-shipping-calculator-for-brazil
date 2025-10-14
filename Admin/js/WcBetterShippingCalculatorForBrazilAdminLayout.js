@@ -7,6 +7,8 @@
     const subTitles = Array.from(mainForm.querySelectorAll('h2'));
     if (!tables.length || !subTitles.length) return;
 
+    let font_class = wcBetterCalcAjax.font_class
+
     const mainContainer = document.createElement('div');
     mainContainer.style.display = 'flex';
     mainContainer.style.flexWrap = 'wrap';
@@ -433,6 +435,7 @@
           forminp.style.backgroundColor = '#fff';
           forminp.style.border = '1px solid #dfdfdf'
           forminp.style.borderRadius = '8px';
+          forminp.style.boxSizing = 'border-box';
 
           const titleDesc = row.querySelector('.wooBetterCustomTitle');
           if (titleDesc) {
@@ -665,6 +668,9 @@
               textInput.id = `woo_better_calc_${styleName}_input_current_style_postcode_fake_custom`;
               textInput.placeholder = placeholderInput ? placeholderInput.value : 'Insira seu CEP';
               textInput.classList.add('woo-better-input-current-style');
+              if (font_class) {
+                textInput.classList.add(font_class);
+              }
               textInput.style.cursor = 'pointer';
               textInput.readOnly = true; // Somente leitura
 
@@ -774,6 +780,9 @@
               button.textContent = 'CONSULTAR';
               button.id = `woo_better_calc_${styleName}_button_current_style_postcode_fake_custom`;
               button.classList.add('woo-better-button-current-style');
+              if (font_class) {
+                button.classList.add(font_class);
+              }
 
               // Aplica os valores de estilo dos campos ao botão
               Object.keys(buttonStyleComponents).forEach(componentId => {
@@ -812,6 +821,9 @@
               const linkText = document.createElement('p');
               linkText.textContent = 'Não sei meu CEP';
               linkText.classList.add('woo-better-link-current-style');
+              if (font_class) {
+                linkText.classList.add(font_class);
+              }
 
               // Adiciona o texto ao container
               containerDiv.appendChild(linkText);

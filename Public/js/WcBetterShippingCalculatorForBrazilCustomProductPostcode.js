@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     const WooBetterData = window.WooBetterData || {};
+    let font_class = WooBetterData.inputStyles.fontClass || '';
     let containerFound = false;
     let blockPosition = 'h1[class*="title"]'
     let postcodeValue = '';
@@ -80,6 +81,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const postcodeText = document.createElement('span');
         postcodeText.innerHTML = `<strong>CEP</strong>: ${postcode}`;
         postcodeText.classList.add('woo-better-current-postcode-text');
+        if (font_class) {
+            postcodeText.classList.add(font_class);
+        }
 
         toggleButton.addEventListener('click', () => {
             const contentBlock = document.querySelector('.woo-better-content-block');
@@ -118,6 +122,9 @@ document.addEventListener('DOMContentLoaded', function () {
         changeButton.type = 'button';
         changeButton.textContent = 'Alterar';
         changeButton.classList.add('woo-better-change-postcode-button');
+        if (font_class) {
+            changeButton.classList.add(font_class);
+        }
 
         changeButton.addEventListener('click', () => {
             const infoBlock = document.querySelector('.woo-better-info-block');
@@ -183,7 +190,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 border-radius: ${WooBetterData.inputStyles.borderRadius} !important;
                 padding: 0px !important;
                 margin: 20px 0px !important;
-                font-family: 'Poppins', sans-serif !important;
                 font-size: 14px !important;
             }
 
@@ -349,6 +355,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function createInfoBlock(productInfo, shippingRates, postcode, form) {
         const infoBlock = document.createElement('div');
         infoBlock.classList.add('woo-better-info-block');
+        infoBlock.classList.add(font_class);
 
         const lastPostcode = getLastUsedPostcode();
 
@@ -404,6 +411,9 @@ document.addEventListener('DOMContentLoaded', function () {
         productName.appendChild(productText);
 
         productName.classList.add('woo-better-product-name');
+        if (font_class) {
+            productName.classList.add(font_class);
+        }
 
         const productQuantity = document.createElement('p');
 
@@ -419,6 +429,9 @@ document.addEventListener('DOMContentLoaded', function () {
         productQuantity.appendChild(quantityText);
 
         productQuantity.classList.add('woo-better-product-quantity');
+        if (font_class) {
+            productQuantity.classList.add(font_class);
+        }
 
         // Métodos de Entrega Disponíveis
         const shippingMethods = document.createElement('div');
@@ -444,6 +457,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         shippingRates.forEach(rate => {
             const listItem = document.createElement('li');
+            if (font_class) {
+                listItem.classList.add(font_class);
+            }
 
             // Decodifica HTML entities do currency symbol
             const tempDiv = document.createElement('div');
@@ -567,6 +583,9 @@ document.addEventListener('DOMContentLoaded', function () {
         input.name = 'woo_better_custom_product_postcode';
         input.placeholder = WooBetterData.placeholder || 'Digite o CEP';
         input.classList.add('woo-better-input-current-style');
+        if (font_class) {
+            input.classList.add(font_class);
+        }
         input.autocomplete = 'postal-code';
 
         if (lastPostcode) {
@@ -626,6 +645,9 @@ document.addEventListener('DOMContentLoaded', function () {
         button.type = 'submit';
         button.textContent = 'CONSULTAR';
         button.classList.add('woo-better-button-current-style');
+        if (font_class) {
+            button.classList.add(font_class);
+        }
 
         // Aplica os estilos do botão
         const buttonStyles = WooBetterData.buttonStyles || {};
@@ -642,6 +664,9 @@ document.addEventListener('DOMContentLoaded', function () {
         linkText.href = 'https://buscacepinter.correios.com.br/app/endereco/index.php';
         linkText.textContent = 'Não sei meu CEP';
         linkText.classList.add('woo-better-link-current-style');
+        if (font_class) {
+            linkText.classList.add(font_class);
+        }
         linkText.target = '_blank';
 
         // Adiciona o texto ao container

@@ -119,6 +119,12 @@ class WcBetterShippingCalculatorForBrazilPublic
         $cache_time = get_option('woo_better_calc_cache_expiration_time', '0');
         $cache_token = get_option('woo_better_calc_enable_auto_cache_reset', 'WCBCB_9X2K4M7P5R8T3N6Y1Q');
         $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
+        $font_source = get_option('woo_better_calc_font_source', 'yes');
+        $font_class = 'woo-better-poppins-family';
+
+        if($font_source === 'no'){
+            $font_class = 'woo-better-inherit-family';
+        } 
 
         if((has_block('woocommerce/product') || 
         (function_exists('is_product') && is_product())) || 
@@ -259,6 +265,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'borderStyle' => get_option('woo_better_calc_cart_input_border_style', 'solid'),
                     'borderColor' => get_option('woo_better_calc_cart_input_border_color_field', '#cccccc'),
                     'borderRadius' => get_option('woo_better_calc_cart_input_border_radius', '4px'),
+                    'fontClass' => $font_class
                 ),
                 'buttonStyles' => array(
                     'backgroundColor' => get_option('woo_better_calc_cart_button_background_color_field', '#0073aa'),
@@ -322,6 +329,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'borderStyle' => get_option('woo_better_calc_product_input_border_style', 'solid'),
                     'borderColor' => get_option('woo_better_calc_product_input_border_color_field', '#cccccc'),
                     'borderRadius' => get_option('woo_better_calc_product_input_border_radius', '4px'),
+                    'fontClass' => $font_class
                 ),
                 'buttonStyles' => array(
                     'backgroundColor' => get_option('woo_better_calc_product_button_background_color_field', '#0073aa'),

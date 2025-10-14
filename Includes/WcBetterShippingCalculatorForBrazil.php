@@ -438,6 +438,12 @@ class WcBetterShippingCalculatorForBrazil
 
             $plugin_path = 'invoice-payment-for-woocommerce/wc-invoice-payment.php';
             $invoice_plugin_installed = file_exists(WP_PLUGIN_DIR . '/' . $plugin_path);
+            $font_source = get_option('woo_better_calc_font_source', 'yes');
+            $font_class = 'woo-better-poppins-family';
+
+            if($font_source === 'no'){
+                $font_class = 'woo-better-inherit-family';
+            } 
 
             // Adiciona ajaxurl para requisições AJAX
             wp_localize_script('wc-better-calc-settings-layout', 'wcBetterCalcAjax', array(
@@ -445,7 +451,8 @@ class WcBetterShippingCalculatorForBrazil
                 'nonce' => wp_create_nonce('woo_better_calc_admin_nonce'),
                 'install_nonce' => wp_create_nonce('install-plugin_invoice-payment-for-woocommerce'),
                 'plugin_slug' => 'invoice-payment-for-woocommerce',
-                'invoice_plugin_installed' => $invoice_plugin_installed
+                'invoice_plugin_installed' => $invoice_plugin_installed,
+                'font_class' => $font_class
             ));
 
             $icons = array(
