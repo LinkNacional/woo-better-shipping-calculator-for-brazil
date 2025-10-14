@@ -399,6 +399,14 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
+            wp_enqueue_script(
+                $this->plugin_name . '-checkout-postcode',
+                plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPostcode.COMPILED.js',
+                array('jquery'),
+                $this->version,
+                false
+            );
+
             if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
                 wp_enqueue_script(
                     $this->plugin_name . '-short-number-field',

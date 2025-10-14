@@ -888,23 +888,102 @@ class WcBetterShippingCalculatorForBrazil
         {
             $this->loader->add_filter('woocommerce_package_rates', $this, 'wc_better_calc_get_shipping_rates', 10, 2);
         }
-        
+
+        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'wc_better_calc_checkout_fields', 10, 1);
+    }
+
+    public function wc_better_calc_checkout_fields($fields)
+    {
+        foreach (['billing', 'shipping'] as $type) {
+            $postcode_key = $type . '_postcode';
+            $first_name_key = $type . '_first_name';
+            $last_name_key = $type . '_last_name';
+
+            // Prioridade máxima para o CEP
+            if (isset($fields[$type][$postcode_key])) {
+                $fields[$type][$postcode_key]['priority'] = 10;
+            }
+            // Prioridade alta para nome/sobrenome
+            if (isset($fields[$type][$first_name_key])) {
+                $fields[$type][$first_name_key]['priority'] = 40;
+            }
+            if (isset($fields[$type][$last_name_key])) {
+                $fields[$type][$last_name_key]['priority'] = 40;
+            }
+
+            // Demais campos
+            foreach ($fields[$type] as $key => &$field) {
+                if (!in_array($key, [$postcode_key, $first_name_key, $last_name_key])) {
+                    $field['priority'] = isset($field['priority']) ? max($field['priority'], 30) : 30;
+                }
+            }
+            uasort($fields[$type], function($a, $b) {
+                return ($a['priority'] ?? 10) <=> ($b['priority'] ?? 10);
+            });
+        }
+        return $fields;
     }
 
     public function wc_better_calc_get_shipping_rates($rates, $package)
     {
-        // Consulta o CEP na API externa
-        $cep = isset($package['destination']['postcode']) ? $package['destination']['postcode'] : '';
-        $address_data = null;
-        // Chave única para o transiente, baseada no CEP
-        $transient_key = 'wc_better_calc_addr_' . md5($cep);
-
-        // Se o transiente existe, não consulta novamente
-        if (get_transient($transient_key)) {
-            // Apenas retorna as taxas normalmente
-            return $rates;
+        // Obtém os CEPs do cliente
+        $billing_cep  = '';
+        $shipping_cep = '';
+        if (function_exists('WC') && WC()->customer) {
+            $billing_cep  = WC()->customer->get_billing_postcode();
+            $shipping_cep = WC()->customer->get_shipping_postcode();
         }
 
+        // Chaves de transiente para cada CEP
+        $transient_key_billing  = 'wc_better_calc_addr_' . md5($billing_cep);
+        $transient_key_shipping = 'wc_better_calc_addr_' . md5($shipping_cep);
+
+        // Se ambos os CEPs são iguais, faz só uma consulta
+        $address_data_billing  = null;
+        $address_data_shipping = null;
+
+        if ($billing_cep === $shipping_cep && $billing_cep) {
+            if (get_transient($transient_key_billing)) {
+                return $rates;
+            }
+            $address_data_billing = $this->get_address_data_by_cep($billing_cep);
+            $address_data_shipping = $address_data_billing;
+        } else {
+            // CEPs diferentes, faz duas consultas
+            if ($billing_cep && !get_transient($transient_key_billing)) {
+                $address_data_billing = $this->get_address_data_by_cep($billing_cep);
+            }
+            if ($shipping_cep && !get_transient($transient_key_shipping)) {
+                $address_data_shipping = $this->get_address_data_by_cep($shipping_cep);
+            }
+        }
+
+        // Atualiza endereço do cliente se encontrado
+        if ($address_data_billing && function_exists('WC') && WC()->customer) {
+            WC()->customer->set_billing_city($address_data_billing['city']);
+            WC()->customer->set_billing_state($address_data_billing['state']);
+            WC()->customer->set_billing_address_1($address_data_billing['address']);
+            set_transient($transient_key_billing, true, 2);
+        }
+        if ($address_data_shipping && function_exists('WC') && WC()->customer) {
+            WC()->customer->set_shipping_city($address_data_shipping['city']);
+            WC()->customer->set_shipping_state($address_data_shipping['state']);
+            WC()->customer->set_shipping_address_1($address_data_shipping['address']);
+            set_transient($transient_key_shipping, true, 2);
+        }
+        if ((($address_data_billing || $address_data_shipping) && function_exists('WC') && WC()->customer)) {
+            WC()->customer->save();
+        }
+
+        return $rates;
+    }
+
+
+    /**
+     * Consulta endereço por CEP usando BrasilAPI e fallback ViaCEP
+     */
+    private function get_address_data_by_cep($cep) {
+        $address_data = null;
         if ($cep) {
             $response = wp_remote_get("https://brasilapi.com.br/api/cep/v2/{$cep}");
             if (!is_wp_error($response)) {
@@ -933,23 +1012,7 @@ class WcBetterShippingCalculatorForBrazil
                 }
             }
         }
-
-        // Se encontrou endereço, preenche no WC()->customer
-        if ($address_data && function_exists('WC') && WC()->customer) {
-            WC()->customer->set_shipping_city($address_data['city']);
-            WC()->customer->set_shipping_state($address_data['state']);
-            WC()->customer->set_shipping_address_1($address_data['address']);
-            WC()->customer->set_billing_city($address_data['city']);
-            WC()->customer->set_billing_state($address_data['state']);
-            WC()->customer->set_billing_address_1($address_data['address']);
-            WC()->customer->save();
-
-            // Seta o transiente por 2 segundos
-            set_transient($transient_key, true, 2);
-        }
-
-        // Sempre devolve os rates normalmente
-        return $rates;
+        return $address_data;
     }
 
     /**
