@@ -731,53 +731,8 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             )
         );
 
-        // TAB 5: Configurações Carrinho(versão antiga)
-        $oldCartSettings = array(
-            'oldCart_section' => array(
-                'title' => __('Carrinho (versão antiga)', 'woo-better-shipping-calculator-for-brazil'),
-                'type'  => 'title',
-                'id'    => 'woo_better_calc_title_old_cart'
-            ),
-            'cep_required' => array(
-                'title'    => __('CEP obrigatório no carrinho', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => false,
-                'id'       => 'woo_better_calc_cep_required',
-                'default'  => 'no',
-                'type'     => 'radio',
-                'options'  => array(
-                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
-                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
-                ),
-                'custom_attributes' => array(
-                    'data-desc-tip' => __('Exige que o cliente insira um CEP válido no carrinho.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Habilite esta configuração para tornar o CEP obrigatório no carrinho.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('CEP obrigatório no carrinho.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-            'hidden_cart_address' => array(
-                'title'    => __('Ocultar campos de endereço na página de carrinho', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => false,
-                'id'       => 'woo_better_hidden_cart_address',
-                'default'  => 'no',
-                'type'     => 'radio',
-                'options'  => array(
-                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
-                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
-                ),
-                'custom_attributes' => array(
-                    'data-desc-tip' => __('Oculta os campos de endereço na página de carrinho.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Habilite esta configuração para ocultar os campos de endereço no carrinho.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Ocultar campos de endereço.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-            'oldCart_section_end' => array(
-                'type' => 'sectionend',
-                'id'   => 'woo_better_calc_old_cart'
-            )
-        );
-
         $checkoutSetting = array(
-            // TAB 6: Checkout
+            // TAB 5: Checkout
             'checkout_section' => array(
                 'title' => __('Checkout', 'woo-better-shipping-calculator-for-brazil'),
                 'type'  => 'title',
@@ -822,7 +777,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
         );
 
         $cacheSettings = array(
-            // TAB 7: Cache
+            // TAB 6: Cache
             'cache_section' => array(
                 'title' => __('Cache', 'woo-better-shipping-calculator-for-brazil'),
                 'type'  => 'title',
@@ -888,7 +843,52 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             )
         );
 
-        $settings = array_merge($settings, $generalSettings, $shortcodeSettings, $productSettings, $cartSettings, $oldCartSettings, $checkoutSetting, $cacheSettings);
+        // TAB 7: Configurações Carrinho(versão antiga)
+        $oldCartSettings = array(
+            'oldCart_section' => array(
+                'title' => __('Carrinho (Versão legada | Woo 10-)', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'title',
+                'id'    => 'woo_better_calc_title_old_cart'
+            ),
+            'cep_required' => array(
+                'title'    => __('CEP obrigatório no carrinho', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_calc_cep_required',
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Exige que o cliente insira um CEP válido no carrinho.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite esta configuração para tornar o CEP obrigatório no carrinho.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('CEP obrigatório no carrinho.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'hidden_cart_address' => array(
+                'title'    => __('Ocultar campos de endereço na página de carrinho', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_hidden_cart_address',
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Oculta os campos de endereço na página de carrinho.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite esta configuração para ocultar os campos de endereço no carrinho.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ocultar campos de endereço.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'oldCart_section_end' => array(
+                'type' => 'sectionend',
+                'id'   => 'woo_better_calc_old_cart'
+            )
+        );
+
+        $settings = array_merge($settings, $generalSettings, $shortcodeSettings, $productSettings, $cartSettings, $checkoutSetting, $cacheSettings, $oldCartSettings);
 
         return apply_filters('woocommerce_get_settings_' . $this->id, $settings);
     }
