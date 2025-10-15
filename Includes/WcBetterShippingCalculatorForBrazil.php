@@ -936,10 +936,15 @@ class WcBetterShippingCalculatorForBrazil
         // Obtém os CEPs do cliente
         $billing_cep  = '';
         $shipping_cep = '';
+        $billing_cep_test  = WC()->customer->get_billing_postcode();
+        error_log('Billing CEP (test): ' . $billing_cep_test);
         if (function_exists('WC') && WC()->customer) {
+            error_log('entrou aqui');
             $billing_cep  = WC()->customer->get_billing_postcode();
             $shipping_cep = WC()->customer->get_shipping_postcode();
         }
+
+        error_log('chameiiii');
 
         // Chaves de transiente para cada CEP
         $transient_key_billing  = 'wc_better_calc_addr_' . md5($billing_cep);
