@@ -177,10 +177,12 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        // Checa se o notice já foi dispensado permanentemente
-        $notice_dismissed = get_user_meta(get_current_user_id(), 'woo_better_calc_notice_dismissed', true);
-        
-        if ($notice_dismissed || isset($_GET['tab']) && 'wc-better-calc' === sanitize_text_field(wp_unslash($_GET['tab']))) {
+        // Chave única para o notice da versão
+        $version = $this->version;
+        $notice_key = 'woo_better_calc_notice_dismissed_' . $version;
+        $notice_dismissed = get_user_meta(get_current_user_id(), $notice_key, true);
+
+        if ($notice_dismissed || (isset($_GET['tab']) && 'wc-better-calc' === sanitize_text_field(wp_unslash($_GET['tab'])))) {
             return;
         }
 
@@ -189,13 +191,15 @@ class WcBetterShippingCalculatorForBrazil
         
         ?>
         <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
-            <p>
-                <strong>🚀 Calculadora de Frete para o Brasil</strong><br>
-                Veja as novas funcionalidades implementadas! Caso seja novo por aqui, 
-                <a href="<?php echo esc_url($settings_url); ?>" class="button button-primary" style="margin-left: 10px;">
-                    Configure o plugin de acordo com sua necessidade
-                </a>
-            </p>
+            <div style="height: 100%; padding: 10px;">
+                <strong style="font-size: 18px;">🚀 Calculadora de Frete para o Brasil</strong>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <p>Veja as novas funcionalidades de <strong>CHECKOUT</strong>, como preenchimento automático de endereço, campo de CEP em destaque e muito mais!</p>
+                    <a href="<?php echo esc_url($settings_url); ?>" class="button button-primary" style="overflow-wrap: break-word;">
+                        Configure o plugin de acordo com sua necessidade
+                    </a>
+                </div>
+            </div>
         </div>
         <?php
     }
@@ -213,9 +217,12 @@ class WcBetterShippingCalculatorForBrazil
             wp_die('Unauthorized');
         }
 
-        // Salva como dispensado para o usuário atual (permanente)
+        // Chave única para o notice da versão
+        $version = isset($this->version) ? $this->version : 'unknown';
+        $notice_key = 'woo_better_calc_notice_dismissed_' . $version;
+        update_user_meta(get_current_user_id(), $notice_key, true);
+        // Também salva o meta antigo para evitar duplicidade
         update_user_meta(get_current_user_id(), 'woo_better_calc_notice_dismissed', true);
-        
         wp_send_json_success();
     }
 
