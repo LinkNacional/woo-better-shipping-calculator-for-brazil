@@ -1,3 +1,8 @@
+# 4.5.0 - 15/10/25
+* NOVO: Sistema de configuração da fonte do texto nos componente de produto + carrinho.
+* NOVO: Preenchimento automático de endereço na página de Checkout.
+* NOVO: Destaque no campo de CEP no formulário da página de Checkout.
+
 # 4.4.0 - 10/09/25
 * Novo: sistema de cache para consulta dos CEPs.
 * Novo: cartão de exibição de plugins.
