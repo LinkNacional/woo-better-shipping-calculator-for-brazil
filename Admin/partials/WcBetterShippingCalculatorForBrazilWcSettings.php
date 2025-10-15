@@ -119,7 +119,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     '<p>&nbsp;</p>' . // Espaço extra
                     '<p><strong>Integração com Temas Clássicos via Shortcode</strong><br>Esta opção é recomendada para temas que não utilizam o editor de blocos (Gutenberg). Se você usa um tema de blocos, opte pelas configurações nativas para uma melhor experiência.</p>' .
                     '<p>&nbsp;</p>' . // Espaço extra
-                    '<p><span><strong>Atenção:</strong> Ao usar shortcodes, apenas as configurações da aba Geral serão aplicadas.</span></p>',
+                    '<p><span><strong>Atenção:</strong> Ao usar shortcodes, apenas as configurações da aba Geral e Checkout serão aplicadas.</span></p>',
                     'woo-better-shipping-calculator-for-brazil'
                 ),
                 'type'  => 'title',
