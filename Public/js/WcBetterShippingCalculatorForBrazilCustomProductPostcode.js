@@ -1,5 +1,17 @@
 document.addEventListener('DOMContentLoaded', function () {
+
     const WooBetterData = window.WooBetterData || {};
+
+    // --- Lógica para sincronizar CEP do carrinho com cache personalizado ---
+    const cartCep = WooBetterData.cart_cep || '';
+    const lastPostcode = getLastUsedPostcode();
+    if (cartCep && cartCep !== lastPostcode) {
+        // Reseta cache e faz nova consulta usando o CEP do carrinho
+        invalidateCache();
+        setLastUsedPostcode(cartCep);
+        sendCEP(cartCep, true);
+    }
+
     let font_class = WooBetterData.inputStyles.fontClass || '';
     let containerFound = false;
     let blockPosition = 'h1[class*="title"]'

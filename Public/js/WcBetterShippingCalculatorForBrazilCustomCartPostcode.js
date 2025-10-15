@@ -6,6 +6,16 @@ document.addEventListener('DOMContentLoaded', function () {
     function debugLog(...args) {
     }
 
+    // --- Lógica para sincronizar CEP do carrinho com cache personalizado ---
+    const cartCep = WooBetterData.cart_cep || '';
+    const lastPostcode = getLastUsedPostcode();
+    if (cartCep && cartCep !== lastPostcode) {
+        // Reseta cache e faz nova consulta usando o CEP do carrinho
+        invalidateCache();
+        setLastUsedPostcode(cartCep);
+        sendCEP(cartCep, true);
+    }
+
     let containerFound = false;
     let blockPosition = 'h2[class*="order"]'
     let postcodeValue = '';

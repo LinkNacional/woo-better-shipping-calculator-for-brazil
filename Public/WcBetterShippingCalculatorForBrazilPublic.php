@@ -127,6 +127,14 @@ class WcBetterShippingCalculatorForBrazilPublic
             $font_class = 'woo-better-inherit-family';
         } 
 
+        $cart_cep = '';
+        if (function_exists('WC') && WC()->customer) {
+            $cart_cep = WC()->customer->get_shipping_postcode();
+            if (empty($cart_cep)) {
+                $cart_cep = WC()->customer->get_billing_postcode();
+            }
+        }
+
         if((has_block('woocommerce/product') || 
         (function_exists('is_product') && is_product())) || 
         has_block('woocommerce/cart')) {
@@ -295,7 +303,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                 'quantity' => WC_BETTER_SHIPPING_PRODUCT_QUANTITY,
                 'enable_search' => $enable_postcode_search,
                 'cache_time' => $cache_time,
-                'cache_token' => $cache_token
+                'cache_token' => $cache_token,
+                'cart_cep' => $cart_cep
             ));
 
             wp_enqueue_style(
@@ -359,7 +368,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                 'quantity' => WC_BETTER_SHIPPING_PRODUCT_QUANTITY,
                 'enable_search' => $enable_postcode_search,
                 'cache_time' => $cache_time,
-                'cache_token' => $cache_token
+                'cache_token' => $cache_token,
+                'cart_cep' => $cart_cep
             ));
 
             wp_enqueue_style(
