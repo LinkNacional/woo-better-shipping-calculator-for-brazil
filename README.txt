@@ -93,6 +93,11 @@ add_filter(
 
 == Changelog ==
 
+= 4.5.0 - 15/10/2025 =
+* NEW: Text font configuration system in the product and cart components.
+* NEW: Automatic address filling on the Checkout page.
+* NEW: Highlight for the ZIP code field in the Checkout page form.
+
 = 4.4.0 - 10/09/2025 =
 * New: cache system for postal code queries.
 * New: plugin display card.
