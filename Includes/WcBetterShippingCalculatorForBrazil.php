@@ -935,6 +935,7 @@ class WcBetterShippingCalculatorForBrazil
         $state      = isset($_POST['state']) ? sanitize_text_field($_POST['state']) : '';
         $district   = isset($_POST['district']) ? sanitize_text_field($_POST['district']) : '';
         $postcode   = isset($_POST['postcode']) ? sanitize_text_field($_POST['postcode']) : '';
+        error_log($postcode);
         $context    = isset($_POST['context']) ? sanitize_text_field($_POST['context']) : 'shipping';
 
         $updated = false;
