@@ -14,6 +14,7 @@ function generateEntries(sourceDir, extension) {
             }
         });
     }
+    console.log('Webpack admin entries:', entries); // Debug log
     return entries;
 }
 

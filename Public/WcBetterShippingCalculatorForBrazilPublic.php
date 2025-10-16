@@ -86,6 +86,20 @@ class WcBetterShippingCalculatorForBrazilPublic
                 wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPublic.COMPILED.css', array(), $this->version, 'all');
             }
         }
+
+        if (function_exists('is_checkout') && is_checkout()) {
+            $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
+            if($cep_position === 'yes')
+            {
+                wp_enqueue_style(
+                    $this->plugin_name . '-checkout-postcode',
+                    plugin_dir_url(__FILE__) . 'css/WcBetterShippingCalculatorForBrazilCheckoutPostcode.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
+        }
     }
 
     /**
@@ -401,23 +415,31 @@ class WcBetterShippingCalculatorForBrazilPublic
 
             if($fill_checkout_address === "yes")
             {
-                wp_enqueue_script(
-                    $this->plugin_name . '-checkout',
-                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckout.COMPILED.js',
-                    array('jquery'),
-                    $this->version,
-                    false
-                );
+                // wp_enqueue_script(
+                //     $this->plugin_name . '-checkout',
+                //     plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckout.COMPILED.js',
+                //     array('jquery'),
+                //     $this->version,
+                //     false
+                // );
             }
 
             if($cep_position === 'yes')
             {
                 wp_enqueue_script(
                     $this->plugin_name . '-checkout-postcode',
-                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPostcode.COMPILED.js',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilCheckoutPostcode.js',
                     array('jquery'),
                     $this->version,
                     false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-checkout-postcode',
+                    'wc_better_checkout_vars',
+                    array(
+                        'ajax_url' => admin_url('admin-ajax.php')
+                    )
                 );
             }
             

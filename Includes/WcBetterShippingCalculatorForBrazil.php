@@ -890,13 +890,10 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
 
-        $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
-        if($fill_checkout_address === "yes")
-        {
-            $this->loader->add_filter('woocommerce_package_rates', $this, 'wc_better_calc_get_shipping_rates', 10, 2);
-        }
-
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'wc_better_calc_checkout_fields', 10, 1);
+
+        $this->loader->add_action('wp_ajax_wc_better_insert_address', $this, 'wc_better_insert_address');
+        $this->loader->add_action('wp_ajax_nopriv_wc_better_insert_address', $this, 'wc_better_insert_address');
     }
 
     public function wc_better_calc_checkout_fields($fields)
@@ -931,100 +928,65 @@ class WcBetterShippingCalculatorForBrazil
         return $fields;
     }
 
-    public function wc_better_calc_get_shipping_rates($rates, $package)
-    {
-        // Obtém os CEPs do cliente
-        $billing_cep  = '';
-        $shipping_cep = '';
-        $billing_cep_test  = WC()->customer->get_billing_postcode();
-        error_log('Billing CEP (test): ' . $billing_cep_test);
+    public function wc_better_insert_address() {
+        // Recebe e sanitiza os dados
+        $address    = isset($_POST['address']) ? sanitize_text_field($_POST['address']) : '';
+        $city       = isset($_POST['city']) ? sanitize_text_field($_POST['city']) : '';
+        $state      = isset($_POST['state']) ? sanitize_text_field($_POST['state']) : '';
+        $district   = isset($_POST['district']) ? sanitize_text_field($_POST['district']) : '';
+        $postcode   = isset($_POST['postcode']) ? sanitize_text_field($_POST['postcode']) : '';
+        $context    = isset($_POST['context']) ? sanitize_text_field($_POST['context']) : 'shipping';
+
+        $updated = false;
         if (function_exists('WC') && WC()->customer) {
-            error_log('entrou aqui');
-            $billing_cep  = WC()->customer->get_billing_postcode();
-            $shipping_cep = WC()->customer->get_shipping_postcode();
-        }
-
-        error_log('chameiiii');
-
-        // Chaves de transiente para cada CEP
-        $transient_key_billing  = 'wc_better_calc_addr_' . md5($billing_cep);
-        $transient_key_shipping = 'wc_better_calc_addr_' . md5($shipping_cep);
-
-        // Se ambos os CEPs são iguais, faz só uma consulta
-        $address_data_billing  = null;
-        $address_data_shipping = null;
-
-        if ($billing_cep === $shipping_cep && $billing_cep) {
-            if (get_transient($transient_key_billing)) {
-                return $rates;
-            }
-            $address_data_billing = $this->get_address_data_by_cep($billing_cep);
-            $address_data_shipping = $address_data_billing;
-        } else {
-            // CEPs diferentes, faz duas consultas
-            if ($billing_cep && !get_transient($transient_key_billing)) {
-                $address_data_billing = $this->get_address_data_by_cep($billing_cep);
-            }
-            if ($shipping_cep && !get_transient($transient_key_shipping)) {
-                $address_data_shipping = $this->get_address_data_by_cep($shipping_cep);
-            }
-        }
-
-        // Atualiza endereço do cliente se encontrado
-        if ($address_data_billing && function_exists('WC') && WC()->customer) {
-            WC()->customer->set_billing_city($address_data_billing['city']);
-            WC()->customer->set_billing_state($address_data_billing['state']);
-            WC()->customer->set_billing_address_1($address_data_billing['address']);
-            set_transient($transient_key_billing, true, 2);
-        }
-        if ($address_data_shipping && function_exists('WC') && WC()->customer) {
-            WC()->customer->set_shipping_city($address_data_shipping['city']);
-            WC()->customer->set_shipping_state($address_data_shipping['state']);
-            WC()->customer->set_shipping_address_1($address_data_shipping['address']);
-            set_transient($transient_key_shipping, true, 2);
-        }
-        if ((($address_data_billing || $address_data_shipping) && function_exists('WC') && WC()->customer)) {
-            WC()->customer->save();
-        }
-
-        return $rates;
-    }
-
-
-    /**
-     * Consulta endereço por CEP usando BrasilAPI e fallback ViaCEP
-     */
-    private function get_address_data_by_cep($cep) {
-        $address_data = null;
-        if ($cep) {
-            $response = wp_remote_get("https://brasilapi.com.br/api/cep/v2/{$cep}");
-            if (!is_wp_error($response)) {
-                $body = wp_remote_retrieve_body($response);
-                $data = json_decode($body, true);
-                if (isset($data['cep'])) {
-                    $address_data = [
-                        'city'    => $data['city'],
-                        'state'   => $data['state'],
-                        'address' => $data['street']
-                    ];
+            if ($context === 'shipping') {
+                if ($address !== '') {
+                    WC()->customer->set_shipping_address_1($address);
+                    $updated = true;
+                }
+                if ($city !== '') {
+                    WC()->customer->set_shipping_city($city);
+                    $updated = true;
+                }
+                if ($state !== '') {
+                    WC()->customer->set_shipping_state($state);
+                    $updated = true;
+                }
+                if ($postcode !== '') {
+                    WC()->customer->set_shipping_postcode($postcode);
+                    $updated = true;
                 }
             } else {
-                // Fallback para ViaCEP
-                $ws_response = wp_remote_get("https://viacep.com.br/ws/{$cep}/json/");
-                if (!is_wp_error($ws_response)) {
-                    $ws_body = wp_remote_retrieve_body($ws_response);
-                    $ws_data = json_decode($ws_body, true);
-                    if (isset($ws_data['cep'])) {
-                        $address_data = [
-                            'city'    => $ws_data['localidade'],
-                            'state'   => $ws_data['uf'],
-                            'address' => $ws_data['logradouro']
-                        ];
-                    }
+                if ($address !== '') {
+                    WC()->customer->set_billing_address_1($address);
+                    $updated = true;
+                }
+                if ($city !== '') {
+                    WC()->customer->set_billing_city($city);
+                    $updated = true;
+                }
+                if ($state !== '') {
+                    WC()->customer->set_billing_state($state);
+                    $updated = true;
+                }
+                if ($postcode !== '') {
+                    WC()->customer->set_billing_postcode($postcode);
+                    $updated = true;
                 }
             }
+            if ($updated) {
+                WC()->customer->save();
+            }
         }
-        return $address_data;
+        if ($updated) {
+            wp_send_json_success([
+                'message' => "Endereço inserido: {$address}, {$city} - {$district} - {$state}"
+            ]);
+        } else {
+            wp_send_json_success([
+                'message' => 'Nenhum endereço inserido, dados em branco.'
+            ]);
+        }
     }
 
     /**
