@@ -93,7 +93,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             {
                 wp_enqueue_style(
                     $this->plugin_name . '-checkout-postcode',
-                    plugin_dir_url(__FILE__) . 'css/WcBetterShippingCalculatorForBrazilCheckoutPostcode.css',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPostcode.COMPILED.css',
                     array(),
                     $this->version,
                     'all'
@@ -413,22 +413,11 @@ class WcBetterShippingCalculatorForBrazilPublic
                 }
             }
 
-            if($fill_checkout_address === "yes")
-            {
-                // wp_enqueue_script(
-                //     $this->plugin_name . '-checkout',
-                //     plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckout.COMPILED.js',
-                //     array('jquery'),
-                //     $this->version,
-                //     false
-                // );
-            }
-
             if($cep_position === 'yes')
             {
                 wp_enqueue_script(
                     $this->plugin_name . '-checkout-postcode',
-                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilCheckoutPostcode.js',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPostcode.COMPILED.js',
                     array('jquery'),
                     $this->version,
                     false
@@ -438,7 +427,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-checkout-postcode',
                     'wc_better_checkout_vars',
                     array(
-                        'ajax_url' => admin_url('admin-ajax.php')
+                        'ajax_url' => admin_url('admin-ajax.php'),
+                        'fill_checkout_address' => $fill_checkout_address,
                     )
                 );
             }

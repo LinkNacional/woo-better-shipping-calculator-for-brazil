@@ -33,25 +33,15 @@ jQuery(function ($) {
         async handleCheckboxChange(event) {
             // Se desmarcou o checkbox
             if (!event.target.checked) {
-                // Desabilita o checkbox durante a reconsulta
-                const $checkboxInput = this.checkboxLabel.find('input[type="checkbox"]');
-                $checkboxInput.prop('disabled', true);
-                $checkboxInput.addClass('wc-better-checkbox-disabled');
-                // Animação de carregando
-                this.showLoadingLabel();
-                // Aguarda mínimo de 2s
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                // Se tem endereço, restaura label do endereço
-                if (this.addressData) {
-                    this.updateCheckboxLabel(this.addressData);
-                    $checkboxInput.prop('disabled', false);
-                    $checkboxInput.removeClass('wc-better-checkbox-disabled');
-                } else {
-                    // Se não tem endereço, mantém label padrão
-                    this.showNotFoundLabel();
-                    // Mantém desabilitado se não tem endereço
-                }
+                // ...existing code...
                 return;
+            }
+            // Se marcou o checkbox e tem endereço
+            // Limpa o campo de número se existir
+            var numberFieldId = this.context + '-number';
+            var $numberInput = $('#' + numberFieldId);
+            if ($numberInput.length) {
+                $numberInput.val('');
             }
             // Se marcou o checkbox e tem endereço
             if (!this.addressData) return;
@@ -137,7 +127,6 @@ jQuery(function ($) {
             if (address.city) parts.push(address.city);
             if (address.district) parts.push(address.district);
             if (address.state) parts.push(address.state);
-            console.log(parts);
             const labelText = `Endereço inserido: ${parts.join(' - ')}`;
             $labelSpan.stop(true, true).css('opacity', 1).text(labelText).show();
         }
@@ -352,7 +341,14 @@ jQuery(function ($) {
         if ($postcodeInput.length === 0) return;
         var $parentDiv = $postcodeInput.parent();
         var checkboxId = 'wc-better-checkbox-' + type;
-        if ($parentDiv.parent().find('#' + checkboxId).length) return;
+        var $existingCheckbox = $('#' + checkboxId).closest('.wc-block-components-checkbox');
+        if ($existingCheckbox.length) {
+            // Se já existe, verifica se está logo abaixo do CEP
+            if (!$postcodeInput.parent().next().is($existingCheckbox)) {
+                $existingCheckbox.insertAfter($postcodeInput.parent());
+            }
+            return;
+        }
         var $clonedCheckbox = $('<div>', {
             class: 'wc-block-components-checkbox wc-block-checkout__use-address-for-shipping wc-better'
         });
@@ -374,13 +370,21 @@ jQuery(function ($) {
         });
         $checkboxLabel.append($checkboxInput, $checkboxSvg, $checkboxText);
         $clonedCheckbox.append($checkboxLabel);
-        if ($parentDiv.next().length) {
-            $clonedCheckbox.insertAfter($parentDiv);
-        } else {
-            $parentDiv.parent().append($clonedCheckbox);
-        }
+        $clonedCheckbox.insertAfter($postcodeInput.parent());
         // Instancia o monitoramento do CEP para atualizar label
         new CepAddressFetcher('#' + type + '-postcode', 'label[for="' + checkboxId + '"]', type);
+    }
+
+    function toggleCheckboxVisibility(baseId) {
+        var $checkboxDiv = $('#wc-better-checkbox-' + baseId).closest('.wc-block-components-checkbox');
+        var $countrySelect = $('#' + baseId + '-country');
+        if ($countrySelect.length && $checkboxDiv.length) {
+            if ($countrySelect.val() !== 'BR') {
+                $checkboxDiv.css('display', 'none');
+            } else {
+                $checkboxDiv.css('display', '');
+            }
+        }
     }
 
     var observer = new MutationObserver(function () {
@@ -393,16 +397,24 @@ jQuery(function ($) {
             var priorityClass = 'woo-better-priority-' + baseId;
             if ($divComponent.hasClass(priorityClass)) return;
             $divComponent.addClass(priorityClass);
+
+            // Movimenta o componente de CEP para antes do address_1
+            var $addressInput = $('#' + baseId + '-address_1');
+            if ($addressInput.length) {
+                var $addressParentDiv = $addressInput.parent();
+                $divComponent.insertBefore($addressParentDiv);
+            }
+
+            insertCustomCheckboxBelowPostcode(baseId);
+
+            // Esconde/mostra checkbox conforme país
+            toggleCheckboxVisibility(baseId);
+            // Observa mudança dinâmica do select país
             var $countrySelect = $('#' + baseId + '-country');
             if ($countrySelect.length) {
-                var $countryParentDiv = $countrySelect.parent();
-                if ($countryParentDiv.next().length) {
-                    $divComponent.insertAfter($countryParentDiv);
-                } else {
-                    $countryParentDiv.parent().append($divComponent);
-                }
-                insertCustomCheckboxBelowPostcode(baseId);
-                $divComponent.css('margin-bottom', '20px');
+                $countrySelect.off('change.wcBetterCountry').on('change.wcBetterCountry', function () {
+                    toggleCheckboxVisibility(baseId);
+                });
             }
         });
     });
