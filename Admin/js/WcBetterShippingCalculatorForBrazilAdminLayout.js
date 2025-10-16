@@ -916,6 +916,9 @@
               'woo_better_calc_product_input_icon_color': 'woo_better_calc_product_input_placeholder',
               'woo_better_calc_product_custom_position': 'woo_better_calc_product_input_position',
 
+              //Checkout
+              'woo_better_calc_enable_auto_address_fill': 'woo_better_calc_cep_field_position',
+
               //Cache
               'woo_better_calc_cache_expiration_time': 'woo_better_calc_enable_auto_postcode_search',
               'woo_better_calc_enable_auto_cache_reset': 'woo_better_calc_enable_auto_postcode_search'
@@ -1313,6 +1316,32 @@
       // Insere o botão após o shortcode
       codeEl.parentNode.insertBefore(copyBtn, codeEl.nextSibling);
     });
+
+    const positionRadios = document.querySelectorAll('input[name="woo_better_calc_cep_field_position"]');
+    const autoAddressRadios = document.querySelectorAll('input[name="woo_better_calc_enable_auto_address_fill"]');
+
+    function updateAutoAddressState() {
+      // Considera habilitado se algum radio do pai estiver marcado como 'yes'
+      const enabled = Array.from(positionRadios).some(radio => radio.checked && radio.value === 'yes');
+      autoAddressRadios.forEach(radio => {
+        radio.disabled = !enabled;
+        radio.style.cursor = enabled ? '' : 'not-allowed';
+        if (!enabled) {
+          // Se desabilitar o pai, marca 'no' no filho
+          if (radio.value === 'no') {
+            radio.checked = true;
+          } else if (radio.value === 'yes') {
+            radio.checked = false;
+          }
+        }
+      });
+    }
+    if (positionRadios.length > 0 && autoAddressRadios.length > 0) {
+      updateAutoAddressState(); // Estado inicial
+      positionRadios.forEach(radio => {
+        radio.addEventListener('change', updateAutoAddressState);
+      });
+    }
 
     startEvenst('cart');
     startEvenst('product');

@@ -1,5 +1,63 @@
 jQuery(function ($) {
 
+    // Se a variável global não permitir, não executa NENHUMA lógica do checkbox
+    var enableCheckbox = true;
+    if (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.fill_checkout_address === 'no') {
+        enableCheckbox = false;
+    }
+
+    function insertCustomCheckboxBelowPostcode(type) {
+        if (!enableCheckbox) return; // Não insere o checkbox se não permitido
+        var $postcodeInput = $('#' + type + '-postcode');
+        if ($postcodeInput.length === 0) return;
+        var $parentDiv = $postcodeInput.parent();
+        var checkboxId = 'wc-better-checkbox-' + type;
+        var $existingCheckbox = $('#' + checkboxId).closest('.wc-block-components-checkbox');
+        if ($existingCheckbox.length) {
+            // Se já existe, verifica se está logo abaixo do CEP
+            if (!$postcodeInput.parent().next().is($existingCheckbox)) {
+                $existingCheckbox.insertAfter($postcodeInput.parent());
+            }
+            return;
+        }
+        var $clonedCheckbox = $('<div>', {
+            class: 'wc-block-components-checkbox wc-block-checkout__use-address-for-shipping wc-better'
+        });
+        var $checkboxLabel = $('<label>', { for: checkboxId });
+        var $checkboxInput = $('<input>', {
+            id: checkboxId,
+            class: 'wc-block-components-checkbox__input wc-better-checkbox-disabled',
+            type: 'checkbox',
+            'aria-invalid': 'false',
+            checked: false,
+            disabled: true
+        });
+        var $checkboxSvg = $(
+            '<svg class="wc-block-components-checkbox__mark" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"></path></svg>'
+        );
+        var $checkboxText = $('<span>', {
+            class: 'wc-block-components-checkbox__label',
+            text: 'Informe acima o código postal (CEP)'
+        });
+        $checkboxLabel.append($checkboxInput, $checkboxSvg, $checkboxText);
+        $clonedCheckbox.append($checkboxLabel);
+        $clonedCheckbox.insertAfter($postcodeInput.parent());
+        // Instancia o monitoramento do CEP para atualizar label
+        new CepAddressFetcher('#' + type + '-postcode', 'label[for="' + checkboxId + '"]', type);
+    }
+
+    function toggleCheckboxVisibility(baseId) {
+        var $checkboxDiv = $('#wc-better-checkbox-' + baseId).closest('.wc-block-components-checkbox');
+        var $countrySelect = $('#' + baseId + '-country');
+        if ($countrySelect.length && $checkboxDiv.length) {
+            if ($countrySelect.val() !== 'BR') {
+                $checkboxDiv.css('display', 'none');
+            } else {
+                $checkboxDiv.css('display', '');
+            }
+        }
+    }
+
     // Classe para buscar endereço via CEP e atualizar label do checkbox
     class CepAddressFetcher {
         formatCep(cep) {
@@ -31,6 +89,7 @@ jQuery(function ($) {
             }
         }
         async handleCheckboxChange(event) {
+            if (!enableCheckbox) return; // Não executa requisições nem lógica do checkbox
             // Se desmarcou o checkbox
             if (!event.target.checked) {
                 // ...existing code...
@@ -333,57 +392,6 @@ jQuery(function ($) {
             if (address.state) parts.push(address.state);
             const labelText = `Usar o endereço: ${parts.join(' - ')}`;
             $labelSpan.stop(true, true).text(labelText).show();
-        }
-    }
-
-    function insertCustomCheckboxBelowPostcode(type) {
-        var $postcodeInput = $('#' + type + '-postcode');
-        if ($postcodeInput.length === 0) return;
-        var $parentDiv = $postcodeInput.parent();
-        var checkboxId = 'wc-better-checkbox-' + type;
-        var $existingCheckbox = $('#' + checkboxId).closest('.wc-block-components-checkbox');
-        if ($existingCheckbox.length) {
-            // Se já existe, verifica se está logo abaixo do CEP
-            if (!$postcodeInput.parent().next().is($existingCheckbox)) {
-                $existingCheckbox.insertAfter($postcodeInput.parent());
-            }
-            return;
-        }
-        var $clonedCheckbox = $('<div>', {
-            class: 'wc-block-components-checkbox wc-block-checkout__use-address-for-shipping wc-better'
-        });
-        var $checkboxLabel = $('<label>', { for: checkboxId });
-        var $checkboxInput = $('<input>', {
-            id: checkboxId,
-            class: 'wc-block-components-checkbox__input wc-better-checkbox-disabled',
-            type: 'checkbox',
-            'aria-invalid': 'false',
-            checked: false,
-            disabled: true
-        });
-        var $checkboxSvg = $(
-            '<svg class="wc-block-components-checkbox__mark" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"></path></svg>'
-        );
-        var $checkboxText = $('<span>', {
-            class: 'wc-block-components-checkbox__label',
-            text: 'Informe acima o código postal (CEP)'
-        });
-        $checkboxLabel.append($checkboxInput, $checkboxSvg, $checkboxText);
-        $clonedCheckbox.append($checkboxLabel);
-        $clonedCheckbox.insertAfter($postcodeInput.parent());
-        // Instancia o monitoramento do CEP para atualizar label
-        new CepAddressFetcher('#' + type + '-postcode', 'label[for="' + checkboxId + '"]', type);
-    }
-
-    function toggleCheckboxVisibility(baseId) {
-        var $checkboxDiv = $('#wc-better-checkbox-' + baseId).closest('.wc-block-components-checkbox');
-        var $countrySelect = $('#' + baseId + '-country');
-        if ($countrySelect.length && $checkboxDiv.length) {
-            if ($countrySelect.val() !== 'BR') {
-                $checkboxDiv.css('display', 'none');
-            } else {
-                $checkboxDiv.css('display', '');
-            }
         }
     }
 
