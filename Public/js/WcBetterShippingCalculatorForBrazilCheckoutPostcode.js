@@ -345,6 +345,7 @@ jQuery(function ($) {
         async fetchFromBrasilApi(cep, signal) {
             try {
                 const response = await fetch(`https://brasilapi.com.br/api/cep/v2/${cep}`, { signal });
+                console.log('fez');
                 if (!response.ok) return null;
                 const data = await response.json();
                 if (data.cep) {
@@ -364,6 +365,7 @@ jQuery(function ($) {
         async fetchFromViaCep(cep, signal) {
             try {
                 const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`, { signal });
+                console.log('fez 2')
                 if (!response.ok) return null;
                 const data = await response.json();
                 if (data.cep) {

@@ -48,10 +48,20 @@ module.exports = {
     plugins: [
         new MiniCssExtractPlugin({
             filename: (pathData) => {
-                const outputDir = pathData.chunk.name.includes('Public')
-                    ? 'Public/cssCompiled'
-                    : 'Admin/cssCompiled';
-                return `${outputDir}/[name].COMPILED.css`;
+                // Se o arquivo de entrada está em Public/css, salva em Public/cssCompiled
+                // Se está em Admin/css, salva em Admin/cssCompiled
+                // Usa o nome do chunk para decidir
+                const publicChunks = fs.readdirSync(path.resolve(__dirname, 'Public/css')).map(f => path.basename(f, '.css'));
+                const adminChunks = fs.readdirSync(path.resolve(__dirname, 'Admin/css')).map(f => path.basename(f, '.css'));
+                let outputDir = '';
+                if (publicChunks.includes(pathData.chunk.name)) {
+                    outputDir = 'Public/cssCompiled';
+                } else if (adminChunks.includes(pathData.chunk.name)) {
+                    outputDir = 'Admin/cssCompiled';
+                } else {
+                    outputDir = '';
+                }
+                return outputDir ? `${outputDir}/[name].COMPILED.css` : '[name].COMPILED.css';
             },
             experimentalUseImportModule: false,
         }),

@@ -132,8 +132,8 @@ class WcBetterShippingCalculatorForBrazilPublic
         $enable_postcode_search = get_option('woo_better_calc_enable_auto_postcode_search', 'yes');
         $cache_time = get_option('woo_better_calc_cache_expiration_time', '0');
         $cache_token = get_option('woo_better_calc_enable_auto_cache_reset', 'WCBCB_9X2K4M7P5R8T3N6Y1Q');
-        $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
         $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
+        $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
         $font_source = get_option('woo_better_calc_font_source', 'yes');
         $font_class = 'woo-better-poppins-family';
 
@@ -413,11 +413,13 @@ class WcBetterShippingCalculatorForBrazilPublic
                 }
             }
 
-            if($cep_position === 'yes')
+            global $post;
+            $has_checkout_shortcode = isset($post) && is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'woocommerce_checkout');
+            if($cep_position === 'yes' && !$has_checkout_shortcode)
             {
                 wp_enqueue_script(
                     $this->plugin_name . '-checkout-postcode',
-                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPostcode.COMPILED.js',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilCheckoutPostcode.js',
                     array('jquery'),
                     $this->version,
                     false
@@ -432,7 +434,27 @@ class WcBetterShippingCalculatorForBrazilPublic
                     )
                 );
             }
-            
+
+            if($cep_position === 'yes' && $has_checkout_shortcode)
+            {
+                wp_enqueue_script(
+                    $this->plugin_name . '-checkout-postcode-shortcode',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilCheckoutPostcodeShortcode.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-checkout-postcode-shortcode',
+                    'wc_better_checkout_vars',
+                    array(
+                        'ajax_url' => admin_url('admin-ajax.php'),
+                        'fill_checkout_address' => $fill_checkout_address,
+                    )
+                );
+            }
+
             if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
                 wp_enqueue_script(
                     $this->plugin_name . '-short-number-field',

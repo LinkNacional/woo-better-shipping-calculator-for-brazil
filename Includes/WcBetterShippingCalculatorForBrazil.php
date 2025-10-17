@@ -136,7 +136,7 @@ class WcBetterShippingCalculatorForBrazil
         // detect state from postcode
         $this->loader->add_action('woocommerce_before_shipping_calculator', $plugin_admin, 'add_extra_css');
         $this->loader->add_filter('woocommerce_cart_calculate_shipping_address', $plugin_admin, 'prepare_address', 5);
-        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100);
+        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field');
 
         $this->loader->add_action('rest_api_init', $this, 'lkn_register_custom_cep_route');
         $this->loader->add_action('woocommerce_checkout_create_order', $this, 'lkn_merge_address_checkout', 999, 2);
@@ -890,7 +890,10 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
 
-        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'wc_better_calc_checkout_fields', 10, 1);
+        $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
+        if($cep_position === 'yes') {
+            $this->loader->add_filter('woocommerce_checkout_fields', $this, 'wc_better_calc_checkout_fields');
+        }
 
         $this->loader->add_action('wp_ajax_wc_better_insert_address', $this, 'wc_better_insert_address');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_insert_address', $this, 'wc_better_insert_address');
@@ -898,44 +901,40 @@ class WcBetterShippingCalculatorForBrazil
 
     public function wc_better_calc_checkout_fields($fields)
     {
-        foreach (['billing', 'shipping'] as $type) {
-            $postcode_key = $type . '_postcode';
-            $first_name_key = $type . '_first_name';
-            $last_name_key = $type . '_last_name';
+        // Adiciona o campo de checkbox em billing e shipping, com IDs únicos
+        $billing_checkbox_key = 'wc_better_calc_checkbox_billing';
+        $shipping_checkbox_key = 'wc_better_calc_checkbox_shipping';
 
-            // Prioridade máxima para o CEP
-            if (isset($fields[$type][$postcode_key])) {
-                $fields[$type][$postcode_key]['priority'] = 10;
-            }
-            // Prioridade alta para nome/sobrenome
-            if (isset($fields[$type][$first_name_key])) {
-                $fields[$type][$first_name_key]['priority'] = 40;
-            }
-            if (isset($fields[$type][$last_name_key])) {
-                $fields[$type][$last_name_key]['priority'] = 40;
-            }
+        $billing_checkbox_field = array(
+            'type'        => 'checkbox',
+            'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
+            'required'    => false,
+            'class'       => array('form-row-wide'),
+            'priority'    => 90,
+            'id'          => 'wc_better_calc_checkbox_billing',
+        );
+        $shipping_checkbox_field = array(
+            'type'        => 'checkbox',
+            'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
+            'required'    => false,
+            'class'       => array('form-row-wide'),
+            'priority'    => 90,
+            'id'          => 'wc_better_calc_checkbox_shipping',
+        );
 
-            // Demais campos
-            foreach ($fields[$type] as $key => &$field) {
-                if (!in_array($key, [$postcode_key, $first_name_key, $last_name_key])) {
-                    $field['priority'] = isset($field['priority']) ? max($field['priority'], 30) : 30;
-                }
-            }
-            uasort($fields[$type], function($a, $b) {
-                return ($a['priority'] ?? 10) <=> ($b['priority'] ?? 10);
-            });
-        }
+        $fields['billing'][$billing_checkbox_key] = $billing_checkbox_field;
+        $fields['shipping'][$shipping_checkbox_key] = $shipping_checkbox_field;
         return $fields;
     }
 
     public function wc_better_insert_address() {
         // Recebe e sanitiza os dados
+        error_log('cheguei aquuiii');
         $address    = isset($_POST['address']) ? sanitize_text_field($_POST['address']) : '';
         $city       = isset($_POST['city']) ? sanitize_text_field($_POST['city']) : '';
         $state      = isset($_POST['state']) ? sanitize_text_field($_POST['state']) : '';
         $district   = isset($_POST['district']) ? sanitize_text_field($_POST['district']) : '';
         $postcode   = isset($_POST['postcode']) ? sanitize_text_field($_POST['postcode']) : '';
-        error_log($postcode);
         $context    = isset($_POST['context']) ? sanitize_text_field($_POST['context']) : 'shipping';
 
         $updated = false;
