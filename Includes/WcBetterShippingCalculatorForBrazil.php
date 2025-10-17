@@ -897,13 +897,35 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('wp_ajax_wc_better_insert_address', $this, 'wc_better_insert_address');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_insert_address', $this, 'wc_better_insert_address');
+
+        $this->loader->add_action('woocommerce_get_country_locale', $this, 'wc_better_calc_phone_number', 10, 1);
+    }
+
+    public function wc_better_calc_phone_number($locale)
+    {
+        // Torna o campo phone do shipping obrigatório no Brasil se a opção estiver ativada
+        $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        if ($phone_required === 'yes') {
+            $locale['BR']['phone']['required'] = true;
+        }
+        return $locale;
     }
 
     public function wc_better_calc_checkout_fields($fields)
     {
         $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
+        $phone_required = get_option('woo_better_calc_contact_required', 'no');
 
-        if($fill_checkout_address === 'no'){
+        if ($phone_required === 'yes') {
+            if (isset($fields['billing']['billing_phone'])) {
+                $fields['billing']['billing_phone']['required'] = true;
+            }
+            if (isset($fields['shipping']['shipping_phone'])) {
+                $fields['shipping']['shipping_phone']['required'] = true;
+            }
+        }
+
+        if ($fill_checkout_address === 'no') {
             return $fields;
         }
 

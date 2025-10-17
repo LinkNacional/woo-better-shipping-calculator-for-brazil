@@ -136,6 +136,7 @@ class WcBetterShippingCalculatorForBrazilPublic
         $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
         $font_source = get_option('woo_better_calc_font_source', 'yes');
         $font_class = 'woo-better-poppins-family';
+        $phone_required = get_option('woo_better_calc_contact_required', 'no');
 
         if($font_source === 'no'){
             $font_class = 'woo-better-inherit-family';
@@ -452,6 +453,16 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'ajax_url' => admin_url('admin-ajax.php'),
                         'fill_checkout_address' => $fill_checkout_address,
                     )
+                );
+            }
+
+            if($phone_required === 'yes' && !$has_checkout_shortcode) {
+                wp_enqueue_script(
+                    $this->plugin_name . '-checkout-phone-required',
+                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilCheckoutPhoneRequired.js',
+                    array('jquery'),
+                    $this->version,
+                    false
                 );
             }
 

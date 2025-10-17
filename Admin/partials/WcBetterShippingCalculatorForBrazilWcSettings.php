@@ -771,6 +771,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Preenchimento de endereço automático por CEP no checkout.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+
             'number_required' => array(
                 'title'    => __('Campo de número adicional', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_number_required',
@@ -785,6 +786,22 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-desc-tip' => __('Adicionar no checkout um campo adicional para o número do endereço.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Implementar a adição de um campo para o "Número" do endereço, posicionado imediatamente após o campo principal do endereço na página de checkout.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('No checkout adicione uma campo após o endereço denominado número', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'contact_required' => array(
+                'title'    => __('Campo de contato obrigatório', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_contact_required',
+                'desc_tip' => false,
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Defina se o campo de contato será obrigatório.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Se habilitado, o campo de contato será obrigatório para finalizar o pedido.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('No checkout, o campo de contato será obrigatório, permitindo adição de novas informações de contato.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'checkout_section_end' => array(
