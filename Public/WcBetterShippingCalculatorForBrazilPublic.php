@@ -439,7 +439,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             {
                 wp_enqueue_script(
                     $this->plugin_name . '-checkout-postcode-shortcode',
-                    plugin_dir_url(__FILE__) . 'js/WcBetterShippingCalculatorForBrazilCheckoutPostcodeShortcode.js',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPostcodeShortcode.COMPILED.js',
                     array('jquery'),
                     $this->version,
                     false

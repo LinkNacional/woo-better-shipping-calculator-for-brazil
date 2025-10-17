@@ -96,11 +96,16 @@ jQuery(function ($) {
                 return;
             }
             // Se marcou o checkbox e tem endereço
-            // Limpa o campo de número se existir
+            // Limpa o campo de número customizado e ajusta checkbox
             var numberFieldId = this.context + '-number';
             var $numberInput = $('#' + numberFieldId);
             if ($numberInput.length) {
-                $numberInput.val('');
+                $numberInput.val('').prop('disabled', false).removeAttr('style').trigger('change');
+                var betterCheckboxId = 'wc-' + this.context + '-better-checkbox';
+                var $betterCheckbox = $('#' + betterCheckboxId);
+                if ($betterCheckbox.length) {
+                    $betterCheckbox.prop('checked', false).prop('disabled', true).trigger('change');
+                }
             }
             // Se marcou o checkbox e tem endereço
             if (!this.addressData) return;
@@ -345,7 +350,6 @@ jQuery(function ($) {
         async fetchFromBrasilApi(cep, signal) {
             try {
                 const response = await fetch(`https://brasilapi.com.br/api/cep/v2/${cep}`, { signal });
-                console.log('fez');
                 if (!response.ok) return null;
                 const data = await response.json();
                 if (data.cep) {
@@ -365,7 +369,6 @@ jQuery(function ($) {
         async fetchFromViaCep(cep, signal) {
             try {
                 const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`, { signal });
-                console.log('fez 2')
                 if (!response.ok) return null;
                 const data = await response.json();
                 if (data.cep) {

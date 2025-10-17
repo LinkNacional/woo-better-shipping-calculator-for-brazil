@@ -136,7 +136,7 @@ class WcBetterShippingCalculatorForBrazil
         // detect state from postcode
         $this->loader->add_action('woocommerce_before_shipping_calculator', $plugin_admin, 'add_extra_css');
         $this->loader->add_filter('woocommerce_cart_calculate_shipping_address', $plugin_admin, 'prepare_address', 5);
-        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field');
+        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100, 1);
 
         $this->loader->add_action('rest_api_init', $this, 'lkn_register_custom_cep_route');
         $this->loader->add_action('woocommerce_checkout_create_order', $this, 'lkn_merge_address_checkout', 999, 2);
@@ -901,6 +901,12 @@ class WcBetterShippingCalculatorForBrazil
 
     public function wc_better_calc_checkout_fields($fields)
     {
+        $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
+
+        if($fill_checkout_address === 'no'){
+            return $fields;
+        }
+
         // Adiciona o campo de checkbox em billing e shipping, com IDs únicos
         $billing_checkbox_key = 'wc_better_calc_checkbox_billing';
         $shipping_checkbox_key = 'wc_better_calc_checkbox_shipping';
@@ -929,7 +935,6 @@ class WcBetterShippingCalculatorForBrazil
 
     public function wc_better_insert_address() {
         // Recebe e sanitiza os dados
-        error_log('cheguei aquuiii');
         $address    = isset($_POST['address']) ? sanitize_text_field($_POST['address']) : '';
         $city       = isset($_POST['city']) ? sanitize_text_field($_POST['city']) : '';
         $state      = isset($_POST['state']) ? sanitize_text_field($_POST['state']) : '';

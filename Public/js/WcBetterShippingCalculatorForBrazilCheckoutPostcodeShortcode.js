@@ -21,8 +21,7 @@ jQuery(function ($) {
                 }
             }
         } else {
-            if (!$postcodeField.length) console.warn('[DEBUG] Campo de CEP não encontrado para', type);
-            if (!$checkboxField.length) console.warn('[DEBUG] Campo de checkbox não encontrado para', type);
+            // ...sem logs de debug...
         }
     }
 });
@@ -51,9 +50,9 @@ jQuery(function ($) {
         var $countrySelect = $('#' + type + '_country');
         if ($countrySelect.length && $checkboxDiv.length) {
             if ($countrySelect.val() !== 'BR') {
-                $checkboxDiv.css('display', 'none');
+                $checkboxDiv.hide();
             } else {
-                $checkboxDiv.css('display', '');
+                $checkboxDiv.show();
             }
         }
     }
@@ -417,6 +416,7 @@ jQuery(function ($) {
         ['billing', 'shipping'].forEach(function (type) {
             movePostcodeFieldBelowCountry(type);
             moveCheckboxBelowPostcodeField(type);
+            toggleCheckboxVisibility(type);
         });
     });
     observer.observe(document.body, { childList: true, subtree: true });
@@ -425,6 +425,14 @@ jQuery(function ($) {
     ['billing', 'shipping'].forEach(function (type) {
         movePostcodeFieldBelowCountry(type);
         moveCheckboxBelowPostcodeField(type);
+        toggleCheckboxVisibility(type);
+        // Monitora mudanças no campo de país
+        var $countrySelect = $('#' + type + '_country');
+        if ($countrySelect.length) {
+            $countrySelect.on('change', function () {
+                toggleCheckboxVisibility(type);
+            });
+        }
     });
 
     // Função para atualizar a label do checkbox
@@ -533,6 +541,16 @@ jQuery(function ($) {
         // Estado
         if (data.state) {
             $("#" + field + "_state").val(data.state).trigger("change");
+        }
+        // Limpa campo customizado lkn_billing_number ou lkn_shipping_number se existir
+        var customNumberId = field === 'billing' ? 'lkn_billing_number' : (field === 'shipping' ? 'lkn_shipping_number' : null);
+        var customCheckboxId = field === 'billing' ? 'lkn_billing_checkbox' : (field === 'shipping' ? 'lkn_shipping_checkbox' : null);
+        if (customNumberId && $("#" + customNumberId).length) {
+            var $customNumber = $("#" + customNumberId);
+            $customNumber.val('').prop('disabled', false).trigger('change');
+            if (customCheckboxId && $("#" + customCheckboxId).length) {
+                $("#" + customCheckboxId).prop('checked', false).trigger('change');
+            }
         }
     }
 
