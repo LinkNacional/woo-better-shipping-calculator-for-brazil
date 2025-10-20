@@ -1,3 +1,93 @@
+// Máscaras de telefone por país
+const phoneMasks = {
+    '+1': '(999) 999-9999', // Estados Unidos
+    '+7': '9 (999) 999-99-99', // Rússia
+    '+20': '9999 999 9999', // Egito
+    '+27': '999 999 9999', // África do Sul
+    '+30': '999 9999 9999', // Grécia
+    '+31': '99 999 9999', // Holanda
+    '+32': '999 99 99 99', // Bélgica
+    '+33': '99 99 99 99 99', // França
+    '+34': '999 99 99 99', // Espanha
+    '+36': '99 999 9999', // Hungria
+    '+39': '999 999 9999', // Itália
+    '+40': '9999 999 999', // Romênia
+    '+41': '99 999 99 99', // Suíça
+    '+43': '9999 999999', // Áustria
+    '+44': '9999 999999', // Reino Unido
+    '+45': '99 99 99 99', // Dinamarca
+    '+46': '99-999 99 99', // Suécia
+    '+47': '999 99 999', // Noruega
+    '+48': '999-999-999', // Polônia
+    '+49': '9999 9999999', // Alemanha
+    '+51': '999 999 999', // Peru
+    '+52': '999 999 9999', // México
+    '+53': '999 999 9999', // Cuba
+    '+54': '999 9999-9999', // Argentina
+    '+55': '(99) 99999-9999', // Brasil
+    '+56': '9 9999 9999', // Chile
+    '+57': '999 9999999', // Colômbia
+    '+58': '9999-9999999', // Venezuela
+    '+60': '999-999 9999', // Malásia
+    '+61': '9999 999 999', // Austrália
+    '+62': '999-9999-9999', // Indonésia
+    '+63': '9999 999 9999', // Filipinas
+    '+64': '999 999 999', // Nova Zelândia
+    '+65': '9999 9999', // Singapura
+    '+66': '99 9999 9999', // Tailândia
+    '+81': '99-9999-9999', // Japão
+    '+82': '99-999-9999', // Coreia do Sul
+    '+84': '9999 999 999', // Vietnã
+    '+86': '999 9999 9999', // China
+    '+90': '999 999 9999', // Turquia
+    '+91': '99999-99999', // Índia
+    '+92': '9999-9999999', // Paquistão
+    '+93': '99 999 9999', // Afeganistão
+    '+94': '999-9999999', // Sri Lanka
+    '+98': '999 999 9999', // Irã
+    '+212': '999-999999', // Marrocos
+    '+213': '999 99 99 99', // Argélia
+    '+216': '99 999 999', // Tunísia
+    '+218': '99-9999999', // Líbia
+    '+220': '999 9999', // Gâmbia
+    '+221': '99 999 99 99', // Senegal
+    '+222': '9999 9999', // Mauritânia
+    '+223': '99 99 99 99', // Mali
+    '+224': '999 99 99 99', // Guiné
+    '+225': '99 999 999', // Costa do Marfim
+    '+226': '99 99 99 99', // Burkina Faso
+    '+227': '99 99 99 99', // Níger
+    '+228': '99 99 99 99', // Togo
+    '+229': '99 99 99 99', // Benin
+    '+230': '999 9999', // Maurício
+    '+231': '999 999 9999', // Libéria
+    '+232': '99 999999', // Serra Leoa
+    '+233': '999 999 9999', // Gana
+    '+234': '999 999 9999', // Nigéria
+    '+351': '99 999 99 99', // Portugal
+};
+
+function applyMask(value, mask) {
+    let v = value.replace(/\D/g, '');
+    let m = mask;
+    let i = 0;
+    let formatted = '';
+    for (let c of m) {
+        if (c === '9') {
+            if (v[i]) {
+                formatted += v[i++];
+            } else {
+                break;
+            }
+        } else {
+            if (i < v.length) {
+                formatted += c;
+            }
+        }
+    }
+    return formatted;
+}
+
 jQuery(function ($) {
     // Dados dos países
     var countries = [
@@ -81,6 +171,7 @@ jQuery(function ($) {
 
         var selectWidth = 118;
         $parentDiv.css('position', 'relative');
+        var fieldHeight = $field.outerHeight() || 40;
         var $select = $('<select></select>')
             .addClass('phone-country-select')
             .attr('id', 'phone-country-select-' + fieldId)
@@ -89,8 +180,8 @@ jQuery(function ($) {
                 left: '0',
                 top: '0',
                 width: selectWidth + 'px',
-                height: $field.outerHeight(),
-                maxHeight: '120px',
+                height: '100%',
+                maxHeight: fieldHeight + 'px',
                 overflowY: 'auto',
                 zIndex: 2,
                 border: '1px solid #ccc',
@@ -103,10 +194,29 @@ jQuery(function ($) {
                 '-moz-appearance': 'menulist'
             });
 
+        // Função para atualizar o max-height do select
+        function updateSelectHeight() {
+            var newHeight = $field.outerHeight() || 40;
+            $select.css('maxHeight', newHeight + 'px');
+        }
+        // Observa mudanças no parentDiv (ex: erro de validação)
+        var heightObserver = new MutationObserver(function () {
+            updateSelectHeight();
+        });
+        heightObserver.observe($parentDiv[0], { childList: true, subtree: true });
+        // Atualiza também ao focar, desfocar e ao inicializar
+        $field.on('focus blur input', updateSelectHeight);
+        updateSelectHeight();
+        // Atualiza ao redimensionar a janela (mobile/desktop)
+        $(window).on('resize', updateSelectHeight);
+
         $.each(countries, function (_, country) {
             var $option = $('<option></option>')
                 .val(country.code)
                 .text(country.flag + ' ' + country.code);
+            if (country.code === '+55') {
+                $option.attr('selected', 'selected');
+            }
             $select.append($option);
         });
 
@@ -134,6 +244,61 @@ jQuery(function ($) {
             } else {
                 $label.css('paddingLeft', (selectWidth + 10) + 'px');
             }
+            // Aplica máscara e força valor formatado no input
+            const input = $field[0];
+            if (!input) return;
+            const code = $select.val();
+            const mask = phoneMasks[code] || '';
+            let currentValue = $field.val();
+            let numeric = currentValue.replace(/\D/g, '');
+            let maxDigits = (mask.match(/9/g) || []).length;
+            numeric = numeric.substring(0, maxDigits);
+            const maskedValue = applyMask(numeric, mask);
+            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+            nativeSetter.call(input, maskedValue);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        // Remove todos os eventos antigos relacionados à máscara
+        $field.off('input keypress change');
+        $select.off('change');
+
+        // Callback para input
+        function maskInputCallback(e) {
+            const code = $select.val();
+            const mask = phoneMasks[code] || '';
+            if (mask) {
+                let currentValue = $field.val();
+                let numeric = currentValue.replace(/\D/g, '');
+                let maxDigits = (mask.match(/9/g) || []).length;
+                numeric = numeric.substring(0, maxDigits);
+                const maskedValue = applyMask(numeric, mask);
+                if (currentValue !== maskedValue) {
+                    $field.val(maskedValue);
+                    $field[0].setAttribute('value', maskedValue);
+                    $field[0].dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+        }
+
+        // Evento de input para aplicar máscara
+        $field.on('keypress', maskInputCallback);
+        $select.on('change', function () {
+            const input = $field[0];
+            if (!input) return;
+
+            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+
+            // Força valor temporário diferente (garante que o React verá a mudança)
+            nativeSetter.call(input, ' ');
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+
+            // Agora seta vazio e dispara input para atualizar o React
+            nativeSetter.call(input, '');
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+
+            // Garante também blur/change
+            input.dispatchEvent(new Event('blur', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
         });
     }
 

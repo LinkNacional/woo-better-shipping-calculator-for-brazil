@@ -919,9 +919,13 @@ class WcBetterShippingCalculatorForBrazil
         if ($phone_required === 'yes') {
             if (isset($fields['billing']['billing_phone'])) {
                 $fields['billing']['billing_phone']['required'] = true;
+                // Remove validação padrão
+                $fields['billing']['billing_phone']['validate'] = array();
             }
             if (isset($fields['shipping']['shipping_phone'])) {
                 $fields['shipping']['shipping_phone']['required'] = true;
+                // Remove validação padrão
+                $fields['shipping']['shipping_phone']['validate'] = array();
             }
         }
 
