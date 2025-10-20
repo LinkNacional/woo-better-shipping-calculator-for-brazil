@@ -270,6 +270,11 @@ jQuery(function ($) {
                 let currentValue = $field.val();
                 let numeric = currentValue.replace(/\D/g, '');
                 let maxDigits = (mask.match(/9/g) || []).length;
+                // Bloqueia a digitação de números extras
+                if (numeric.length >= maxDigits && e.key && /\d/.test(e.key)) {
+                    e.preventDefault();
+                    return false;
+                }
                 numeric = numeric.substring(0, maxDigits);
                 const maskedValue = applyMask(numeric, mask);
                 if (currentValue !== maskedValue) {
