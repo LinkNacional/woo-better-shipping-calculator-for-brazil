@@ -464,6 +464,22 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->version,
                     false
                 );
+
+                $billing_phone_country = '';
+                $shipping_phone_country = '';
+                if (function_exists('WC') && WC()->session) {
+                    $billing_phone_country = WC()->session->get('billing_phone_country_code');
+                    $shipping_phone_country = WC()->session->get('shipping_phone_country_code');
+                }
+
+                wp_localize_script(
+                    $this->plugin_name . '-checkout-phone-required',
+                    'wc_better_phone_country',
+                    array(
+                        'billing_phone_country' => $billing_phone_country,
+                        'shipping_phone_country' => $shipping_phone_country,
+                    )
+                );
             }
 
             if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {

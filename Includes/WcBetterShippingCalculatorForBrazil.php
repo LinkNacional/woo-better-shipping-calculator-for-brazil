@@ -902,6 +902,25 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action( 'woocommerce_store_api_checkout_order_processed', $this, 'validate_phone_based_on_country' );
 
         $this->loader->add_action('woocommerce_init', $this, 'init_woocommerce');
+
+        $this->loader->add_action('woocommerce_admin_order_data_after_billing_address', $this, 'woo_better_billing_country_code');
+        $this->loader->add_action('woocommerce_admin_order_data_after_shipping_address', $this, 'woo_better_shipping_country_code');
+    }
+
+    public function woo_better_shipping_country_code($order)
+    {
+        $code = $order->get_meta('_shipping_phone_country_code');
+        if ($code) {
+            echo '<p><strong>Código do país do telefone:</strong> ' . esc_html($code) . '</p>';
+        }
+    }
+
+    public function woo_better_billing_country_code($order)
+    {   
+        $code = $order->get_meta('_billing_phone_country_code');
+        if ($code) {
+            echo '<p><strong>Código do país do telefone:</strong> ' . esc_html($code) . '</p>';
+        }
     }
 
     public function validate_phone_based_on_country( $order = null )
@@ -1010,6 +1029,10 @@ class WcBetterShippingCalculatorForBrazil
                 throw new \Exception('O Telefone de Cobrança parece estar incompleto para o país selecionado.');
             }
         }
+
+        $order->update_meta_data('_billing_phone_country_code', $billing_country_code);
+        $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
+        $order->save();
     }
 
     public function init_woocommerce()

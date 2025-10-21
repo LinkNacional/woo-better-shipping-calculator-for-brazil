@@ -210,11 +210,21 @@ jQuery(function ($) {
         // Atualiza ao redimensionar a janela (mobile/desktop)
         $(window).on('resize', updateSelectHeight);
 
+        // Define o valor do país pelo PHP/session, se disponível
+        let countryCode = '+55';
+        if (typeof wc_better_phone_country !== 'undefined') {
+            if (fieldId === 'billing-phone' && wc_better_phone_country.billing_phone_country) {
+                countryCode = wc_better_phone_country.billing_phone_country;
+            }
+            if (fieldId === 'shipping-phone' && wc_better_phone_country.shipping_phone_country) {
+                countryCode = wc_better_phone_country.shipping_phone_country;
+            }
+        }
         $.each(countries, function (_, country) {
             var $option = $('<option></option>')
                 .val(country.code)
                 .text(country.flag + ' ' + country.code);
-            if (country.code === '+55') {
+            if (country.code === countryCode) {
                 $option.attr('selected', 'selected');
             }
             $select.append($option);
