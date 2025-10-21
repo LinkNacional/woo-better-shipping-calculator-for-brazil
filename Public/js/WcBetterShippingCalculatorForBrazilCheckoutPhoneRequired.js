@@ -264,46 +264,97 @@ jQuery(function ($) {
 
         // Callback para input
         function maskInputCallback(e) {
+
             const code = $select.val();
             const mask = phoneMasks[code] || '';
             if (mask) {
+                let input = $field[0];
                 let currentValue = $field.val();
-                let numeric = currentValue.replace(/\D/g, '');
                 let maxDigits = (mask.match(/9/g) || []).length;
-                // Bloqueia a digitação de números extras
-                if (numeric.length >= maxDigits && e.key && /\d/.test(e.key)) {
-                    e.preventDefault();
-                    return false;
-                }
-                numeric = numeric.substring(0, maxDigits);
-                const maskedValue = applyMask(numeric, mask);
-                if (currentValue !== maskedValue) {
-                    $field.val(maskedValue);
-                    $field[0].setAttribute('value', maskedValue);
+
+
+                // Permite digitar apenas números, (, ), - e espaço
+                if (e.inputType === 'insertText' && e.data && !(/[0-9\(\)\- ]/.test(e.data))) {
+                    // Remove o último caractere inserido se não for permitido
+                    $field.val(currentValue.slice(0, -1));
+                    $field[0].setAttribute('value', currentValue.slice(0, -1));
                     $field[0].dispatchEvent(new Event('input', { bubbles: true }));
+                    return;
+                }
+
+                // Extrai todos os dígitos do campo
+                let numeric = '';
+                let cursorPos = input.selectionStart;
+                let digitsBeforeCursor = 0;
+                for (let i = 0; i < currentValue.length; i++) {
+                    if (/\d/.test(currentValue[i])) {
+                        numeric += currentValue[i];
+                        if (i < cursorPos) digitsBeforeCursor++;
+                    }
+                }
+
+                // Permite digitação livre se não houver números
+                if (numeric.length === 0) {
+                    return;
+                }
+
+                // Aplica máscara normalmente se houver números
+                numeric = numeric.substring(0, maxDigits);
+                let maskedValue = applyMask(numeric, mask);
+                if (maskedValue !== currentValue) {
+                    // Mantém caracteres especiais permitidos digitados manualmente
+                    let specials = currentValue.replace(/[0-9]/g, '');
+                    let finalValue = '';
+                    let digitIdx = 0;
+                    for (let i = 0; i < maskedValue.length; i++) {
+                        if (/[0-9]/.test(maskedValue[i])) {
+                            finalValue += maskedValue[i];
+                            digitIdx++;
+                        } else {
+                            finalValue += maskedValue[i];
+                        }
+                    }
+                    for (let c of specials) {
+                        if (!finalValue.includes(c) && /[\(\)\- ]/.test(c)) {
+                            finalValue += c;
+                        }
+                    }
+                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                    if (input.value !== finalValue) {
+                        nativeSetter.call(input, finalValue);
+                        // Reposiciona o cursor na posição equivalente ao número inserido
+                        let maskCursorPos = 0;
+                        let digitsCounted = 0;
+                        while (maskCursorPos < finalValue.length && digitsCounted < digitsBeforeCursor) {
+                            if (/\d/.test(finalValue[maskCursorPos])) {
+                                digitsCounted++;
+                            }
+                            maskCursorPos++;
+                        }
+                        maskCursorPos = Math.min(maskCursorPos, finalValue.length);
+                        input.setSelectionRange(maskCursorPos, maskCursorPos);
+                    }
                 }
             }
         }
 
         // Evento de input para aplicar máscara
-        $field.on('keypress', maskInputCallback);
+        $field.on('input', maskInputCallback);
         $select.on('change', function () {
             const input = $field[0];
             if (!input) return;
 
             const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
 
-            // Força valor temporário diferente (garante que o React verá a mudança)
-            nativeSetter.call(input, ' ');
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-
             // Agora seta vazio e dispara input para atualizar o React
             nativeSetter.call(input, '');
             input.dispatchEvent(new Event('input', { bubbles: true }));
 
-            // Garante também blur/change
-            input.dispatchEvent(new Event('blur', { bubbles: true }));
-            input.dispatchEvent(new Event('change', { bubbles: true }));
+            // Ajusta o padding do label se o campo estiver vazio
+            const $label = $parentDiv.find('label[for="' + fieldId + '"]');
+            if ($field.val() === '') {
+                $label.css('paddingLeft', (selectWidth + 10) + 'px');
+            }
         });
     }
 
