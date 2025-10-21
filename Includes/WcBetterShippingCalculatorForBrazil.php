@@ -899,6 +899,170 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_nopriv_wc_better_insert_address', $this, 'wc_better_insert_address');
 
         $this->loader->add_action('woocommerce_get_country_locale', $this, 'wc_better_calc_phone_number', 10, 1);
+        $this->loader->add_action( 'woocommerce_store_api_checkout_order_processed', $this, 'validate_phone_based_on_country' );
+
+        $this->loader->add_action('woocommerce_init', $this, 'init_woocommerce');
+    }
+
+    public function validate_phone_based_on_country( $order = null )
+    {
+        // Array de máscaras para contar os dígitos esperados
+        $phone_masks = array(
+            '+1' => '(999) 999-9999',
+            '+7' => '9 (999) 999-99-99',
+            '+20' => '9999 999 9999',
+            '+27' => '999 999 9999',
+            '+30' => '999 9999 9999',
+            '+31' => '99 999 9999',
+            '+32' => '999 99 99 99',
+            '+33' => '99 99 99 99 99',
+            '+34' => '999 99 99 99',
+            '+36' => '99 999 9999',
+            '+39' => '999 999 9999',
+            '+40' => '9999 999 999',
+            '+41' => '99 999 99 99',
+            '+43' => '9999 999999',
+            '+44' => '9999 999999',
+            '+45' => '99 99 99 99',
+            '+46' => '99-999 99 99',
+            '+47' => '999 99 999',
+            '+48' => '999-999-999',
+            '+49' => '9999 9999999',
+            '+51' => '999 999 999',
+            '+52' => '999 999 9999',
+            '+53' => '999 999 9999',
+            '+54' => '999 9999-9999',
+            '+55' => '(99) 99999-9999',
+            '+56' => '9 9999 9999',
+            '+57' => '999 9999999',
+            '+58' => '9999-9999999',
+            '+60' => '999-999 9999',
+            '+61' => '9999 999 999',
+            '+62' => '999-9999-9999',
+            '+63' => '9999 999 9999',
+            '+64' => '999 999 999',
+            '+65' => '9999 9999',
+            '+66' => '99 9999 9999',
+            '+81' => '99-9999-9999',
+            '+82' => '99-999-9999',
+            '+84' => '9999 999 999',
+            '+86' => '999 9999 9999',
+            '+90' => '999 999 9999',
+            '+91' => '99999-99999',
+            '+92' => '9999-9999999',
+            '+93' => '99 999 9999',
+            '+94' => '999-9999999',
+            '+98' => '999 999 9999',
+            '+212' => '999-999999',
+            '+213' => '999 99 99 99',
+            '+216' => '99 999 999',
+            '+218' => '99-9999999',
+            '+220' => '999 9999',
+            '+221' => '99 999 99 99',
+            '+222' => '9999 9999',
+            '+223' => '99 99 99 99',
+            '+224' => '999 99 99 99',
+            '+225' => '99 999 999',
+            '+226' => '99 99 99 99',
+            '+227' => '99 99 99 99',
+            '+228' => '99 99 99 99',
+            '+229' => '99 99 99 99',
+            '+230' => '999 9999',
+            '+231' => '999 999 9999',
+            '+232' => '99 999999',
+            '+233' => '999 999 9999',
+            '+234' => '999 999 9999',
+            '+351' => '99 999 99 99',
+        );
+
+        // --- Validação para o Telefone de Envio ---
+        $shipping_phone = null;
+        $shipping_country_code = null;
+        if ($order && method_exists($order, 'get_shipping_phone')) {
+            $shipping_phone = $order->get_shipping_phone();
+        }
+        if (function_exists('WC') && WC()->session) {
+            $shipping_country_code = WC()->session->get('shipping_phone_country_code');
+        }
+        if (!empty($shipping_phone) && !empty($shipping_country_code)) {
+            $mask = isset($phone_masks[$shipping_country_code]) ? $phone_masks[$shipping_country_code] : '999999999';
+            $expected_length = substr_count($mask, '9');
+            $unmasked_phone = preg_replace('/[^\d]/', '', $shipping_phone);
+            if (strlen($unmasked_phone) < $expected_length) {
+                throw new \Exception('O Telefone de Entrega parece estar incompleto para o país selecionado.');
+            }
+        }
+
+        // --- Validação para o Telefone de Faturação ---
+        $billing_phone = null;
+        $billing_country_code = null;
+        if ($order && method_exists($order, 'get_billing_phone')) {
+            $billing_phone = $order->get_billing_phone();
+        }
+        if (function_exists('WC') && WC()->session) {
+            $billing_country_code = WC()->session->get('billing_phone_country_code');
+        }
+        if (!empty($billing_phone) && !empty($billing_country_code)) {
+            $mask = isset($phone_masks[$billing_country_code]) ? $phone_masks[$billing_country_code] : '999999999';
+            $expected_length = substr_count($mask, '9');
+            $unmasked_phone = preg_replace('/[^\d]/', '', $billing_phone);
+            if (strlen($unmasked_phone) < $expected_length) {
+                throw new \Exception('O Telefone de Cobrança parece estar incompleto para o país selecionado.');
+            }
+        }
+    }
+
+    public function init_woocommerce()
+    {
+        if ( function_exists( 'woocommerce_store_api_register_endpoint_data' ) ) {
+            woocommerce_store_api_register_endpoint_data( [
+                'endpoint'        => 'checkout',
+                'namespace'       => 'my_phone_validation',
+                'schema_callback' => function() {
+                    return [
+                        'billing_phone_country' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                        'shipping_phone_country' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                    ];
+                },
+                'data_callback' => function() {
+                    return [
+                        'billing_phone_country'  => '', 
+                        'shipping_phone_country' => '', 
+                    ];
+                },
+            ] );
+        }
+
+        if ( function_exists( 'woocommerce_store_api_register_update_callback' ) ) {
+            woocommerce_store_api_register_update_callback( [
+                'namespace' => 'my_phone_validation',
+                'callback'  => [ $this, 'handle_phone_country_update' ],
+            ] );
+        }
+    }
+
+    public function handle_phone_country_update( $data ) {
+        if (! function_exists('WC') ||! WC()->session ) {
+            return;
+        }
+
+        // Guarda o código do país de faturação na sessão
+        if ( isset( $data['billing_phone_country'] ) ) {
+            $country_code = sanitize_text_field( $data['billing_phone_country'] );
+            WC()->session->set( 'billing_phone_country_code', $country_code );
+        }
+
+        // Guarda o código do país de envio na sessão
+        if ( isset( $data['shipping_phone_country'] ) ) {
+            $country_code = sanitize_text_field( $data['shipping_phone_country'] );
+            WC()->session->set( 'shipping_phone_country_code', $country_code );
+        }
     }
 
     public function wc_better_calc_phone_number($locale)
@@ -919,13 +1083,9 @@ class WcBetterShippingCalculatorForBrazil
         if ($phone_required === 'yes') {
             if (isset($fields['billing']['billing_phone'])) {
                 $fields['billing']['billing_phone']['required'] = true;
-                // Remove validação padrão
-                $fields['billing']['billing_phone']['validate'] = array();
             }
             if (isset($fields['shipping']['shipping_phone'])) {
                 $fields['shipping']['shipping_phone']['required'] = true;
-                // Remove validação padrão
-                $fields['shipping']['shipping_phone']['validate'] = array();
             }
         }
 

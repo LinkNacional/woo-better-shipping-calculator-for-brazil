@@ -345,7 +345,6 @@ jQuery(function ($) {
             if (!input) return;
 
             const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-
             // Agora seta vazio e dispara input para atualizar o React
             nativeSetter.call(input, '');
             input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -363,12 +362,65 @@ jQuery(function ($) {
             $.each(fieldIds, function (_, id) {
                 createCountrySelect(id);
             });
+            // Atualiza ambos os campos no WooCommerce Blocks sempre que houver mutação
+            if (window.wc && window.wc.blocksCheckout) {
+                var $billingSelect = $('#phone-country-select-billing-phone');
+                var $shippingSelect = $('#phone-country-select-shipping-phone');
+                var billingCode = $billingSelect.length ? $billingSelect.val() : null;
+                var shippingCode = $shippingSelect.length ? $shippingSelect.val() : null;
+
+                // Se só um dos selects existe, usa o mesmo código para ambos
+                if (billingCode && !shippingCode) {
+                    shippingCode = billingCode;
+                } else if (!billingCode && shippingCode) {
+                    billingCode = shippingCode;
+                }
+
+                var data = {};
+                if (billingCode) {
+                    data.billing_phone_country = billingCode;
+                }
+                if (shippingCode) {
+                    data.shipping_phone_country = shippingCode;
+                }
+
+                window.wc.blocksCheckout.extensionCartUpdate({
+                    namespace: 'my_phone_validation',
+                    data: data
+                });
+            }
         });
         observer.observe(document.body, { childList: true, subtree: true });
         // Checagem inicial
         $.each(fieldIds, function (_, id) {
             createCountrySelect(id);
         });
+        // Atualiza ambos os campos no WooCommerce Blocks na checagem inicial
+        if (window.wc && window.wc.blocksCheckout) {
+            var $billingSelect = $('#phone-country-select-billing-phone');
+            var $shippingSelect = $('#phone-country-select-shipping-phone');
+            var billingCode = $billingSelect.length ? $billingSelect.val() : null;
+            var shippingCode = $shippingSelect.length ? $shippingSelect.val() : null;
+
+            if (billingCode && !shippingCode) {
+                shippingCode = billingCode;
+            } else if (!billingCode && shippingCode) {
+                billingCode = shippingCode;
+            }
+
+            var data = {};
+            if (billingCode) {
+                data.billing_phone_country = billingCode;
+            }
+            if (shippingCode) {
+                data.shipping_phone_country = shippingCode;
+            }
+
+            window.wc.blocksCheckout.extensionCartUpdate({
+                namespace: 'my_phone_validation',
+                data: data
+            });
+        }
     }
 
     observeFields(['billing-phone', 'shipping-phone']);
