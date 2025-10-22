@@ -157,12 +157,12 @@
     }
 
     const featureMessage1 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Defina uma fonte personalizada entre Poppins ou a fonte do tema nos novos componentes de consulta de CEP em PRODUTO/CARRINHO.'
+      '<strong>NOVO:</strong> Defina uma fonte personalizada entre Poppins ou a fonte do tema nos novos componentes de consulta de CEP em PRODUTO/CARRINHO através da aba GERAL.'
     ]);
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Melhore a página de checkout com a nova opção de preenchimento automático de endereço, junto com a opção de destaque no campo de CEP/POSTCODE.'
+      '<strong>NOVO:</strong> Melhore a página de CHECKOUT com a nova opção de preenchimento automático de endereço, destaque do campo CEP e campo de telefone customizado.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento

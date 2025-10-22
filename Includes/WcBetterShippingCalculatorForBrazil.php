@@ -1392,12 +1392,12 @@ class WcBetterShippingCalculatorForBrazil
 
     public function wc_better_insert_address() {
         // Recebe e sanitiza os dados
-        $address    = isset($_POST['address']) ? sanitize_text_field($_POST['address']) : '';
-        $city       = isset($_POST['city']) ? sanitize_text_field($_POST['city']) : '';
-        $state      = isset($_POST['state']) ? sanitize_text_field($_POST['state']) : '';
-        $district   = isset($_POST['district']) ? sanitize_text_field($_POST['district']) : '';
-        $postcode   = isset($_POST['postcode']) ? sanitize_text_field($_POST['postcode']) : '';
-        $context    = isset($_POST['context']) ? sanitize_text_field($_POST['context']) : 'shipping';
+        $address    = isset($_POST['address']) ? sanitize_text_field(wp_unslash($_POST['address'])) : '';
+        $city       = isset($_POST['city']) ? sanitize_text_field(wp_unslash($_POST['city'])) : '';
+        $state      = isset($_POST['state']) ? sanitize_text_field(wp_unslash($_POST['state'])) : '';
+        $district   = isset($_POST['district']) ? sanitize_text_field(wp_unslash($_POST['district'])) : '';
+        $postcode   = isset($_POST['postcode']) ? sanitize_text_field(wp_unslash($_POST['postcode'])) : '';
+        $context    = isset($_POST['context']) ? sanitize_text_field(wp_unslash($_POST['context'])) : 'shipping';
 
         $updated = false;
         if (function_exists('WC') && WC()->customer) {

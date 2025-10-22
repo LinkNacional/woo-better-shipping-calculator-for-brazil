@@ -113,13 +113,12 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             // TAB 2: Shortcodes
             'shortcodes_section' => array(
                 'title' => __('Shortcodes', 'woo-better-shipping-calculator-for-brazil'),
-                'desc'  => __(
-                    '<p><strong>Carrinho:</strong><br><code class="woo-better-shortcode">[woocommerce_cart]</code></p>' .
-                    '<p><strong>Finalização de compra:</strong><br><code class="woo-better-shortcode">[woocommerce_checkout]</code></p>' .
-                    '<p>&nbsp;</p>' . // Espaço extra
-                    '<p><strong>Integração com Temas Clássicos via Shortcode</strong><br>Esta opção é recomendada para temas que não utilizam o editor de blocos (Gutenberg). Se você usa um tema de blocos, opte pelas configurações nativas para uma melhor experiência.</p>' .
-                    '<p>&nbsp;</p>' . // Espaço extra
-                    '<p><span><strong>Atenção:</strong> Ao usar shortcodes, apenas as configurações da aba Geral e Checkout serão aplicadas.</span></p>',
+                'desc'  => __('<p><strong>Carrinho:</strong><br><code class="woo-better-shortcode">[woocommerce_cart]</code></p>
+                    <p><strong>Finalização de compra:</strong><br><code class="woo-better-shortcode">[woocommerce_checkout]</code></p>
+                    <p> </p>
+                    <p><strong>Integração com Temas Clássicos via Shortcode</strong><br>Esta opção é recomendada para temas que não utilizam o editor de blocos (Gutenberg). Se você usa um tema de blocos, opte pelas configurações nativas para uma melhor experiência.</p>
+                    <p> </p>
+                    <p><span><strong>Atenção:</strong> Ao usar shortcodes, apenas as configurações da aba Geral e Checkout serão aplicadas.</span></p>', 
                     'woo-better-shipping-calculator-for-brazil'
                 ),
                 'type'  => 'title',
