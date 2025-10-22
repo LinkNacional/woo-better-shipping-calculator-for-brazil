@@ -174,7 +174,7 @@ jQuery(function ($) {
         var fieldHeight = $field.outerHeight() || 40;
         var $select = $('<select></select>')
             .addClass('phone-country-select')
-            .attr('id', 'phone-country-select-' + fieldId)
+            .attr('id', 'woo-better-country-select-' + fieldId)
             .css({
                 position: 'absolute',
                 left: '0',
@@ -374,8 +374,8 @@ jQuery(function ($) {
             });
             // Atualiza ambos os campos no WooCommerce Blocks sempre que houver mutação
             if (window.wc && window.wc.blocksCheckout) {
-                var $billingSelect = $('#phone-country-select-billing-phone');
-                var $shippingSelect = $('#phone-country-select-shipping-phone');
+                var $billingSelect = $('#woo-better-country-select-billing-phone');
+                var $shippingSelect = $('#woo-better-country-select-shipping-phone');
                 var billingCode = $billingSelect.length ? $billingSelect.val() : null;
                 var shippingCode = $shippingSelect.length ? $shippingSelect.val() : null;
 
@@ -407,8 +407,8 @@ jQuery(function ($) {
         });
         // Atualiza ambos os campos no WooCommerce Blocks na checagem inicial
         if (window.wc && window.wc.blocksCheckout) {
-            var $billingSelect = $('#phone-country-select-billing-phone');
-            var $shippingSelect = $('#phone-country-select-shipping-phone');
+            var $billingSelect = $('#woo-better-country-select-billing-phone');
+            var $shippingSelect = $('#woo-better-country-select-shipping-phone');
             var billingCode = $billingSelect.length ? $billingSelect.val() : null;
             var shippingCode = $shippingSelect.length ? $shippingSelect.val() : null;
 

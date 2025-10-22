@@ -27,6 +27,15 @@ document.addEventListener('DOMContentLoaded', function () {
         return parentContainer;
     }
 
+    function invalidateCache() {
+        // Função de reset do cache customizado
+        try {
+            localStorage.removeItem('woo_better_calc_custom_cache');
+        } catch (e) {
+            // Ignora erro de localStorage
+        }
+    }
+
     function fetchProductNonce(callback) {
         const formData = new FormData();
         formData.append('action', 'wc_better_calc_get_nonce');
