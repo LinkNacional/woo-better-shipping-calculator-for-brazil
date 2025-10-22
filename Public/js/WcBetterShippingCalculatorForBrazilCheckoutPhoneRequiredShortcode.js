@@ -209,8 +209,9 @@ jQuery(function ($) {
         var localized = window.wc_better_phone_country_shortcode || {};
         var code = localized[phoneType + '_phone_country'] || '';
         if (!code) code = defaultCode;
-        if ($select.length && !$select.val()) {
-            $select.val(code).trigger('change');
+        if ($select.length) {
+            $select.val(code);
+            $select.trigger('change');
         }
     }
 
