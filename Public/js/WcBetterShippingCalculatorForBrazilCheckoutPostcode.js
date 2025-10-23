@@ -1,5 +1,6 @@
 jQuery(function ($) {
 
+    console.log('novo')
     // Se a variável global não permitir, não executa NENHUMA lógica do checkbox
     var enableCheckbox = true;
     if (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.fill_checkout_address === 'no') {
@@ -135,7 +136,7 @@ jQuery(function ($) {
                 var betterCheckboxId = 'wc-' + this.context + '-better-checkbox';
                 var $betterCheckbox = $('#' + betterCheckboxId);
                 if ($betterCheckbox.length) {
-                    $betterCheckbox.prop('checked', false).prop('disabled', true).trigger('change');
+                    $betterCheckbox.prop('checked', false).trigger('change');
                 }
             }
             // Se marcou o checkbox e tem endereço
@@ -244,6 +245,7 @@ jQuery(function ($) {
         async handleInput(event) {
             const cep = this.sanitizeCep(event.target.value);
             const $checkboxInput = this.checkboxLabel.find('input[type="checkbox"]');
+            const $checkboxLabel = $checkboxInput.closest('label');
 
             // Cancela requisição anterior se houver
             if (this._abortController) {
@@ -264,6 +266,7 @@ jQuery(function ($) {
             if (this.isValidCep(cep)) {
                 $checkboxInput.prop('disabled', true);
                 $checkboxInput.addClass('wc-better-checkbox-disabled');
+                $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
                 this.showLoadingLabel();
 
                 // Cria novo AbortController para esta consulta
@@ -300,6 +303,7 @@ jQuery(function ($) {
                     this.updateCheckboxLabel(address);
                     $checkboxInput.prop('disabled', false);
                     $checkboxInput.removeClass('wc-better-checkbox-disabled');
+                    $checkboxLabel.removeClass('wc-better-checkbox-disabled-label');
                     // Garante que a inserção automática ocorra se o endereço mudou OU o CEP digitado mudou
                     if (
                         !previousAddress ||
@@ -315,6 +319,7 @@ jQuery(function ($) {
                     this.showNotFoundLabel();
                     $checkboxInput.prop('disabled', true);
                     $checkboxInput.addClass('wc-better-checkbox-disabled');
+                    $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
                     $checkboxInput.prop('checked', false);
                     const data = {
                         action: 'wc_better_insert_address',
@@ -348,6 +353,7 @@ jQuery(function ($) {
                 // Se o CEP não é válido, mantém desabilitado e atualiza texto
                 $checkboxInput.prop('disabled', true);
                 $checkboxInput.addClass('wc-better-checkbox-disabled');
+                $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
                 $checkboxInput.prop('checked', false);
                 if (this.checkboxLabel.length) {
                     const $labelSpan = this.checkboxLabel.find('.wc-block-components-checkbox__label');
@@ -458,14 +464,28 @@ jQuery(function ($) {
             if ($divComponent.hasClass(priorityClass)) return;
             $divComponent.addClass(priorityClass);
 
-            // Movimenta o componente de CEP para antes do address_1
+            // Lógica de posicionamento do CEP
+            var checkboxId = 'wc-better-checkbox-' + baseId;
+            var $checkboxLabel = $('label[for="' + checkboxId + '"]');
             var $addressInput = $('#' + baseId + '-address_1');
-            if ($addressInput.length) {
-                var $addressParentDiv = $addressInput.parent();
-                $divComponent.insertBefore($addressParentDiv);
+            var $addressParentDiv = $addressInput.length ? $addressInput.parent() : null;
+            if ($checkboxLabel.length) {
+                // Se o checkbox existe, posiciona o CEP acima do checkbox
+                var $checkboxDiv = $checkboxLabel.closest('.wc-block-components-checkbox');
+                if ($checkboxDiv.length && $checkboxDiv.prev()[0] !== $divComponent[0]) {
+                    $divComponent.insertBefore($checkboxDiv);
+                }
+            } else if ($addressParentDiv) {
+                // Se não existe checkbox, posiciona o CEP acima do endereço
+                if ($addressParentDiv.prev()[0] !== $divComponent[0]) {
+                    $divComponent.insertBefore($addressParentDiv);
+                }
             }
 
-            insertCustomCheckboxBelowPostcode(baseId);
+            // Só insere o checkbox se ele ainda não existe
+            if ($checkboxLabel.length === 0) {
+                insertCustomCheckboxBelowPostcode(baseId);
+            }
 
             // Esconde/mostra checkbox conforme país
             toggleCheckboxVisibility(baseId);

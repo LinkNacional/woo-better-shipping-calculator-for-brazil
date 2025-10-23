@@ -395,7 +395,7 @@ jQuery(function ($) {
                 }
 
                 window.wc.blocksCheckout.extensionCartUpdate({
-                    namespace: 'my_phone_validation',
+                    namespace: 'woo_better_phone_validation',
                     data: data
                 });
             }
@@ -427,7 +427,7 @@ jQuery(function ($) {
             }
 
             window.wc.blocksCheckout.extensionCartUpdate({
-                namespace: 'my_phone_validation',
+                namespace: 'woo_better_phone_validation',
                 data: data
             });
         }

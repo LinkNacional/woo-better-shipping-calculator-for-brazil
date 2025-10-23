@@ -1037,6 +1037,29 @@ class WcBetterShippingCalculatorForBrazil
 
     public function validate_phone_based_on_country( $order = null )
     {
+        $number_field = get_option('woo_better_calc_number_required', 'no');
+        if($number_field === 'yes') {
+            $shipping_number = WC()->session->get('woo_better_shipping_number');
+            if(!empty($shipping_number)) {
+                $new_shipping_address = $order->get_shipping_address_1() . ' - ' . $shipping_number;
+                $order->set_shipping_address_1($new_shipping_address);
+                // Atualiza o endereço do usuário logado
+                if ($order->get_user_id()) {
+                    update_user_meta($order->get_user_id(), 'shipping_address_1', $new_shipping_address);
+                }
+            }
+            $billing_number = WC()->session->get('woo_better_billing_number');
+            if(!empty($billing_number)) {
+                $new_billing_address = $order->get_billing_address_1() . ' - ' . $billing_number;
+                $order->set_billing_address_1($new_billing_address);
+                // Atualiza o endereço do usuário logado
+                if ($order->get_user_id()) {
+                    update_user_meta($order->get_user_id(), 'billing_address_1', $new_billing_address);
+                }
+            }
+
+            $order->save();
+        }
         // Array de máscaras para contar os dígitos esperados
         $phone_masks = array(
             '+1' => '(999) 999-9999',
@@ -1142,8 +1165,11 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
-        $order->update_meta_data('_billing_phone_country_code', $billing_country_code);
-        $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
+        $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        if($phone_required) {
+            $order->update_meta_data('_billing_phone_country_code', $billing_country_code);
+            $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
+        }
         $order->save();
     }
 
@@ -1152,7 +1178,7 @@ class WcBetterShippingCalculatorForBrazil
         if ( function_exists( 'woocommerce_store_api_register_endpoint_data' ) ) {
             woocommerce_store_api_register_endpoint_data( [
                 'endpoint'        => 'checkout',
-                'namespace'       => 'my_phone_validation',
+                'namespace'       => 'woo_better_phone_validation',
                 'schema_callback' => function() {
                     return [
                         'billing_phone_country' => [
@@ -1171,14 +1197,61 @@ class WcBetterShippingCalculatorForBrazil
                         'shipping_phone_country' => '', 
                     ];
                 },
-            ] );
+            ]);
+
+            woocommerce_store_api_register_endpoint_data( [
+                'endpoint'        => 'checkout',
+                'namespace'       => 'woo_better_number_validation',
+                'schema_callback' => function() {
+                    return [
+                        'woo_better_shipping_number' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                        'woo_better_billing_number' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                    ];
+                },
+                'data_callback' => function() {
+                    return [
+                        'woo_better_shipping_number'  => '', 
+                        'woo_better_billing_number' => '', 
+                    ];
+                },
+            ]);
         }
 
         if ( function_exists( 'woocommerce_store_api_register_update_callback' ) ) {
-            woocommerce_store_api_register_update_callback( [
-                'namespace' => 'my_phone_validation',
+            woocommerce_store_api_register_update_callback([
+                'namespace' => 'woo_better_phone_validation',
                 'callback'  => [ $this, 'handle_phone_country_update' ],
-            ] );
+            ]);
+
+            woocommerce_store_api_register_update_callback([
+                'namespace' => 'woo_better_number_validation',
+                'callback'  => [ $this, 'handle_number_update' ],
+            ]);
+        }
+    }
+
+    public function handle_number_update($data)
+    {
+        if (! function_exists('WC') ||! WC()->session ) {
+            return;
+        }
+
+        // Guarda o número de faturação na sessão
+        if ( isset( $data['woo_better_billing_number'] ) ) {
+            $billing_number = sanitize_text_field( $data['woo_better_billing_number'] );
+            WC()->session->set( 'woo_better_billing_number', $billing_number );
+        }
+
+        // Guarda o número de envio na sessão
+        if ( isset( $data['woo_better_shipping_number'] ) ) {
+            $shipping_number = sanitize_text_field( $data['woo_better_shipping_number'] );
+            WC()->session->set( 'woo_better_shipping_number', $shipping_number );
         }
     }
 
@@ -1402,7 +1475,10 @@ class WcBetterShippingCalculatorForBrazil
         $updated = false;
         if (function_exists('WC') && WC()->customer) {
             if ($context === 'shipping') {
-                if ($address !== '') {
+                if ($address !== '' && $district !== '') {
+                    WC()->customer->set_shipping_address_1($address . ' - ' . $district);
+                    $updated = true;
+                } else if ($address !== '') {
                     WC()->customer->set_shipping_address_1($address);
                     $updated = true;
                 }
@@ -1419,7 +1495,10 @@ class WcBetterShippingCalculatorForBrazil
                     $updated = true;
                 }
             } else {
-                if ($address !== '') {
+                if( $address !== '' && $district !== '') {
+                    WC()->customer->set_billing_address_1($address . ' - ' . $district);
+                    $updated = true;
+                } else if ($address !== '') {
                     WC()->customer->set_billing_address_1($address);
                     $updated = true;
                 }

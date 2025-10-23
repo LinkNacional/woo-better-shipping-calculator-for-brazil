@@ -120,19 +120,22 @@ document.addEventListener('DOMContentLoaded', function () {
         const button = document.querySelector('.woo-better-button-current-style');
         const input = document.querySelector('.woo-better-input-current-style');
 
-        button.disabled = false;
-        input.disabled = false;
-        button.textContent = originalButtonText;
+        if (button) {
+            button.disabled = false;
+            button.textContent = originalButtonText;
+            button.style.backgroundColor = WooBetterData.buttonStyles.backgroundColor || '#0073aa';
+            button.style.cursor = '';
+        }
+        if (input) {
+            input.disabled = false;
+            input.style.backgroundColor = WooBetterData.inputStyles.backgroundColor || '#fff';
+            input.style.cursor = '';
+        }
 
         const cepBlock = document.querySelector('.woo-better-current-postcode-block');
         if (cepBlock) {
             cepBlock.style.display = 'flex';
         }
-
-        input.style.backgroundColor = WooBetterData.inputStyles.backgroundColor || '#fff';
-        input.style.cursor = '';
-        button.style.backgroundColor = WooBetterData.buttonStyles.backgroundColor || '#0073aa';
-        button.style.cursor = '';
 
         const updateIcon = document.querySelector('.woo-better-update-icon');
         const updateIconContainer = document.querySelector('.woo-better-update-icon-container');

@@ -5,3 +5,7 @@
     background: #e7e7e7 !important;
     cursor: not-allowed !important;
 }
+
+.wc-better-checkbox-disabled-label {
+    cursor: not-allowed !important;
+}
