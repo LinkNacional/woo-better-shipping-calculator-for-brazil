@@ -46,6 +46,35 @@ jQuery(function ($) {
         new CepAddressFetcher('#' + type + '-postcode', 'label[for="' + checkboxId + '"]', type);
     }
 
+    function updateAddressFields(type, apiData) {
+        // Mapeia os campos relevantes
+        const fieldMap = [
+            { id: `${type}-address_1`, key: 'address' },
+            { id: `${type}-address_2`, key: 'address_2' },
+            { id: `${type}-city`, key: 'city' },
+            { id: `${type}-state`, key: 'state' }
+        ];
+
+        fieldMap.forEach(field => {
+            const input = document.getElementById(field.id);
+            if (!input) return;
+            const value = apiData[field.key];
+
+            if (field.key === 'state') {
+                // Sempre marca SP no select de estado
+                input.value = 'SP';
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            } else {
+                // Limpa o campo se vier vazio ou null
+                if (value === '' || value === null || value === undefined) {
+                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                    nativeSetter.call(input, '');
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+        });
+    }
+
     function toggleCheckboxVisibility(baseId) {
         var $checkboxDiv = $('#wc-better-checkbox-' + baseId).closest('.wc-block-components-checkbox');
         var $countrySelect = $('#' + baseId + '-country');
@@ -101,6 +130,8 @@ jQuery(function ($) {
             var $numberInput = $('#' + numberFieldId);
             if ($numberInput.length) {
                 $numberInput.val('').prop('disabled', false).removeAttr('style').trigger('change');
+                const $parentDiv = $numberInput.parent();
+                $parentDiv.removeClass('is-active');
                 var betterCheckboxId = 'wc-' + this.context + '-better-checkbox';
                 var $betterCheckbox = $('#' + betterCheckboxId);
                 if ($betterCheckbox.length) {
@@ -149,10 +180,26 @@ jQuery(function ($) {
             }
             // Mensagem de sucesso
             this.showInsertedLabel(address);
+
             // Atualiza o endereço do carrinho no Woo Blocks
             if (window.wp && window.wp.data && typeof window.wp.data.dispatch === 'function') {
                 try {
-                    window.wp.data.dispatch('wc/store/cart').invalidateResolutionForStore('shippingAddress');
+                    window.wp.data.dispatch('wc/store/cart').invalidateResolutionForStore('shippingAddress')
+                    let observerTimeout;
+
+                    const observer = new MutationObserver((mutations, obs) => {
+                        // Verifica se o campo foi atualizado (exemplo: shipping-address_1 existe e está visível)
+                        const input = document.getElementById(`${this.context}-address_1`);
+                        if (input) {
+                            updateAddressFields(this.context, data);
+                            clearTimeout(observerTimeout);
+                            observerTimeout = setTimeout(() => {
+                                obs.disconnect();
+                            }, 3000);
+                        }
+                    });
+                    observer.observe(document.body, { childList: true, subtree: true });
+
                 } catch (e) {
                     // Se não for possível atualizar, mostra mensagem de erro na label
                     if (this.checkboxLabel.length) {
