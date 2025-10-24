@@ -703,11 +703,15 @@ class WcBetterShippingCalculatorForBrazil
             if (!empty($billing_address) && !$only_virtual) {
                 $new_billing = $billing_address . ' - ' . $billing_number;
                 $order->set_billing_address_1($new_billing);
+                 $billing_number = WC()->session->get('woo_better_billing_number');
+                 WC()->session->set('woo_better_shipping_number', $shipping_number);
             }
 
             if (!empty($shipping_address)) {
                 $new_shipping = $shipping_address . ' - ' . $shipping_number;
                 $order->set_shipping_address_1($new_shipping);
+                 $shipping_number = WC()->session->get('woo_better_shipping_number');
+                 WC()->session->set('woo_better_billing_number', $billing_number);
             }
         }
     }
@@ -1011,27 +1015,48 @@ class WcBetterShippingCalculatorForBrazil
 
 
         if (!empty($billing_phone) && !empty($billing_phone_country)) {
-            $mask = isset($phone_masks[$billing_phone_country]) ? $phone_masks[$billing_phone_country] : '999999999';
-            $expected_length = substr_count($mask, '9');
             $unmasked_phone = preg_replace('/[^\d]/', '', $billing_phone);
-            if (strlen($unmasked_phone) < $expected_length) {
-                throw new \Exception('O Telefone de Cobrança parece estar incompleto para o país selecionado.');
+            if ($billing_phone_country === '+55') {
+                // Aceita 10 ou 11 dígitos para Brasil
+                if (!(strlen($unmasked_phone) === 10 || strlen($unmasked_phone) === 11)) {
+                    throw new \Exception('O Telefone de Cobrança parece estar incompleto para o país selecionado.');
+                }
+            } else {
+                $mask = isset($phone_masks[$billing_phone_country]) ? $phone_masks[$billing_phone_country] : '999999999';
+                $expected_length = substr_count($mask, '9');
+                if (strlen($unmasked_phone) < $expected_length) {
+                    throw new \Exception('O Telefone de Cobrança parece estar incompleto para o país selecionado.');
+                }
             }
         }
-
 
         if (!empty($shipping_phone) && !empty($shipping_phone_country)) {
-            $mask = isset($phone_masks[$shipping_phone_country]) ? $phone_masks[$shipping_phone_country] : '999999999';
-            $expected_length = substr_count($mask, '9');
             $unmasked_phone = preg_replace('/[^\d]/', '', $shipping_phone);
-            if (strlen($unmasked_phone) < $expected_length) {
-                throw new \Exception('O Telefone de Entrega parece estar incompleto para o país selecionado.');
+            if ($shipping_phone_country === '+55') {
+                // Aceita 10 ou 11 dígitos para Brasil
+                if (!(strlen($unmasked_phone) === 10 || strlen($unmasked_phone) === 11)) {
+                    throw new \Exception('O Telefone de Entrega parece estar incompleto para o país selecionado.');
+                }
+            } else {
+                $mask = isset($phone_masks[$shipping_phone_country]) ? $phone_masks[$shipping_phone_country] : '999999999';
+                $expected_length = substr_count($mask, '9');
+                if (strlen($unmasked_phone) < $expected_length) {
+                    throw new \Exception('O Telefone de Entrega parece estar incompleto para o país selecionado.');
+                }
             }
         }
 
-        // Salva os meta no pedido
-        $order->update_meta_data('_billing_phone_country_code', $billing_phone_country);
-        $order->update_meta_data('_shipping_phone_country_code', $shipping_phone_country);
+        $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        if($phone_required === 'yes') {
+            if (!empty($billing_phone_country)) {
+                $order->set_billing_phone($billing_phone_country . ' ' . $order->get_billing_phone());
+            }
+            if (!empty($shipping_phone_country)) {
+                $order->set_shipping_phone($shipping_phone_country . ' ' . $order->get_shipping_phone());
+            }
+            $order->update_meta_data('_billing_phone_country_code', $billing_phone_country);
+            $order->update_meta_data('_shipping_phone_country_code', $shipping_phone_country);
+        }
         $order->save();
     }
 
@@ -1139,11 +1164,18 @@ class WcBetterShippingCalculatorForBrazil
             $shipping_country_code = WC()->session->get('shipping_phone_country_code');
         }
         if (!empty($shipping_phone) && !empty($shipping_country_code)) {
-            $mask = isset($phone_masks[$shipping_country_code]) ? $phone_masks[$shipping_country_code] : '999999999';
-            $expected_length = substr_count($mask, '9');
             $unmasked_phone = preg_replace('/[^\d]/', '', $shipping_phone);
-            if (strlen($unmasked_phone) < $expected_length) {
-                throw new \Exception('O Telefone de Entrega parece estar incompleto para o país selecionado.');
+            if ($shipping_country_code === '+55') {
+                // Aceita 10 ou 11 dígitos para Brasil
+                if (!(strlen($unmasked_phone) === 10 || strlen($unmasked_phone) === 11)) {
+                    throw new \Exception('O Telefone de Entrega parece estar incompleto para o país selecionado.');
+                }
+            } else {
+                $mask = isset($phone_masks[$shipping_country_code]) ? $phone_masks[$shipping_country_code] : '999999999';
+                $expected_length = substr_count($mask, '9');
+                if (strlen($unmasked_phone) < $expected_length) {
+                    throw new \Exception('O Telefone de Entrega parece estar incompleto para o país selecionado.');
+                }
             }
         }
 
@@ -1157,16 +1189,29 @@ class WcBetterShippingCalculatorForBrazil
             $billing_country_code = WC()->session->get('billing_phone_country_code');
         }
         if (!empty($billing_phone) && !empty($billing_country_code)) {
-            $mask = isset($phone_masks[$billing_country_code]) ? $phone_masks[$billing_country_code] : '999999999';
-            $expected_length = substr_count($mask, '9');
             $unmasked_phone = preg_replace('/[^\d]/', '', $billing_phone);
-            if (strlen($unmasked_phone) < $expected_length) {
-                throw new \Exception('O Telefone de Cobrança parece estar incompleto para o país selecionado.');
+            if ($billing_country_code === '+55') {
+                // Aceita 10 ou 11 dígitos para Brasil
+                if (!(strlen($unmasked_phone) === 10 || strlen($unmasked_phone) === 11)) {
+                    throw new \Exception('O Telefone de Cobrança parece estar incompleto para o país selecionado.');
+                }
+            } else {
+                $mask = isset($phone_masks[$billing_country_code]) ? $phone_masks[$billing_country_code] : '999999999';
+                $expected_length = substr_count($mask, '9');
+                if (strlen($unmasked_phone) < $expected_length) {
+                    throw new \Exception('O Telefone de Cobrança parece estar incompleto para o país selecionado.');
+                }
             }
         }
 
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
-        if($phone_required) {
+        if($phone_required === 'yes') {
+            if (!empty($billing_country_code)) {
+                $order->set_billing_phone($billing_country_code . ' ' . $order->get_billing_phone());
+            }
+            if (!empty($shipping_country_code)) {
+                $order->set_shipping_phone($shipping_country_code . ' ' . $order->get_shipping_phone());
+            }
             $order->update_meta_data('_billing_phone_country_code', $billing_country_code);
             $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
         }
@@ -1472,6 +1517,7 @@ class WcBetterShippingCalculatorForBrazil
         $postcode   = isset($_POST['postcode']) ? sanitize_text_field(wp_unslash($_POST['postcode'])) : '';
         $context    = isset($_POST['context']) ? sanitize_text_field(wp_unslash($_POST['context'])) : 'shipping';
 
+        error_log($district);
         $updated = false;
         if (function_exists('WC') && WC()->customer) {
             if ($context === 'shipping') {
@@ -1479,6 +1525,7 @@ class WcBetterShippingCalculatorForBrazil
                     WC()->customer->set_shipping_address_1($address . ' - ' . $district);
                     $updated = true;
                 } else if ($address !== '') {
+                    error_log('entrou aqui e setou o básico');
                     WC()->customer->set_shipping_address_1($address);
                     $updated = true;
                 }

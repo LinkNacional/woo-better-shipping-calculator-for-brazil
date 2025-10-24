@@ -482,6 +482,21 @@ jQuery(function ($) {
                 }
             }
 
+            var billingNumber = (window.wc_better_checkout_vars && window.wc_better_checkout_vars.billing_number) || '';
+            var shippingNumber = (window.wc_better_checkout_vars && window.wc_better_checkout_vars.shipping_number) || '';
+            console.log(billingNumber)
+            console.log(shippingNumber)
+            if ((baseId === 'billing' && billingNumber) || (baseId === 'shipping' && shippingNumber)) {
+                if ($addressInput.length) {
+                    console.log('removendo numero do endereco')
+                    var currentValue = $addressInput.val();
+                    var newValue = currentValue.replace(/\s*[–-]\s*[^–-]+\s*$/, '');
+                    var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                    nativeSetter.call($addressInput[0], newValue);
+                    $addressInput[0].dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+
             // Só insere o checkbox se ele ainda não existe
             if ($checkboxLabel.length === 0) {
                 insertCustomCheckboxBelowPostcode(baseId);

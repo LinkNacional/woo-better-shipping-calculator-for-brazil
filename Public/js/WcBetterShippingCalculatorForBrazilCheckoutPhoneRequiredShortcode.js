@@ -103,8 +103,17 @@ jQuery(function ($) {
         var inputTimeout;
         function maskHandler(triggerChange = false) {
             var code = $select.val();
-            var mask = phoneMasks[code] || '';
             var value = $input.val();
+            var mask = phoneMasks[code] || '';
+            // Lógica especial para Brasil (+55): fixo ou móvel
+            if (code === '+55') {
+                var digits = value.replace(/\D/g, '');
+                if (digits.length === 11) {
+                    mask = '(99) 99999-9999'; // móvel
+                } else if (digits.length === 10) {
+                    mask = '(99) 9999-9999'; // fixo
+                }
+            }
             var masked = mask ? applyMask(value, mask) : value.replace(/[^0-9()\- ]/g, '');
             var inputEl = $input[0];
             if (inputEl) {
@@ -123,17 +132,53 @@ jQuery(function ($) {
         }
 
         $input.on('input', function (e) {
+            var val = $input.val();
+            // Se começa com +, tenta detectar código do país
+            if (val.startsWith('+')) {
+                // Detecta até 3 dígitos após o +
+                var match = val.match(/^\+(\d{1,3})/);
+                var code = match ? ('+' + match[1]) : '';
+                // Se o usuário digitou 2 ou 3 dígitos após o +
+                if (match && (match[1].length === 2 || match[1].length === 3)) {
+                    // Se não existe código, apaga o input
+                    if (!phoneMasks[code]) {
+                        $input.val('');
+                        return;
+                    }
+                }
+                // Se existe código no select, seta
+                if (code && phoneMasks[code]) {
+                    $select.val(code);
+                    $select.trigger('change');
+                    // Limita o valor ao código detectado
+                    if (val.length > code.length) {
+                        val = val.slice(0, code.length);
+                        $input.val(val);
+                    }
+                }
+                // Não aplica máscara enquanto houver +
+                return;
+            }
+            // Se o usuário digitar espaço após o código, remove o código e aplica máscara
+            if (/^\+\d{1,3} /.test(val)) {
+                // Remove o código e espaço
+                var codeMatch = val.match(/^(\+\d{1,3}) /);
+                if (codeMatch) {
+                    val = val.replace(codeMatch[0], '');
+                    $input.val(val);
+                }
+                maskHandler(true);
+                return;
+            }
             // Permite digitar números, (, ), -, espaço normalmente
             if (e.originalEvent && e.originalEvent.data && !(/[0-9\(\)\- ]/.test(e.originalEvent.data))) {
                 // Bloqueia outros caracteres
-                var val = $input.val();
                 $input.val(val.replace(/[^0-9\(\)\- ]/g, ''));
                 return;
             }
             maskHandler(true);
         });
         $select.on('change', function () {
-            $input.val('');
             maskHandler();
         });
 

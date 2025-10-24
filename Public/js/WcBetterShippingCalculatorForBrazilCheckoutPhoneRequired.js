@@ -69,6 +69,14 @@ const phoneMasks = {
 
 function applyMask(value, mask) {
     let v = value.replace(/\D/g, '');
+    // Lógica especial para Brasil (+55)
+    if (mask === '(99) 99999-9999' || mask === '(99) 9999-9999') {
+        if (v.length === 10) {
+            mask = '(99) 9999-9999';
+        } else if (v.length === 11) {
+            mask = '(99) 99999-9999';
+        }
+    }
     let m = mask;
     let i = 0;
     let formatted = '';
@@ -245,6 +253,24 @@ jQuery(function ($) {
             display: 'block',
             transition: 'padding-left 0.2s'
         });
+        // Detecta country code no início do campo ao inicializar
+        (function detectAndSetCountryCode() {
+            let val = $field.val();
+            console.log(val)
+            if (val && val.startsWith('+')) {
+                let match = val.match(/^(\+\d{1,3})\s?/);
+                if (match) {
+                    let code = match[1];
+                    // Verifica se o código existe no select
+                    if ($select.find('option[value="' + code + '"]').length) {
+                        $select.val(code).trigger('change');
+                        // Remove o código do campo
+                        let newVal = val.replace(new RegExp('^' + code + '\s?'), '');
+                        $field.val(newVal);
+                    }
+                }
+            }
+        })();
         $field.on('focus', function () {
             $label.css('paddingLeft', (selectWidth + 40) + 'px');
         });
@@ -275,14 +301,88 @@ jQuery(function ($) {
         // Callback para input
         function maskInputCallback(e) {
 
+            let input = $field[0];
+            let currentValue = $field.val();
+            console.log(currentValue)
+            // Detecta se começa com +
+            if (currentValue.startsWith('+')) {
+                // Impede digitar outro '+' se já existe
+                if (e.inputType === 'insertText' && e.data === '+' && currentValue.indexOf('+') === 0) {
+                    // Remove o último caractere inserido
+                    $field.val(currentValue.slice(0, -1));
+                    $field[0].setAttribute('value', currentValue.slice(0, -1));
+                    $field[0].dispatchEvent(new Event('input', { bubbles: true }));
+                    return;
+                }
+                // Captura até 4 caracteres (+ e até 3 dígitos)
+                let match = currentValue.match(/^(\+\d{1,3})/);
+                let code = match ? match[1] : '';
+                // Se o usuário digitou apenas '+', permite continuar digitando normalmente
+                if (currentValue === '+') {
+                    return;
+                }
+                // Atualiza select se código existir
+                if (code && phoneMasks[code]) {
+                    $select.val(code);
+                }
+                // Só remove o código e aplica a máscara se o código tiver pelo menos dois dígitos após '+'
+                if (code && !phoneMasks[code] && code.length > 2) {
+                    // Busca o último código válido digitado
+                    let lastValidCode = null;
+                    // Tenta +1, +12, +123 (prioridade para maior)
+                    let possibleCodes = [currentValue.substring(0, 4), currentValue.substring(0, 3), currentValue.substring(0, 2)];
+                    for (let c of possibleCodes) {
+                        if (phoneMasks[c]) {
+                            lastValidCode = c;
+                            break;
+                        }
+                    }
+                    // fallback para o valor atual do select
+                    if (!lastValidCode) lastValidCode = $select.val();
+                    $select.val(lastValidCode);
+                    // Remove o código do campo e inicia com o restante
+                    let rest = currentValue.substring(lastValidCode.length);
+                    const mask = phoneMasks[lastValidCode] || '';
+                    let numeric = rest.replace(/\D/g, '');
+                    let maxDigits = (mask.match(/9/g) || []).length;
+                    numeric = numeric.substring(0, maxDigits);
+                    let maskedValue = applyMask(numeric, mask);
+                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                    nativeSetter.call(input, maskedValue);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    return;
+                }
+                // Se exceder 4 caracteres, trava e aplica máscara
+                if (code && currentValue.length > code.length) {
+                    // Se o próximo caractere for espaço, remove o código e aplica máscara
+                    if (currentValue[code.length] === ' ') {
+                        // Remove o código do campo
+                        let rest = currentValue.substring(code.length + 1);
+                        const mask = phoneMasks[$select.val()] || '';
+                        let numeric = rest.replace(/\D/g, '');
+                        let maxDigits = (mask.match(/9/g) || []).length;
+                        numeric = numeric.substring(0, maxDigits);
+                        let maskedValue = applyMask(numeric, mask);
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(input, maskedValue);
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        return;
+                    } else {
+                        // Se não for espaço, impede digitação extra
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(input, code);
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        return;
+                    }
+                }
+                // Não aplica máscara enquanto estiver digitando o código
+                return;
+            }
+            // Lógica normal de máscara
             const code = $select.val();
             const mask = phoneMasks[code] || '';
             if (mask) {
-                let input = $field[0];
-                let currentValue = $field.val();
                 let maxDigits = (mask.match(/9/g) || []).length;
-
-
                 // Permite digitar apenas números, (, ), - e espaço
                 if (e.inputType === 'insertText' && e.data && !(/[0-9\(\)\- ]/.test(e.data))) {
                     // Remove o último caractere inserido se não for permitido
@@ -291,7 +391,6 @@ jQuery(function ($) {
                     $field[0].dispatchEvent(new Event('input', { bubbles: true }));
                     return;
                 }
-
                 // Extrai todos os dígitos do campo
                 let numeric = '';
                 let cursorPos = input.selectionStart;
@@ -302,12 +401,10 @@ jQuery(function ($) {
                         if (i < cursorPos) digitsBeforeCursor++;
                     }
                 }
-
                 // Permite digitação livre se não houver números
                 if (numeric.length === 0) {
                     return;
                 }
-
                 // Aplica máscara normalmente se houver números
                 numeric = numeric.substring(0, maxDigits);
                 let maskedValue = applyMask(numeric, mask);
@@ -355,7 +452,6 @@ jQuery(function ($) {
             if (!input) return;
 
             const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-            // Agora seta vazio e dispara input para atualizar o React
             nativeSetter.call(input, '');
             input.dispatchEvent(new Event('input', { bubbles: true }));
 
