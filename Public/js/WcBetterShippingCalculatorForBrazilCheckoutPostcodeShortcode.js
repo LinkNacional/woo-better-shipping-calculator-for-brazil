@@ -1,4 +1,5 @@
 jQuery(function ($) {
+    // Executa apenas uma vez para cada tipo
     window.moveCheckboxBelowPostcodeField = function (type) {
         var $postcodeField = $('#' + type + '_postcode_field');
         var $checkboxField = $('#wc_better_calc_checkbox_' + type + '_field');
@@ -411,12 +412,29 @@ jQuery(function ($) {
         }
     }
 
+    let addressSanitized = { billing: false, shipping: false };
+
     // MutationObserver para monitorar mudanças no DOM
     var observer = new MutationObserver(function () {
         ['billing', 'shipping'].forEach(function (type) {
             movePostcodeFieldBelowCountry(type);
             moveCheckboxBelowPostcodeField(type);
             toggleCheckboxVisibility(type);
+            // Lógica para remover número do endereço apenas uma vez
+            if (!addressSanitized[type]) {
+                var number = (type === 'billing') ? (window.wc_better_checkout_vars && window.wc_better_checkout_vars.billing_number) : (window.wc_better_checkout_vars && window.wc_better_checkout_vars.shipping_number);
+                var $addressInput = $('#' + type + '_address_1');
+                if ($addressInput.length && number) {
+                    var currentVal = $addressInput.val();
+                    if (currentVal && currentVal.match(new RegExp(`\\s*-?\\s*${number}\\s*$`))) {
+                        var sanitized = removeNumberFromAddress(currentVal, number);
+                        $addressInput.val(sanitized).trigger('change');
+                        addressSanitized[type] = true;
+                    }
+                } else if ($addressInput.length && !number) {
+                    addressSanitized[type] = true; // Não há número, não precisa repetir
+                }
+            }
         });
     });
     observer.observe(document.body, { childList: true, subtree: true });
@@ -434,6 +452,14 @@ jQuery(function ($) {
             });
         }
     });
+
+    // Função para remover número do endereço
+    function removeNumberFromAddress(address, number) {
+        if (!address || !number) return address;
+        // Remove " - número" do final do endereço, ignorando espaços extras
+        const regex = new RegExp(`\\s*-?\\s*${number}\\s*$`);
+        return address.replace(regex, '').trim();
+    }
 
     // Função para atualizar a label do checkbox
     function updateCheckboxLabel(type, status, addressText, addressObj) {
@@ -516,32 +542,25 @@ jQuery(function ($) {
     // Função para preencher campos do checkout clássico (shortcode) igual ao modelo dos Correios
     function fillFields(field, data) {
         // Formata o CEP para 68372-470
-        if (data.postcode) {
-            let cep = String(data.postcode).replace(/\D/g, '');
-            if (cep.length === 8) {
-                cep = cep.slice(0, 5) + '-' + cep.slice(5);
-            }
-            $("#" + field + "_postcode").val(cep).trigger("change");
+        // Preenche todos os campos, se não existir valor, seta como ''
+        let cep = data.postcode ? String(data.postcode).replace(/\D/g, '') : '';
+        if (cep.length === 8) {
+            cep = cep.slice(0, 5) + '-' + cep.slice(5);
         }
-        if (data.address) {
-            $("#" + field + "_address_1").val(data.address).trigger("change");
-        }
+        $("#" + field + "_postcode").val(cep).trigger("change");
+
+        $("#" + field + "_address_1").val(data.address ? data.address : '').trigger("change");
+
         // Bairro
-        if (data.neighborhood) {
-            if ($("#" + field + "_neighborhood").length) {
-                $("#" + field + "_neighborhood").val(data.neighborhood).trigger("change");
-            } else {
-                $("#" + field + "_address_2").val(data.neighborhood).trigger("change");
-            }
+        let neighborhood = data.neighborhood ? data.neighborhood : '';
+        if ($("#" + field + "_neighborhood").length) {
+            $("#" + field + "_neighborhood").val(neighborhood).trigger("change");
+        } else {
+            $("#" + field + "_address_2").val(neighborhood).trigger("change");
         }
-        // Cidade
-        if (data.city) {
-            $("#" + field + "_city").val(data.city).trigger("change");
-        }
-        // Estado
-        if (data.state) {
-            $("#" + field + "_state").val(data.state).trigger("change");
-        }
+
+        $("#" + field + "_city").val(data.city ? data.city : '').trigger("change");
+        $("#" + field + "_state").val(data.state ? data.state : '').trigger("change");
         // Limpa campo customizado lkn_billing_number ou lkn_shipping_number se existir
         var customNumberId = field === 'billing' ? 'lkn_billing_number' : (field === 'shipping' ? 'lkn_shipping_number' : null);
         var customCheckboxId = field === 'billing' ? 'lkn_billing_checkbox' : (field === 'shipping' ? 'lkn_shipping_checkbox' : null);

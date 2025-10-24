@@ -179,6 +179,7 @@ jQuery(function ($) {
             maskHandler(true);
         });
         $select.on('change', function () {
+            $input.val('');
             maskHandler();
         });
 
@@ -195,6 +196,13 @@ jQuery(function ($) {
         var $input = $(inputId);
         var $selectField = $(selectFieldId);
         if ($input.length === 0 || $selectField.length === 0) return;
+
+        // Verifica se o select já está imediatamente após o input
+        var $nextElem = $input.next('select');
+        if ($nextElem.length > 0 && ($nextElem.attr('id') === phoneType + '_phone_country')) {
+            // Já está no lugar, não movimenta
+            return;
+        }
 
         // Já foi movimentado? (verifica se já existe select com position absolute)
         var $wrapper = $input.closest('.woocommerce-input-wrapper');
@@ -252,6 +260,7 @@ jQuery(function ($) {
         var $select = $(selectId);
         var defaultCode = '+55';
         var localized = window.wc_better_phone_country_shortcode || {};
+        console.log(localized)
         var code = localized[phoneType + '_phone_country'] || '';
         if (!code) code = defaultCode;
         if ($select.length) {
@@ -266,10 +275,12 @@ jQuery(function ($) {
         var observer = new MutationObserver(function () {
             moveCountrySelect('billing');
             moveCountrySelect('shipping');
-            setDefaultCountrySelect('billing');
-            setDefaultCountrySelect('shipping');
         });
         observer.observe(target, { childList: true, subtree: true });
+
+        // Chama apenas uma vez ao carregar a página
+        setDefaultCountrySelect('billing');
+        setDefaultCountrySelect('shipping');
     }
 
     observerCountrySelect();
