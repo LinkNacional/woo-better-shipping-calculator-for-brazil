@@ -6,13 +6,18 @@ document.addEventListener("DOMContentLoaded", function () {
     // Preenche os campos de número com valores vindos do wp_localize_script, se existirem
     if (typeof wc_better_checkout_shortcode_number_vars !== 'undefined') {
         if (billingNumberField && wc_better_checkout_shortcode_number_vars.billing_number) {
-            console.log(wc_better_checkout_shortcode_number_vars.billing_number);
             if (window.jQuery) {
                 var $billingField = window.jQuery(billingNumberField);
                 $billingField.val(wc_better_checkout_shortcode_number_vars.billing_number).trigger("change");
             } else {
                 billingNumberField.value = wc_better_checkout_shortcode_number_vars.billing_number;
                 billingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            // Se o valor preenchido for 'S/N', marca o checkbox e desabilita o campo
+            if (wc_better_checkout_shortcode_number_vars.billing_number === "S/N" && checkbox) {
+                checkbox.checked = true;
+                billingNumberField.setAttribute("disabled", "disabled");
+                billingNumberFieldWrapper.style.opacity = "0.5";
             }
         }
         // Detecta e preenche o campo de número de shipping se existir
@@ -24,6 +29,14 @@ document.addEventListener("DOMContentLoaded", function () {
             } else {
                 shippingNumberField.value = wc_better_checkout_shortcode_number_vars.shipping_number;
                 shippingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            // Se o valor preenchido for 'S/N', marca o checkbox e desabilita o campo
+            var shippingCheckbox = document.querySelector("#lkn_shipping_checkbox");
+            var shippingNumberFieldWrapper = document.querySelector("#lkn_shipping_number_field");
+            if (wc_better_checkout_shortcode_number_vars.shipping_number === "S/N" && shippingCheckbox) {
+                shippingCheckbox.checked = true;
+                shippingNumberField.setAttribute("disabled", "disabled");
+                if (shippingNumberFieldWrapper) shippingNumberFieldWrapper.style.opacity = "0.5";
             }
         }
     }

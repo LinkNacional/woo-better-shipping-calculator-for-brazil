@@ -578,29 +578,48 @@ jQuery(function ($) {
         var $postcode = $('#' + type + '_postcode');
         var $checkbox = $('#wc_better_calc_checkbox_' + type);
         var addressData = null;
+        var checkboxBlocked = false;
         if ($postcode.length && !$postcode.data('hasInputListener')) {
             let loadingPulse = null;
             let lastCepRaw = '';
-            // Função para aplicar/remover disabled e classe
+            let lastValidCep = '';
+            // Função para aplicar/remover disabled e classe na label
             function setCheckboxDisabled(disabled) {
                 if ($checkbox.length) {
                     $checkbox.prop('disabled', !!disabled);
+                    var $label = $checkbox.closest('label');
                     if (disabled) {
                         $checkbox.addClass('wc-better-checkbox-disabled');
+                        $label.addClass('wc-better-checkbox-disabled-label');
                     } else {
                         $checkbox.removeClass('wc-better-checkbox-disabled');
+                        $label.removeClass('wc-better-checkbox-disabled-label');
                     }
                 }
+            }
+            // Função para bloquear o checkbox após inserção
+            function blockCheckbox() {
+                checkboxBlocked = true;
+                setCheckboxDisabled(true);
+            }
+            // Função para desbloquear o checkbox
+            function unblockCheckbox() {
+                checkboxBlocked = false;
+                setCheckboxDisabled(false);
             }
             $postcode.on('input', async function (e) {
                 const rawValue = e.target.value;
                 const cep = rawValue.replace(/\D/g, '');
+                // Se o campo foi apagado ou ficou inválido, desabilita e bloqueia
                 if (cep.length !== 8) {
                     updateCheckboxLabel(type, 'default');
                     setCheckboxDisabled(true);
                     addressData = null;
                     if (loadingPulse) { clearInterval(loadingPulse); loadingPulse = null; }
                     lastCepRaw = '';
+                    lastValidCep = '';
+                    checkboxBlocked = false;
+                    $checkbox.prop('checked', false);
                     return;
                 }
                 // Sempre faz requisição se o valor do campo mudar, mesmo que só o formato (com/sem hífen)
@@ -642,77 +661,24 @@ jQuery(function ($) {
                 if (lastCepRaw.replace(/\D/g, '') !== cep) return; // Se o usuário digitou outro CEP, não atualiza
                 if (found) {
                     updateCheckboxLabel(type, 'success', addressText, addressObj);
-                    setCheckboxDisabled(false);
                     addressData = addressObj || null;
-                    // Se o checkbox já estiver marcado, faz requisição automaticamente
+                    lastValidCep = cep;
+                    // Só desbloqueia se o campo foi apagado/inválido e depois completado novamente
+                    if (!checkboxBlocked) {
+                        unblockCheckbox();
+                    } else {
+                        setCheckboxDisabled(true);
+                    }
+                    // Se o checkbox já estiver marcado, NÃO faz requisição automática, apenas bloqueia
                     if ($checkbox.prop('checked')) {
-                        // Chama a mesma lógica do evento de change
-                        var $label = $checkbox.closest('label');
-                        var $fadeSpan = $label.find('span.wc-better-label-fade');
-                        if ($fadeSpan.length) {
-                            $fadeSpan.stop(true, true).css('opacity', 1).text('Inserindo Endereço...').show();
-                        }
-                        var data = {
-                            action: 'wc_better_insert_address',
-                            address: addressData.address || '',
-                            city: addressData.city || '',
-                            state: addressData.state || '',
-                            district: addressData.district || '',
-                            postcode: $postcode.val(),
-                            context: type
-                        };
-                        let ajaxCompleted = false;
-                        const ajaxPromise = new Promise((resolve, reject) => {
-                            $.ajax({
-                                url: (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.ajax_url) ? wc_better_checkout_vars.ajax_url : '/wp-admin/admin-ajax.php',
-                                method: 'POST',
-                                data: data,
-                                success: function (response) {
-                                    ajaxCompleted = true;
-                                    resolve(response);
-                                },
-                                error: function () {
-                                    ajaxCompleted = true;
-                                    reject();
-                                }
-                            });
-                        });
-                        Promise.race([
-                            ajaxPromise,
-                            new Promise(resolve => setTimeout(resolve, 2000))
-                        ]).then(async function () {
-                            if (!ajaxCompleted) {
-                                await ajaxPromise;
-                            }
-                            // Mensagem de sucesso com endereço completo
-                            if ($fadeSpan.length && addressData) {
-                                let parts = [];
-                                if (addressData.address) parts.push(addressData.address);
-                                if (addressData.city) parts.push(addressData.city);
-                                if (addressData.district) parts.push(addressData.district);
-                                if (addressData.state) parts.push(addressData.state);
-                                const labelText = 'Endereço inserido: ' + parts.join(' - ');
-                                $fadeSpan.stop(true, true).css('opacity', 1).text(labelText).show();
-                                fillFields(type, {
-                                    address: addressData.address,
-                                    city: addressData.city,
-                                    state: addressData.state,
-                                    neighborhood: addressData.district || addressData.neighborhood || '',
-                                    postcode: $postcode.val()
-                                });
-                            }
-                        }).catch(function () {
-                            if ($fadeSpan.length) {
-                                $fadeSpan.stop(true, true).css('opacity', 1).text('Erro ao inserir endereço.').show();
-                            }
-                        });
+                        blockCheckbox();
                     }
                 } else {
                     updateCheckboxLabel(type, 'notfound');
                     setCheckboxDisabled(true);
                     addressData = null;
-                    // Desmarca o checkbox automaticamente
                     $checkbox.prop('checked', false);
+                    checkboxBlocked = false;
                 }
             });
             // Evento de change para disparar AJAX ao marcar o checkbox
@@ -720,6 +686,7 @@ jQuery(function ($) {
                 if (!enableCheckbox) return;
                 if (!e.target.checked) return;
                 if (!addressData) return;
+                if (checkboxBlocked) return; // Não permite desmarcar se bloqueado
                 // Animação de inserção
                 var $label = $checkbox.closest('label');
                 var $fadeSpan = $label.find('span.wc-better-label-fade');
@@ -781,6 +748,8 @@ jQuery(function ($) {
                             postcode: $postcode.val()
                         });
                     }
+                    // Após inserir, bloqueia o checkbox
+                    blockCheckbox();
                 }).catch(function () {
                     if ($fadeSpan.length) {
                         $fadeSpan.stop(true, true).css('opacity', 1).text('Erro ao inserir endereço.').show();

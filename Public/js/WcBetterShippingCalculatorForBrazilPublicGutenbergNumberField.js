@@ -82,7 +82,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         // Evento de input para registrar valor
                         input.addEventListener('input', function () {
                             let val = input.value.trim();
-                            console.log(val)
                             if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
                                 let data = { woo_better_shipping_number: val, woo_better_billing_number: '' };
                                 const billingNumberInput = document.getElementById('billing-number');
@@ -91,7 +90,6 @@ document.addEventListener("DOMContentLoaded", function () {
                                 } else {
                                     data.woo_better_billing_number = billingNumberInput.value;
                                 }
-                                console.log(data)
                                 window.wc.blocksCheckout.extensionCartUpdate({
                                     namespace: 'woo_better_number_validation',
                                     data: data
@@ -384,17 +382,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Evento de input para registrar valor
                 input.addEventListener('input', function () {
                     let val = input.value.trim();
-                    console.log(val);
                     if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
                         let data = { woo_better_shipping_number: '', woo_better_billing_number: val };
                         const shippingNumberInput = document.getElementById('shipping-number');
-                        console.log(shippingNumberInput);
                         if (!shippingNumberInput) {
                             data.woo_better_shipping_number = val;
                         } else {
                             data.woo_better_shipping_number = shippingNumberInput.value;
                         }
-                        console.log(data)
 
                         window.wc.blocksCheckout.extensionCartUpdate({
                             namespace: 'woo_better_number_validation',
@@ -469,7 +464,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
                         let data = { woo_better_shipping_number: '', woo_better_billing_number: val };
                         const shippingNumberInput = document.getElementById('shipping-number');
-                        console.log(shippingNumberInput);
                         if (!shippingNumberInput) {
                             data.woo_better_shipping_number = val;
                         } else {

@@ -256,7 +256,6 @@ jQuery(function ($) {
         // Detecta country code no início do campo ao inicializar
         (function detectAndSetCountryCode() {
             let val = $field.val();
-            console.log(val)
             if (val && val.startsWith('+')) {
                 let match = val.match(/^(\+\d{1,3})\s?/);
                 if (match) {
@@ -303,7 +302,6 @@ jQuery(function ($) {
 
             let input = $field[0];
             let currentValue = $field.val();
-            console.log(currentValue)
             // Detecta se começa com +
             if (currentValue.startsWith('+')) {
                 // Impede digitar outro '+' se já existe

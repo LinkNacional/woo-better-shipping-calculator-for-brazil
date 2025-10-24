@@ -260,7 +260,6 @@ jQuery(function ($) {
         var $select = $(selectId);
         var defaultCode = '+55';
         var localized = window.wc_better_phone_country_shortcode || {};
-        console.log(localized)
         var code = localized[phoneType + '_phone_country'] || '';
         if (!code) code = defaultCode;
         if ($select.length) {

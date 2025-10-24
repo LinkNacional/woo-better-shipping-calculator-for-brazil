@@ -8,7 +8,6 @@ jQuery(function ($) {
         $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
     }
 
-    console.log('novo')
     // Se a variável global não permitir, não executa NENHUMA lógica do checkbox
     var enableCheckbox = true;
     if (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.fill_checkout_address === 'no') {
@@ -502,11 +501,8 @@ jQuery(function ($) {
 
             var billingNumber = (window.wc_better_checkout_vars && window.wc_better_checkout_vars.billing_number) || '';
             var shippingNumber = (window.wc_better_checkout_vars && window.wc_better_checkout_vars.shipping_number) || '';
-            console.log(billingNumber)
-            console.log(shippingNumber)
             if ((baseId === 'billing' && billingNumber) || (baseId === 'shipping' && shippingNumber)) {
                 if ($addressInput.length) {
-                    console.log('removendo numero do endereco')
                     var currentValue = $addressInput.val();
                     var newValue = currentValue.replace(/\s*[–-]\s*[^–-]+\s*$/, '');
                     var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
