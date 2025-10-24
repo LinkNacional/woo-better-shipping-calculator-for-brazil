@@ -93,7 +93,7 @@ add_filter(
 
 == Changelog ==
 
-= 4.5.0 - 15/10/2025 =
+= 4.5.0 - 24/10/2025 =
 * NEW: Text font configuration system in the product and cart components.
 * NEW: Automatic address filling on the Checkout page.
 * NEW: Highlight for the ZIP code field in the Checkout page form.
