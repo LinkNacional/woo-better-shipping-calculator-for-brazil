@@ -475,7 +475,19 @@ jQuery(function ($) {
         if (status === 'loading') {
             labelText = 'Carregando endereço...';
         } else if (status === 'success') {
-            // Monta label dinâmica igual ao Gutenberg
+            // Endereço foi realmente inserido
+            if (addressObj) {
+                let parts = [];
+                if (addressObj.address) parts.push(addressObj.address);
+                if (addressObj.city) parts.push(addressObj.city);
+                if (addressObj.district || addressObj.neighborhood) parts.push(addressObj.district || addressObj.neighborhood);
+                if (addressObj.state) parts.push(addressObj.state);
+                labelText = 'Endereço inserido: ' + parts.join(' - ');
+            } else {
+                labelText = 'Endereço inserido: ' + addressText;
+            }
+        } else if (status === 'preview') {
+            // Apenas pré-visualização, não inserido
             if (addressObj) {
                 let parts = [];
                 if (addressObj.address) parts.push(addressObj.address);
@@ -541,7 +553,6 @@ jQuery(function ($) {
 
     // Função para preencher campos do checkout clássico (shortcode) igual ao modelo dos Correios
     function fillFields(field, data) {
-        // Formata o CEP para 68372-470
         // Preenche todos os campos, se não existir valor, seta como ''
         let cep = data.postcode ? String(data.postcode).replace(/\D/g, '') : '';
         if (cep.length === 8) {
@@ -556,7 +567,9 @@ jQuery(function ($) {
         if ($("#" + field + "_neighborhood").length) {
             $("#" + field + "_neighborhood").val(neighborhood).trigger("change");
         } else {
-            $("#" + field + "_address_2").val(neighborhood).trigger("change");
+            if (data.address !== '' && neighborhood !== '') {
+                $("#" + field + "_address_1").val(data.address + ' - ' + neighborhood).trigger("change");
+            }
         }
 
         $("#" + field + "_city").val(data.city ? data.city : '').trigger("change");
@@ -579,6 +592,7 @@ jQuery(function ($) {
         var $checkbox = $('#wc_better_calc_checkbox_' + type);
         var addressData = null;
         var checkboxBlocked = false;
+        var lastInsertedAddress = null;
         if ($postcode.length && !$postcode.data('hasInputListener')) {
             let loadingPulse = null;
             let lastCepRaw = '';
@@ -660,7 +674,7 @@ jQuery(function ($) {
                 }
                 if (lastCepRaw.replace(/\D/g, '') !== cep) return; // Se o usuário digitou outro CEP, não atualiza
                 if (found) {
-                    updateCheckboxLabel(type, 'success', addressText, addressObj);
+                    updateCheckboxLabel(type, 'preview', addressText, addressObj);
                     addressData = addressObj || null;
                     lastValidCep = cep;
                     // Só desbloqueia se o campo foi apagado/inválido e depois completado novamente
@@ -669,9 +683,78 @@ jQuery(function ($) {
                     } else {
                         setCheckboxDisabled(true);
                     }
-                    // Se o checkbox já estiver marcado, NÃO faz requisição automática, apenas bloqueia
+                    // Se o checkbox já estiver marcado, verifica se o endereço mudou
                     if ($checkbox.prop('checked')) {
-                        blockCheckbox();
+                        // Se o endereço mudou, faz inserção automática
+                        if (!lastInsertedAddress || JSON.stringify(lastInsertedAddress) !== JSON.stringify(addressData)) {
+                            // Animação de inserção
+                            var $label = $checkbox.closest('label');
+                            var $fadeSpan = $label.find('span.wc-better-label-fade');
+                            if ($fadeSpan.length) {
+                                $fadeSpan.stop(true, true).css('opacity', 1).text('Inserindo Endereço...').show();
+                            }
+                            var data = {
+                                action: 'wc_better_insert_address',
+                                address: addressData.address || '',
+                                city: addressData.city || '',
+                                state: addressData.state || '',
+                                district: addressData.district || '',
+                                postcode: $postcode.val(),
+                                context: type
+                            };
+                            let ajaxCompleted = false;
+                            const ajaxPromise = new Promise((resolve, reject) => {
+                                $.ajax({
+                                    url: (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.ajax_url) ? wc_better_checkout_vars.ajax_url : '/wp-admin/admin-ajax.php',
+                                    method: 'POST',
+                                    data: data,
+                                    success: function (response) {
+                                        ajaxCompleted = true;
+                                        resolve(response);
+                                    },
+                                    error: function () {
+                                        ajaxCompleted = true;
+                                        reject();
+                                    }
+                                });
+                            });
+                            Promise.race([
+                                ajaxPromise,
+                                new Promise(resolve => setTimeout(resolve, 2000))
+                            ]).then(async function () {
+                                if (!ajaxCompleted) {
+                                    await ajaxPromise;
+                                }
+                                // Mensagem de sucesso com endereço completo
+                                if ($fadeSpan.length && addressData) {
+                                    let parts = [];
+                                    if (addressData.address) parts.push(addressData.address);
+                                    if (addressData.city) parts.push(addressData.city);
+                                    if (addressData.district) parts.push(addressData.district);
+                                    if (addressData.state) parts.push(addressData.state);
+                                    const labelText = 'Endereço inserido: ' + parts.join(' - ');
+                                    $fadeSpan.stop(true, true).css('opacity', 1).text(labelText).show();
+                                    // Atualiza também a label principal para garantir que não fique com 'Usar o endereço'
+                                    updateCheckboxLabel(type, 'success', '', addressData);
+                                    fillFields(type, {
+                                        address: addressData.address,
+                                        city: addressData.city,
+                                        state: addressData.state,
+                                        neighborhood: addressData.district || addressData.neighborhood || '',
+                                        postcode: $postcode.val()
+                                    });
+                                }
+                                // Após inserir, bloqueia o checkbox
+                                blockCheckbox();
+                                lastInsertedAddress = JSON.parse(JSON.stringify(addressData));
+                            }).catch(function () {
+                                if ($fadeSpan.length) {
+                                    $fadeSpan.stop(true, true).css('opacity', 1).text('Erro ao inserir endereço.').show();
+                                }
+                            });
+                        } else {
+                            blockCheckbox();
+                        }
                     }
                 } else {
                     updateCheckboxLabel(type, 'notfound');

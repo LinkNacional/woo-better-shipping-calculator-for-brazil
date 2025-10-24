@@ -747,7 +747,7 @@ class WcBetterShippingCalculatorForBrazil
                     'status' => true,
                     'city' => 'Cidade',
                     'state_sigla' => 'SP',
-                    'state' => 'Estado',
+                    'state' => 'Sao Paulo',
                     'address' => 'Endereço'
                 ),
                 200
@@ -1517,7 +1517,6 @@ class WcBetterShippingCalculatorForBrazil
         $postcode   = isset($_POST['postcode']) ? sanitize_text_field(wp_unslash($_POST['postcode'])) : '';
         $context    = isset($_POST['context']) ? sanitize_text_field(wp_unslash($_POST['context'])) : 'shipping';
 
-        error_log($district);
         $updated = false;
         if (function_exists('WC') && WC()->customer) {
             if ($context === 'shipping') {
@@ -1525,7 +1524,6 @@ class WcBetterShippingCalculatorForBrazil
                     WC()->customer->set_shipping_address_1($address . ' - ' . $district);
                     $updated = true;
                 } else if ($address !== '') {
-                    error_log('entrou aqui e setou o básico');
                     WC()->customer->set_shipping_address_1($address);
                     $updated = true;
                 }
