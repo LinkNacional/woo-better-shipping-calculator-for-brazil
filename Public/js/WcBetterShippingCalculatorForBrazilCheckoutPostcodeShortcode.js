@@ -31,7 +31,7 @@ jQuery(function ($) {
 jQuery(function ($) {
     // Se a variável global não permitir, não executa NENHUMA lógica do checkbox
     var enableCheckbox = true;
-    if (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.fill_checkout_address === 'no') {
+    if (typeof wc_better_checkout_vars_shortcode !== 'undefined' && wc_better_checkout_vars_shortcode.fill_checkout_address === 'no') {
         enableCheckbox = false;
     }
 
@@ -112,7 +112,6 @@ jQuery(function ($) {
             } else if (/^\d{5}-\d{3}$/.test(this.input.val())) {
                 formattedCep = this.input.val();
             }
-            // Removido: atualização do campo de CEP aqui, será feita após AJAX
             // Animação de inserção
             this.showInsertingLabel();
             const address = this.addressData;
@@ -125,13 +124,13 @@ jQuery(function ($) {
                 district: address.district,
                 postcode: formattedCep || this.formatCep(this.input.val()),
                 context: this.context,
-                nonce: (typeof wc_better_checkout_vars !== 'undefined' ? wc_better_checkout_vars.nonce : '')
+                nonce: (typeof wc_better_checkout_vars_shortcode !== 'undefined' ? wc_better_checkout_vars_shortcode.nonce : '')
             };
             let ajaxCompleted = false;
             // Promise para requisição AJAX
             const ajaxPromise = new Promise((resolve, reject) => {
                 $.ajax({
-                    url: (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.ajax_url) ? wc_better_checkout_vars.ajax_url : '/wp-admin/admin-ajax.php',
+                    url: (typeof wc_better_checkout_vars_shortcode !== 'undefined' && wc_better_checkout_vars_shortcode.ajax_url) ? wc_better_checkout_vars_shortcode.ajax_url : '/wp-admin/admin-ajax.php',
                     method: 'POST',
                     data: data,
                     success: function (response) {
@@ -302,10 +301,11 @@ jQuery(function ($) {
                         district: '',
                         postcode: formattedCep || this.formatCep(this.input.val()),
                         context: this.context,
-                        not_found: true
+                        not_found: true,
+                        nonce: (typeof wc_better_checkout_vars_shortcode !== 'undefined' ? wc_better_checkout_vars_shortcode.nonce : '')
                     };
                     $.ajax({
-                        url: (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.ajax_url) ? wc_better_checkout_vars.ajax_url : '/wp-admin/admin-ajax.php',
+                        url: (typeof wc_better_checkout_vars_shortcode !== 'undefined' && wc_better_checkout_vars_shortcode.ajax_url) ? wc_better_checkout_vars_shortcode.ajax_url : '/wp-admin/admin-ajax.php',
                         method: 'POST',
                         data: data
                     });
@@ -423,7 +423,7 @@ jQuery(function ($) {
             toggleCheckboxVisibility(type);
             // Lógica para remover número do endereço apenas uma vez
             if (!addressSanitized[type]) {
-                var number = (type === 'billing') ? (window.wc_better_checkout_vars && window.wc_better_checkout_vars.billing_number) : (window.wc_better_checkout_vars && window.wc_better_checkout_vars.shipping_number);
+                var number = (type === 'billing') ? (window.wc_better_checkout_vars_shortcode && window.wc_better_checkout_vars_shortcode.billing_number) : (window.wc_better_checkout_vars_shortcode && window.wc_better_checkout_vars_shortcode.shipping_number);
                 var $addressInput = $('#' + type + '_address_1');
                 if ($addressInput.length && number) {
                     var currentVal = $addressInput.val();
@@ -701,12 +701,13 @@ jQuery(function ($) {
                                 state: addressData.state || '',
                                 district: addressData.district || '',
                                 postcode: $postcode.val(),
-                                context: type
+                                context: type,
+                                nonce: (typeof wc_better_checkout_vars_shortcode !== 'undefined' ? wc_better_checkout_vars_shortcode.nonce : '')
                             };
                             let ajaxCompleted = false;
                             const ajaxPromise = new Promise((resolve, reject) => {
                                 $.ajax({
-                                    url: (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.ajax_url) ? wc_better_checkout_vars.ajax_url : '/wp-admin/admin-ajax.php',
+                                    url: (typeof wc_better_checkout_vars_shortcode !== 'undefined' && wc_better_checkout_vars_shortcode.ajax_url) ? wc_better_checkout_vars_shortcode.ajax_url : '/wp-admin/admin-ajax.php',
                                     method: 'POST',
                                     data: data,
                                     success: function (response) {
@@ -785,13 +786,14 @@ jQuery(function ($) {
                     state: addressData.state || '',
                     district: addressData.district || '',
                     postcode: $postcode.val(),
-                    context: type
+                    context: type,
+                    nonce: (typeof wc_better_checkout_vars_shortcode !== 'undefined' ? wc_better_checkout_vars_shortcode.nonce : '')
                 };
                 let ajaxCompleted = false;
                 // Promise para requisição AJAX
                 const ajaxPromise = new Promise((resolve, reject) => {
                     $.ajax({
-                        url: (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.ajax_url) ? wc_better_checkout_vars.ajax_url : '/wp-admin/admin-ajax.php',
+                        url: (typeof wc_better_checkout_vars_shortcode !== 'undefined' && wc_better_checkout_vars_shortcode.ajax_url) ? wc_better_checkout_vars_shortcode.ajax_url : '/wp-admin/admin-ajax.php',
                         method: 'POST',
                         data: data,
                         success: function (response) {

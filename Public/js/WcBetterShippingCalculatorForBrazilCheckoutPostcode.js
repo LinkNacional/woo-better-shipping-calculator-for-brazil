@@ -347,7 +347,8 @@ jQuery(function ($) {
                         district: '',
                         postcode: this.formatCep(this.input.val()),
                         context: this.context,
-                        not_found: true
+                        not_found: true,
+                        nonce: (typeof wc_better_checkout_vars !== 'undefined' ? wc_better_checkout_vars.nonce : '')
                     };
                     $.ajax({
                         url: (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.ajax_url) ? wc_better_checkout_vars.ajax_url : '/wp-admin/admin-ajax.php',

@@ -478,7 +478,7 @@ class WcBetterShippingCalculatorForBrazilPublic
 
                 wp_localize_script(
                     $this->plugin_name . '-checkout-postcode-shortcode',
-                    'wc_better_checkout_vars',
+                    'wc_better_checkout_vars_shortcode',
                     array(
                         'ajax_url' => admin_url('admin-ajax.php'),
                         'fill_checkout_address' => $fill_checkout_address,
