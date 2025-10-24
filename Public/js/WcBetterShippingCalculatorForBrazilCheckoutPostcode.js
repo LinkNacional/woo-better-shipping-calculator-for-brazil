@@ -1,4 +1,12 @@
 jQuery(function ($) {
+    // Função para desabilitar checkbox e label
+    function disableCheckboxAndLabel(type) {
+        var checkboxId = 'wc-better-checkbox-' + type;
+        var $checkboxInput = $('#' + checkboxId);
+        var $checkboxLabel = $checkboxInput.closest('label');
+        $checkboxInput.prop('disabled', true).addClass('wc-better-checkbox-disabled').prop('checked', false);
+        $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
+    }
 
     console.log('novo')
     // Se a variável global não permitir, não executa NENHUMA lógica do checkbox
@@ -19,6 +27,8 @@ jQuery(function ($) {
             if (!$postcodeInput.parent().next().is($existingCheckbox)) {
                 $existingCheckbox.insertAfter($postcodeInput.parent());
             }
+            // Sempre desabilita ao inserir novo endereço
+            disableCheckboxAndLabel(type);
             return;
         }
         var $clonedCheckbox = $('<div>', {
@@ -45,6 +55,8 @@ jQuery(function ($) {
         $clonedCheckbox.insertAfter($postcodeInput.parent());
         // Instancia o monitoramento do CEP para atualizar label
         new CepAddressFetcher('#' + type + '-postcode', 'label[for="' + checkboxId + '"]', type);
+        // Sempre desabilita ao inserir novo endereço
+        disableCheckboxAndLabel(type);
     }
 
     function updateAddressFields(type, apiData) {
@@ -124,6 +136,12 @@ jQuery(function ($) {
             if (!event.target.checked) {
                 // ...existing code...
                 return;
+            }
+            // Ao marcar, desabilita imediatamente o checkbox
+            if (event.target.checked) {
+                const $checkboxInput = $(event.target);
+                $checkboxInput.prop('disabled', true).addClass('wc-better-checkbox-disabled');
+                $checkboxInput.closest('label').addClass('wc-better-checkbox-disabled-label');
             }
             // Se marcou o checkbox e tem endereço
             // Limpa o campo de número customizado e ajusta checkbox
