@@ -460,7 +460,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'ajax_url' => admin_url('admin-ajax.php'),
                         'fill_checkout_address' => $fill_checkout_address,
                         'billing_number' => $billing_number,
-                        'shipping_number' => $shipping_number
+                        'shipping_number' => $shipping_number,
+                        'nonce' => wp_create_nonce('wc_better_insert_address')
                     )
                 );
             }
@@ -482,7 +483,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'ajax_url' => admin_url('admin-ajax.php'),
                         'fill_checkout_address' => $fill_checkout_address,
                         'billing_number' => $billing_number,
-                        'shipping_number' => $shipping_number
+                        'shipping_number' => $shipping_number,
+                        'nonce' => wp_create_nonce('wc_better_insert_address')
                     )
                 );
             }

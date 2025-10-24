@@ -124,7 +124,8 @@ jQuery(function ($) {
                 state: address.state,
                 district: address.district,
                 postcode: formattedCep || this.formatCep(this.input.val()),
-                context: this.context
+                context: this.context,
+                nonce: (typeof wc_better_checkout_vars !== 'undefined' ? wc_better_checkout_vars.nonce : '')
             };
             let ajaxCompleted = false;
             // Promise para requisição AJAX

@@ -1509,6 +1509,10 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     public function wc_better_insert_address() {
+        // Verifica nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wc_better_insert_address')) {
+            wp_send_json_error(['message' => 'Falha na verificação de segurança (nonce).'], 403);
+        }
         // Recebe e sanitiza os dados
         $address    = isset($_POST['address']) ? sanitize_text_field(wp_unslash($_POST['address'])) : '';
         $city       = isset($_POST['city']) ? sanitize_text_field(wp_unslash($_POST['city'])) : '';
