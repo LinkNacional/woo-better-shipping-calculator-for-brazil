@@ -461,6 +461,33 @@ jQuery(function ($) {
         });
     }
 
+    function updatePhoneCountryData() {
+        var $billingSelect = $('#woo-better-country-select-billing-phone');
+        var $shippingSelect = $('#woo-better-country-select-shipping-phone');
+        var billingCode = $billingSelect.length ? $billingSelect.val() : null;
+        var shippingCode = $shippingSelect.length ? $shippingSelect.val() : null;
+
+        // Se só um dos selects existe, usa o mesmo código para ambos
+        if (billingCode && !shippingCode) {
+            shippingCode = billingCode;
+        } else if (!billingCode && shippingCode) {
+            billingCode = shippingCode;
+        }
+
+        var data = {};
+        if (billingCode) {
+            data.billing_phone_country = billingCode;
+        }
+        if (shippingCode) {
+            data.shipping_phone_country = shippingCode;
+        }
+
+        window.wc.blocksCheckout.extensionCartUpdate({
+            namespace: 'woo_better_phone_validation',
+            data: data
+        });
+    }
+
     function observeFields(fieldIds) {
         var observer = new MutationObserver(function () {
             $.each(fieldIds, function (_, id) {
@@ -468,30 +495,7 @@ jQuery(function ($) {
             });
             // Atualiza ambos os campos no WooCommerce Blocks sempre que houver mutação
             if (window.wc && window.wc.blocksCheckout) {
-                var $billingSelect = $('#woo-better-country-select-billing-phone');
-                var $shippingSelect = $('#woo-better-country-select-shipping-phone');
-                var billingCode = $billingSelect.length ? $billingSelect.val() : null;
-                var shippingCode = $shippingSelect.length ? $shippingSelect.val() : null;
-
-                // Se só um dos selects existe, usa o mesmo código para ambos
-                if (billingCode && !shippingCode) {
-                    shippingCode = billingCode;
-                } else if (!billingCode && shippingCode) {
-                    billingCode = shippingCode;
-                }
-
-                var data = {};
-                if (billingCode) {
-                    data.billing_phone_country = billingCode;
-                }
-                if (shippingCode) {
-                    data.shipping_phone_country = shippingCode;
-                }
-
-                window.wc.blocksCheckout.extensionCartUpdate({
-                    namespace: 'woo_better_phone_validation',
-                    data: data
-                });
+                updatePhoneCountryData();
             }
         });
         observer.observe(document.body, { childList: true, subtree: true });
@@ -501,29 +505,7 @@ jQuery(function ($) {
         });
         // Atualiza ambos os campos no WooCommerce Blocks na checagem inicial
         if (window.wc && window.wc.blocksCheckout) {
-            var $billingSelect = $('#woo-better-country-select-billing-phone');
-            var $shippingSelect = $('#woo-better-country-select-shipping-phone');
-            var billingCode = $billingSelect.length ? $billingSelect.val() : null;
-            var shippingCode = $shippingSelect.length ? $shippingSelect.val() : null;
-
-            if (billingCode && !shippingCode) {
-                shippingCode = billingCode;
-            } else if (!billingCode && shippingCode) {
-                billingCode = shippingCode;
-            }
-
-            var data = {};
-            if (billingCode) {
-                data.billing_phone_country = billingCode;
-            }
-            if (shippingCode) {
-                data.shipping_phone_country = shippingCode;
-            }
-
-            window.wc.blocksCheckout.extensionCartUpdate({
-                namespace: 'woo_better_phone_validation',
-                data: data
-            });
+            updatePhoneCountryData();
         }
     }
 

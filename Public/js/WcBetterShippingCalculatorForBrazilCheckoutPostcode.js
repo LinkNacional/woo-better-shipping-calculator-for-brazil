@@ -503,14 +503,15 @@ jQuery(function ($) {
 
             var billingNumber = (window.wc_better_checkout_vars && window.wc_better_checkout_vars.billing_number) || '';
             var shippingNumber = (window.wc_better_checkout_vars && window.wc_better_checkout_vars.shipping_number) || '';
-            if ((baseId === 'billing' && billingNumber) || (baseId === 'shipping' && shippingNumber)) {
-                if ($addressInput.length) {
-                    var currentValue = $addressInput.val();
-                    var newValue = currentValue.replace(/\s*[–-]\s*[^–-]+\s*$/, '');
-                    var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                    nativeSetter.call($addressInput[0], newValue);
-                    $addressInput[0].dispatchEvent(new Event('input', { bubbles: true }));
-                }
+            var numero = (baseId === 'billing' ? billingNumber : shippingNumber);
+            if (numero && $addressInput.length) {
+                var currentValue = $addressInput.val();
+                // Remove apenas o número do final, preservando o bairro
+                var regex = new RegExp('\\s*[–-]\\s*' + numero.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$', 'i');
+                var newValue = currentValue.replace(regex, '');
+                var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                nativeSetter.call($addressInput[0], newValue);
+                $addressInput[0].dispatchEvent(new Event('input', { bubbles: true }));
             }
 
             // Só insere o checkbox se ele ainda não existe

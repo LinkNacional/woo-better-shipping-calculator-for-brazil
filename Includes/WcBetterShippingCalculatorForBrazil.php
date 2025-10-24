@@ -703,15 +703,16 @@ class WcBetterShippingCalculatorForBrazil
             if (!empty($billing_address) && !$only_virtual) {
                 $new_billing = $billing_address . ' - ' . $billing_number;
                 $order->set_billing_address_1($new_billing);
-                 $billing_number = WC()->session->get('woo_better_billing_number');
-                 WC()->session->set('woo_better_shipping_number', $shipping_number);
+                WC()->session->set('woo_better_shipping_number', $billing_number);
             }
 
-            if (!empty($shipping_address)) {
+            if (!empty($shipping_address) && !$only_virtual) {
+                if($billing_address == $shipping_address){
+                    $shipping_number = $billing_number;
+                }
                 $new_shipping = $shipping_address . ' - ' . $shipping_number;
                 $order->set_shipping_address_1($new_shipping);
-                 $shipping_number = WC()->session->get('woo_better_shipping_number');
-                 WC()->session->set('woo_better_billing_number', $billing_number);
+                WC()->session->set('woo_better_billing_number', $shipping_number);
             }
         }
     }
@@ -1066,16 +1067,49 @@ class WcBetterShippingCalculatorForBrazil
         if($number_field === 'yes') {
             $shipping_number = WC()->session->get('woo_better_shipping_number');
             if(!empty($shipping_number)) {
-                $new_shipping_address = $order->get_shipping_address_1() . ' - ' . $shipping_number;
+                $address = $order->get_shipping_address_1();
+                $parts = explode(' – ', $address);
+                $filtered = array_filter($parts, function($part) use ($shipping_number) {
+                    return strtolower(trim($part)) !== strtolower(trim($shipping_number));
+                });
+                $address = implode(' - ', $filtered);
+                $parts = explode(' - ', $address);
+                $filtered = array_filter($parts, function($part) use ($shipping_number) {
+                    return strtolower(trim($part)) !== strtolower(trim($shipping_number));
+                });
+
+                $shipping_address = implode(' - ', $filtered);
+            }
+            $billing_number = WC()->session->get('woo_better_billing_number');
+            if($order->get_shipping_address_1() === $order->get_billing_address_1()) {
+                $billing_number = $shipping_number;
+            }
+            if(!empty($billing_number)) {
+                $address = $order->get_billing_address_1();
+                $parts = explode(' – ', $address);
+                $filtered = array_filter($parts, function($part) use ($billing_number) {
+                    return strtolower(trim($part)) !== strtolower(trim($billing_number));
+                });
+                $address = implode(' - ', $filtered);
+                $parts = explode(' - ', $address);
+                $filtered = array_filter($parts, function($part) use ($billing_number) {
+                    return strtolower(trim($part)) !== strtolower(trim($billing_number));
+                });
+
+                $billing_address = implode(' - ', $filtered);
+            }
+
+            if(!empty($shipping_number)) {
+                $new_shipping_address = $shipping_address . ' - ' . $shipping_number;
                 $order->set_shipping_address_1($new_shipping_address);
                 // Atualiza o endereço do usuário logado
                 if ($order->get_user_id()) {
                     update_user_meta($order->get_user_id(), 'shipping_address_1', $new_shipping_address);
                 }
             }
-            $billing_number = WC()->session->get('woo_better_billing_number');
+
             if(!empty($billing_number)) {
-                $new_billing_address = $order->get_billing_address_1() . ' - ' . $billing_number;
+                $new_billing_address = $billing_address . ' - ' . $billing_number;
                 $order->set_billing_address_1($new_billing_address);
                 // Atualiza o endereço do usuário logado
                 if ($order->get_user_id()) {
