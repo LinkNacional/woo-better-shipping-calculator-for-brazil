@@ -7,6 +7,8 @@
     const subTitles = Array.from(mainForm.querySelectorAll('h2'));
     if (!tables.length || !subTitles.length) return;
 
+    let font_class = wcBetterCalcAjax.font_class
+
     const mainContainer = document.createElement('div');
     mainContainer.style.display = 'flex';
     mainContainer.style.flexWrap = 'wrap';
@@ -121,7 +123,7 @@
     const stickyContainer = document.createElement('div');
     stickyContainer.className = 'sticky-container';
     stickyContainer.style.position = 'sticky';
-    stickyContainer.style.top = '314px';
+    stickyContainer.style.top = '120px';
     stickyContainer.style.maxWidth = '370px';
 
     function createFeatureMessage(iconText, messageLines) {
@@ -155,12 +157,12 @@
     }
 
     const featureMessage1 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Adicione a busca de CEP nas páginas de carrinho e/ou produto.'
+      '<strong>NOVO:</strong> Defina uma fonte personalizada entre Poppins ou a fonte do tema nos novos componentes de consulta de CEP em PRODUTO/CARRINHO através da aba GERAL.'
     ]);
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Sistema de cache inteligente que armazena consultas de frete para acelerar consultas futuras e melhorar a experiência do usuário.'
+      '<strong>NOVO:</strong> Melhore a página de CHECKOUT com a nova opção de preenchimento automático de endereço, destaque do campo CEP e campo de telefone customizado.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento
@@ -316,7 +318,7 @@
       settingsCard.style.display = 'block'
 
       // Move o componente para o sideContainer
-      sideContainer.appendChild(settingsCard);
+      stickyContainer.appendChild(settingsCard);
 
       stickyContainer.appendChild(featureMessage1);
       stickyContainer.appendChild(featureMessage2);
@@ -433,6 +435,7 @@
           forminp.style.backgroundColor = '#fff';
           forminp.style.border = '1px solid #dfdfdf'
           forminp.style.borderRadius = '8px';
+          forminp.style.boxSizing = 'border-box';
 
           const titleDesc = row.querySelector('.wooBetterCustomTitle');
           if (titleDesc) {
@@ -665,6 +668,9 @@
               textInput.id = `woo_better_calc_${styleName}_input_current_style_postcode_fake_custom`;
               textInput.placeholder = placeholderInput ? placeholderInput.value : 'Insira seu CEP';
               textInput.classList.add('woo-better-input-current-style');
+              if (font_class) {
+                textInput.classList.add(font_class);
+              }
               textInput.style.cursor = 'pointer';
               textInput.readOnly = true; // Somente leitura
 
@@ -774,6 +780,9 @@
               button.textContent = 'CONSULTAR';
               button.id = `woo_better_calc_${styleName}_button_current_style_postcode_fake_custom`;
               button.classList.add('woo-better-button-current-style');
+              if (font_class) {
+                button.classList.add(font_class);
+              }
 
               // Aplica os valores de estilo dos campos ao botão
               Object.keys(buttonStyleComponents).forEach(componentId => {
@@ -812,6 +821,9 @@
               const linkText = document.createElement('p');
               linkText.textContent = 'Não sei meu CEP';
               linkText.classList.add('woo-better-link-current-style');
+              if (font_class) {
+                linkText.classList.add(font_class);
+              }
 
               // Adiciona o texto ao container
               containerDiv.appendChild(linkText);
@@ -903,6 +915,9 @@
               'woo_better_calc_product_input_icon': 'woo_better_calc_product_input_placeholder',
               'woo_better_calc_product_input_icon_color': 'woo_better_calc_product_input_placeholder',
               'woo_better_calc_product_custom_position': 'woo_better_calc_product_input_position',
+
+              //Checkout
+              'woo_better_calc_enable_auto_address_fill': 'woo_better_calc_cep_field_position',
 
               //Cache
               'woo_better_calc_cache_expiration_time': 'woo_better_calc_enable_auto_postcode_search',
@@ -1264,6 +1279,68 @@
         // Insere o botão após o input
         cacheResetInput.parentNode.insertBefore(clearCacheButton, cacheResetInput.nextSibling);
       }
+    }
+
+    const shortcodeElements = document.querySelectorAll('.woo-better-shortcode');
+
+    shortcodeElements.forEach(function (codeEl) {
+      // Cria o botão de copiar
+      const copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.className = 'woo-better-copy-shortcode-btn';
+      copyBtn.title = 'Copiar shortcode';
+      copyBtn.innerHTML = '📋'; // Ícone de copiar
+
+      // Estilização leve (adicione o resto no CSS)
+      copyBtn.style.marginLeft = '8px';
+      copyBtn.style.cursor = 'pointer';
+      copyBtn.style.border = 'none';
+      copyBtn.style.background = 'transparent';
+      copyBtn.style.fontSize = '16px';
+      copyBtn.style.transition = 'transform 0.2s';
+
+      // Evento de copiar
+      copyBtn.addEventListener('click', function () {
+        const shortcodeText = codeEl.textContent.trim();
+        navigator.clipboard.writeText(shortcodeText).then(function () {
+          // Animação leve
+          copyBtn.innerHTML = '✅';
+          copyBtn.style.transform = 'scale(1.2)';
+          setTimeout(function () {
+            copyBtn.innerHTML = '📋';
+            copyBtn.style.transform = 'scale(1)';
+          }, 1200);
+        });
+      });
+
+      // Insere o botão após o shortcode
+      codeEl.parentNode.insertBefore(copyBtn, codeEl.nextSibling);
+    });
+
+    const positionRadios = document.querySelectorAll('input[name="woo_better_calc_cep_field_position"]');
+    const autoAddressRadios = document.querySelectorAll('input[name="woo_better_calc_enable_auto_address_fill"]');
+
+    function updateAutoAddressState() {
+      // Considera habilitado se algum radio do pai estiver marcado como 'yes'
+      const enabled = Array.from(positionRadios).some(radio => radio.checked && radio.value === 'yes');
+      autoAddressRadios.forEach(radio => {
+        radio.disabled = !enabled;
+        radio.style.cursor = enabled ? '' : 'not-allowed';
+        if (!enabled) {
+          // Se desabilitar o pai, marca 'no' no filho
+          if (radio.value === 'no') {
+            radio.checked = true;
+          } else if (radio.value === 'yes') {
+            radio.checked = false;
+          }
+        }
+      });
+    }
+    if (positionRadios.length > 0 && autoAddressRadios.length > 0) {
+      updateAutoAddressState(); // Estado inicial
+      positionRadios.forEach(radio => {
+        radio.addEventListener('change', updateAutoAddressState);
+      });
     }
 
     startEvenst('cart');

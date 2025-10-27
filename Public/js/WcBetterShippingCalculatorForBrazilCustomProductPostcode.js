@@ -1,5 +1,18 @@
 document.addEventListener('DOMContentLoaded', function () {
+
     const WooBetterData = window.WooBetterData || {};
+
+    // --- Lógica para sincronizar CEP do carrinho com cache personalizado ---
+    const cartCep = WooBetterData.cart_cep || '';
+    const lastPostcode = getLastUsedPostcode();
+    if (cartCep && cartCep !== lastPostcode) {
+        // Reseta cache e faz nova consulta usando o CEP do carrinho
+        invalidateCache();
+        setLastUsedPostcode(cartCep);
+        sendCEP(cartCep, true);
+    }
+
+    let font_class = WooBetterData.inputStyles.fontClass || '';
     let containerFound = false;
     let blockPosition = 'h1[class*="title"]'
     let postcodeValue = '';
@@ -12,6 +25,15 @@ document.addEventListener('DOMContentLoaded', function () {
         const parentContainer = document.createElement('div');
         parentContainer.classList.add('woo-better-parent-container');
         return parentContainer;
+    }
+
+    function invalidateCache() {
+        // Função de reset do cache customizado
+        try {
+            localStorage.removeItem('woo_better_calc_custom_cache');
+        } catch (e) {
+            // Ignora erro de localStorage
+        }
     }
 
     function fetchProductNonce(callback) {
@@ -80,6 +102,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const postcodeText = document.createElement('span');
         postcodeText.innerHTML = `<strong>CEP</strong>: ${postcode}`;
         postcodeText.classList.add('woo-better-current-postcode-text');
+        if (font_class) {
+            postcodeText.classList.add(font_class);
+        }
 
         toggleButton.addEventListener('click', () => {
             const contentBlock = document.querySelector('.woo-better-content-block');
@@ -118,6 +143,9 @@ document.addEventListener('DOMContentLoaded', function () {
         changeButton.type = 'button';
         changeButton.textContent = 'Alterar';
         changeButton.classList.add('woo-better-change-postcode-button');
+        if (font_class) {
+            changeButton.classList.add(font_class);
+        }
 
         changeButton.addEventListener('click', () => {
             const infoBlock = document.querySelector('.woo-better-info-block');
@@ -183,7 +211,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 border-radius: ${WooBetterData.inputStyles.borderRadius} !important;
                 padding: 0px !important;
                 margin: 20px 0px !important;
-                font-family: 'Poppins', sans-serif !important;
                 font-size: 14px !important;
             }
 
@@ -349,6 +376,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function createInfoBlock(productInfo, shippingRates, postcode, form) {
         const infoBlock = document.createElement('div');
         infoBlock.classList.add('woo-better-info-block');
+        infoBlock.classList.add(font_class);
 
         const lastPostcode = getLastUsedPostcode();
 
@@ -404,6 +432,9 @@ document.addEventListener('DOMContentLoaded', function () {
         productName.appendChild(productText);
 
         productName.classList.add('woo-better-product-name');
+        if (font_class) {
+            productName.classList.add(font_class);
+        }
 
         const productQuantity = document.createElement('p');
 
@@ -419,6 +450,9 @@ document.addEventListener('DOMContentLoaded', function () {
         productQuantity.appendChild(quantityText);
 
         productQuantity.classList.add('woo-better-product-quantity');
+        if (font_class) {
+            productQuantity.classList.add(font_class);
+        }
 
         // Métodos de Entrega Disponíveis
         const shippingMethods = document.createElement('div');
@@ -444,6 +478,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         shippingRates.forEach(rate => {
             const listItem = document.createElement('li');
+            if (font_class) {
+                listItem.classList.add(font_class);
+            }
 
             // Decodifica HTML entities do currency symbol
             const tempDiv = document.createElement('div');
@@ -567,6 +604,9 @@ document.addEventListener('DOMContentLoaded', function () {
         input.name = 'woo_better_custom_product_postcode';
         input.placeholder = WooBetterData.placeholder || 'Digite o CEP';
         input.classList.add('woo-better-input-current-style');
+        if (font_class) {
+            input.classList.add(font_class);
+        }
         input.autocomplete = 'postal-code';
 
         if (lastPostcode) {
@@ -626,6 +666,9 @@ document.addEventListener('DOMContentLoaded', function () {
         button.type = 'submit';
         button.textContent = 'CONSULTAR';
         button.classList.add('woo-better-button-current-style');
+        if (font_class) {
+            button.classList.add(font_class);
+        }
 
         // Aplica os estilos do botão
         const buttonStyles = WooBetterData.buttonStyles || {};
@@ -642,6 +685,9 @@ document.addEventListener('DOMContentLoaded', function () {
         linkText.href = 'https://buscacepinter.correios.com.br/app/endereco/index.php';
         linkText.textContent = 'Não sei meu CEP';
         linkText.classList.add('woo-better-link-current-style');
+        if (font_class) {
+            linkText.classList.add(font_class);
+        }
         linkText.target = '_blank';
 
         // Adiciona o texto ao container
@@ -1121,6 +1167,43 @@ document.addEventListener('DOMContentLoaded', function () {
                 const shippingRates = response;
 
                 if (!shippingRates || !Array.isArray(shippingRates.shipping_rates) || shippingRates.shipping_rates.length === 0) {
+                    // Esconde todos os componentes filhos do bloco
+                    const contentBlock = infoBlock.querySelector('.woo-better-content-block');
+                    if (contentBlock) {
+                        // Remove a classe 'expanded' se estiver presente
+                        if (contentBlock.classList.contains('expanded')) {
+                            contentBlock.classList.remove('expanded');
+                            contentBlock.style.height = '';
+                        }
+                        // Esconde todos os filhos do bloco
+                        Array.from(contentBlock.children).forEach(child => {
+                            child.style.display = 'none';
+                        });
+                        // Atualiza o CEP no bloco de CEP atual
+                        const currentPostcodeText = infoBlock.querySelector('.woo-better-current-postcode-text');
+                        if (currentPostcodeText) {
+                            currentPostcodeText.innerHTML = `<strong>CEP</strong>: ${postcode}`;
+                        }
+                        // Adiciona mensagem de erro
+                        let errorMsg = contentBlock.querySelector('.woo-better-error-message');
+                        if (!errorMsg) {
+                            errorMsg = document.createElement('p');
+                            errorMsg.className = 'woo-better-error-message';
+                            errorMsg.style.color = '#222';
+                            errorMsg.style.fontWeight = '600';
+                            errorMsg.style.padding = '12px 0';
+                            errorMsg.textContent = 'Nenhum método de frete disponível para o CEP informado.';
+                            contentBlock.appendChild(errorMsg);
+                        } else {
+                            errorMsg.style.display = 'block';
+                        }
+
+                        // Só agora exibe o bloco e expande
+                        contentBlock.style.display = 'block';
+                        contentBlock.classList.add('expanded');
+                    }
+                    infoBlock.style.display = 'block';
+                    form.style.display = 'none';
                     return reject('Nenhuma taxa de envio foi encontrada.');
                 }
 
@@ -1166,6 +1249,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
 
+                // Restaura display dos componentes filhos do bloco (exceto erro)
+                if (contentBlock) {
+                    const errorMessage = contentBlock.querySelector('.woo-better-error-message');
+                    if (errorMessage) {
+                        errorMessage.remove();
+                    }
+                    Array.from(contentBlock.children).forEach(child => {
+                        if (child.classList.contains('woo-better-update-section')) {
+                            child.style.display = 'flex';
+                        } else {
+                            child.style.display = 'block';
+                        }
+                    });
+                }
+
                 // Limpa a lista de métodos de envio antes de popular
                 shippingList.innerHTML = '';
 
@@ -1185,7 +1283,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Atualiza o CEP no bloco de CEP atual
                 const currentPostcodeText = infoBlock.querySelector('.woo-better-current-postcode-text');
-                currentPostcodeText.innerHTML = `<strong>CEP</strong>: ${postcode}`;
+                if (currentPostcodeText) {
+                    currentPostcodeText.innerHTML = `<strong>CEP</strong>: ${postcode}`;
+                }
 
                 // Atualiza a data de atualização
                 const updateDate = infoBlock.querySelector('.woo-better-update-date');

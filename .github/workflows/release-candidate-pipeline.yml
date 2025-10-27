@@ -1,4 +1,4 @@
-name: Pre-Release Pipeline
+name: Release-Candidate Pipeline
 
 on:
   pull_request:
@@ -11,8 +11,8 @@ jobs:
     if: github.event.pull_request.merged == true
     uses: ./.github/workflows/analysis.yml
     
-  pre-release:
+  release-candidate:
     needs: analysis
-    uses: ./.github/workflows/pre-release.yml
+    uses: ./.github/workflows/release-candidate.yml
     with:
       analysis_status: ${{ needs.analysis.outputs.analysis_status }}

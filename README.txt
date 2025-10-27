@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.8
 Requires PHP: 7.3
-Stable tag: 4.4.0
+Stable tag: 4.5.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -92,6 +92,11 @@ add_filter(
 );
 
 == Changelog ==
+
+= 4.5.0 - 24/10/2025 =
+* NEW: Text font configuration system in the product and cart components.
+* NEW: Automatic address filling on the Checkout page.
+* NEW: Highlight for the ZIP code field in the Checkout page form.
 
 = 4.4.0 - 10/09/2025 =
 * New: cache system for postal code queries.
