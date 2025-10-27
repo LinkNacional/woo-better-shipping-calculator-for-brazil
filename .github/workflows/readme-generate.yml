@@ -1,39 +1,39 @@
-name: Auto Generate README with Images
+# name: Auto Generate README with Images
 
-on:
-  pull_request:
-    types: [closed]
-    branches: [dev, main]
+# on:
+#   pull_request:
+#     types: [closed]
+#     branches: [release-candidate, main]
 
-env:
-  PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
-  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} # configure sua chave no GitHub Secrets
+# env:
+#   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
+#   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} # configure sua chave no GitHub Secrets
 
-jobs:
-  generate-readme:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+# jobs:
+#   generate-readme:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v3
 
-      # Instala o readme-ai
-      - name: Install readme-ai
-        run: pip install readme-ai
+#       # Instala o readme-ai
+#       - name: Install readme-ai
+#         run: pip install readme-ai
 
-      # Gera o README.md com readme-ai (usando template se quiser)
-      - name: Generate README with readme-ai
-        run: |
-          readme-ai generate --output README.md --force --config readme-template.md
+#       # Gera o README.md com readme-ai (usando template se quiser)
+#       - name: Generate README with readme-ai
+#         run: |
+#           readme-ai generate --output README.md --force --config readme-template.md
 
-      # Adiciona logo e screenshots automaticamente
-      - name: Add logo and screenshots to README
-        run: |
-          bash ./generate-readme.sh
+#       # Adiciona logo e screenshots automaticamente
+#       - name: Add logo and screenshots to README
+#         run: |
+#           bash ./generate-readme.sh
 
-      # Faz commit do README.md gerado
-      - name: Commit README.md
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md
-          git commit -m ":memo: auto-generate README.md"
-          git push
+#       # Faz commit do README.md gerado
+#       - name: Commit README.md
+#         run: |
+#           git config --global user.name "github-actions[bot]"
+#           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+#           git add README.md
+#           git commit -m ":memo: auto-generate README.md"
+#           git push
