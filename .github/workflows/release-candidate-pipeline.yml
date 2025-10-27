@@ -3,7 +3,7 @@ name: Release-Candidate Pipeline
 on:
   pull_request:
     types: [ closed ]
-    branches: [ dev ]
+    branches: [ release-candidate ]
   workflow_dispatch:
 
 jobs:
