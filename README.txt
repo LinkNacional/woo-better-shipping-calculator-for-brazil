@@ -68,6 +68,8 @@ If you find any errors or have suggestions, open an issue in our [GitHub reposit
 11. Progress bar in Legacy checkout.
 12. New postcode component.
 13. New layout for postcode component.
+14. New mask for phone number.
+15. New POSTCODE search.
 
 == Frequently Asked Questions ==
 
