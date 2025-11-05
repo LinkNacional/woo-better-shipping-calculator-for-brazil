@@ -9,49 +9,113 @@ Stable tag: 4.5.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
-Shipping calculator with automatic ZIP code for WooCommerce. Compatible with Gutenberg and ideal for Brazilian stores.
+Shipping calculator with automatic address pre-filling by CEP on checkout for WooCommerce. Features mandatory phone field with country code (DDI) and dynamic field control. Ideal for Brazilian [WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/) stores. Compatible with Gutenberg and Shortcodes.
 
 == Description ==
 
-Improved shipping calculator for Brazilian stores, making it easier and improving the data entry flow on the cart and checkout pages:
+Improved shipping calculator designed specifically for **Brazilian e-commerce stores using WooCommerce**, making it easier and significantly improving the data entry flow on the cart and checkout pages.
 
-> On the Cart page:
+This [WordPress](https://www.linknacional.com.br/wordpress/) plugin ensures faster address verification and cleaner form management, leading to a better user experience and fewer abandoned carts.
 
-- ZIP code validation.
-- Control on the submit button, allowing you to proceed only after entering a valid ZIP code.
-- Hiding address fields.
-- Compatibility with Legacy and Blocks (Gutenberg) mode.
+### Watch the Plugin Demo:
 
-> On the Checkout page:
+[youtube https://www.youtube.com/watch?v=oHnUt0zYLv0]
 
-- Number field (complementing the address via `checkbox` or `text-input`).
-- Hiding address fields.
-- Compatibility with Legacy and Blocks (Gutenberg) mode.
+### Key Features & Improvements:
 
-> Additional Features:
+#### **On the Cart Page:**
 
-- Option to set a minimum cart value for free shipping.
-- Fully customizable through the plugin settings.
+* **ZIP Code Validation:** Real-time validation of the CEP (ZIP code) format.
+* **Submission Control:** The checkout/proceed button is only enabled after the customer enters a valid CEP.
+* **Dynamic Field Hiding:** Option to hide unnecessary address fields on the Cart page for a cleaner interface.
+* Compatibility with both **Legacy** and **Blocks (Gutenberg)** WooCommerce modes.
 
-Some of these features can be modified or disabled using hooks. More details in the [Frequently Asked Questions (FAQ)](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
+#### **On the Checkout Page:**
+
+* **✨ NEW: Automatic Address Lookup:** Automatically pre-fills the street, neighborhood, city, and state fields after the customer enters a valid CEP.
+* **NEW: Required Phone Field with DDI:** The phone field is now mandatory and includes a resource to capture the Country Code (DDI), ensuring complete contact information.
+* **Number Field Addition:** Adds the mandatory "Number" field, often missing in standard WooCommerce forms. Includes a `checkbox` option for addresses that are "Sem Número" (No Number).
+* Dynamic Field Hiding: Option to hide address fields when not needed.
+
+#### **Additional Features:**
+
+* **Free Shipping Minimum:** Option to set a minimum cart value required to activate the free shipping method.
+* Fully customizable through the dedicated plugin settings page.
+* The plugin is fully customizable via action and filter hooks for advanced users.
+
+More details can be found in the [Frequently Asked Questions (FAQ)](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
 
 = Help and Support =
 
-When you need help, create a topic in the [Plugin Support Forum](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
+When you need help, please create a topic in the [Plugin Support Forum](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
 
-= Contributions =
 
-If you find any errors or have suggestions, open an issue in our [GitHub repository](https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil).
-
-[Brasil API](https://brasilapi.com.br) - ZIP code field.
-[VIACEP](https://viacep.com.br) - ZIP code field.
+** Recommended Plugins **
+* [Link Invoice Payment for WooCommerce](https://wordpress.org/plugins/invoice-payment-for-woocommerce/) - Integrate custom payment methods and offer invoice-based payments in your WooCommerce store.
+* [Pix For WooCommerce](https://br.wordpress.org/plugins/payment-gateway-pix-for-woocommerce/) - Integrate Pix, Brazil’s revolutionary instant payment system, into your WooCommerce store 
 
 == Installation ==
 
-1. Access your WordPress admin and go to **Plugins > Add New**.
-2. Search for "Improved Shipping Calculator for Brazilian Stores".
-3. Find the plugin, click "Install Now" and then "Activate".
-4. Done! No additional configuration needed.
+1.  Access your WordPress admin and go to **Plugins > Add New**.
+2.  Search for "Improved Shipping Calculator for Brazilian Stores".
+3.  Find the plugin, click "Install Now" and then "Activate".
+4.  Done! No additional configuration is needed, but we recommend visiting the plugin settings.
+
+== Screenshots ==
+
+1. New plugin settings page.
+2. Old cart screen using the Gutenberg block editor.
+3. New cart screen using the Gutenberg block editor.
+4. Old cart screen using the WooCommerce shortcode.
+5. New cart screen using the WooCommerce shortcode.
+6. Number field using the Gutenberg block editor.
+7. Number field using the WooCommerce shortcode.
+8. Progress bar in Gutenberg cart.
+9. Progress bar in Gutenberg checkout.
+10. Progress bar in Legacy cart.
+11. Progress bar in Legacy checkout.
+12. New postcode component.
+13. New layout for postcode component.
+14. Automatic Address Pre-filling in Checkout. (New)
+15. Mandatory Phone Field with DDI. (New)
+
+== Frequently Asked Questions ==
+
+= How can I CHANGE the text "Calculate shipping"? =
+
+Use the following code:
+
+add_filter(
+	'wc_better_shipping_calculator_for_brazil_postcode_label',
+	function () {
+		return 'your new text';
+	}
+);
+
+= How can I REMOVE the text "Calculate shipping"? =
+
+Use the following code:
+
+add_filter(
+	'wc_better_shipping_calculator_for_brazil_postcode_label',
+	'__return_null'
+);
+
+= Why is the Phone field now mandatory and asking for a Country Code (DDI)? =
+
+This feature was added to ensure all essential customer contact data is complete and correctly formatted. The DDI (Dialing Code International) ensures the phone number is standardized for both national and international calls, which is crucial for logistics and customer service. You can disable this feature in the plugin settings under the Checkout tab.
+
+= How does the automatic address lookup by CEP work? =
+
+When the customer enters a valid 8-digit CEP (Brazilian postcode) on the checkout page, the plugin uses public APIs (like VIACEP and Brasil API) to automatically retrieve and fill in the Street, City, State, and Neighborhood fields, speeding up the checkout process.
+
+
+= Contributions =
+
+If you find any errors or have suggestions, please open an issue in our [GitHub repository](https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil).
+
+* [Brasil API](https://brasilapi.com.br) - ZIP code field.
+* [VIACEP](https://viacep.com.br) - ZIP code field.
 
 == Screenshots ==
 
@@ -70,28 +134,6 @@ If you find any errors or have suggestions, open an issue in our [GitHub reposit
 13. New layout for postcode component.
 14. New mask for phone number.
 15. New POSTCODE search.
-
-== Frequently Asked Questions ==
-
-= How can I CHANGE the text "Calculate shipping"? =
-
-Use the following code:
-
-add_filter(
-    'wc_better_shipping_calculator_for_brazil_postcode_label',
-    function () {
-        return 'your new text';
-    }
-);
-
-= How can I REMOVE the text "Calculate shipping"? =
-
-Use the following code:
-
-add_filter(
-    'wc_better_shipping_calculator_for_brazil_postcode_label',
-    '__return_null'
-);
 
 == Changelog ==
 
