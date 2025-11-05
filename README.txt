@@ -117,24 +117,6 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [Brasil API](https://brasilapi.com.br) - ZIP code field.
 * [VIACEP](https://viacep.com.br) - ZIP code field.
 
-== Screenshots ==
-
-1. New plugin settings page.
-2. Old cart screen using the Gutenberg block editor.
-3. New cart screen using the Gutenberg block editor.
-4. Old cart screen using the WooCommerce shortcode.
-4. New cart screen using the WooCommerce shortcode.
-6. Number field using the Gutenberg block editor.
-7. Number field using the WooCommerce shortcode.
-8. Progress bar in Gutenberg cart.
-9. Progress bar in Gutenberg checkout.
-10. Progress bar in Legacy cart.
-11. Progress bar in Legacy checkout.
-12. New postcode component.
-13. New layout for postcode component.
-14. New mask for phone number.
-15. New POSTCODE search.
-
 == Changelog ==
 
 = 4.5.0 - 24/10/2025 =
