@@ -440,7 +440,7 @@
           const titleDesc = row.querySelector('.wooBetterCustomTitle');
           if (titleDesc) {
             const pElement = document.createElement('p');
-            pElement.textContent = "Use shortcodes para adicionar funcionalidades específicas em temas clássicos."
+            pElement.textContent = "Utilize shortcodes para adicionar funcionalidades específicas do plugin a temas clássicos."
             pElement.style.fontWeight = 'normal';
             pElement.style.color = '#343B45';
 

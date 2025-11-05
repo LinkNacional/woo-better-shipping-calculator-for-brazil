@@ -463,7 +463,13 @@ jQuery(function ($) {
 
     function updatePhoneCountryData() {
         var $billingSelect = $('#woo-better-country-select-billing-phone');
+        if ($billingSelect) {
+            $billingSelect.css('flex', '1 0 calc(100%)');
+        }
         var $shippingSelect = $('#woo-better-country-select-shipping-phone');
+        if ($shippingSelect) {
+            $shippingSelect.css('flex', '1 0 calc(100%)');
+        }
         var billingCode = $billingSelect.length ? $billingSelect.val() : null;
         var shippingCode = $shippingSelect.length ? $shippingSelect.val() : null;
 

@@ -476,6 +476,7 @@ jQuery(function ($) {
         var $postcodeDivs = $('.wc-block-components-address-form__postcode');
         $postcodeDivs.each(function () {
             var $divComponent = $(this);
+            $divComponent.css('flex', '1 0 calc(100%)');
             var $input = $divComponent.find('input');
             if ($input.length === 0) return;
             var baseId = $input.attr('id').replace('-postcode', '');

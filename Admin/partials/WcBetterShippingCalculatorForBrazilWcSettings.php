@@ -26,24 +26,24 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'id'    => 'woo_better_calc_title_geral'
             ),
             'disabled_shipping' => array(
-                'title'    => __('Entrega de produto', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Opções de Frete e Entrega', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_disabled_shipping',
                 'default'  => 'default',
                 'desc_tip' => false,
                 'type'     => 'select',
                 'options'  => array(
-                    'all'     => __('Desabilitar entrega/endereço para todos os produtos', 'woo-better-shipping-calculator-for-brazil'),
-                    'digital' => __('Desabilitar entrega/endereço para apenas produtos digitais', 'woo-better-shipping-calculator-for-brazil'),
-                    'default' => __('Manter entrega padrão', 'woo-better-shipping-calculator-for-brazil')
+                    'all'     => __('Desabilitar Frete e Endereço para Todos', 'woo-better-shipping-calculator-for-brazil'),
+                    'digital' => __('Desabilitar Frete e Endereço Apenas para Produtos Digitais', 'woo-better-shipping-calculator-for-brazil'),
+                    'default' => __('Manter Padrão do WooCommerce', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-desc-tip' => __('Escolha como deseja configurar a entrega dos produtos.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Salve esta configuração para aplicar as regras de entrega selecionadas.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Configuração de entrega de produtos.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-desc-tip' => __('Configure como o endereço de entrega e os métodos de frete serão apresentados no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Entrega dinâmica será mantida conforme o padrão do Woocommerce.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Gerencie as opções de endereço e cálculo de frete.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'enable_min_free_shipping' => array(
-                'title'    => __('Frete grátis', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Opções de Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,
                 'id'       => 'woo_better_enable_min_free_shipping',
                 'default'  => 'no',
@@ -53,13 +53,14 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
+                    'data-subtitle' => __('Habilitar Mínimo para Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
                     'data-desc-tip' => __('Permite definir um valor mínimo para ativar o frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Habilite esta opção para configurar um valor mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Configuração de frete grátis.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-title-description' => __('Configure aqui as regras para o frete grátis.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'min_free_shipping_value' => array(
-                'title'    => __('Valor mínimo para frete grátis', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Valor Mínimo', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_min_free_shipping_value',
                 'desc_tip' => false,
                 'default'  => '',
@@ -67,12 +68,12 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'custom_attributes' => array(
                     'min' => 0,
                     'data-desc-tip' => __('Defina o valor mínimo necessário para ativar o frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Insira o valor mínimo do carrinho para ativar o frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Valor mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-description' => __('Insira o valor mínimo do carrinho para que o frete grátis seja ativado.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ex: 200,00', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'font_source' => array(
-                'title'    => __('Fonte Utilizada', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Fonte para Busca de CEP', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,
                 'id'       => 'woo_better_calc_font_source',
                 'default'  => 'yes',
@@ -82,13 +83,14 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Fonte do Site', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-desc-tip' => __('Exibe um link para as configurações nas páginas de carrinho e produto quando o usuário for administrador.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Escolha a fonte que se adeque melhor à sua página.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Fonte padrão no componente de CEP', 'woo-better-shipping-calculator-for-brazil')
+                    'data-subtitle' => __('Fonte Padrão', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Selecione a fonte a ser aplicada no campo de busca do CEP (Código de Endereçamento Postal).', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Escolha a fonte que melhor se adapta ao design da sua página.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Configura a fonte para o componente de busca de CEP.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'enable_settings_link' => array(
-                'title'    => __('Link de configuração', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Link Rápido de Configuração', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,
                 'id'       => 'woo_better_calc_enable_settings_link',
                 'default'  => 'no',
@@ -98,9 +100,10 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-desc-tip' => __('Exibe um link para as configurações nas páginas de carrinho e produto quando o usuário for administrador.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Habilite esta opção para mostrar um link de configuração nas páginas frontend para usuários administradores.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Link de configuração para administradores.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-subtitle' => __('Exibir Link de Configuração', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Exibe um atalho para as configurações do plugin nas páginas de Carrinho e de Produto quando o utilizador for um administrador.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite esta opção para exibir o link de configuração nas páginas frontend (visíveis ao público) para os utilizadores administradores.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Exibir o link de configuração somente para utilizadores administradores.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'geral_section_end' => array(
@@ -114,10 +117,11 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             'shortcodes_section' => array(
                 'title' => __('Shortcodes', 'woo-better-shipping-calculator-for-brazil'),
                 'desc'  => __('<p><strong>Carrinho:</strong><br><code class="woo-better-shortcode">[woocommerce_cart]</code></p>
+                    <p style="padding: 10px 0;"> </p>
                     <p><strong>Finalização de compra:</strong><br><code class="woo-better-shortcode">[woocommerce_checkout]</code></p>
-                    <p> </p>
-                    <p><strong>Integração com Temas Clássicos via Shortcode</strong><br>Esta opção é recomendada para temas que não utilizam o editor de blocos (Gutenberg). Se você usa um tema de blocos, opte pelas configurações nativas para uma melhor experiência.</p>
-                    <p> </p>
+                    <p style="padding: 10px 0;"> </p>
+                    <p><strong>Uso e Integração com Temas Clássicos</strong><br>Esta opção é recomendada para temas que não utilizam o editor de blocos (Gutenberg). Se o seu tema for baseado em blocos, utilize as configurações nativas do plugin para uma melhor experiência.</p>
+                    <p style="padding: 10px 0;"> </p>
                     <p><span><strong>Atenção:</strong> Ao usar shortcodes, apenas as configurações da aba Geral e Checkout serão aplicadas.</span></p>', 
                     'woo-better-shipping-calculator-for-brazil'
                 ),
@@ -738,7 +742,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'id'    => 'woo_better_calc_title_checkout'
             ),
             'cep_field_position' => array(
-                'title'    => __('Campo CEP', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Configurações do Campo CEP', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_cep_field_position',
                 'desc_tip' => false,
                 'default'  => 'no',
@@ -748,10 +752,10 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-subtitle' => __('Posição do campo CEP', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-desc-tip' => __('Defina os ajustes para configurar o seu campo de CEP.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Com esta opção habilitada, o campo CEP será exibido no topo do formulário de checkout, facilitando o preenchimento.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Destaque do campo CEP no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-subtitle' => __('Destaque do Campo CEP', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Defina as configurações de exibição e funcionalidade para o campo de CEP (Checkout).', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Ao habilitar, o campo CEP será exibido no topo do formulário de checkout, posicionado imediatamente após o campo de País.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Escolha se o campo de CEP deve ser destacado no checkout.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'enable_auto_address_fill' => array(
@@ -766,13 +770,13 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 ),
                 'custom_attributes' => array(
                     'data-desc-tip' => __('Permitir que o usuário preencha o endereço automaticamente ao digitar o CEP no checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Com esta opção habilitada, o endereço será preenchido automaticamente após o usuário inserir o CEP no checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Preenchimento de endereço automático por CEP no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-description' => __('Com esta opção ativada, uma sugestão de endereço aparecerá, e o utilizador poderá optar por usá-la para preencher os campos do checkout automaticamente.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Habilite o preenchimento automático do endereço via CEP no checkout.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
 
             'number_required' => array(
-                'title'    => __('Campo de número adicional', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Campo de Número do Endereço', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_number_required',
                 'desc_tip' => false,
                 'default'  => 'no',
@@ -782,13 +786,14 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-desc-tip' => __('Adicionar no checkout um campo adicional para o número do endereço.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Implementar a adição de um campo para o "Número" do endereço, posicionado imediatamente após o campo principal do endereço na página de checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('No checkout adicione uma campo após o endereço denominado número', 'woo-better-shipping-calculator-for-brazil')
+                    'data-subtitle' => __('Adicionar Campo de Número (Obrigatório)', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Adiciona um campo de Número de preenchimento obrigatório ao formulário de endereço no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para adicionar um campo de "Número" ao endereço. Inclui checkbox para endereços "Sem Número" e torna o campo obrigatório no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Adiciona o campo de Número, posicionado logo após o campo principal do endereço (Rua).', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'contact_required' => array(
-                'title'    => __('Campo de contato obrigatório', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Telefone (Contato) Obrigatório com DDI', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_contact_required',
                 'desc_tip' => false,
                 'default'  => 'no',
@@ -798,9 +803,10 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-desc-tip' => __('Defina se o campo de contato será obrigatório.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Se habilitado, o campo de contato será obrigatório para finalizar o pedido.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('No checkout, o campo de contato será obrigatório, permitindo adição de novas informações de contato.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-subtitle' => __('Tornar Telefone Obrigatório + Captura de DDI', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Define a obrigatoriedade do campo de Telefone, adicionando também o recurso de captura do Código de País (DDI).', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Se habilitado, o campo de telefone será de preenchimento obrigatório para que o cliente possa finalizar o pedido.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('No checkout, o campo de telefone torna-se obrigatório e passa a incluir o código de país (DDI).', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'checkout_section_end' => array(
