@@ -8,14 +8,28 @@
 		: 0;
 
 	function getCartTotal() {
-		let el = document.querySelector('.wc-block-formatted-money-amount.wc-block-components-totals-item__value');
-		if (!el) {
-			el = document.querySelector('td[data-title="Subtotal"] .woocommerce-Price-amount.amount bdi');
+		// Lista de seletores possíveis para o valor do carrinho
+		let selectors = [
+			'.wc-block-formatted-money-amount.wc-block-components-totals-item__value',
+			'td[data-title="Subtotal"] .woocommerce-Price-amount.amount bdi',
+			'.cart-subtotal .woocommerce-Price-amount.amount bdi',
+			'.cart-subtotal .woocommerce-Price-amount.amount',
+			'.wc-block-components-totals-item__value .wc-block-formatted-money-amount',
+			'.order-total .woocommerce-Price-amount.amount bdi',
+			'.order-total .woocommerce-Price-amount.amount'
+		];
+
+		let el = null;
+		for (let selector of selectors) {
+			el = document.querySelector(selector);
+			if (el && el.textContent.trim()) {
+				break;
+			}
 		}
-		if (!el) {
-			el = document.querySelector('.cart-subtotal .woocommerce-Price-amount.amount bdi');
+
+		if (!el || !el.textContent.trim()) {
+			return 0;
 		}
-		if (!el) return 0;
 
 		// Obtém as configurações de moeda do WooCommerce
 		const currencySettings = window.wcSettings?.currency || {};
@@ -27,12 +41,15 @@
 		const effectiveThousandSeparator = thousandSeparator === '.' || thousandSeparator === ',' ? thousandSeparator : '.';
 
 		// Converte o valor do texto para número
-		let value = el.textContent
+		let rawText = el.textContent.trim();
+		let value = rawText
 			.replace(new RegExp(`\\${effectiveThousandSeparator}`, 'g'), '') // Remove o separador de milhar
 			.replace(new RegExp(`\\${effectiveDecimalSeparator}`), '.') // Substitui o separador decimal por '.'
 			.replace(/[^\d.-]/g, ''); // Remove caracteres não numéricos
 
-		return parseFloat(value) || 0;
+		let parsedValue = parseFloat(value) || 0;
+
+		return parsedValue;
 	}
 
 	function insertOrUpdateProgressBar() {
@@ -47,7 +64,7 @@
 			percent = Math.min((cartTotal / minValue) * 100, 100);
 			message = cartTotal >= minValue
 				? 'Parabéns! Você tem frete grátis!'
-				: 'Falta(m) apenas mais R$' + (minValue - cartTotal).toFixed(2) + ' para obter FRETE GRÀTIS';
+				: 'Falta(m) apenas mais R$' + (minValue - cartTotal).toFixed(2) + ' para obter FRETE GRÁTIS';
 		}
 
 		let progressBar = document.querySelector('.wc-better-shipping-progress-bar');
@@ -129,38 +146,126 @@
 		}
 	}
 
+	let observers = []; // Array para armazenar os observers
+
 	function waitForCartTotalAndInit() {
 		let attempts = 0; // Contador de tentativas
 
 		function tryInit() {
-			let target = document.querySelector('.wc-block-formatted-money-amount.wc-block-components-totals-item__value');
-			if (!target) {
-				target = document.querySelector('.cart-collaterals');
-			}
-			if (!target) {
-				target = document.querySelector('#order_review');
+			// Busca por múltiplos targets possíveis
+			let targets = [
+				'.wc-block-formatted-money-amount.wc-block-components-totals-item__value',
+				'.cart-collaterals',
+				'#order_review',
+				'.woocommerce-cart-form',
+				'.wc-block-cart',
+				'.wc-block-checkout',
+				'body' // Fallback para o body se não encontrar nada
+			];
+
+			let foundTarget = null;
+			for (let selector of targets) {
+				foundTarget = document.querySelector(selector);
+				if (foundTarget) {
+					break;
+				}
 			}
 
-			if (!target) {
+			if (!foundTarget && attempts < 30) {
 				attempts++;
-				if (attempts >= 20) {
-					return;
-				}
 				setTimeout(tryInit, 200); // Tenta novamente após 200ms
 				return;
 			}
 
+			// Se não encontrou target específico, usa o body como fallback
+			if (!foundTarget) {
+				foundTarget = document.body;
+			}
+
 			insertOrUpdateProgressBar();
 
-			let observer = new MutationObserver(function () {
-				insertOrUpdateProgressBar();
+			// Limpa observers anteriores
+			observers.forEach(obs => obs.disconnect());
+			observers = [];
+
+			// Cria um novo observer com configurações mais abrangentes
+			let observer = new MutationObserver(function (mutations) {
+				let shouldUpdate = false;
+
+				mutations.forEach(function (mutation) {
+					// Verifica se houve mudanças relevantes
+					if (mutation.type === 'childList' || mutation.type === 'characterData') {
+						// Verifica se a mutação afeta elementos relacionados ao carrinho
+						let target = mutation.target;
+						if (target && (
+							target.classList?.contains('woocommerce-Price-amount') ||
+							target.classList?.contains('wc-block-formatted-money-amount') ||
+							target.closest('.cart-subtotal') ||
+							target.closest('.wc-block-components-totals-item') ||
+							target.closest('.woocommerce-cart-form') ||
+							target.closest('.wc-block-cart') ||
+							target.closest('.wc-block-checkout')
+						)) {
+							shouldUpdate = true;
+						}
+					}
+				});
+
+				if (shouldUpdate) {
+					// Adiciona um pequeno delay para garantir que o DOM foi atualizado
+					setTimeout(insertOrUpdateProgressBar, 100);
+				}
 			});
-			observer.observe(target, { childList: true, characterData: true, subtree: true });
+
+			observer.observe(foundTarget, {
+				childList: true,
+				characterData: true,
+				subtree: true,
+				attributes: true,
+				attributeFilter: ['class', 'data-title']
+			});
+
+			observers.push(observer);
+
+			// Também monitora eventos específicos do WooCommerce
+			$(document).on('updated_cart_totals updated_checkout', function () {
+				setTimeout(insertOrUpdateProgressBar, 100);
+			});
+
+			// Observer adicional para mudanças na quantidade de produtos
+			$(document).on('change', 'input.qty', function () {
+				setTimeout(insertOrUpdateProgressBar, 500);
+			});
+
+			// Observer para mudanças em blocos do Gutenberg (WooCommerce Blocks)
+			$(document).on('wc-blocks_cart_updated wc-blocks_checkout_updated', function () {
+				setTimeout(insertOrUpdateProgressBar, 100);
+			});
 		}
 
 		tryInit(); // Inicia a primeira tentativa
 	}
 
+	// Função para verificar periodicamente se o observer ainda está funcionando
+	function periodicCheck() {
+		// Verifica se existe algum observer ativo
+		if (observers.length === 0) {
+			waitForCartTotalAndInit();
+		}
+
+		// Atualiza a barra de progresso periodicamente
+		insertOrUpdateProgressBar();
+	}
+
+	// Inicializa quando o DOM estiver pronto
 	$(waitForCartTotalAndInit);
+
+	// Também inicializa quando a página estiver completamente carregada
+	$(window).on('load', function () {
+		setTimeout(waitForCartTotalAndInit, 500);
+	});
+
+	// Verifica periodicamente se o observer ainda está funcionando (a cada 5 segundos)
+	setInterval(periodicCheck, 5000);
 
 })(jQuery);

@@ -9,11 +9,11 @@ Stable tag: 4.5.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
-Enhanced WooCommerce shipping calculator for Brazilian stores with automatic address pre-filling and mandatory phone field with country code.
+Shipping calculator for Brazilian WooCommerce stores with automatic Postal Code address pre-filling and mandatory phone field with country code.
 
 == Description ==
 
-Improved shipping calculator designed specifically for **Brazilian e-commerce stores using WooCommerce**, making it easier and significantly improving the data entry flow on the cart and checkout pages.
+Improved shipping calculator designed specifically for **Brazilian e-commerce stores using [WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/) **, making it easier and significantly improving the data entry flow on the cart and checkout pages.
 
 This [WordPress](https://www.linknacional.com.br/wordpress/) plugin ensures faster address verification and cleaner form management, leading to a better user experience and fewer abandoned carts.
 
