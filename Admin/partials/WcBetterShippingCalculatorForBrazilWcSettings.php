@@ -67,6 +67,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'type'     => 'number',
                 'custom_attributes' => array(
                     'min' => 0,
+                    'step' => '0.01',
                     'data-desc-tip' => __('Defina o valor mínimo necessário para ativar o frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Insira o valor mínimo do carrinho para que o frete grátis seja ativado.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Ex: 200,00', 'woo-better-shipping-calculator-for-brazil')
@@ -142,7 +143,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'id'    => 'woo_better_calc_product_page_settings'
             ),
             'enable_product_page' => array(
-                'title'    => __('Habilitar na página de produto', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Cálculo de Frete na Página do Produto', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_enable_product_page',
                 'default'  => 'yes',
                 'type'     => 'radio',
@@ -151,9 +152,10 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-desc-tip' => __('Habilite esta opção para exibir o campo na página de produto.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Exibe o campo de personalização na página de produto.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Habilitar na página de produto.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-subtitle' => __('Exibir Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Habilite esta opção para exibir o campo da calculadora de frete diretamente na página do produto.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Exibe o campo de cálculo de frete na página do produto (abaixo do botão "Comprar").', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ativa o campo de cálculo de frete na página individual do produto.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
 
@@ -437,7 +439,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             ),
 
             'enable_cart_page' => array(
-                'title'    => __('Habilitar na página de carrinho', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Exibir Calculadora no Carrinho', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_enable_cart_page',
                 'default'  => 'yes',
                 'type'     => 'radio',
@@ -446,9 +448,10 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-desc-tip' => __('Habilite esta opção para exibir o campo na página de carrinho.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Exibe o campo de personalização na página de carrinho.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Habilitar na página de carrinho.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-subtitle' => __('Ativar Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Habilite esta opção para exibir o campo da calculadora de frete na página do carrinho.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Exibe o campo de cálculo de frete (CEP) na página do carrinho.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ativa a exibição da calculadora de frete na página do carrinho.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
 
