@@ -102,8 +102,8 @@ class WcBetterShippingCalculatorForBrazilAdmin
          * between the defined hooks and the functions defined in this
          * class.
          */
-
-        $notice_dismissed = get_user_meta(get_current_user_id(), 'woo_better_calc_notice_dismissed', true);
+        $notice_key = 'woo_better_calc_notice_dismissed_' . WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
+        $notice_dismissed = get_user_meta(get_current_user_id(), $notice_key, true);
 
         if (!$notice_dismissed) {
             wp_enqueue_script(

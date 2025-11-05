@@ -2,8 +2,8 @@
 	'use strict';
 
 	jQuery(document).ready(function ($) {
-		// Handle do dismiss do notice
-		$(document).on('click', '[data-dismissible="woo-better-calc-notice"] .notice-dismiss', function (e) {
+
+		$('[data-dismissible="woo-better-calc-notice"] .notice-dismiss').on('click', function (e) {
 			e.preventDefault();
 
 			$.ajax({

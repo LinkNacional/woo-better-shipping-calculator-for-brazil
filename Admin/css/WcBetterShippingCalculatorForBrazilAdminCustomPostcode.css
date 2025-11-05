@@ -150,6 +150,7 @@
 }
 
 .woo-better-icon {
+    display: inline !important;
     width: 16px;
     height: 16px;
     margin-right: 5px;
