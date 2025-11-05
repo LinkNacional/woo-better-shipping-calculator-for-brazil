@@ -448,7 +448,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-subtitle' => __('Ativar Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-subtitle' => __('Exibir Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil'),
                     'data-desc-tip' => __('Habilite esta opção para exibir o campo da calculadora de frete na página do carrinho.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Exibe o campo de cálculo de frete (CEP) na página do carrinho.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Ativa a exibição da calculadora de frete na página do carrinho.', 'woo-better-shipping-calculator-for-brazil')
