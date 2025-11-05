@@ -9,7 +9,7 @@ Stable tag: 4.5.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
-Shipping calculator with automatic address pre-filling by CEP on checkout for WooCommerce. Features mandatory phone field with country code (DDI) and dynamic field control. Ideal for Brazilian [WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/) stores. Compatible with Gutenberg and Shortcodes.
+Enhanced WooCommerce shipping calculator for Brazilian stores with automatic address pre-filling and mandatory phone field with country code.
 
 == Description ==
 
