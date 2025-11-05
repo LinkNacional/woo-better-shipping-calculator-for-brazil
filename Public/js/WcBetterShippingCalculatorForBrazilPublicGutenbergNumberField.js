@@ -2,7 +2,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let shippingBlockFound = false
     let billingBlockFound = false
     let submitFound = false
-    let submitEvent = false
+    let shippingEventsBound = false;
+    let billingEventsBound = false;
     let placeOrderButton = null
     let intervalCount = 0
     let checkboxCount = 0
@@ -58,7 +59,43 @@ document.addEventListener("DOMContentLoaded", function () {
                         input.setAttribute('required', '');
                         input.setAttribute('aria-invalid', 'false');
                         input.setAttribute('autocapitalize', 'sentences');
-                        input.value = '';
+                        // Valor inicial
+                        const initialValue = (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.shipping_number) ? WooBetterNumberData.shipping_number : '';
+                        input.value = initialValue;
+                        if (initialValue !== '') {
+                            customInputDiv.classList.add('is-active');
+                        }
+
+                        // Criando o checkbox
+                        const shippingCheckboxInput = document.createElement('input');
+                        shippingCheckboxInput.id = 'wc-shipping-better-checkbox';
+                        shippingCheckboxInput.className = 'wc-block-components-checkbox__input';
+                        shippingCheckboxInput.type = 'checkbox';
+                        shippingCheckboxInput.setAttribute('aria-invalid', 'false');
+                        // Estado inicial do checkbox/input
+                        if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.shipping_number === 'S/N') {
+                            shippingCheckboxInput.checked = true;
+                            input.disabled = true;
+                            input.style.backgroundColor = '#e0e0e0';
+                            input.style.color = '#808080';
+                        }
+                        // Evento de input para registrar valor
+                        input.addEventListener('input', function () {
+                            let val = input.value.trim();
+                            if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                                let data = { woo_better_shipping_number: val, woo_better_billing_number: '' };
+                                const billingNumberInput = document.getElementById('billing-number');
+                                if (!billingNumberInput) {
+                                    data.woo_better_billing_number = val;
+                                } else {
+                                    data.woo_better_billing_number = billingNumberInput.value;
+                                }
+                                window.wc.blocksCheckout.extensionCartUpdate({
+                                    namespace: 'woo_better_number_validation',
+                                    data: data
+                                });
+                            }
+                        });
 
                         // Criando o label
                         const label = document.createElement('label');
@@ -107,11 +144,36 @@ document.addEventListener("DOMContentLoaded", function () {
                         const checkboxLabel = document.createElement('label');
                         checkboxLabel.setAttribute('for', 'wc-shipping-better-checkbox');
 
+                        // Criando o checkbox
                         const checkboxInput = document.createElement('input');
                         checkboxInput.id = 'wc-shipping-better-checkbox';
                         checkboxInput.className = 'wc-block-components-checkbox__input';
                         checkboxInput.type = 'checkbox';
                         checkboxInput.setAttribute('aria-invalid', 'false');
+                        // Estado inicial do checkbox/input
+                        if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.shipping_number === 'S/N') {
+                            checkboxInput.checked = true;
+                            input.disabled = true;
+                            input.style.backgroundColor = '#e0e0e0';
+                            input.style.color = '#808080';
+                        }
+                        // Evento de change para registrar valor
+                        checkboxInput.addEventListener('change', function () {
+                            let val = this.checked ? 'S/N' : '';
+                            if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                                let data = { woo_better_shipping_number: val, woo_better_billing_number: '' };
+                                const billingNumberInput = document.getElementById('billing-number');
+                                if (!billingNumberInput) {
+                                    data.woo_better_billing_number = val;
+                                } else {
+                                    data.woo_better_billing_number = billingNumberInput.value;
+                                }
+                                window.wc.blocksCheckout.extensionCartUpdate({
+                                    namespace: 'woo_better_number_validation',
+                                    data: data
+                                });
+                            }
+                        });
 
                         const checkboxSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                         checkboxSvg.setAttribute('class', 'wc-block-components-checkbox__mark');
@@ -121,7 +183,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         const checkboxPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                         checkboxPath.setAttribute('d', 'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z');
-
                         checkboxSvg.appendChild(checkboxPath);
 
                         const checkboxText = document.createElement('span');
@@ -264,69 +325,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
         }
-
-        if ((shippingBlockFound || billingBlockFound) && submitFound && !submitEvent) {
-            (function () {
-                const originalFetch = window.fetch;
-
-                window.fetch = async function (input, init) {
-                    // Verifica se a requisição é para a rota específica do checkout
-                    if (typeof input === 'string' && input.includes('/wp-json/wc/store/v1/checkout')) {
-                        try {
-                            const body = JSON.parse(init.body);
-
-                            // Obtém o valor do input do número do endereço
-                            const shippingNumberInput = document.getElementById('shipping-number');
-                            const shippingNumber = shippingNumberInput ? shippingNumberInput.value.trim() : '';
-
-                            const billingNumberInput = document.getElementById('billing-number');
-                            const billingNumber = billingNumberInput ? billingNumberInput.value.trim() : '';
-
-                            const billingCheckContainer = document.querySelector('.wc-block-components-checkbox.wc-block-checkout__use-address-for-billing')
-                            const billingCheck = billingCheckContainer ? billingCheckContainer.querySelector('input') : ''
-
-                            if (billingCheck) {
-                                if (billingCheck.checked) {
-                                    if (body?.billing_address?.address_1 && shippingNumber) {
-                                        body.billing_address.address_1 += ` - ${shippingNumber}`;
-                                        body['payment_data'].push({ key: 'lkn_billing_number', value: shippingNumber })
-                                    } else if (body?.billing_address?.address_1 && !shippingNumber) {
-                                        body.billing_address.address_1 += ` - S/N`;
-                                        body['payment_data'].push({ key: 'lkn_billing_number', value: 'S/N' })
-                                    }
-                                } else {
-                                    if (billingNumber) {
-                                        if (body?.billing_address?.address_1) {
-                                            body.billing_address.address_1 += ` - ${billingNumber}`;
-                                            body['payment_data'].push({ key: 'lkn_billing_number', value: billingNumber })
-                                        }
-                                    } else {
-                                        if (body?.billing_address?.address_1) {
-                                            body.billing_address.address_1 += ` - S/N`;
-                                            body['payment_data'].push({ key: 'lkn_billing_number', value: 'S/N' })
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (shippingNumber && body?.shipping_address?.address_1) {
-                                body.shipping_address.address_1 += ` - ${shippingNumber}`;
-                                body['payment_data'].push({ key: 'lkn_shipping_number', value: shippingNumber })
-                            }
-
-                            // Atualiza o corpo da requisição
-                            init.body = JSON.stringify(body);
-                        } catch (error) {
-                            console.error('Erro ao modificar a requisição do checkout:', error);
-                        }
-                    }
-
-                    return originalFetch(input, init);
-                };
-            })();
-
-            submitEvent = true
-        }
     });
 
     // Configuração do observer para observar mudanças no corpo do documento
@@ -361,7 +359,44 @@ document.addEventListener("DOMContentLoaded", function () {
                 input.setAttribute('required', '');
                 input.setAttribute('aria-invalid', 'false');
                 input.setAttribute('autocapitalize', 'sentences');
-                input.value = '';
+                // Valor inicial
+                const initialValue = (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.billing_number) ? WooBetterNumberData.billing_number : '';
+                input.value = initialValue;
+                if (initialValue !== '') {
+                    customInputDiv.classList.add('is-active'); // animação label
+                }
+
+                // Criando o checkbox
+                const billingCheckboxInput = document.createElement('input');
+                billingCheckboxInput.id = 'wc-billing-better-checkbox';
+                billingCheckboxInput.className = 'wc-block-components-checkbox__input';
+                billingCheckboxInput.type = 'checkbox';
+                billingCheckboxInput.setAttribute('aria-invalid', 'false');
+                // Estado inicial do checkbox/input
+                if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.billing_number === 'S/N') {
+                    billingCheckboxInput.checked = true;
+                    input.disabled = true;
+                    input.style.backgroundColor = '#e0e0e0';
+                    input.style.color = '#808080';
+                }
+                // Evento de input para registrar valor
+                input.addEventListener('input', function () {
+                    let val = input.value.trim();
+                    if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                        let data = { woo_better_shipping_number: '', woo_better_billing_number: val };
+                        const shippingNumberInput = document.getElementById('shipping-number');
+                        if (!shippingNumberInput) {
+                            data.woo_better_shipping_number = val;
+                        } else {
+                            data.woo_better_shipping_number = shippingNumberInput.value;
+                        }
+
+                        window.wc.blocksCheckout.extensionCartUpdate({
+                            namespace: 'woo_better_number_validation',
+                            data: data
+                        });
+                    }
+                });
 
                 // Criando o label
                 const label = document.createElement('label');
@@ -410,11 +445,36 @@ document.addEventListener("DOMContentLoaded", function () {
                 const checkboxLabel = document.createElement('label');
                 checkboxLabel.setAttribute('for', 'wc-billing-better-checkbox');
 
+                // Criando o checkbox
                 const checkboxInput = document.createElement('input');
                 checkboxInput.id = 'wc-billing-better-checkbox';
                 checkboxInput.className = 'wc-block-components-checkbox__input';
                 checkboxInput.type = 'checkbox';
                 checkboxInput.setAttribute('aria-invalid', 'false');
+                // Estado inicial do checkbox/input
+                if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.billing_number === 'S/N') {
+                    checkboxInput.checked = true;
+                    input.disabled = true;
+                    input.style.backgroundColor = '#e0e0e0';
+                    input.style.color = '#808080';
+                }
+                // Evento de change para registrar valor
+                checkboxInput.addEventListener('change', function () {
+                    let val = this.checked ? 'S/N' : '';
+                    if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                        let data = { woo_better_shipping_number: '', woo_better_billing_number: val };
+                        const shippingNumberInput = document.getElementById('shipping-number');
+                        if (!shippingNumberInput) {
+                            data.woo_better_shipping_number = val;
+                        } else {
+                            data.woo_better_shipping_number = shippingNumberInput.value;
+                        }
+                        window.wc.blocksCheckout.extensionCartUpdate({
+                            namespace: 'woo_better_number_validation',
+                            data: data
+                        });
+                    }
+                });
 
                 const checkboxSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 checkboxSvg.setAttribute('class', 'wc-block-components-checkbox__mark');
@@ -450,19 +510,19 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                 });
 
-                const billingCheckboxInput = document.getElementById('wc-billing-better-checkbox')
-                const billingNumberInput = document.getElementById('billing-number');
+                let billingCheckboxInputEl = document.getElementById('wc-billing-better-checkbox');
+                let billingNumberInputEl = document.getElementById('billing-number');
 
-                billingCheckboxInput.addEventListener('change', function () {
+                billingCheckboxInputEl.addEventListener('change', function () {
                     const divInputNumber = document.querySelector('.wc-better-billing-number');
                     const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
 
                     if (this.checked) {
-                        billingNumberInput.disabled = true;
-                        billingNumberInput.setAttribute('value', 'S/N');
-                        billingNumberInput.value = 'S/N';
-                        billingNumberInput.style.backgroundColor = '#e0e0e0';
-                        billingNumberInput.style.color = '#808080';
+                        billingNumberInputEl.disabled = true;
+                        billingNumberInputEl.setAttribute('value', 'S/N');
+                        billingNumberInputEl.value = 'S/N';
+                        billingNumberInputEl.style.backgroundColor = '#e0e0e0';
+                        billingNumberInputEl.style.color = '#808080';
                         if (divInputNumber) {
                             divInputNumber.classList.add('is-active');
                         }
@@ -470,21 +530,21 @@ document.addEventListener("DOMContentLoaded", function () {
                             billingErrorNumberInput.style.display = 'none'
                         }
                     } else {
-                        billingNumberInput.disabled = false;
-                        billingNumberInput.setAttribute('value', '');
-                        billingNumberInput.value = '';
-                        billingNumberInput.style.backgroundColor = '';
-                        billingNumberInput.style.color = '';
+                        billingNumberInputEl.disabled = false;
+                        billingNumberInputEl.setAttribute('value', '');
+                        billingNumberInputEl.value = '';
+                        billingNumberInputEl.style.backgroundColor = '';
+                        billingNumberInputEl.style.color = '';
                         if (divInputNumber) {
                             divInputNumber.classList.remove('is-active');
                         }
                     }
                 });
 
-                billingNumberInput.addEventListener('input', function () {
+                billingNumberInputEl.addEventListener('input', function () {
                     const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
-                    if (billingNumberInput) {
-                        if (billingNumberInput.value.trim().length > 0) {
+                    if (billingNumberInputEl) {
+                        if (billingNumberInputEl.value.trim().length > 0) {
                             // Remove a restrição ao clique
                             billingErrorNumberInput.style.display = 'none'
                         } else {

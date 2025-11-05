@@ -1,4 +1,4 @@
-name: Generate Pre-Release
+name: Generate Release-Candidate
 
 on:
   workflow_call:
@@ -11,7 +11,7 @@ on:
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
   PHP_VERSION: "7.4"
-  DEPLOY_TAG: "4.4.0-rc.1"
+  DEPLOY_TAG: "4.5.0-rc.2"
 
 jobs:
   release-build:
@@ -21,6 +21,8 @@ jobs:
     if: inputs.analysis_status == 'success' || github.event_name == 'workflow_dispatch'
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: release-candidate
 
     # Run composer install and generate vendor
     - name: Run composer install

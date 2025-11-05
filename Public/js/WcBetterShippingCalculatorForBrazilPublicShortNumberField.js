@@ -3,21 +3,66 @@ document.addEventListener("DOMContentLoaded", function () {
     const billingNumberFieldWrapper = document.querySelector("#lkn_billing_number_field");
     const checkbox = document.querySelector("#lkn_billing_checkbox");
 
+    // Preenche os campos de número com valores vindos do wp_localize_script, se existirem
+    if (typeof wc_better_checkout_shortcode_number_vars !== 'undefined') {
+        if (billingNumberField && wc_better_checkout_shortcode_number_vars.billing_number) {
+            if (window.jQuery) {
+                var $billingField = window.jQuery(billingNumberField);
+                $billingField.val(wc_better_checkout_shortcode_number_vars.billing_number).trigger("change");
+            } else {
+                billingNumberField.value = wc_better_checkout_shortcode_number_vars.billing_number;
+                billingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            // Se o valor preenchido for 'S/N', marca o checkbox e desabilita o campo
+            if (wc_better_checkout_shortcode_number_vars.billing_number === "S/N" && checkbox) {
+                checkbox.checked = true;
+                billingNumberField.setAttribute("disabled", "disabled");
+                billingNumberFieldWrapper.style.opacity = "0.5";
+            }
+        }
+        // Detecta e preenche o campo de número de shipping se existir
+        var shippingNumberField = document.querySelector("#lkn_shipping_number");
+        if (shippingNumberField && wc_better_checkout_shortcode_number_vars.shipping_number) {
+            if (window.jQuery) {
+                var $shippingField = window.jQuery(shippingNumberField);
+                $shippingField.val(wc_better_checkout_shortcode_number_vars.shipping_number).trigger("change");
+            } else {
+                shippingNumberField.value = wc_better_checkout_shortcode_number_vars.shipping_number;
+                shippingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            // Se o valor preenchido for 'S/N', marca o checkbox e desabilita o campo
+            var shippingCheckbox = document.querySelector("#lkn_shipping_checkbox");
+            var shippingNumberFieldWrapper = document.querySelector("#lkn_shipping_number_field");
+            if (wc_better_checkout_shortcode_number_vars.shipping_number === "S/N" && shippingCheckbox) {
+                shippingCheckbox.checked = true;
+                shippingNumberField.setAttribute("disabled", "disabled");
+                if (shippingNumberFieldWrapper) shippingNumberFieldWrapper.style.opacity = "0.5";
+            }
+        }
+    }
+
     let shippingFound = false
 
     if (checkbox && billingNumberField) {
-        checkbox.addEventListener("change", async function () {
+        checkbox.addEventListener("change", function () {
             if (this.checked) {
-                billingNumberField.focus()
-                billingNumberField.value = ""; // Limpa antes de começar a digitação
-                await typeCharacter(billingNumberField, "S/N");
-                billingNumberField.blur()
-
+                if (window.jQuery) {
+                    var $billingField = window.jQuery(billingNumberField);
+                    $billingField.val("S/N").trigger("change");
+                } else {
+                    billingNumberField.value = "S/N";
+                    billingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
+                }
                 billingNumberField.setAttribute("disabled", "disabled");
                 billingNumberFieldWrapper.style.opacity = "0.5";
-                billingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
             } else {
-                billingNumberField.value = "";
+                if (window.jQuery) {
+                    var $billingField = window.jQuery(billingNumberField);
+                    $billingField.val("").trigger("change");
+                } else {
+                    billingNumberField.value = "";
+                    billingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
+                }
                 billingNumberField.removeAttribute("disabled");
                 billingNumberFieldWrapper.style.opacity = "1";
             }
@@ -33,21 +78,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (shippingCheckbox && !shippingFound) {
             shippingFound = true
-            shippingCheckbox.addEventListener("change", async function () {
+            shippingCheckbox.addEventListener("change", function () {
                 const shippingNumberField = document.querySelector("#lkn_shipping_number");
                 const shippingNumberFieldWrapper = document.querySelector("#lkn_shipping_number_field");
 
                 if (this.checked) {
-                    shippingNumberField.focus()
-                    shippingNumberField.value = ""; // Limpa antes de começar a digitação
-                    await typeCharacter(shippingNumberField, "S/N");
-                    shippingNumberField.blur()
-
+                    if (window.jQuery) {
+                        var $shippingField = window.jQuery(shippingNumberField);
+                        $shippingField.val("S/N").trigger("change");
+                    } else {
+                        shippingNumberField.value = "S/N";
+                        shippingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
+                    }
                     shippingNumberField.setAttribute("disabled", "disabled");
                     shippingNumberFieldWrapper.style.opacity = "0.5";
-                    shippingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
                 } else {
-                    shippingNumberField.value = "";
+                    if (window.jQuery) {
+                        var $shippingField = window.jQuery(shippingNumberField);
+                        $shippingField.val("").trigger("change");
+                    } else {
+                        shippingNumberField.value = "";
+                        shippingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
+                    }
                     shippingNumberField.removeAttribute("disabled");
                     shippingNumberFieldWrapper.style.opacity = "1";
                 }
@@ -92,13 +144,4 @@ document.addEventListener("DOMContentLoaded", function () {
     })();
 });
 
-async function typeCharacter(field, text) {
-    let index = 0;
-
-    while (index < text.length) {
-        field.value += text[index];
-        field.dispatchEvent(new Event("input", { bubbles: true }));
-        index++;
-        await new Promise(resolve => setTimeout(resolve, 100));
-    }
-}
+// Removida a função typeCharacter, agora o valor é setado diretamente e o trigger('change') é chamado via jQuery se disponível.

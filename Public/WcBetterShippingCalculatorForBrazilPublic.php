@@ -86,6 +86,20 @@ class WcBetterShippingCalculatorForBrazilPublic
                 wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPublic.COMPILED.css', array(), $this->version, 'all');
             }
         }
+
+        if (function_exists('is_checkout') && is_checkout()) {
+            $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
+            if($cep_position === 'yes')
+            {
+                wp_enqueue_style(
+                    $this->plugin_name . '-checkout-postcode',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPostcode.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
+        }
     }
 
     /**
@@ -118,6 +132,23 @@ class WcBetterShippingCalculatorForBrazilPublic
         $enable_postcode_search = get_option('woo_better_calc_enable_auto_postcode_search', 'yes');
         $cache_time = get_option('woo_better_calc_cache_expiration_time', '0');
         $cache_token = get_option('woo_better_calc_enable_auto_cache_reset', 'WCBCB_9X2K4M7P5R8T3N6Y1Q');
+        $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
+        $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
+        $font_source = get_option('woo_better_calc_font_source', 'yes');
+        $font_class = 'woo-better-poppins-family';
+        $phone_required = get_option('woo_better_calc_contact_required', 'no');
+
+        if($font_source === 'no'){
+            $font_class = 'woo-better-inherit-family';
+        } 
+
+        $cart_cep = '';
+        if (function_exists('WC') && WC()->customer) {
+            $cart_cep = WC()->customer->get_shipping_postcode();
+            if (empty($cart_cep)) {
+                $cart_cep = WC()->customer->get_billing_postcode();
+            }
+        }
 
         if((has_block('woocommerce/product') || 
         (function_exists('is_product') && is_product())) || 
@@ -210,12 +241,29 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
 
             if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
+
+                $billing_number = '';
+                $shipping_number = '';
+                if (function_exists('WC') && WC()->session) {
+                    $billing_number = WC()->session->get('woo_better_billing_number');
+                    $shipping_number = WC()->session->get('woo_better_shipping_number');
+                }
+
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-number-field',
                     plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergNumberField.COMPILED.js',
                     array(),
                     $this->version,
                     false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-number-field',
+                    'WooBetterNumberData',
+                    array(
+                        'billing_number' => $billing_number,
+                        'shipping_number' => $shipping_number
+                    )
                 );
             }
 
@@ -258,6 +306,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'borderStyle' => get_option('woo_better_calc_cart_input_border_style', 'solid'),
                     'borderColor' => get_option('woo_better_calc_cart_input_border_color_field', '#cccccc'),
                     'borderRadius' => get_option('woo_better_calc_cart_input_border_radius', '4px'),
+                    'fontClass' => $font_class
                 ),
                 'buttonStyles' => array(
                     'backgroundColor' => get_option('woo_better_calc_cart_button_background_color_field', '#0073aa'),
@@ -286,7 +335,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                 'quantity' => WC_BETTER_SHIPPING_PRODUCT_QUANTITY,
                 'enable_search' => $enable_postcode_search,
                 'cache_time' => $cache_time,
-                'cache_token' => $cache_token
+                'cache_token' => $cache_token,
+                'cart_cep' => $cart_cep
             ));
 
             wp_enqueue_style(
@@ -321,6 +371,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'borderStyle' => get_option('woo_better_calc_product_input_border_style', 'solid'),
                     'borderColor' => get_option('woo_better_calc_product_input_border_color_field', '#cccccc'),
                     'borderRadius' => get_option('woo_better_calc_product_input_border_radius', '4px'),
+                    'fontClass' => $font_class
                 ),
                 'buttonStyles' => array(
                     'backgroundColor' => get_option('woo_better_calc_product_button_background_color_field', '#0073aa'),
@@ -349,7 +400,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                 'quantity' => WC_BETTER_SHIPPING_PRODUCT_QUANTITY,
                 'enable_search' => $enable_postcode_search,
                 'cache_time' => $cache_time,
-                'cache_token' => $cache_token
+                'cache_token' => $cache_token,
+                'cart_cep' => $cart_cep
             ));
 
             wp_enqueue_style(
@@ -363,6 +415,16 @@ class WcBetterShippingCalculatorForBrazilPublic
 
         if (function_exists('is_checkout') && is_checkout()) {
             $number_field = get_option('woo_better_calc_number_required', 'no');
+            $billing_number = '';
+            $shipping_number = '';
+            $billing_phone_country = '';
+            $shipping_phone_country = '';
+            if (function_exists('WC') && WC()->session) {
+                $billing_phone_country = WC()->session->get('billing_phone_country_code');
+                $shipping_phone_country = WC()->session->get('shipping_phone_country_code');
+                $billing_number = WC()->session->get('woo_better_billing_number');
+                $shipping_number = WC()->session->get('woo_better_shipping_number');
+            }
 
             $only_virtual = false;
             if (function_exists('WC')) {
@@ -379,14 +441,108 @@ class WcBetterShippingCalculatorForBrazilPublic
                 }
             }
 
+            global $post;
+            $has_checkout_shortcode = isset($post) && is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'woocommerce_checkout');
+            if($cep_position === 'yes' && !$has_checkout_shortcode)
+            {
+                wp_enqueue_script(
+                    $this->plugin_name . '-checkout-postcode',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPostcode.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
 
-            if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
+                wp_localize_script(
+                    $this->plugin_name . '-checkout-postcode',
+                    'wc_better_checkout_vars',
+                    array(
+                        'ajax_url' => admin_url('admin-ajax.php'),
+                        'fill_checkout_address' => $fill_checkout_address,
+                        'billing_number' => $billing_number,
+                        'shipping_number' => $shipping_number,
+                        'nonce' => wp_create_nonce('wc_better_insert_address')
+                    )
+                );
+            }
+
+            if($cep_position === 'yes' && $has_checkout_shortcode)
+            {
+                wp_enqueue_script(
+                    $this->plugin_name . '-checkout-postcode-shortcode',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPostcodeShortcode.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-checkout-postcode-shortcode',
+                    'wc_better_checkout_vars_shortcode',
+                    array(
+                        'ajax_url' => admin_url('admin-ajax.php'),
+                        'fill_checkout_address' => $fill_checkout_address,
+                        'billing_number' => $billing_number,
+                        'shipping_number' => $shipping_number,
+                        'nonce' => wp_create_nonce('wc_better_insert_address')
+                    )
+                );
+            }
+
+            if($phone_required === 'yes' && !$has_checkout_shortcode) {
+                wp_enqueue_script(
+                    $this->plugin_name . '-checkout-phone-required',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneRequired.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+                
+                wp_localize_script(
+                    $this->plugin_name . '-checkout-phone-required',
+                    'wc_better_phone_country',
+                    array(
+                        'billing_phone_country' => $billing_phone_country,
+                        'shipping_phone_country' => $shipping_phone_country
+                    )
+                );
+            }
+
+            if($phone_required === 'yes' && $has_checkout_shortcode) {
+                wp_enqueue_script(
+                    $this->plugin_name . '-checkout-phone-required-shortcode',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneRequiredShortcode.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-checkout-phone-required-shortcode',
+                    'wc_better_phone_country_shortcode',
+                    array(
+                        'billing_phone_country' => $billing_phone_country,
+                        'shipping_phone_country' => $shipping_phone_country,
+                    )
+                );
+            }
+
+            if ($number_field === 'yes' && $has_checkout_shortcode && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
                 wp_enqueue_script(
                     $this->plugin_name . '-short-number-field',
                     plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortNumberField.COMPILED.js',
                     array(),
                     $this->version,
                     false
+                );
+
+                 wp_localize_script(
+                    $this->plugin_name . '-short-number-field',
+                    'wc_better_checkout_shortcode_number_vars',
+                    array(
+                        'billing_number' => $billing_number,
+                        'shipping_number' => $shipping_number
+                    )
                 );
             }
 
