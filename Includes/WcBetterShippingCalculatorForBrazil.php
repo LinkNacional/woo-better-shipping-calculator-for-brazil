@@ -894,10 +894,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
 
-        $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
-        if($cep_position === 'yes') {
-            $this->loader->add_filter('woocommerce_checkout_fields', $this, 'wc_better_calc_checkout_fields');
-        }
+        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'wc_better_calc_checkout_fields');
 
         $this->loader->add_action('wp_ajax_wc_better_insert_address', $this, 'wc_better_insert_address');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_insert_address', $this, 'wc_better_insert_address');
@@ -1364,6 +1361,8 @@ class WcBetterShippingCalculatorForBrazil
 
     public function wc_better_calc_checkout_fields($fields)
     {
+        
+        $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
         $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
 
@@ -1511,7 +1510,7 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
-        if ($fill_checkout_address === 'no') {
+        if ($fill_checkout_address === 'no' || $cep_position === 'no') {
             return $fields;
         }
 
