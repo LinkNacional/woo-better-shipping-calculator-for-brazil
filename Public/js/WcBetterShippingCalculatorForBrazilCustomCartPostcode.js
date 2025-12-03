@@ -705,7 +705,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         
         if (WooBetterData.position === 'custom') {
-            blockPosition = WooBetterData.custom_position || (isBlocksCart ? '.wc-block-cart__main' : 'h2[class*="order"]');
+            blockPosition = WooBetterData.custom_position || (isBlocksCart ? 'h2[class*="order"]' : '.woocommerce-notices-wrapper');
         } else {
             const position = WooBetterData.position || 'top';
             if (isBlocksCart) {
@@ -713,18 +713,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (position === 'middle') {
                     blockPosition = '.wp-block-woocommerce-cart-order-summary-coupon-form-block';
                 } else if (position === 'bottom') {
-                    blockPosition = '.wc-block-cart__sidebar';
+                    blockPosition = '.wp-block-woocommerce-cart-order-summary-block';
                 } else {
-                    blockPosition = '.wc-block-cart__main';
+                    blockPosition = 'h2[class*="order"]';
                 }
             } else {
                 // Posições para shortcode (lógica atual)
                 if (position === 'middle') {
                     blockPosition = 'div[class*="cart_totals"]';
                 } else if (position === 'bottom') {
-                    blockPosition = 'div[class*="totals-footer"]';
+                    blockPosition = '.shop_table_responsive:not(.cart)';
                 } else {
-                    blockPosition = 'form[class="woocommerce-cart-form"]';
+                    blockPosition = '.cart_totals h2';
                 }
             }
         }
