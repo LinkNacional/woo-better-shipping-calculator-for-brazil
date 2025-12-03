@@ -932,6 +932,28 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Função helper para atualizar timestamp consistentemente
+    function updateTimestamp(infoBlock, addFlashAnimation = false) {
+        const updateDate = infoBlock.querySelector('.woo-better-update-date');
+        if (updateDate) {
+            const currentDate = new Date().toLocaleString('pt-BR');
+            updateDate.textContent = `Atualizado em ${currentDate}`;
+
+            if (addFlashAnimation) {
+                // Adiciona a animação de flash para indicar atualização
+                updateDate.classList.remove('flash');
+                // Força um reflow para reiniciar a animação
+                updateDate.offsetWidth;
+                updateDate.classList.add('flash');
+
+                // Remove a classe após a animação
+                setTimeout(() => {
+                    updateDate.classList.remove('flash');
+                }, 2000);
+            }
+        }
+    }
+
     createDynamicStyles();
 
     validateCacheToken();
@@ -1190,11 +1212,26 @@ document.addEventListener('DOMContentLoaded', function () {
                                         shippingList.innerHTML = '<li>Produto digital, não há taxas de envio.</li>';
                                     }
 
+                                    // Atualiza a data de atualização
+                                    updateTimestamp(infoBlock, forceRequest);
+
                                     infoBlock.style.display = 'block';
                                     const contentBlock = infoBlock.querySelector('.woo-better-content-block');
                                     if (contentBlock) {
                                         contentBlock.classList.add('expanded');
                                         contentBlock.style.display = 'block';
+                                    }
+
+                                    // Para a animação do ícone de update se estiver ativa
+                                    const updateIcon = infoBlock.querySelector('.woo-better-update-icon');
+                                    const updateIconContainer = infoBlock.querySelector('.woo-better-update-icon-container');
+                                    if (updateIcon && updateIcon.classList.contains('spinning')) {
+                                        setTimeout(() => {
+                                            updateIcon.classList.remove('spinning');
+                                            if (updateIconContainer) {
+                                                updateIconContainer.classList.remove('spinning-container');
+                                            }
+                                        }, 800);
                                     }
                                 }
 
