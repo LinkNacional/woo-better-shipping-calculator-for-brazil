@@ -79,17 +79,7 @@
     }
 
     if (WCBetterCalcWooVersion.status === 'valid') {
-      const gutenbergElement = document.querySelector('input[name="woo_better_calc_cep_required"]');
-
-      if (gutenbergElement) {
-        const closestTbody = gutenbergElement.closest('tbody');
-        if (closestTbody) {
-          const gutenbergWarning = createWarningMessage('Configuração indisponível para o seu tema em blocos.');
-
-          // Insere o <tr> no início do <tbody>
-          closestTbody.insertBefore(gutenbergWarning, closestTbody.firstChild);
-        }
-      }
+      // Configuração indisponível para temas em blocos foi removida
     }
 
     // Mensagem de Warning na versão do WooCommerce
@@ -883,7 +873,6 @@
             // Define relação entre mais de um componente em um bloco
             const targetComponentCartNames = {
               'woo_better_min_free_shipping_value': 'woo_better_enable_min_free_shipping',
-              'woo_better_hidden_cart_address': 'woo_better_calc_cep_required',
 
               //Cart
               'woo_better_calc_cart_input_border_width': 'woo_better_calc_cart_input_background_color_field',

@@ -123,18 +123,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
         $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
 
-        // force shipping cart settings
-        $this->loader->add_filter('option_woocommerce_enable_shipping_calc', $this, 'activate_fields', 20);
-        $this->loader->add_filter('option_woocommerce_shipping_cost_requires_address', $this, 'activate_fields', 20);
-
-        // hide shipping calculator country, state and city fields
-        $this->loader->add_filter('woocommerce_shipping_calculator_enable_country', $this, 'woo_fields', 20);
-        $this->loader->add_filter('woocommerce_shipping_calculator_enable_state', $this, 'woo_fields', 20);
-        $this->loader->add_filter('woocommerce_shipping_calculator_enable_city', $this, 'woo_fields', 20);
-
         // detect state from postcode
-        $this->loader->add_action('woocommerce_before_shipping_calculator', $plugin_admin, 'add_extra_css');
-        $this->loader->add_filter('woocommerce_cart_calculate_shipping_address', $plugin_admin, 'prepare_address', 5);
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100, 1);
 
         $this->loader->add_action('rest_api_init', $this, 'lkn_register_custom_cep_route');
@@ -344,47 +333,10 @@ class WcBetterShippingCalculatorForBrazil
 
         $customer = WC()->customer;
 
-        $cep_required = get_option('woo_better_calc_cep_required', 'no');
-        $hidden_address = get_option('woo_better_hidden_cart_address', 'no');
-
         // Verificar se o cliente está definido
         if (is_a($customer, 'WC_Customer')) {
-            if (has_block('woocommerce/cart')) {
-                if ($customer->get_shipping_city() === '' && $cep_required === 'yes' && $hidden_address === 'yes') {
-                    $customer->set_shipping_country('BR');
-                    $customer->set_shipping_state('SP');
-                    $customer->set_shipping_city('Vazio');
-                    $customer->set_shipping_address('Vazio');
-
-                    $customer->save();
-                } elseif ($hidden_address === 'no' && $customer->get_shipping_city() === 'Vazio') {
-                    $customer->set_shipping_country('BR');
-                    $customer->set_shipping_state('SP');
-                    $customer->set_shipping_city('');
-                    $customer->set_shipping_address('');
-
-                    $customer->set_billing_country('BR');
-                    $customer->set_billing_state('SP');
-                    $customer->set_billing_city('');
-                    $customer->set_billing_address('');
-
-                    $customer->save();
-                }
-            } elseif (has_block('woocommerce/checkout')) {
-                if ($customer->get_shipping_city() === 'Vazio') {
-                    $customer->set_shipping_country('BR');
-                    $customer->set_shipping_state('SP');
-                    $customer->set_shipping_city('');
-                    $customer->set_shipping_address('');
-
-                    $customer->set_billing_country('BR');
-                    $customer->set_billing_state('SP');
-                    $customer->set_billing_city('');
-                    $customer->set_billing_address('');
-
-                    $customer->save();
-                }
-            }
+            // Funcionalidade legacy de campos ocultos removida
+            // Funcionalidade legacy de campos ocultos removida
         }
     }
 
@@ -861,15 +813,9 @@ class WcBetterShippingCalculatorForBrazil
         );
     }
 
-    public function woo_fields()
-    {
-        return false;
-    }
 
-    public function activate_fields()
-    {
-        return 'yes';
-    }
+
+
 
     /**
      * Register all of the hooks related to the public-facing functionality
@@ -1751,12 +1697,12 @@ class WcBetterShippingCalculatorForBrazil
 
         // Verifica se o produto é digital (virtual ou para download)
         if ($product->is_virtual() || $product->is_downloadable()) {
-            wp_send_json_error(array(
-                'status' => false,
+            wp_send_json_success(array(
+                'status' => true,
                 'digital' => true,
                 'product_name' => $product->get_name(),
                 'message' => 'O produto é digital ou baixável e não requer cálculo de frete.',
-            ), 400);
+            ), 200);
         }
 
         // Converte o preço para float para garantir que seja numérico
@@ -1948,12 +1894,12 @@ class WcBetterShippingCalculatorForBrazil
                 ? 'O produto no carrinho é digital ou baixável e não requer cálculo de frete.'
                 : 'Todos os produtos no carrinho são digitais ou baixáveis e não requerem cálculo de frete.';
 
-            wp_send_json_error(array(
-                'status' => false,
+            wp_send_json_success(array(
+                'status' => true,
                 'digital' => true,
                 'cart_count' => $cart_count,
                 'message' => $message,
-            ), 400);
+            ), 200);
         }
 
         // Calcula o total do carrinho

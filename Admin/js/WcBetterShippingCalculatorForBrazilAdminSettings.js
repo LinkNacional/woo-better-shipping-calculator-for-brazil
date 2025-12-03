@@ -3,8 +3,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const disableShipping = document.getElementById('woo_better_calc_disabled_shipping');
     if (disableShipping) {
         const numberField = document.querySelectorAll('input[name="woo_better_calc_number_required"]');
-        const hiddenField = document.querySelectorAll('input[name="woo_better_hidden_cart_address"]');
-        const requirePostcode = document.querySelectorAll('input[name="woo_better_calc_cep_required"]');
         const minimumFreeShippingRadios = document.querySelectorAll('input[name="woo_better_enable_min_free_shipping"]');
 
         if (minimumFreeShippingRadios.length > 0) {
@@ -50,81 +48,18 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     });
                 }
-                if (hiddenField) {
-                    hiddenField.forEach(radio => {
-                        radio.disabled = true;
-                        radio.style.cursor = 'not-allowed';
 
-                        // Marca 'no' e desmarca 'yes' ao desabilitar
-                        if (radio.value === 'no') {
-                            radio.checked = true;
-                        } else if (radio.value === 'yes') {
-                            radio.checked = false;
-                        }
-                    });
-                }
-                if (requirePostcode) {
-                    requirePostcode.forEach(radio => {
-                        radio.disabled = true;
-                        radio.style.cursor = 'not-allowed';
-
-                        // Marca 'no' e desmarca 'yes' ao desabilitar
-                        if (radio.value === 'no') {
-                            radio.checked = true;
-                        } else if (radio.value === 'yes') {
-                            radio.checked = false;
-                        }
-                    });
-                }
             } else {
                 enableAllFields(); // Habilita os campos antes de aplicar a lógica adicional
             }
         }
 
-        // Função para lidar com a lógica adicional do "requirePostcode"
-        function handleRequirePostcodeChange() {
-            if (requirePostcode) {
-                const isPostcodeRequired = Array.from(requirePostcode).some(radio => radio.checked && radio.value === 'yes');
-                if (hiddenField) {
-                    hiddenField.forEach(radio => {
-                        if (isPostcodeRequired) {
-                            radio.disabled = false;
-                            radio.style.cursor = '';
-                        } else {
-                            radio.disabled = true;
-                            radio.style.cursor = 'not-allowed';
-                        }
-                    });
-                }
 
-                if (!isPostcodeRequired) {
-                    hiddenField.forEach(radio => {
-                        if (radio.value === 'no') {
-                            radio.checked = true; // Marca 'no'
-                        } else if (radio.value === 'yes') {
-                            radio.checked = false; // Desmarca 'yes'
-                        }
-                    });
-                }
-            }
-        }
 
         // Função para habilitar todos os campos
         function enableAllFields() {
             if (numberField) {
                 numberField.forEach(radio => {
-                    radio.disabled = false;
-                    radio.style.cursor = '';
-                });
-            }
-            if (hiddenField) {
-                hiddenField.forEach(radio => {
-                    radio.disabled = false;
-                    radio.style.cursor = '';
-                });
-            }
-            if (requirePostcode) {
-                requirePostcode.forEach(radio => {
                     radio.disabled = false;
                     radio.style.cursor = '';
                 });
@@ -137,16 +72,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             disableShipping.addEventListener('change', function () {
                 handleDisableShippingChange();
-                handleRequirePostcodeChange(); // Chama a lógica adicional após a mudança
-            });
-        }
-
-        // Adiciona o evento change ao grupo de radios "requirePostcode"
-        if (requirePostcode) {
-            handleRequirePostcodeChange();
-
-            requirePostcode.forEach(radio => {
-                radio.addEventListener('change', handleRequirePostcodeChange);
             });
         }
     }
