@@ -259,10 +259,6 @@ class WcBetterShippingCalculatorForBrazilPublic
                 'placeholder' => get_option('woo_better_calc_cart_input_placeholder', 'Insira seu CEP'),
                 'position' => get_option('woo_better_calc_cart_input_position', 'top'),
                 'custom_position' => get_option('woo_better_calc_cart_custom_position', 'h2[class*="order"]'),
-                'custom_class' => array(
-                    'quantity' => get_option('woo_better_calc_cart_custom_quantity', ''),
-                    'remove' => get_option('woo_better_calc_cart_custom_remove', ''),
-                ),
                 'is_blocks_cart' => $is_blocks_cart,
                 'inputStyles' => array(
                     'backgroundColor' => get_option('woo_better_calc_cart_input_background_color_field', '#ffffff'),

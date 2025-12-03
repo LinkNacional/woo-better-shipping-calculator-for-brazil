@@ -888,7 +888,6 @@
               'woo_better_calc_cart_input_icon': 'woo_better_calc_cart_input_placeholder',
               'woo_better_calc_cart_input_icon_color': 'woo_better_calc_cart_input_placeholder',
               'woo_better_calc_cart_custom_position': 'woo_better_calc_cart_input_position',
-              'woo_better_calc_cart_custom_remove': 'woo_better_calc_cart_custom_quantity',
 
               //Product
               'woo_better_calc_product_input_border_width': 'woo_better_calc_product_input_background_color_field',

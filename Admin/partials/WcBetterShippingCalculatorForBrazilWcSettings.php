@@ -708,29 +708,6 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Escolha a cor no qual será utilizada para definir a cor do icone do input.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
-            'cart_input_custom_quantity' => array(
-                'title'    => __('Classes de controle do carrinho', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_calc_cart_custom_quantity',
-                'type'     => 'text',
-                'default'  => '',
-                'custom_attributes' => array(
-                    'data-subtitle' => __('Classe de input de quantidade personalizada', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-desc-tip' => __('Defina uma classe ou deixe o campo vazio caso queira a classe padrão.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Insira a classe(.class) ou id(#id) do componente para localizar o input de quantidade.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Caso o input de quantidade do carrinho não esteja sendo atualizado de forma dinâmica, insira uma classe personalizada.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-            'cart_input_custom_remove' => array(
-                'title'    => __('Classe do botão de remoção de produto personalizada', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_calc_cart_custom_remove',
-                'type'     => 'text',
-                'default'  => '',
-                'custom_attributes' => array(
-                    'data-desc-tip' => __('Defina uma classe ou deixe o campo vazio caso queira a classe padrão.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Insira a classe(.class) ou id(#id) do componente para localizar o botão de remoção.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Caso o botão de remoção de produto do carrinho não esteja sendo atualizado de forma dinâmica, insira uma classe personalizada.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
             'cart_page_settings_end' => array(
                 'type' => 'sectionend',
                 'id'   => 'woo_better_calc_cart_page_settings'
