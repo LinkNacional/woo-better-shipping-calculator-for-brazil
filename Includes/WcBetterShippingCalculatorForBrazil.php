@@ -849,8 +849,8 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('woocommerce_init', $this, 'init_woocommerce');
 
-        $this->loader->add_action('woocommerce_store_api_checkout_order_processed', $this, 'save_phone_country_codes_api', 10, 1);
-        $this->loader->add_action('woocommerce_checkout_create_order', $this, 'save_phone_country_codes', 10, 2);
+        $this->loader->add_action('woocommerce_checkout_order_processed', $this, 'save_phone_country_codes', 10, 2);
+        $this->loader->add_action('woocommerce_store_api_checkout_update_order_from_request', $this, 'save_phone_country_codes_from_request', 10, 2);
 
         $this->loader->add_action('woocommerce_admin_order_data_after_billing_address', $this, 'woo_better_billing_country_code');
         $this->loader->add_action('woocommerce_admin_order_data_after_shipping_address', $this, 'woo_better_shipping_country_code');
@@ -872,46 +872,99 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
-    public function save_phone_country_codes($order, $data)
+    public function save_phone_country_codes($order_id, $data)
     {
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            return;
+        }
+        
+        $billing_country_code = '';
+        $shipping_country_code = '';
+        
         // Salvar código do país do telefone de faturação (campos tradicionais)
         if (isset($data['billing_phone_country']) && !empty($data['billing_phone_country'])) {
-            $order->update_meta_data('_billing_phone_country_code', sanitize_text_field($data['billing_phone_country']));
+            $billing_country_code = sanitize_text_field($data['billing_phone_country']);
         }
         
         // Salvar código do país do telefone de entrega (campos tradicionais)
         if (isset($data['shipping_phone_country']) && !empty($data['shipping_phone_country'])) {
-            $order->update_meta_data('_shipping_phone_country_code', sanitize_text_field($data['shipping_phone_country']));
+            $shipping_country_code = sanitize_text_field($data['shipping_phone_country']);
+        }
+
+        // Lógica para aplicar o mesmo código quando um campo não for encontrado
+        if (!empty($billing_country_code) && empty($shipping_country_code)) {
+            $shipping_country_code = $billing_country_code;
+        } elseif (!empty($shipping_country_code) && empty($billing_country_code)) {
+            $billing_country_code = $shipping_country_code;
+        }
+
+        // Salva os metadados
+        if (!empty($billing_country_code)) {
+            $order->update_meta_data('_billing_phone_country_code', $billing_country_code);
         }
         
-        // Salvar código do país do telefone de faturação (novos campos adicionais)
-        if (isset($_POST['billing_phone_country_code']) && !empty($_POST['billing_phone_country_code'])) {
-            $order->update_meta_data('_billing_phone_country_code', sanitize_text_field(wp_unslash($_POST['billing_phone_country_code'])));
+        if (!empty($shipping_country_code)) {
+            $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
         }
-        
-        // Salvar código do país do telefone de entrega (novos campos adicionais)
-        if (isset($_POST['shipping_phone_country_code']) && !empty($_POST['shipping_phone_country_code'])) {
-            $order->update_meta_data('_shipping_phone_country_code', sanitize_text_field(wp_unslash($_POST['shipping_phone_country_code'])));
+
+        if (!empty($billing_country_code) || !empty($shipping_country_code)) {
+            $order->save();
         }
     }
 
-    public function save_phone_country_codes_api($order)
+    // Função específica para WooCommerce Block Checkout
+    public function save_phone_country_codes_from_request($order, $request)
     {
-        // Obter dados dos campos adicionais via Store API
-        $additional_fields = $order->get_meta('_additional_fields');
+        if (!$order) {
+            return;
+        }
         
-        if ($additional_fields && is_array($additional_fields)) {
-            // Salvar código do país do telefone de faturação
-            if (isset($additional_fields['billing_phone_country_code']) && !empty($additional_fields['billing_phone_country_code'])) {
-                $order->update_meta_data('_billing_phone_country_code', sanitize_text_field($additional_fields['billing_phone_country_code']));
+        $billing_country_code = '';
+        $shipping_country_code = '';
+        
+        // Captura dos dados do request do Block Checkout
+        $extensions = $request->get_param('extensions') ?? [];
+        
+        // Verifica o namespace dos códigos de país
+        if (isset($extensions['woo_better_phone_country'])) {
+            $phone_data = $extensions['woo_better_phone_country'];
+            
+            if (isset($phone_data['billing_phone_country_code'])) {
+                $billing_country_code = sanitize_text_field( (string) $phone_data['billing_phone_country_code'] );
             }
             
-            // Salvar código do país do telefone de entrega
-            if (isset($additional_fields['shipping_phone_country_code']) && !empty($additional_fields['shipping_phone_country_code'])) {
-                $order->update_meta_data('_shipping_phone_country_code', sanitize_text_field($additional_fields['shipping_phone_country_code']));
+            if (isset($phone_data['shipping_phone_country_code'])) {
+                $shipping_country_code = sanitize_text_field( (string) $phone_data['shipping_phone_country_code'] );
             }
-            
-            // Salvar o pedido
+        }
+        
+        // Fallback para $_POST se não encontrar nos extensions
+        if (empty($billing_country_code) && isset($_POST['billing_phone_country_code'])) {
+            $billing_country_code = sanitize_text_field($_POST['billing_phone_country_code']);
+        }
+        
+        if (empty($shipping_country_code) && isset($_POST['shipping_phone_country_code'])) {
+            $shipping_country_code = sanitize_text_field($_POST['shipping_phone_country_code']);
+        }
+        
+        // Lógica para aplicar o mesmo código quando um campo não for encontrado
+        if (!empty($billing_country_code) && empty($shipping_country_code)) {
+            $shipping_country_code = $billing_country_code;
+        } elseif (!empty($shipping_country_code) && empty($billing_country_code)) {
+            $billing_country_code = $shipping_country_code;
+        }
+        
+        // Salva se houver dados
+        if (!empty($billing_country_code)) {
+            $order->update_meta_data('_billing_phone_country_code', $billing_country_code);
+        }
+        
+        if (!empty($shipping_country_code)) {
+            $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
+        }
+        
+        if (!empty($billing_country_code) || !empty($shipping_country_code)) {
             $order->save();
         }
     }
@@ -920,21 +973,20 @@ class WcBetterShippingCalculatorForBrazil
     {
         // Registrar campos adicionais de checkout usando a nova API
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
-        error_log('Phone required option: ' . $phone_required);
         
         if ($phone_required === 'yes' && function_exists('woocommerce_register_additional_checkout_field')) {
-            error_log('Registering additional checkout fields for phone country codes.');
             // Campo hidden para código do país do telefone
-            woocommerce_register_additional_checkout_field( array(
-                'id'       => 'phone_number/country_code',
-                'label'    => __( 'Código do país do telefone', 'woo-better-shipping-calculator-for-brazil' ),
-                'location' => 'address',
-                'type'     => 'text',
-                'required' => false,
-            ));
+            // woocommerce_register_additional_checkout_field( array(
+            //     'id'       => 'phone_number/country_code',
+            //     'label'    => __( 'Código do país do telefone', 'woo-better-shipping-calculator-for-brazil' ),
+            //     'location' => 'address',
+            //     'type'     => 'text',
+            //     'required' => false,
+            // ));
         }
 
         if ( function_exists( 'woocommerce_store_api_register_endpoint_data' ) ) {
+            // Registra campos para números de endereço
             woocommerce_store_api_register_endpoint_data( [
                 'endpoint'        => 'checkout',
                 'namespace'       => 'woo_better_number_validation',
@@ -957,12 +1009,43 @@ class WcBetterShippingCalculatorForBrazil
                     ];
                 },
             ]);
+            
+            // Registra campos para códigos de país do telefone
+            woocommerce_store_api_register_endpoint_data( [
+                'endpoint'        => 'checkout',
+                'namespace'       => 'woo_better_phone_country',
+                'schema_callback' => function() {
+                    return [
+                        'billing_phone_country_code' => [
+                            'type'     => 'string',
+                            'readonly' => false,
+                        ],
+                        'shipping_phone_country_code' => [
+                            'type'     => 'string',
+                            'readonly' => false,
+                        ],
+                    ];
+                },
+                'data_callback' => function() {
+                    return [
+                        'billing_phone_country_code'  => '', 
+                        'shipping_phone_country_code' => '', 
+                    ];
+                },
+            ]);
         }
 
         if ( function_exists( 'woocommerce_store_api_register_update_callback' ) ) {
+            // Callback para números de endereço
             woocommerce_store_api_register_update_callback([
                 'namespace' => 'woo_better_number_validation',
                 'callback'  => [ $this, 'handle_number_update' ],
+            ]);
+            
+            // Callback para códigos de país do telefone
+            woocommerce_store_api_register_update_callback([
+                'namespace' => 'woo_better_phone_country',
+                'callback'  => [ $this, 'handle_phone_country_update' ],
             ]);
         }
     }
@@ -993,13 +1076,13 @@ class WcBetterShippingCalculatorForBrazil
 
         // Guarda o código do país de faturação na sessão
         if ( isset( $data['billing_phone_country_code'] ) ) {
-            $country_code = sanitize_text_field( $data['billing_phone_country_code'] );
+            $country_code = sanitize_text_field( (string) $data['billing_phone_country_code'] );
             WC()->session->set( 'billing_phone_country_code', $country_code );
         }
 
         // Guarda o código do país de envio na sessão
         if ( isset( $data['shipping_phone_country_code'] ) ) {
-            $country_code = sanitize_text_field( $data['shipping_phone_country_code'] );
+            $country_code = sanitize_text_field( (string) $data['shipping_phone_country_code'] );
             WC()->session->set( 'shipping_phone_country_code', $country_code );
         }
     }

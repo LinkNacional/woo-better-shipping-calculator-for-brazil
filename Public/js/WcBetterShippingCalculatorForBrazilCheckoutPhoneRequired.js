@@ -37,6 +37,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 phoneField.dataset.intlTelInputInitialized = 'true';
                 adjustPhoneLabel(phoneField);
                 
+                // Atualiza o campo de código do país na inicialização
+                setTimeout(() => {
+                    const countryData = iti.getSelectedCountryData();
+                    const dialCode = '+' + countryData.dialCode;
+                    
+                    // Cria ou atualiza campos hidden dinâmicos para capturar via hook
+                    updateHiddenCountryCodeField(fieldSelector, dialCode);
+                    
+                    // Mantém compatibilidade com campos existentes se necessário
+                    let targetFieldId = '';
+                    if (fieldSelector.includes('billing')) {
+                        targetFieldId = 'billing-phone_number-country_code';
+                    } else if (fieldSelector.includes('shipping')) {
+                        targetFieldId = 'shipping-phone_number-country_code';
+                    }
+                    
+                    if (targetFieldId) {
+                        const countryCodeField = document.getElementById(targetFieldId);
+                        if (countryCodeField) {
+                            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                            nativeSetter.call(countryCodeField, dialCode);
+                            
+                            const events = [
+                                new Event('input', { bubbles: true }),
+                                new Event('change', { bubbles: true })
+                            ];
+                            
+                            events.forEach(event => {
+                                countryCodeField.dispatchEvent(event);
+                            });
+                            
+                            triggerReactChange(countryCodeField, dialCode);
+                        }
+                    }
+                }, 50);
+                
                 function applyPhoneFormatting(event, context = 'input') {
                     try {
                         const currentValue = phoneField.value;
@@ -436,6 +472,129 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 0);
                 }
                 
+                // Função para criar/atualizar campos hidden dinâmicos
+                function updateHiddenCountryCodeField(fieldSelector, dialCode) {
+                    // Garante que dialCode seja uma string válida
+                    const countryCode = String(dialCode || '+55');
+                    
+                    let fieldName = '';
+                    let otherFieldName = '';
+                    if (fieldSelector.includes('billing')) {
+                        fieldName = 'billing_phone_country_code';
+                        otherFieldName = 'shipping_phone_country_code';
+                    } else if (fieldSelector.includes('shipping')) {
+                        fieldName = 'shipping_phone_country_code';
+                        otherFieldName = 'billing_phone_country_code';
+                    }
+                    
+                    if (fieldName) {
+                        // Para Block Checkout
+                        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+                            try {
+                                const { dispatch, select } = wp.data;
+                                
+                                // Verifica se é WooCommerce Blocks
+                                if (dispatch('wc/store/checkout')) {
+                                    const checkoutDispatch = dispatch('wc/store/checkout');
+                                    
+                                    // Usa o método correto para definir extension data
+                                    if (checkoutDispatch.setExtensionData) {
+                                        const currentData = select('wc/store/checkout').getExtensionData() || {};
+                                        let phoneCountryData = currentData['woo_better_phone_country'] || {};
+                                        
+                                        // Sempre garantir que ambos os campos existam como strings
+                                        phoneCountryData['billing_phone_country_code'] = phoneCountryData['billing_phone_country_code'] || '+55';
+                                        phoneCountryData['shipping_phone_country_code'] = phoneCountryData['shipping_phone_country_code'] || '+55';
+                                        
+                                        // Define o campo específico
+                                        phoneCountryData[fieldName] = countryCode;
+                                        
+                                        // Se o outro campo não existir no DOM, define o mesmo valor para ambos
+                                        const otherFieldSelector = fieldSelector.includes('billing') ? 
+                                            '#shipping_phone, #shipping-phone' : 
+                                            '#billing_phone, #billing-phone';
+                                        const otherFieldExists = document.querySelector(otherFieldSelector);
+                                        
+                                        if (!otherFieldExists) {
+                                            phoneCountryData[otherFieldName] = countryCode;
+                                        }
+                                        
+                                        checkoutDispatch.setExtensionData('woo_better_phone_country', phoneCountryData);
+                                    } else if (checkoutDispatch.__unstableSetExtensionData) {
+                                        // Fallback para versões antigas
+                                        const currentData = select('wc/store/checkout').getExtensionData() || {};
+                                        let phoneCountryData = currentData['woo_better_phone_country'] || {};
+                                        
+                                        // Sempre garantir que ambos os campos existam como strings
+                                        phoneCountryData['billing_phone_country_code'] = phoneCountryData['billing_phone_country_code'] || '+55';
+                                        phoneCountryData['shipping_phone_country_code'] = phoneCountryData['shipping_phone_country_code'] || '+55';
+                                        
+                                        // Define o campo específico
+                                        phoneCountryData[fieldName] = countryCode;
+                                        
+                                        // Se o outro campo não existir no DOM, define o mesmo valor para ambos
+                                        const otherFieldSelector = fieldSelector.includes('billing') ? 
+                                            '#shipping_phone, #shipping-phone' : 
+                                            '#billing_phone, #billing-phone';
+                                        const otherFieldExists = document.querySelector(otherFieldSelector);
+                                        
+                                        if (!otherFieldExists) {
+                                            phoneCountryData[otherFieldName] = countryCode;
+                                        }
+                                        
+                                        checkoutDispatch.__unstableSetExtensionData('woo_better_phone_country', phoneCountryData);
+                                    }
+                                }
+                            } catch (error) {
+                                // Silenciar erro
+                            }
+                        }
+                        
+                        // Para checkout tradicional
+                        // Remove campo existente se houver
+                        const existingField = document.querySelector(`input[name="${fieldName}"]`);
+                        if (existingField) {
+                            existingField.remove();
+                        }
+                        
+                        // Cria novo campo hidden
+                        const hiddenField = document.createElement('input');
+                        hiddenField.type = 'hidden';
+                        hiddenField.name = fieldName;
+                        hiddenField.value = countryCode;
+                        
+                        // Verifica se o outro campo de telefone existe no formulário tradicional
+                        const otherFieldSelector = fieldSelector.includes('billing') ? 
+                            '#shipping_phone, #shipping-phone' : 
+                            '#billing_phone, #billing-phone';
+                        const otherFieldExists = document.querySelector(otherFieldSelector);
+                        
+                        // Se o outro campo não existir, cria também o hidden para o outro endereço
+                        if (!otherFieldExists) {
+                            const existingOtherField = document.querySelector(`input[name="${otherFieldName}"]`);
+                            if (existingOtherField) {
+                                existingOtherField.remove();
+                            }
+                            
+                            const otherHiddenField = document.createElement('input');
+                            otherHiddenField.type = 'hidden';
+                            otherHiddenField.name = otherFieldName;
+                            otherHiddenField.value = countryCode;
+                            
+                            const checkoutForm = document.querySelector('form.checkout');
+                            if (checkoutForm) {
+                                checkoutForm.appendChild(otherHiddenField);
+                            }
+                        }
+                        
+                        // Adiciona o campo principal ao formulário tradicional
+                        const checkoutForm = document.querySelector('form.checkout');
+                        if (checkoutForm) {
+                            checkoutForm.appendChild(hiddenField);
+                        }
+                    }
+                }
+                
                 if (!phoneField.dataset.inputListenerAdded) {
                     phoneField.addEventListener('input', function(event) {
                         Promise.resolve().then(() => {
@@ -448,6 +607,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!phoneField.dataset.countryChangeListenerAdded) {
                     phoneField.addEventListener('countrychange', function(event) {
                         countryChanged = true;
+                        
+                        // Captura o código do país selecionado
+                        const countryData = iti.getSelectedCountryData();
+                        const dialCode = '+' + countryData.dialCode;
+                        
+                        // Atualiza campos hidden dinâmicos
+                        updateHiddenCountryCodeField(fieldSelector, dialCode);
+                        
+                        // Mantém compatibilidade com campos existentes se necessário
+                        let targetFieldId = '';
+                        if (fieldSelector.includes('billing')) {
+                            targetFieldId = 'billing-phone_number-country_code';
+                        } else if (fieldSelector.includes('shipping')) {
+                            targetFieldId = 'shipping-phone_number-country_code';
+                        }
+                        
+                        if (targetFieldId) {
+                            const countryCodeField = document.getElementById(targetFieldId);
+                            if (countryCodeField) {
+                                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                nativeSetter.call(countryCodeField, dialCode);
+                                
+                                const events = [
+                                    new Event('input', { bubbles: true }),
+                                    new Event('change', { bubbles: true })
+                                ];
+                                
+                                events.forEach(event => {
+                                    countryCodeField.dispatchEvent(event);
+                                });
+                                
+                                triggerReactChange(countryCodeField, dialCode);
+                            }
+                        }
+                        
                         Promise.resolve().then(() => {
                             applyPhoneFormatting(event, 'Country Change');
                         });
@@ -478,6 +672,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Função para inicializar campos no Store API
+    function initializeStoreAPIFields() {
+        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+            try {
+                const { dispatch, select } = wp.data;
+                
+                if (dispatch('wc/store/checkout')) {
+                    const checkoutDispatch = dispatch('wc/store/checkout');
+                    
+                    if (checkoutDispatch.setExtensionData) {
+                        const currentData = select('wc/store/checkout').getExtensionData() || {};
+                        const phoneCountryData = currentData['woo_better_phone_country'] || {};
+                        
+                        // Sempre garantir que ambos os campos existam como strings
+                        if (!phoneCountryData['billing_phone_country_code']) {
+                            phoneCountryData['billing_phone_country_code'] = '+55';
+                        }
+                        if (!phoneCountryData['shipping_phone_country_code']) {
+                            phoneCountryData['shipping_phone_country_code'] = '+55';
+                        }
+                        
+                        checkoutDispatch.setExtensionData('woo_better_phone_country', phoneCountryData);
+                    }
+                }
+            } catch (error) {
+                // Silenciar erro
+            }
+        }
+    }
+
+    // Inicializar campos do Store API
+    initializeStoreAPIFields();
+    
     initPhoneInput();
 
     const observer = new MutationObserver(function(mutations) {
