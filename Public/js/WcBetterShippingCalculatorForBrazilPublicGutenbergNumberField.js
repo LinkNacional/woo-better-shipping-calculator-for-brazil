@@ -556,5 +556,133 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
     }
+
+    // Função para inicializar os campos de número no Store API
+    function initializeStoreAPINumberFields() {
+        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+            try {
+                const { dispatch, select } = wp.data;
+                
+                if (dispatch('wc/store/checkout')) {
+                    const checkoutDispatch = dispatch('wc/store/checkout');
+                    
+                    if (checkoutDispatch.setExtensionData) {
+                        const currentData = select('wc/store/checkout').getExtensionData() || {};
+                        const numberData = currentData['woo_better_number_validation'] || {};
+                        
+                        // Inicializar os campos de número se não existirem
+                        if (!numberData.hasOwnProperty('woo_better_shipping_number')) {
+                            numberData['woo_better_shipping_number'] = '';
+                        }
+                        if (!numberData.hasOwnProperty('woo_better_billing_number')) {
+                            numberData['woo_better_billing_number'] = '';
+                        }
+                        
+                        checkoutDispatch.setExtensionData('woo_better_number_validation', numberData);
+                    }
+                }
+            } catch (error) {
+                // Silenciar erro
+            }
+        }
+    }
+
+    // Função para atualizar dados dos campos de número
+    function updateNumberFieldData() {
+        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+            try {
+                const { dispatch } = wp.data;
+                
+                if (dispatch('wc/store/checkout')) {
+                    const checkoutDispatch = dispatch('wc/store/checkout');
+                    
+                    if (checkoutDispatch.setExtensionData) {
+                        const shippingNumberInput = document.getElementById('shipping-number');
+                        const billingNumberInput = document.getElementById('billing-number');
+                        
+                        const numberData = {
+                            woo_better_shipping_number: shippingNumberInput ? shippingNumberInput.value : '',
+                            woo_better_billing_number: billingNumberInput ? billingNumberInput.value : ''
+                        };
+                        
+                        checkoutDispatch.setExtensionData('woo_better_number_validation', numberData);
+                    }
+                }
+            } catch (error) {
+                // Silenciar erro
+            }
+        }
+    }
+
+    // Inicializar campos do Store API
+    initializeStoreAPINumberFields();
+
+    // Observar mudanças nos campos e atualizar Store API
+    const observerNumbers = new MutationObserver(function(mutations) {
+        let hasNumberFieldsChanged = false;
+        
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        const numberInputs = node.querySelectorAll ? 
+                            node.querySelectorAll('#shipping-number, #billing-number') : [];
+                        
+                        if (numberInputs.length > 0 || 
+                            (node.id && (node.id === 'shipping-number' || node.id === 'billing-number'))) {
+                            hasNumberFieldsChanged = true;
+                        }
+                    }
+                });
+            }
+        });
+        
+        if (hasNumberFieldsChanged) {
+            setTimeout(() => {
+                updateNumberFieldData();
+                
+                // Adicionar listeners aos campos se ainda não existem
+                const shippingNumberInput = document.getElementById('shipping-number');
+                const billingNumberInput = document.getElementById('billing-number');
+                
+                if (shippingNumberInput && !shippingNumberInput.dataset.storeApiListener) {
+                    shippingNumberInput.addEventListener('input', updateNumberFieldData);
+                    shippingNumberInput.addEventListener('change', updateNumberFieldData);
+                    shippingNumberInput.dataset.storeApiListener = 'true';
+                }
+                
+                if (billingNumberInput && !billingNumberInput.dataset.storeApiListener) {
+                    billingNumberInput.addEventListener('input', updateNumberFieldData);
+                    billingNumberInput.addEventListener('change', updateNumberFieldData);
+                    billingNumberInput.dataset.storeApiListener = 'true';
+                }
+            }, 100);
+        }
+    });
+
+    observerNumbers.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+
+    // Configurar listeners iniciais se os campos já existirem
+    setTimeout(() => {
+        updateNumberFieldData();
+        
+        const shippingNumberInput = document.getElementById('shipping-number');
+        const billingNumberInput = document.getElementById('billing-number');
+        
+        if (shippingNumberInput && !shippingNumberInput.dataset.storeApiListener) {
+            shippingNumberInput.addEventListener('input', updateNumberFieldData);
+            shippingNumberInput.addEventListener('change', updateNumberFieldData);
+            shippingNumberInput.dataset.storeApiListener = 'true';
+        }
+        
+        if (billingNumberInput && !billingNumberInput.dataset.storeApiListener) {
+            billingNumberInput.addEventListener('input', updateNumberFieldData);
+            billingNumberInput.addEventListener('change', updateNumberFieldData);
+            billingNumberInput.dataset.storeApiListener = 'true';
+        }
+    }, 500);
 });
 
