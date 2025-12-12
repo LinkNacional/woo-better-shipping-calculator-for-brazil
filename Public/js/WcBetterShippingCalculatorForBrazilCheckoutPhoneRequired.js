@@ -486,7 +486,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         fieldName = 'shipping_phone_country_code';
                         otherFieldName = 'billing_phone_country_code';
                     }
-                    
                     if (fieldName) {
                         // Para Block Checkout
                         if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {

@@ -81,7 +81,25 @@ class WcBetterShippingCalculatorForBrazilPublic
             // Bloco de cart removido - funcionalidade legacy removida
         }
 
-        if (function_exists('is_checkout') && is_checkout()) {
+        // Detecta se estamos na página de checkout (compatível com novas versões do WooCommerce)
+        global $post;
+        $is_checkout_page = false;
+        $has_checkout_shortcode = false;
+        $has_checkout_block = false;
+        
+        if (isset($post) && is_a($post, 'WP_Post')) {
+            $has_checkout_shortcode = has_shortcode($post->post_content, 'woocommerce_checkout');
+            $has_checkout_block = has_block('woocommerce/checkout', $post);
+        }
+        
+        // Fallback para função is_checkout() se disponível
+        if (function_exists('is_checkout')) {
+            $is_checkout_page = is_checkout() || $has_checkout_shortcode || $has_checkout_block;
+        } else {
+            $is_checkout_page = $has_checkout_shortcode || $has_checkout_block;
+        }
+        
+        if ($is_checkout_page) {
             $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
             if($cep_position === 'yes')
             {
@@ -115,6 +133,25 @@ class WcBetterShippingCalculatorForBrazilPublic
          * between the defined hooks and the functions defined in this
          * class.
          */
+        
+        // Detecta se estamos na página de checkout (compatível com novas versões do WooCommerce)
+        global $post;
+        $is_checkout_page = false;
+        $has_checkout_shortcode = false;
+        $has_checkout_block = false;
+        
+        if (isset($post) && is_a($post, 'WP_Post')) {
+            $has_checkout_shortcode = has_shortcode($post->post_content, 'woocommerce_checkout');
+            $has_checkout_block = has_block('woocommerce/checkout', $post);
+        }
+        
+        // Fallback para função is_checkout() se disponível
+        if (function_exists('is_checkout')) {
+            $is_checkout_page = is_checkout() || $has_checkout_shortcode || $has_checkout_block;
+        } else {
+            $is_checkout_page = $has_checkout_shortcode || $has_checkout_block;
+        }
+        
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
         $cart_custom_postcode = get_option('woo_better_calc_enable_cart_page', 'yes');
@@ -163,7 +200,7 @@ class WcBetterShippingCalculatorForBrazilPublic
 
 
 
-        if ((has_block('woocommerce/checkout') || has_block('woocommerce/cart') || (function_exists('is_cart') && is_cart()) ||  (function_exists('is_checkout') && is_checkout())) && $enable_min === 'yes') {
+        if ((has_block('woocommerce/checkout') || has_block('woocommerce/cart') || (function_exists('is_cart') && is_cart()) || $is_checkout_page) && $enable_min === 'yes') {
             wp_enqueue_script(
                 $this->plugin_name . '-progress-bar',
                 plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilProgressBar.COMPILED.js',
@@ -374,7 +411,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             );
         }
 
-        if (function_exists('is_checkout') && is_checkout()) {
+        if ($is_checkout_page) {
             $number_field = get_option('woo_better_calc_number_required', 'no');
             $billing_number = '';
             $shipping_number = '';
@@ -398,8 +435,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                 }
             }
 
-            global $post;
-            $has_checkout_shortcode = isset($post) && is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'woocommerce_checkout');
+            // Usando variável já definida no topo da função
             if($cep_position === 'yes' && !$has_checkout_shortcode)
             {
                 wp_enqueue_script(

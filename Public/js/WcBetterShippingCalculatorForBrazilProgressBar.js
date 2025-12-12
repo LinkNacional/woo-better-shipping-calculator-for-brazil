@@ -197,16 +197,32 @@
 					if (mutation.type === 'childList' || mutation.type === 'characterData') {
 						// Verifica se a mutação afeta elementos relacionados ao carrinho
 						let target = mutation.target;
-						if (target && (
-							target.classList?.contains('woocommerce-Price-amount') ||
-							target.classList?.contains('wc-block-formatted-money-amount') ||
-							target.closest('.cart-subtotal') ||
-							target.closest('.wc-block-components-totals-item') ||
-							target.closest('.woocommerce-cart-form') ||
-							target.closest('.wc-block-cart') ||
-							target.closest('.wc-block-checkout')
-						)) {
-							shouldUpdate = true;
+						
+						// Verifica se target é um elemento DOM válido antes de usar closest
+						if (target && target.nodeType === Node.ELEMENT_NODE && typeof target.closest === 'function') {
+							if (target.classList?.contains('woocommerce-Price-amount') ||
+								target.classList?.contains('wc-block-formatted-money-amount') ||
+								target.closest('.cart-subtotal') ||
+								target.closest('.wc-block-components-totals-item') ||
+								target.closest('.woocommerce-cart-form') ||
+								target.closest('.wc-block-cart') ||
+								target.closest('.wc-block-checkout')
+							) {
+								shouldUpdate = true;
+							}
+						}
+						// Verifica também se o target tem classes relevantes sem usar closest
+						else if (target && target.classList) {
+							if (target.classList.contains('woocommerce-Price-amount') ||
+								target.classList.contains('wc-block-formatted-money-amount') ||
+								target.classList.contains('cart-subtotal') ||
+								target.classList.contains('wc-block-components-totals-item') ||
+								target.classList.contains('woocommerce-cart-form') ||
+								target.classList.contains('wc-block-cart') ||
+								target.classList.contains('wc-block-checkout')
+							) {
+								shouldUpdate = true;
+							}
 						}
 					}
 				});

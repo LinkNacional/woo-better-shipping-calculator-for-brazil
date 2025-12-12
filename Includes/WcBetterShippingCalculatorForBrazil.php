@@ -813,10 +813,6 @@ class WcBetterShippingCalculatorForBrazil
         );
     }
 
-
-
-
-
     /**
      * Register all of the hooks related to the public-facing functionality
      * of the plugin.
@@ -882,6 +878,9 @@ class WcBetterShippingCalculatorForBrazil
         $billing_country_code = '';
         $shipping_country_code = '';
         
+        // Detecta se está usando o mesmo endereço para cobrança
+        $use_same_address = $this->detect_same_address_usage($order, $data);
+        
         // Salvar código do país do telefone de faturação (campos tradicionais)
         if (isset($data['billing_phone_country']) && !empty($data['billing_phone_country'])) {
             $billing_country_code = sanitize_text_field($data['billing_phone_country']);
@@ -892,19 +891,40 @@ class WcBetterShippingCalculatorForBrazil
             $shipping_country_code = sanitize_text_field($data['shipping_phone_country']);
         }
 
-        // Lógica para aplicar o mesmo código quando um campo não for encontrado
-        if (!empty($billing_country_code) && empty($shipping_country_code)) {
-            $shipping_country_code = $billing_country_code;
-        } elseif (!empty($shipping_country_code) && empty($billing_country_code)) {
-            $billing_country_code = $shipping_country_code;
+        // Lógica aprimorada considerando o checkbox de mesmo endereço
+        if ($use_same_address) {
+            // Se usar mesmo endereço, prioriza o código de entrega (shipping)
+            if (!empty($shipping_country_code)) {
+                $billing_country_code = $shipping_country_code;
+            } elseif (!empty($billing_country_code)) {
+                $shipping_country_code = $billing_country_code;
+            }
+        } else {
+            // Lógica original quando não usa mesmo endereço
+            if (!empty($billing_country_code) && empty($shipping_country_code)) {
+                $shipping_country_code = $billing_country_code;
+            } elseif (!empty($shipping_country_code) && empty($billing_country_code)) {
+                $billing_country_code = $shipping_country_code;
+            }
         }
 
-        // Salva os metadados
+        // Processar telefone de faturação
         if (!empty($billing_country_code)) {
+            $billing_phone = $order->get_billing_phone();
+            if (!empty($billing_phone)) {
+                $clean_phone = $this->clean_and_format_phone($billing_country_code, $billing_phone);
+                $order->set_billing_phone($clean_phone);
+            }
             $order->update_meta_data('_billing_phone_country_code', $billing_country_code);
         }
         
+        // Processar telefone de entrega
         if (!empty($shipping_country_code)) {
+            $shipping_phone = $order->get_shipping_phone();
+            if (!empty($shipping_phone)) {
+                $clean_phone = $this->clean_and_format_phone($shipping_country_code, $shipping_phone);
+                $order->set_shipping_phone($clean_phone);
+            }
             $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
         }
 
@@ -922,6 +942,9 @@ class WcBetterShippingCalculatorForBrazil
         
         $billing_country_code = '';
         $shipping_country_code = '';
+        
+        // Detecta se está usando o mesmo endereço para cobrança nos blocks
+        $use_same_address = $this->detect_same_address_usage_from_request($order, $request);
         
         // Captura dos dados do request do Block Checkout
         $extensions = $request->get_param('extensions') ?? [];
@@ -948,19 +971,40 @@ class WcBetterShippingCalculatorForBrazil
             $shipping_country_code = sanitize_text_field($_POST['shipping_phone_country_code']);
         }
         
-        // Lógica para aplicar o mesmo código quando um campo não for encontrado
-        if (!empty($billing_country_code) && empty($shipping_country_code)) {
-            $shipping_country_code = $billing_country_code;
-        } elseif (!empty($shipping_country_code) && empty($billing_country_code)) {
-            $billing_country_code = $shipping_country_code;
+        // Lógica aprimorada considerando o checkbox de mesmo endereço
+        if ($use_same_address) {
+            // Se usar mesmo endereço, prioriza o código de entrega (shipping)
+            if (!empty($shipping_country_code)) {
+                $billing_country_code = $shipping_country_code;
+            } elseif (!empty($billing_country_code)) {
+                $shipping_country_code = $billing_country_code;
+            }
+        } else {
+            // Lógica original quando não usa mesmo endereço
+            if (!empty($billing_country_code) && empty($shipping_country_code)) {
+                $shipping_country_code = $billing_country_code;
+            } elseif (!empty($shipping_country_code) && empty($billing_country_code)) {
+                $billing_country_code = $shipping_country_code;
+            }
         }
         
-        // Salva se houver dados
+        // Processar telefone de faturação
         if (!empty($billing_country_code)) {
+            $billing_phone = $order->get_billing_phone();
+            if (!empty($billing_phone)) {
+                $clean_phone = $this->clean_and_format_phone($billing_country_code, $billing_phone);
+                $order->set_billing_phone($clean_phone);
+            }
             $order->update_meta_data('_billing_phone_country_code', $billing_country_code);
         }
         
+        // Processar telefone de entrega
         if (!empty($shipping_country_code)) {
+            $shipping_phone = $order->get_shipping_phone();
+            if (!empty($shipping_phone)) {
+                $clean_phone = $this->clean_and_format_phone($shipping_country_code, $shipping_phone);
+                $order->set_shipping_phone($clean_phone);
+            }
             $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
         }
         
@@ -969,22 +1013,92 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
+    /**
+     * Detecta se o checkbox "usar mesmo endereço para cobrança" está marcado
+     *
+     * @param WC_Order $order
+     * @param array $data
+     * @return bool
+     */
+    private function detect_same_address_usage($order, $data)
+    {
+        // Verifica se os endereços são idênticos (indica uso do mesmo endereço)
+        $billing_address_1 = $order->get_billing_address_1();
+        $shipping_address_1 = $order->get_shipping_address_1();
+        
+        $billing_city = $order->get_billing_city();
+        $shipping_city = $order->get_shipping_city();
+        
+        $billing_postcode = $order->get_billing_postcode();
+        $shipping_postcode = $order->get_shipping_postcode();
+        
+        // Se endereços são idênticos, assume que checkbox estava marcado
+        if ($billing_address_1 === $shipping_address_1 &&
+            $billing_city === $shipping_city &&
+            $billing_postcode === $shipping_postcode &&
+            !empty($billing_address_1)) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Detecta se o checkbox "usar mesmo endereço" está marcado no WooCommerce Blocks
+     *
+     * @param WC_Order $order
+     * @param WP_REST_Request $request
+     * @return bool
+     */
+    private function detect_same_address_usage_from_request($order, $request)
+    {
+        // Tenta detectar via request params primeiro
+        $use_shipping_as_billing = $request->get_param('use_shipping_as_billing');
+        if ($use_shipping_as_billing === true || $use_shipping_as_billing === 'true') {
+            return true;
+        }
+        
+        // Fallback: verifica endereços idênticos
+        return $this->detect_same_address_usage($order, []);
+    }
+
+    /**
+     * Limpa e formata o telefone concatenando código do país + número limpo
+     *
+     * @param string $country_code Código do país (ex: +55)
+     * @param string $phone Número de telefone original
+     * @return string Telefone formatado limpo (ex: +5589999999835)
+     */
+    private function clean_and_format_phone($country_code, $phone)
+    {
+        if (empty($phone)) {
+            return $phone;
+        }
+        
+        // Se o telefone já tem código do país, apenas limpa os caracteres especiais
+        if (strpos($phone, '+') === 0) {
+            // Remove caracteres especiais do telefone: (, ), -, espaços
+            $clean_phone = preg_replace('/[()\\s-]/', '', $phone);
+            return $clean_phone;
+        }
+        
+        // Limpa o código do país (garante que tenha o +)
+        $clean_country_code = trim($country_code);
+        if (!str_starts_with($clean_country_code, '+')) {
+            $clean_country_code = '+' . $clean_country_code;
+        }
+        
+        // Remove caracteres especiais do telefone: (, ), -, espaços
+        $clean_phone = preg_replace('/[()\\s-]/', '', $phone);
+        
+        // Concatena código do país + número limpo
+        $full_phone = $clean_country_code . $clean_phone;
+        
+        return $full_phone;
+    }
+
     public function init_woocommerce()
     {
-        // Registrar campos adicionais de checkout usando a nova API
-        $phone_required = get_option('woo_better_calc_contact_required', 'no');
-        
-        if ($phone_required === 'yes' && function_exists('woocommerce_register_additional_checkout_field')) {
-            // Campo hidden para código do país do telefone
-            // woocommerce_register_additional_checkout_field( array(
-            //     'id'       => 'phone_number/country_code',
-            //     'label'    => __( 'Código do país do telefone', 'woo-better-shipping-calculator-for-brazil' ),
-            //     'location' => 'address',
-            //     'type'     => 'text',
-            //     'required' => false,
-            // ));
-        }
-
         if ( function_exists( 'woocommerce_store_api_register_endpoint_data' ) ) {
             // Registra campos para números de endereço
             woocommerce_store_api_register_endpoint_data( [
