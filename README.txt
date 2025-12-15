@@ -119,6 +119,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+= 4.6.0 - 15/12/2025 =
+* NEW: Dynamic progress bar for free shipping with customizable messages.
+* NEW: Automatic capture and formatting of country codes in phone numbers.
+* NEW: Complete feature parity between block editor and shortcode.
+
 = 4.5.0 - 24/10/2025 =
 * NEW: Text font configuration system in the product and cart components.
 * NEW: Automatic address filling on the Checkout page.
