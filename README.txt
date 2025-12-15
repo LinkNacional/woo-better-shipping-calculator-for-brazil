@@ -116,6 +116,7 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 * [Brasil API](https://brasilapi.com.br) - ZIP code field.
 * [VIACEP](https://viacep.com.br) - ZIP code field.
+* [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
 
