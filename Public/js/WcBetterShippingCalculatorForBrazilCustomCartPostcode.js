@@ -975,121 +975,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const targetClass = setPosition();
                 const targetElement = document.querySelector(targetClass);
                 if (targetElement && !containerFound) {
-                    containerFound = true;
-
-                    const parentContainer = createParentContainer();
-                    const form = createForm();
-
-                    const lastPostcode = getLastUsedPostcode();
-                    let initializeData = {
-                        cart: {
-                            name: '****',
-                            quantity: WooBetterData.quantity || 1,
-                            currency_symbol: 'R$',
-                            currency_minor_unit: 2,
-                        },
-                        shipping_rates: [
-                            {
-                                id: '**********',
-                                label: '***********',
-                                cost: 12.34,
-                            },
-                        ],
-                        postcode: '12345-678',
-                    };
-
-                    if (lastPostcode) {
-                        const cachedData = getCachedCartShippingData(lastPostcode);
-                        if (cachedData) {
-                            initializeData = {
-                                cart: cachedData.cart,
-                                shipping_rates: cachedData.shipping_rates,
-                                postcode: lastPostcode,
-                            };
-                        } else {
-                            initializeData.postcode = lastPostcode;
-                        }
-                    }
-
-                    const cartInfoBlock = createInfoBlock(initializeData.cart, initializeData.shipping_rates, initializeData.postcode, form);
-
-                    parentContainer.appendChild(form);
-                    parentContainer.appendChild(cartInfoBlock);
-
-                    targetElement.insertAdjacentElement('afterend', parentContainer);
-
-                    fetchCartNonce(function () {
-                        const lastPostcode = getLastUsedPostcode();
-
-                        if (lastPostcode) {
-                            const inputPostcode = document.querySelector('.woo-better-input-current-style');
-                            if (inputPostcode) {
-                                inputPostcode.value = lastPostcode;
-
-
-                                if (WooBetterData.enable_search && WooBetterData.enable_search === 'yes') {
-                                    const cachedData = getCachedCartShippingData(lastPostcode);
-
-                                    if (cachedData) {
-                                        const infoBlock = document.querySelector('.woo-better-info-block');
-                                        if (infoBlock) {
-                                            const hasRealDataInComponent = cachedData.cart && cachedData.cart.name && cachedData.cart.name !== '****';
-
-                                            if (hasRealDataInComponent) {
-                                                infoBlock.style.display = 'block';
-
-                                                const toggleButton = infoBlock.querySelector('.woo-better-toggle-button');
-                                                if (toggleButton) {
-                                                    toggleButton.innerHTML = '';
-                                                    displayButton(toggleButton, 'up', 'Esconder detalhes de entrega');
-                                                }
-
-                                                const contentInfoBlock = infoBlock.querySelector('.woo-better-content-block');
-                                                if (contentInfoBlock) {
-                                                    contentInfoBlock.classList.add('expanded');
-                                                    contentInfoBlock.style.display = 'block';
-                                                    contentInfoBlock.style.height = `${contentInfoBlock.scrollHeight}px`;
-                                                }
-                                            } else {
-                                                processShippingRatesFromCache(cachedData, form, infoBlock, lastPostcode);
-
-                                                infoBlock.style.display = 'block';
-
-                                                const toggleButton = infoBlock.querySelector('.woo-better-toggle-button');
-                                                if (toggleButton) {
-                                                    toggleButton.innerHTML = '';
-                                                    displayButton(toggleButton, 'up', 'Esconder detalhes de entrega');
-                                                }
-
-                                                const contentInfoBlock = infoBlock.querySelector('.woo-better-content-block');
-                                                if (contentInfoBlock) {
-                                                    contentInfoBlock.classList.add('expanded');
-                                                    contentInfoBlock.style.display = 'block';
-                                                    contentInfoBlock.style.height = `${contentInfoBlock.scrollHeight}px`;
-                                                }
-                                            }
-
-                                            const currentPostcodeText = infoBlock.querySelector('.woo-better-current-postcode-text');
-                                            if (currentPostcodeText) {
-                                                currentPostcodeText.innerHTML = `<strong>CEP</strong>: ${lastPostcode}`;
-                                            }
-                                        }
-                                    } else {
-                                        form.style.display = 'block';
-
-                                        if (WooBetterData.enable_search === 'yes') {
-                                            // Se enable_search estiver habilitado, apenas exibe o formulário
-                                            // Não faz consulta automática - aguarda o usuário clicar
-                                        }
-                                        // Se enable_search = 'no', apenas exibe o formulário para consulta manual
-                                    }
-                                }
-                                // Se enable_search não estiver habilitado, apenas preenche o campo
-                            }
-                        }
-                        observer.disconnect();
-                    });
-
+                    createComponentIfNeeded();
                     observer.disconnect();
                 }
             }
@@ -2189,6 +2075,156 @@ document.addEventListener('DOMContentLoaded', function () {
             updateTokenCache();
         }
     }
+
+    // Observer para detectar quando o componente é removido e recriá-lo
+    let componentCheckInterval = null;
+    
+    function startComponentMonitor() {
+        // Verifica a cada 500ms se o componente ainda existe
+        componentCheckInterval = setInterval(() => {
+            const existingComponent = document.querySelector('.woo-better-parent-container');
+            const targetElement = document.querySelector(setPosition());
+            
+            // Se o componente deveria existir mas não existe mais, e temos um local para recriá-lo
+            if (!existingComponent && targetElement && containerFound) {
+                debugLog('Componente removido detectado, recriando...');
+                
+                // Reseta o flag para permitir recriação
+                containerFound = false;
+                
+                // Chama a lógica de criação novamente
+                setTimeout(() => {
+                    createComponentIfNeeded();
+                }, 100);
+            }
+        }, 500);
+    }
+    
+    function stopComponentMonitor() {
+        if (componentCheckInterval) {
+            clearInterval(componentCheckInterval);
+            componentCheckInterval = null;
+        }
+    }
+    
+    function createComponentIfNeeded() {
+        const targetClass = setPosition();
+        const targetElement = document.querySelector(targetClass);
+        const existingComponent = document.querySelector('.woo-better-parent-container');
+        
+        if (targetElement && !existingComponent && !containerFound) {
+            containerFound = true;
+
+            const parentContainer = createParentContainer();
+            const form = createForm();
+
+            const lastPostcode = getLastUsedPostcode();
+            let initializeData = {
+                cart: {
+                    name: '****',
+                    quantity: WooBetterData.quantity || 1,
+                    currency_symbol: 'R$',
+                    currency_minor_unit: 2,
+                },
+                shipping_rates: [
+                    {
+                        id: '**********',
+                        label: '***********',
+                        cost: 12.34,
+                    },
+                ],
+                postcode: '12345-678',
+            };
+
+            if (lastPostcode) {
+                const cachedData = getCachedCartShippingData(lastPostcode);
+                if (cachedData) {
+                    initializeData = {
+                        cart: cachedData.cart,
+                        shipping_rates: cachedData.shipping_rates,
+                        postcode: lastPostcode,
+                    };
+                } else {
+                    initializeData.postcode = lastPostcode;
+                }
+            }
+
+            const cartInfoBlock = createInfoBlock(initializeData.cart, initializeData.shipping_rates, initializeData.postcode, form);
+
+            parentContainer.appendChild(form);
+            parentContainer.appendChild(cartInfoBlock);
+
+            targetElement.insertAdjacentElement('afterend', parentContainer);
+
+            fetchCartNonce(function () {
+                const lastPostcode = getLastUsedPostcode();
+
+                if (lastPostcode) {
+                    const inputPostcode = document.querySelector('.woo-better-input-current-style');
+                    if (inputPostcode) {
+                        inputPostcode.value = lastPostcode;
+
+                        if (WooBetterData.enable_search && WooBetterData.enable_search === 'yes') {
+                            const cachedData = getCachedCartShippingData(lastPostcode);
+
+                            if (cachedData) {
+                                const infoBlock = document.querySelector('.woo-better-info-block');
+                                if (infoBlock) {
+                                    const hasRealDataInComponent = cachedData.cart && cachedData.cart.name && cachedData.cart.name !== '****';
+
+                                    if (hasRealDataInComponent) {
+                                        infoBlock.style.display = 'block';
+
+                                        const toggleButton = infoBlock.querySelector('.woo-better-toggle-button');
+                                        if (toggleButton) {
+                                            toggleButton.innerHTML = '';
+                                            displayButton(toggleButton, 'up', 'Esconder detalhes de entrega');
+                                        }
+
+                                        const contentInfoBlock = infoBlock.querySelector('.woo-better-content-block');
+                                        if (contentInfoBlock) {
+                                            contentInfoBlock.classList.add('expanded');
+                                            contentInfoBlock.style.display = 'block';
+                                            contentInfoBlock.style.height = `${contentInfoBlock.scrollHeight}px`;
+                                        }
+                                    } else {
+                                        processShippingRatesFromCache(cachedData, form, infoBlock, lastPostcode);
+
+                                        infoBlock.style.display = 'block';
+
+                                        const toggleButton = infoBlock.querySelector('.woo-better-toggle-button');
+                                        if (toggleButton) {
+                                            toggleButton.innerHTML = '';
+                                            displayButton(toggleButton, 'up', 'Esconder detalhes de entrega');
+                                        }
+
+                                        const contentInfoBlock = infoBlock.querySelector('.woo-better-content-block');
+                                        if (contentInfoBlock) {
+                                            contentInfoBlock.classList.add('expanded');
+                                            contentInfoBlock.style.display = 'block';
+                                            contentInfoBlock.style.height = `${contentInfoBlock.scrollHeight}px`;
+                                        }
+                                    }
+
+                                    const currentPostcodeText = infoBlock.querySelector('.woo-better-current-postcode-text');
+                                    if (currentPostcodeText) {
+                                        currentPostcodeText.innerHTML = `<strong>CEP</strong>: ${lastPostcode}`;
+                                    }
+                                }
+                            } else {
+                                form.style.display = 'block';
+                            }
+                        }
+                    }
+                }
+            });
+            
+            debugLog('Componente recriado com sucesso');
+        }
+    }
+    
+    // Inicia o monitoramento do componente após a criação inicial
+    startComponentMonitor();
 
     // Observa o corpo do documento
     observer.observe(document.body, {

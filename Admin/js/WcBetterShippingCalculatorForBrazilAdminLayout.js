@@ -459,7 +459,7 @@
 
               // Cria o <span> logo abaixo do <hr>
               const spanElement = document.createElement('span');
-              spanElement.textContent = "Shortcodes são úteis para temas que não utilizam o editor de blocos Gutenberg."
+              spanElement.textContent = "Shortcodes são especialmente úteis para temas clássicos que não utilizam o editor de blocos (Gutenberg)."
 
               spanElement.style.color = '#343B45'; // Cinza suave
               spanElement.style.fontSize = '13px';
