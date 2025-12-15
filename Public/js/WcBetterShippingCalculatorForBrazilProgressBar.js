@@ -7,6 +7,7 @@
 	let currentCartTotal = 0;
 	let lastValidPercent = 0;
 	let lastValidMessage = '';
+	let cartUpdateTimeout = null; // Para debounce das atualizações do carrinho
 
 	// Inicializa com o valor do PHP se disponível
 	const progressConfig = typeof wc_better_shipping_progress !== 'undefined' ? wc_better_shipping_progress : {};
@@ -170,32 +171,41 @@
 
 	// Função para obter dados do carrinho via WooCommerce REST API (para shortcode)
 	function getCartDataViaAjax() {
-		const progressConfig = typeof wc_better_shipping_progress !== 'undefined' ? wc_better_shipping_progress : {};
-		const cartApiUrl = progressConfig.cart_api_url || '/wp-json/wc/store/v1/cart';
+		// Debounce para evitar múltiplas requisições simultâneas
+		if (cartUpdateTimeout) {
+			clearTimeout(cartUpdateTimeout);
+		}
 		
-		fetch(cartApiUrl, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-			}
-		})
-		.then(response => response.json())
-		.then(data => {
-			if (data && data.totals && data.totals.total_items) {
-				// O valor vem em centavos, divide por 100 para obter o valor real
-				const totalItems = parseInt(data.totals.total_items) / 100;
-				currentCartTotal = totalItems;
-			} else {
+		cartUpdateTimeout = setTimeout(() => {
+			cartUpdateTimeout = null;
+			
+			const progressConfig = typeof wc_better_shipping_progress !== 'undefined' ? wc_better_shipping_progress : {};
+			const cartApiUrl = progressConfig.cart_api_url || '/wp-json/wc/store/v1/cart';
+			
+			fetch(cartApiUrl, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				}
+			})
+			.then(response => response.json())
+			.then(data => {
+				if (data && data.totals && data.totals.total_items) {
+					// O valor vem em centavos, divide por 100 para obter o valor real
+					const totalItems = parseInt(data.totals.total_items) / 100;
+					currentCartTotal = totalItems;
+				} else {
+					// Fallback para DOM se API falhar
+					currentCartTotal = getCartTotalFromDOM();
+				}
+				stopLoadingState();
+			})
+			.catch(error => {
 				// Fallback para DOM se API falhar
 				currentCartTotal = getCartTotalFromDOM();
-			}
-			stopLoadingState();
-		})
-		.catch(error => {
-			// Fallback para DOM se API falhar
-			currentCartTotal = getCartTotalFromDOM();
-			stopLoadingState();
-		});
+				stopLoadingState();
+			});
+		}, 300); // Debounce de 300ms
 	}
 
 	// Intercepta requisições para a API do WooCommerce Store (blocks)
