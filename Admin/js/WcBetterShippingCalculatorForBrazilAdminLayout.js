@@ -147,7 +147,7 @@
     }
 
     const featureMessage1 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Busca Automática de Endereço por CEP no Checkout!'
+      '<strong>NOVO:</strong> Todas as funcionalidades disponíveis no editor de blocos agora estão disponíveis no shortocode!'
     ]);
 
     // Cria o segundo bloco de mensagem

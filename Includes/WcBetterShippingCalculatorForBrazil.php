@@ -182,7 +182,7 @@ class WcBetterShippingCalculatorForBrazil
             <div style="height: 100%; padding: 10px;">
                 <strong style="font-size: 18px;">🚀 Calculadora de Frete para o Brasil</strong>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <p>Veja as novas funcionalidades de <strong>CHECKOUT</strong>, como preenchimento automático de endereço, campo de CEP em destaque e muito mais!</p>
+                    <p>Veja as novas funcionalidades de <strong>CHECKOUT</strong>, como preenchimento automático de endereço, campo de CEP em destaque, telefone com código do país e muito mais!</p>
                     <a href="<?php echo esc_url($settings_url); ?>" class="button button-primary" style="overflow-wrap: break-word;">
                         Configure o plugin de acordo com sua necessidade
                     </a>
