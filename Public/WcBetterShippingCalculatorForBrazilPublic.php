@@ -209,6 +209,12 @@ class WcBetterShippingCalculatorForBrazilPublic
                 false
             );
 
+            // Obtém o total dos itens do carrinho
+            $cart_total = 0;
+            if (function_exists('WC') && WC()->cart) {
+                $cart_total = floatval(WC()->cart->get_subtotal());
+            }
+
             wp_localize_script(
                 $this->plugin_name . '-progress-bar',
                 'wc_better_shipping_progress',
@@ -217,6 +223,10 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'currency_symbol' => get_woocommerce_currency_symbol(),
                     'min_free_shipping_message' => get_option('woo_better_min_free_shipping_message', 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS'),
                     'min_free_shipping_success_message' => get_option('woo_better_min_free_shipping_success_message', 'Parabéns! Você tem frete grátis!'),
+                    'has_cart_block' => has_block('woocommerce/cart'),
+                    'current_url' => (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
+                    'initial_cart_total' => $cart_total,
+                    'cart_api_url' => rest_url('wc/store/v1/cart')
                 )
             );
         }
