@@ -57,14 +57,30 @@
 		let percent = 0;
 		let message = '';
 
+		// Obtém as configurações do localize
+		const progressConfig = typeof wc_better_shipping_progress !== 'undefined' ? wc_better_shipping_progress : {};
+		const currencySymbol = progressConfig.currency_symbol || 'R$';
+		const successMessage = progressConfig.min_free_shipping_success_message || 'Parabéns! Você tem frete grátis!';
+		let progressMessage = progressConfig.min_free_shipping_message || 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS';
+
+		// Valida se a mensagem personalizada contém o placeholder {value}
+		if (!progressMessage.includes('{value}')) {
+			// Se não contém {value}, usa a mensagem padrão
+			progressMessage = 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS';
+		}
+
 		if (minValue <= 0) {
 			percent = 100;
-			message = 'Parabéns! Você tem frete grátis!';
+			message = successMessage;
 		} else {
 			percent = Math.min((cartTotal / minValue) * 100, 100);
-			message = cartTotal >= minValue
-				? 'Parabéns! Você tem frete grátis!'
-				: 'Falta(m) apenas mais R$' + (minValue - cartTotal).toFixed(2) + ' para obter FRETE GRÁTIS';
+			if (cartTotal >= minValue) {
+				message = successMessage;
+			} else {
+				const remainingValue = (minValue - cartTotal).toFixed(2);
+				const formattedValue = currencySymbol + remainingValue;
+				message = progressMessage.replace('{value}', formattedValue);
+			}
 		}
 
 		let progressBar = document.querySelector('.wc-better-shipping-progress-bar');

@@ -73,6 +73,32 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Ex: 200,00', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'min_free_shipping_message' => array(
+                'title'    => __('Mensagens para o Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_min_free_shipping_message',
+                'desc_tip' => false,
+                'default'  => 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS',
+                'type'     => 'text',
+                'custom_attributes' => array(
+                    'data-subtitle' => __('Mensagem de Frete Mínimo', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Defina as mensagens de feedback na barra de progresso.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Use {value} como marcador para o valor restante. Ex: "Falta(m) apenas mais {value} para obter FRETE GRÁTIS"', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Mensagem exibida quando o valor do carrinho ainda não atingiu o mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
+                    'pattern' => '.*\{value\}.*'
+                )
+            ),
+            'min_free_shipping_success_message' => array(
+                'title'    => __('Mensagem de Frete Grátis Ativado', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_min_free_shipping_success_message',
+                'desc_tip' => false,
+                'default'  => 'Parabéns! Você tem frete grátis!',
+                'type'     => 'text',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Mensagem exibida quando o valor do carrinho atingiu o mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Mensagem de parabéns exibida quando o cliente se qualifica para frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Esta mensagem será exibida quando o frete grátis estiver ativo.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'font_source' => array(
                 'title'    => __('Fonte para Busca de CEP', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,
