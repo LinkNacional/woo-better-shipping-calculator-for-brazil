@@ -850,6 +850,10 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('woocommerce_admin_order_data_after_billing_address', $this, 'woo_better_billing_country_code');
         $this->loader->add_action('woocommerce_admin_order_data_after_shipping_address', $this, 'woo_better_shipping_country_code');
+        
+        // NOVO: Hook para restaurar endereço quando carrinho for modificado
+        $this->loader->add_action('woocommerce_cart_updated', $this, 'restore_address_after_cart_change');
+        $this->loader->add_action('woocommerce_add_to_cart', $this, 'restore_address_after_cart_change');
     }
 
     public function woo_better_shipping_country_code($order)
@@ -858,6 +862,15 @@ class WcBetterShippingCalculatorForBrazil
         if ($code) {
             echo '<p><strong>Código do país:</strong> ' . esc_html($code) . '</p>';
         }
+    }
+
+    /**
+     * Restaura endereço após mudanças no carrinho
+     *
+     * @return void
+     */
+    public function restore_address_after_cart_change() {
+        $this->restore_address_from_cookies();
     }
 
     public function woo_better_billing_country_code($order)
@@ -1154,6 +1167,103 @@ class WcBetterShippingCalculatorForBrazil
         
         // Fallback: verifica endereços idênticos
         return $this->detect_same_address_usage($order, []);
+    }
+
+    /**
+     * Salva dados de endereço em cookies para persistir durante operações do carrinho
+     *
+     * @param array $shipping_data Dados de endereço para salvar
+     * @return void
+     */
+    private function save_address_to_cookies($shipping_data) {
+        $cookie_expire = time() + (60 * 60 * 2); // 2 horas
+        
+        // Remove valores vazios e adiciona timestamp para validação
+        $clean_data = array_filter($shipping_data, function($value) {
+            return !empty($value);
+        });
+        
+        if (empty($clean_data)) {
+            return;
+        }
+        
+        // Adiciona timestamp para validação de expiração
+        $clean_data['timestamp'] = time();
+        
+        // Serializa e codifica em base64 para segurança
+        $encoded_data = base64_encode(wp_json_encode($clean_data));
+        
+        // Salva um único cookie com todos os dados
+        setcookie('woo_better_address_data', $encoded_data, $cookie_expire, '/');
+    }
+
+    /**
+     * Restaura dados dos cookies se a sessão foi resetada
+     *
+     * @return void
+     */
+    private function restore_address_from_cookies() {
+        if (!WC()->customer) return;
+        
+        // Verifica se o cookie existe
+        if (empty($_COOKIE['woo_better_address_data'])) {
+            return;
+        }
+        
+        // Verifica se precisa restaurar (se postcode está vazio)
+        if (!empty(WC()->customer->get_shipping_postcode())) {
+            return;
+        }
+        
+        try {
+            // Decodifica e desserializa os dados
+            $encoded_data = sanitize_text_field($_COOKIE['woo_better_address_data']);
+            $decoded_json = base64_decode($encoded_data, true);
+            
+            if ($decoded_json === false) {
+                return; // Falha na decodificação base64
+            }
+            
+            $address_data = json_decode($decoded_json, true);
+            
+            if (!is_array($address_data)) {
+                return; // Dados inválidos
+            }
+            
+            // Valida timestamp (verifica se não expirou)
+            $timestamp = $address_data['timestamp'] ?? 0;
+            if ((time() - $timestamp) > (60 * 60 * 2)) { // 2 horas
+                // Remove cookie expirado
+                setcookie('woo_better_address_data', '', time() - 3600, '/');
+                return;
+            }
+            
+            // Remove timestamp dos dados antes de aplicar
+            unset($address_data['timestamp']);
+            
+            // Aplica os dados ao customer
+            $updated = false;
+            $valid_fields = ['first_name', 'last_name', 'address_1', 'city', 'state', 'postcode', 'country', 'phone'];
+            
+            foreach ($valid_fields as $field) {
+                if (isset($address_data[$field]) && !empty($address_data[$field])) {
+                    $sanitized_value = sanitize_text_field($address_data[$field]);
+                    
+                    // Aplica para shipping e billing
+                    WC()->customer->{"set_shipping_{$field}"}($sanitized_value);
+                    WC()->customer->{"set_billing_{$field}"}($sanitized_value);
+                    $updated = true;
+                }
+            }
+            
+            if ($updated) {
+                WC()->customer->save();
+            }
+            
+        } catch (Exception $e) {
+            // Em caso de erro, remove o cookie
+            setcookie('woo_better_address_data', '', time() - 3600, '/');
+        }
     }
 
     /**
@@ -1662,6 +1772,9 @@ class WcBetterShippingCalculatorForBrazil
 
         // Salva os dados do cliente
         WC()->customer->save();
+        
+        // NOVO: Salva também em cookies para persistir durante mudanças no carrinho
+        $this->save_address_to_cookies($shipping_data);
 
         // Obtém o ID do produto da página atual
         $product_id = isset($_POST['product_id']) ? absint($_POST['product_id']) : 0;
