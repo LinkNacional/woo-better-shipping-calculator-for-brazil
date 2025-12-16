@@ -224,7 +224,9 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'min_free_shipping_message' => get_option('woo_better_min_free_shipping_message', 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS'),
                     'min_free_shipping_success_message' => get_option('woo_better_min_free_shipping_success_message', 'Parabéns! Você tem frete grátis!'),
                     'has_cart_block' => has_block('woocommerce/cart'),
-                    'current_url' => (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
+                    'current_url' => (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . 
+                        (isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '') . 
+                        (isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : ''),
                     'initial_cart_total' => $cart_total,
                     'cart_api_url' => rest_url('wc/store/v1/cart')
                 )

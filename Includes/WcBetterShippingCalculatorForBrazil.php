@@ -986,11 +986,11 @@ class WcBetterShippingCalculatorForBrazil
         
         // Fallback para $_POST se não encontrar nos extensions
         if (empty($billing_country_code) && isset($_POST['billing_phone_country_code'])) {
-            $billing_country_code = sanitize_text_field($_POST['billing_phone_country_code']);
+            $billing_country_code = sanitize_text_field(wp_unslash($_POST['billing_phone_country_code']));
         }
         
         if (empty($shipping_country_code) && isset($_POST['shipping_phone_country_code'])) {
-            $shipping_country_code = sanitize_text_field($_POST['shipping_phone_country_code']);
+            $shipping_country_code = sanitize_text_field(wp_unslash($_POST['shipping_phone_country_code']));
         }
         
         // Lógica aprimorada considerando o checkbox de mesmo endereço
@@ -1223,7 +1223,7 @@ class WcBetterShippingCalculatorForBrazil
         
         try {
             // Decodifica e desserializa os dados
-            $encoded_data = sanitize_text_field($_COOKIE['woo_better_address_data']);
+            $encoded_data = sanitize_text_field(wp_unslash($_COOKIE['woo_better_address_data']));
             $decoded_json = base64_decode($encoded_data, true);
             
             if ($decoded_json === false) {

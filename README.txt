@@ -3,7 +3,7 @@ Contributors: LinkNacional, luizbills
 Donate link:
 Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
-Tested up to: 6.8
+Tested up to: 6.9
 Requires PHP: 7.3
 Stable tag: 4.6.0
 License: GPLv2 or later
