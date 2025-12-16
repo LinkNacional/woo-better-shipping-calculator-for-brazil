@@ -883,7 +883,7 @@ class WcBetterShippingCalculatorForBrazil
     {   
         $code = $order->get_meta('_billing_phone_country_code');
         if ($code) {
-            echo '<p><strong>Código do país do telefone:</strong> ' . esc_html($code) . '</p>';
+            echo '<p><strong>Código do país:</strong> ' . esc_html($code) . '</p>';
         }
     }
 
