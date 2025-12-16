@@ -147,7 +147,7 @@
     }
 
     const featureMessage1 = createFeatureMessage('✔️', [
-      '<strong>ATUALIZADO:</strong> Todas as funcionalidades disponíveis no editor de blocos agora estão disponíveis no shortocode!'
+      '<strong>ATUALIZADO:</strong> Todas as funcionalidades disponíveis no editor de blocos agora estão disponíveis no shortcode!'
     ]);
 
     // Cria o segundo bloco de mensagem

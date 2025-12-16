@@ -181,11 +181,17 @@ class WcBetterShippingCalculatorForBrazil
         <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
             <div style="height: 100%; padding: 10px;">
                 <strong style="font-size: 18px;">🚀 Calculadora de Frete para o Brasil</strong>
-                <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                     <p>Veja as novas funcionalidades de <strong>CHECKOUT</strong>, como preenchimento automático de endereço, campo de CEP em destaque, telefone com código do país e muito mais!</p>
-                    <a href="<?php echo esc_url($settings_url); ?>" class="button button-primary" style="overflow-wrap: break-word;">
+                    <a href="<?php echo esc_url($settings_url); ?>" class="button button-primary" style="white-space: normal; word-break: break-word; text-align: center; line-height: normal; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 350px;">
                         Configure o plugin de acordo com sua necessidade
                     </a>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <p style="margin: 0; font-weight: 500;">
+                        ✨ <strong>ATUALIZADO:</strong> Todas as funcionalidades disponíveis no editor de blocos agora estão disponíveis no shortcode.
+                    </p>
                 </div>
             </div>
         </div>
