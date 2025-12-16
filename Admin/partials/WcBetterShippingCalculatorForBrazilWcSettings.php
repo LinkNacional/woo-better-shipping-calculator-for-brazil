@@ -147,9 +147,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     <p style="padding: 10px 0;"> </p>
                     <p><strong>Finalização de compra:</strong><br><code class="woo-better-shortcode">[woocommerce_checkout]</code></p>
                     <p style="padding: 10px 0;"> </p>
-                    <p><strong>Nova versão</strong><br>Todas as funcionalidades agora estão disponíveis para serem utilizadas nos shortcodes.</p>
-                    <p style="padding: 10px 0;"> </p>
-                    <p><span><strong>Importante:</strong> Caso os campos originais de endereço do WooCommerce ainda estejam sendo exibidos, recomendamos desativá-los através das <a href="/wp-admin/admin.php?page=wc-settings&tab=shipping&section=options" target="_blank">configurações de entrega do WooCommerce</a>.</span></p>', 
+                    <p style="margin-top: 15px; color: #8F8F8F;"><span><strong>Importante:</strong> Caso queira desativar os campos de endereço no carrinho, recomendamos desativar a opção "Ativar a calculadora de entrega na página de carrinho" em <a href="/wp-admin/admin.php?page=wc-settings&tab=shipping&section=options" target="_blank">configurações de entrega do WooCommerce</a>. Disponível apenas para página de carrinho por shortcode.</span></p>', 
                     'woo-better-shipping-calculator-for-brazil'
                 ),
                 'type'  => 'title',
