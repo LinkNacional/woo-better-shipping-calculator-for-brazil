@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (minimumFreeShippingRadios.length > 0) {
             const minimumFreeShippingValue = document.getElementById('woo_better_min_free_shipping_value');
+            const minimumFreeShippingMessage = document.getElementById('woo_better_min_free_shipping_message');
+            const minimumFreeShippingSuccessMessage = document.getElementById('woo_better_min_free_shipping_success_message');
+            
             if (minimumFreeShippingValue) {
                 function updateMinimumFreeShippingValue() {
                     const selectedOption = Array.from(minimumFreeShippingRadios).find(radio => radio.checked)?.value;
@@ -15,11 +18,35 @@ document.addEventListener('DOMContentLoaded', function () {
                         minimumFreeShippingValue.disabled = false;
                         minimumFreeShippingValue.style.backgroundColor = '';
                         minimumFreeShippingValue.style.cursor = '';
+                        
+                        // Habilita os campos de mensagem
+                        if (minimumFreeShippingMessage) {
+                            minimumFreeShippingMessage.disabled = false;
+                            minimumFreeShippingMessage.style.backgroundColor = '';
+                            minimumFreeShippingMessage.style.cursor = '';
+                        }
+                        if (minimumFreeShippingSuccessMessage) {
+                            minimumFreeShippingSuccessMessage.disabled = false;
+                            minimumFreeShippingSuccessMessage.style.backgroundColor = '';
+                            minimumFreeShippingSuccessMessage.style.cursor = '';
+                        }
                     } else if (selectedOption === 'no') {
                         minimumFreeShippingValue.value = 0;
                         minimumFreeShippingValue.disabled = true;
                         minimumFreeShippingValue.style.backgroundColor = '#f1f1f1';
                         minimumFreeShippingValue.style.cursor = 'not-allowed';
+                        
+                        // Desabilita os campos de mensagem
+                        if (minimumFreeShippingMessage) {
+                            minimumFreeShippingMessage.disabled = true;
+                            minimumFreeShippingMessage.style.backgroundColor = '#f1f1f1';
+                            minimumFreeShippingMessage.style.cursor = 'not-allowed';
+                        }
+                        if (minimumFreeShippingSuccessMessage) {
+                            minimumFreeShippingSuccessMessage.disabled = true;
+                            minimumFreeShippingSuccessMessage.style.backgroundColor = '#f1f1f1';
+                            minimumFreeShippingSuccessMessage.style.cursor = 'not-allowed';
+                        }
                     }
                 }
 
