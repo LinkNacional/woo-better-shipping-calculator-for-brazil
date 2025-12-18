@@ -79,17 +79,7 @@
     }
 
     if (WCBetterCalcWooVersion.status === 'valid') {
-      const gutenbergElement = document.querySelector('input[name="woo_better_calc_cep_required"]');
-
-      if (gutenbergElement) {
-        const closestTbody = gutenbergElement.closest('tbody');
-        if (closestTbody) {
-          const gutenbergWarning = createWarningMessage('Configuração indisponível para o seu tema em blocos.');
-
-          // Insere o <tr> no início do <tbody>
-          closestTbody.insertBefore(gutenbergWarning, closestTbody.firstChild);
-        }
-      }
+      // Configuração indisponível para temas em blocos foi removida
     }
 
     // Mensagem de Warning na versão do WooCommerce
@@ -157,12 +147,12 @@
     }
 
     const featureMessage1 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Defina uma fonte personalizada entre Poppins ou a fonte do tema nos novos componentes de consulta de CEP em PRODUTO/CARRINHO através da aba GERAL.'
+      '<strong>ATUALIZADO:</strong> Todas as funcionalidades disponíveis no editor de blocos agora estão disponíveis no shortcode!'
     ]);
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Melhore a página de CHECKOUT com a nova opção de preenchimento automático de endereço, destaque do campo CEP e campo de telefone customizado.'
+      '<strong>NOVO:</strong> Campo de Telefone Aprimorado: Agora com Código de País (DDI) e de preenchimento obrigatório.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento
@@ -469,7 +459,7 @@
 
               // Cria o <span> logo abaixo do <hr>
               const spanElement = document.createElement('span');
-              spanElement.textContent = "Shortcodes são úteis para temas que não utilizam o editor de blocos Gutenberg."
+              spanElement.textContent = "Shortcodes são especialmente úteis para temas clássicos que não utilizam o editor de blocos (Gutenberg)."
 
               spanElement.style.color = '#343B45'; // Cinza suave
               spanElement.style.fontSize = '13px';
@@ -883,7 +873,7 @@
             // Define relação entre mais de um componente em um bloco
             const targetComponentCartNames = {
               'woo_better_min_free_shipping_value': 'woo_better_enable_min_free_shipping',
-              'woo_better_hidden_cart_address': 'woo_better_calc_cep_required',
+              'woo_better_min_free_shipping_success_message': 'woo_better_min_free_shipping_message',
 
               //Cart
               'woo_better_calc_cart_input_border_width': 'woo_better_calc_cart_input_background_color_field',
@@ -899,7 +889,6 @@
               'woo_better_calc_cart_input_icon': 'woo_better_calc_cart_input_placeholder',
               'woo_better_calc_cart_input_icon_color': 'woo_better_calc_cart_input_placeholder',
               'woo_better_calc_cart_custom_position': 'woo_better_calc_cart_input_position',
-              'woo_better_calc_cart_custom_remove': 'woo_better_calc_cart_custom_quantity',
 
               //Product
               'woo_better_calc_product_input_border_width': 'woo_better_calc_product_input_background_color_field',

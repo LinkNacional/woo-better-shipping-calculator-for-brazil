@@ -2,9 +2,6 @@
 
 namespace Lkn\WcBetterShippingCalculatorForBrazil\Admin;
 
-use Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazilHelpers as h;
-use Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazilStates;
-
 /**
  * The admin-specific functionality of the plugin.
  *
@@ -119,53 +116,5 @@ class WcBetterShippingCalculatorForBrazilAdmin
                 'ajaxurl' => admin_url('admin-ajax.php')
             ));
         }
-    }
-
-    public function add_extra_css()
-    {
-        // translate to "Calcule o frete:"
-        $postcode_label = apply_filters(
-            h::prefix('postcode_label'),
-            __('Calculate shipping:', 'woo-better-shipping-calculator-for-brazil')
-        );
-        ?>
-<style>
-    <?php if ($postcode_label) : ?>
-    #calc_shipping_postcode_field::before {
-        display: block;
-        content: "<?php echo esc_html($postcode_label); ?>";
-    }
-
-    <?php endif; ?>
-
-    .shipping-calculator-button {
-        display: none !important;
-        visibility: hidden !important;
-    }
-
-    .shipping-calculator-form {
-        display: block !important;
-        height: auto !important;
-    }
-</style>
-<?php
-    }
-
-    public function prepare_address($address)
-    {
-        $country = h::get($address['country'], 'BR');
-        if (! $country || 'BR' === $country) {
-            $postcode = \wc_clean(\wp_unslash($address['postcode'] ?? ''));
-            $state = WcBetterShippingCalculatorForBrazilStates::get_state_from_postcode($postcode);
-            if ($state) {
-                $address['country'] = 'BR';
-                $_POST['calc_shipping_country'] = 'BR';
-                $address['state'] = $state;
-                $_POST['calc_shipping_state'] = $state;
-                $address['postcode'] = $postcode;
-                $_POST['calc_shipping_postcode'] = $postcode;
-            }
-        }
-        return $address;
     }
 }

@@ -3,17 +3,17 @@ Contributors: LinkNacional, luizbills
 Donate link:
 Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
-Tested up to: 6.8
+Tested up to: 6.9
 Requires PHP: 7.3
-Stable tag: 4.5.0
+Stable tag: 4.6.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
-Shipping calculator with automatic address pre-filling by CEP on checkout for WooCommerce. Features mandatory phone field with country code (DDI) and dynamic field control. Ideal for Brazilian [WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/) stores. Compatible with Gutenberg and Shortcodes.
+Shipping calculator for Brazilian WooCommerce stores with automatic Postal Code address pre-filling and mandatory phone field with country code.
 
 == Description ==
 
-Improved shipping calculator designed specifically for **Brazilian e-commerce stores using WooCommerce**, making it easier and significantly improving the data entry flow on the cart and checkout pages.
+Improved shipping calculator designed specifically for **Brazilian e-commerce stores using [WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/) **, making it easier and significantly improving the data entry flow on the cart and checkout pages.
 
 This [WordPress](https://www.linknacional.com.br/wordpress/) plugin ensures faster address verification and cleaner form management, leading to a better user experience and fewer abandoned carts.
 
@@ -116,8 +116,14 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 * [Brasil API](https://brasilapi.com.br) - ZIP code field.
 * [VIACEP](https://viacep.com.br) - ZIP code field.
+* [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+= 4.6.0 - 15/12/2025 =
+* NEW: Dynamic progress bar for free shipping with customizable messages.
+* NEW: Automatic capture and formatting of country codes in phone numbers.
+* NEW: Complete feature parity between block editor and shortcode.
 
 = 4.5.0 - 24/10/2025 =
 * NEW: Text font configuration system in the product and cart components.

@@ -1,0 +1,12 @@
+.iti__search-input {
+  width: 100% !important;
+  border-width: 0 !important;
+  border-radius: 3px !important;
+  padding-left: 30px !important;
+  padding-right: 28px !important;
+  min-height: 40px !important;
+}
+
+.iti.iti--allow-dropdown {
+    width: 100% !important;
+}
