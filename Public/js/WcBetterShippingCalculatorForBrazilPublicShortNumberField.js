@@ -143,5 +143,3 @@ document.addEventListener("DOMContentLoaded", function () {
         };
     })();
 });
-
-// Removida a função typeCharacter, agora o valor é setado diretamente e o trigger('change') é chamado via jQuery se disponível.

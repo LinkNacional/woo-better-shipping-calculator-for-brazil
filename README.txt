@@ -3,9 +3,9 @@ Contributors: LinkNacional, luizbills
 Donate link:
 Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
-Tested up to: 6.8
+Tested up to: 6.9
 Requires PHP: 7.3
-Stable tag: 4.5.0
+Stable tag: 4.6.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -116,8 +116,14 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 * [Brasil API](https://brasilapi.com.br) - ZIP code field.
 * [VIACEP](https://viacep.com.br) - ZIP code field.
+* [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+= 4.6.0 - 15/12/2025 =
+* NEW: Dynamic progress bar for free shipping with customizable messages.
+* NEW: Automatic capture and formatting of country codes in phone numbers.
+* NEW: Complete feature parity between block editor and shortcode.
 
 = 4.5.0 - 24/10/2025 =
 * NEW: Text font configuration system in the product and cart components.

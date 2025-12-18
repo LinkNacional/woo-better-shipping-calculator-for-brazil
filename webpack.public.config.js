@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 // Função para gerar entradas dinâmicas com base nos arquivos em uma pasta
 function generateEntries(sourceDir, extension) {
@@ -40,6 +41,20 @@ module.exports = {
                     },
                 },
             },
+            {
+                test: /\.css$/, // Aplica a regra para arquivos .css
+                use: [
+                    MiniCssExtractPlugin.loader, // Extrai CSS para arquivos separados
+                    'css-loader', // Processa arquivos CSS
+                ],
+            },
+            {
+                test: /\.(png|jpe?g|gif|svg|webp)$/i,
+                type: 'asset/resource',
+                generator: {
+                    filename: '../cssCompiled/[hash][ext][query]'
+                }
+            },
         ],
     },
     plugins: [
@@ -48,5 +63,9 @@ module.exports = {
                 path.resolve(__dirname, 'Public/jsCompiled/*'),
             ],
         }), // Limpa o diretório de saída antes de gerar novos arquivos
+        new MiniCssExtractPlugin({
+            filename: '../cssCompiled/[name].COMPILED.css', // CSS será extraído para a pasta cssCompiled
+            chunkFilename: '../cssCompiled/[name].COMPILED.css',
+        }),
     ],
 };

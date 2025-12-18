@@ -1,4 +1,9 @@
 jQuery(function ($) {
+    // Objeto global para rastrear instâncias ativas do CepAddressFetcher
+    var activeCepFetchers = {};
+    // Flag global para controlar processamento do observer
+    var isProcessingAddressUpdate = false;
+
     // Função para desabilitar checkbox e label
     function disableCheckboxAndLabel(type) {
         var checkboxId = 'wc-better-checkbox-' + type;
@@ -52,13 +57,23 @@ jQuery(function ($) {
         $checkboxLabel.append($checkboxInput, $checkboxSvg, $checkboxText);
         $clonedCheckbox.append($checkboxLabel);
         $clonedCheckbox.insertAfter($postcodeInput.parent());
-        // Instancia o monitoramento do CEP para atualizar label
-        new CepAddressFetcher('#' + type + '-postcode', 'label[for="' + checkboxId + '"]', type);
+        // Instancia o monitoramento do CEP para atualizar label apenas se não existir
+        if (!activeCepFetchers[type]) {
+            activeCepFetchers[type] = new CepAddressFetcher('#' + type + '-postcode', 'label[for="' + checkboxId + '"]', type);
+        }
         // Sempre desabilita ao inserir novo endereço
         disableCheckboxAndLabel(type);
     }
 
     function updateAddressFields(type, apiData) {
+        // Verifica se deve ignorar verificação de processamento
+        const skipCheck = apiData.skipProcessingCheck === true;
+        
+        // Verifica se já está processando para evitar loop (exceto se skipCheck for true)
+        if (!skipCheck && isProcessingAddressUpdate) {
+            return;
+        }
+        
         // Mapeia os campos relevantes
         const fieldMap = [
             { id: `${type}-address_1`, key: 'address' },
@@ -69,19 +84,100 @@ jQuery(function ($) {
 
         fieldMap.forEach(field => {
             const input = document.getElementById(field.id);
-            if (!input) return;
+            if (!input) {
+                return;
+            }
             const value = apiData[field.key];
 
             if (field.key === 'state') {
-                // Sempre marca SP no select de estado
-                input.value = 'SP';
-                input.dispatchEvent(new Event('change', { bubbles: true }));
+                // Usa o estado retornado pela API
+                const currentValue = input.value;
+                const newValue = value || '';
+                
+                if (currentValue !== newValue) {
+                    input.value = newValue;
+                    // Sempre dispara evento para campo estado na primeira execução
+                    if (skipCheck || updateCount <= 1) {
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+            } else if (field.key === 'address') {
+                // Para o campo endereço principal, sempre atualiza se tiver valor
+                if (value && value.trim() !== '') {
+                    const currentValue = input.value;
+                    if (currentValue !== value) {
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(input, value);
+                        if (skipCheck || updateCount <= 1) {
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    }
+                }
+            } else if (field.key === 'city') {
+                // Para cidade, sempre atualiza se tiver valor
+                if (value && value.trim() !== '') {
+                    const currentValue = input.value;
+                    if (currentValue !== value) {
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(input, value);
+                        if (skipCheck || updateCount <= 1) {
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    }
+                }
+            } else if (field.key === 'address_2') {
+                // Para address_2, trata especificamente para evitar restauração de valores antigos
+                const currentValue = input.value;
+                
+                if (value && value.trim() !== '') {
+                    // Se tem valor na API, usa ele
+                    if (currentValue !== value) {
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(input, value);
+                        if (skipCheck || updateCount <= 1) {
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    }
+                } else {
+                    // Se não tem valor na API, define um espaço em vez de vazio para evitar restauração
+                    const targetValue = ' '; // Espaço em branco em vez de string vazia
+                    if (currentValue !== targetValue) {
+                        
+                        // Define espaço em branco
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(input, targetValue);
+                        input.value = targetValue;
+                        input.setAttribute('value', targetValue);
+                        
+                        if (skipCheck || updateCount <= 1) {
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                            input.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                        
+                        // Verificação adicional para garantir que mantém o espaço
+                        setTimeout(() => {
+                            if (input.value !== targetValue && input.value.trim() !== '') {
+                                const nativeSetter2 = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                nativeSetter2.call(input, targetValue);
+                                input.value = targetValue;
+                                input.dispatchEvent(new Event('input', { bubbles: true }));
+                                input.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                        }, 200);
+                        
+                    }
+                }
             } else {
-                // Limpa o campo se vier vazio ou null
+                // Para outros campos não mapeados especificamente
                 if (value === '' || value === null || value === undefined) {
-                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                    nativeSetter.call(input, '');
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    const currentValue = input.value;
+                    if (currentValue !== '') {
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(input, '');
+                        if (skipCheck || updateCount <= 1) {
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    }
                 }
             }
         });
@@ -106,6 +202,11 @@ jQuery(function ($) {
             return cep.length === 8 ? cep.slice(0, 5) + '-' + cep.slice(5) : cep;
         }
         constructor(inputSelector, checkboxLabelSelector, context = 'shipping') {
+            // Verifica se já existe uma instância para este contexto
+            if (activeCepFetchers[context]) {
+                activeCepFetchers[context].destroy();
+            }
+            
             this.input = $(inputSelector);
             this.checkboxLabel = $(checkboxLabelSelector);
             this.context = context;
@@ -113,15 +214,23 @@ jQuery(function ($) {
             this.checkboxInput = null;
             this._abortController = null;
             this._lastCep = '';
+            this._debounceTimer = null;
+            this._requestInProgress = false;
+            this._lastRequestTime = 0;
+            this._minRequestInterval = 500; // Mínimo de 500ms entre requisições
+            
+            // Registra esta instância
+            activeCepFetchers[context] = this;
+            
             this.init();
         }
         init() {
             if (!this.input.length) return;
-            this.input.on('input', this.handleInput.bind(this));
+            this.input.on('input.wcBetterCep', this.handleInput.bind(this));
             // Armazena referência ao checkbox
             this.checkboxInput = this.checkboxLabel.find('input[type="checkbox"]');
             // Adiciona evento de change para disparar AJAX
-            this.checkboxInput.on('change', this.handleCheckboxChange.bind(this));
+            this.checkboxInput.on('change.wcBetterCep', this.handleCheckboxChange.bind(this));
             // Verifica se já existe um CEP preenchido ao carregar
             const initialCep = this.sanitizeCep(this.input.val());
             if (this.isValidCep(initialCep)) {
@@ -129,13 +238,58 @@ jQuery(function ($) {
                 this.handleInput({ target: { value: initialCep } });
             }
         }
+
+        destroy() {
+            // Remove event listeners com namespace específico
+            if (this.input && this.input.length) {
+                this.input.off('input.wcBetterCep');
+            }
+            if (this.checkboxInput && this.checkboxInput.length) {
+                this.checkboxInput.off('change.wcBetterCep');
+            }
+            
+            // Cancela debounce timer
+            if (this._debounceTimer) {
+                clearTimeout(this._debounceTimer);
+                this._debounceTimer = null;
+            }
+            
+            // Cancela requisições pendentes
+            if (this._abortController) {
+                this._abortController.abort();
+                this._abortController = null;
+            }
+            
+            // Para animações
+            if (this._loadingPulse) {
+                clearInterval(this._loadingPulse);
+                this._loadingPulse = null;
+            }
+            
+            // Remove da lista de instâncias ativas
+            if (activeCepFetchers[this.context] === this) {
+                delete activeCepFetchers[this.context];
+            }
+            
+            // Limpa referências
+            this.input = null;
+            this.checkboxLabel = null;
+            this.checkboxInput = null;
+            this.addressData = null;
+            this._requestInProgress = false;
+        }
         async handleCheckboxChange(event) {
-            if (!enableCheckbox) return; // Não executa requisições nem lógica do checkbox
+            
+            if (!enableCheckbox) {
+                return; // Não executa requisições nem lógica do checkbox
+            }
+            
             // Se desmarcou o checkbox
             if (!event.target.checked) {
                 // ...existing code...
                 return;
             }
+            
             // Ao marcar, desabilita imediatamente o checkbox
             if (event.target.checked) {
                 const $checkboxInput = $(event.target);
@@ -157,10 +311,14 @@ jQuery(function ($) {
                 }
             }
             // Se marcou o checkbox e tem endereço
-            if (!this.addressData) return;
+            if (!this.addressData) {
+                return;
+            }
+            
             // Animação de inserção
             this.showInsertingLabel();
             const address = this.addressData;
+            
             // Dados para enviar
             const data = {
                 action: 'wc_better_insert_address',
@@ -172,6 +330,7 @@ jQuery(function ($) {
                 context: this.context,
                 nonce: (typeof wc_better_checkout_vars !== 'undefined' ? wc_better_checkout_vars.nonce : '')
             };
+            
             let ajaxCompleted = false;
             // Promise para requisição AJAX
             const ajaxPromise = new Promise((resolve, reject) => {
@@ -180,15 +339,17 @@ jQuery(function ($) {
                     method: 'POST',
                     data: data,
                     success: function (response) {
+                        
                         ajaxCompleted = true;
                         resolve(response);
                     },
-                    error: function () {
+                    error: function (xhr, status, error) {
                         ajaxCompleted = true;
                         reject();
                     }
                 });
             });
+            
             // Aguarda mínimo de 2s e AJAX
             await Promise.race([
                 ajaxPromise,
@@ -197,6 +358,7 @@ jQuery(function ($) {
             if (!ajaxCompleted) {
                 await ajaxPromise;
             }
+            
             // Mensagem de sucesso
             this.showInsertedLabel(address);
 
@@ -204,22 +366,74 @@ jQuery(function ($) {
             if (window.wp && window.wp.data && typeof window.wp.data.dispatch === 'function') {
                 try {
                     window.wp.data.dispatch('wc/store/cart').invalidateResolutionForStore('shippingAddress')
+                    
+                    // Flag para evitar loop infinito
+                    let observerActive = true;
+                    let updateCount = 0;
+                    const maxUpdates = 2; // Máximo 2 atualizações
                     let observerTimeout;
+                    
+                    // Variável para acessar updateCount dentro da função updateAddressFields
+                    window.wcBetterUpdateCount = updateCount;
 
                     const observer = new MutationObserver((mutations, obs) => {
-                        // Verifica se o campo foi atualizado (exemplo: shipping-address_1 existe e está visível)
+                        // Verifica limites
+                        if (!observerActive || updateCount >= maxUpdates) {
+                            obs.disconnect();
+                            return;
+                        }
+                        
+                        // Verifica se o campo foi atualizado
                         const input = document.getElementById(`${this.context}-address_1`);
                         if (input) {
-                            updateAddressFields(this.context, data);
+                            
+                            updateCount++;
+                            
+                            // Chama updateAddressFields na primeira vez sem verificação
+                            if (updateCount === 1) {
+                                updateAddressFields(this.context, { ...data, skipProcessingCheck: true });
+                                
+                                // Ativa flag APÓS a primeira execução
+                                setTimeout(() => {
+                                    isProcessingAddressUpdate = true;
+                                }, 100);
+                            } else {
+                                // Nas execuções subsequentes, verifica a flag
+                                if (isProcessingAddressUpdate) {
+                                    return;
+                                }
+                                isProcessingAddressUpdate = true;
+                                updateAddressFields(this.context, data);
+                            }
+                            
+                            // Reset da flag após um delay
+                            setTimeout(() => {
+                                isProcessingAddressUpdate = false;
+                            }, 800);
+                            
+                            // Reset do timeout
                             clearTimeout(observerTimeout);
                             observerTimeout = setTimeout(() => {
+                                observerActive = false;
                                 obs.disconnect();
-                            }, 3000);
+                            }, 3000); // 3 segundos de timeout total
                         }
                     });
+                    
                     observer.observe(document.body, { childList: true, subtree: true });
+                    
+                    // Timeout de segurança absoluto
+                    setTimeout(() => {
+                        if (observerActive) {
+                            observerActive = false;
+                            observer.disconnect();
+                            isProcessingAddressUpdate = false;
+                        }
+                    }, 5000);
 
                 } catch (e) {
+                    // Reset da flag em caso de erro
+                    isProcessingAddressUpdate = false;
                     // Se não for possível atualizar, mostra mensagem de erro na label
                     if (this.checkboxLabel.length) {
                         const $labelSpan = this.checkboxLabel.find('.wc-block-components-checkbox__label');
@@ -228,6 +442,8 @@ jQuery(function ($) {
                         });
                     }
                 }
+            } else {
+                
             }
         }
         showInsertingLabel() {
@@ -264,13 +480,23 @@ jQuery(function ($) {
             const cep = this.sanitizeCep(event.target.value);
             const $checkboxInput = this.checkboxLabel.find('input[type="checkbox"]');
             const $checkboxLabel = $checkboxInput.closest('label');
+            
+
+            // Cancela debounce timer anterior
+            if (this._debounceTimer) {
+                clearTimeout(this._debounceTimer);
+                this._debounceTimer = null;
+            }
 
             // Cancela requisição anterior se houver
             if (this._abortController) {
                 this._abortController.abort();
+                this._abortController = null;
             }
-            this._abortController = null;
+            
             this._lastCep = cep;
+            this._requestInProgress = false;
+            
             // Limpa qualquer animação anterior do label
             if (this._loadingPulse) {
                 clearInterval(this._loadingPulse);
@@ -282,101 +508,145 @@ jQuery(function ($) {
             }
 
             if (this.isValidCep(cep)) {
+                // Desabilita o checkbox imediatamente
                 $checkboxInput.prop('disabled', true);
                 $checkboxInput.addClass('wc-better-checkbox-disabled');
                 $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
-                this.showLoadingLabel();
+                
+                // Implementa debounce de 300ms
+                this._debounceTimer = setTimeout(async () => {
+                    await this._performCepLookup(cep, $checkboxInput, $checkboxLabel);
+                }, 300);
+            } else {
+                // CEP inválido
+                this._handleInvalidCep($checkboxInput, $checkboxLabel);
+            }
+        }
+        
+        async _performCepLookup(cep, $checkboxInput, $checkboxLabel) {
+            
+            // Verifica rate limiting
+            const now = Date.now();
+            const timeSinceLastRequest = now - this._lastRequestTime;
+            
+            if (timeSinceLastRequest < this._minRequestInterval) {
+                const waitTime = this._minRequestInterval - timeSinceLastRequest;
+                setTimeout(() => this._performCepLookup(cep, $checkboxInput, $checkboxLabel), waitTime);
+                return;
+            }
+            
+            // Verifica se já tem uma requisição em progresso
+            if (this._requestInProgress) {
+                return;
+            }
+            
+            this._requestInProgress = true;
+            this._lastRequestTime = now;
+            
+            this.showLoadingLabel();
 
-                // Cria novo AbortController para esta consulta
-                const abortController = new AbortController();
-                this._abortController = abortController;
-                let address;
-                try {
-                    await Promise.race([
-                        (async () => {
-                            address = await this.fetchAddress(cep, abortController.signal);
-                        })(),
-                        new Promise(resolve => setTimeout(resolve, 2000))
-                    ]);
-                    if (address === undefined) {
+            // Cria novo AbortController para esta consulta
+            const abortController = new AbortController();
+            this._abortController = abortController;
+            let address;
+            
+            try {
+                await Promise.race([
+                    (async () => {
                         address = await this.fetchAddress(cep, abortController.signal);
-                    }
-                } catch (e) {
-                    if (e.name === 'AbortError') {
-                        // Consulta abortada, não faz nada
-                        return;
-                    }
+                    })(),
+                    new Promise(resolve => setTimeout(resolve, 5000)) // Timeout de 5 segundos
+                ]);
+                
+                if (address === undefined) {
+                    address = await this.fetchAddress(cep, abortController.signal);
                 }
-
-                // Se o usuário mudou o CEP durante a consulta, não faz nada
-                if (this._lastCep !== cep) {
+                
+            } catch (e) {
+                if (e.name === 'AbortError') {
+                    this._requestInProgress = false;
                     return;
                 }
+                address = null;
+            } finally {
+                this._requestInProgress = false;
+            }
 
-                if (address) {
-                    const previousAddress = this.addressData;
-                    const previousCep = previousAddress && previousAddress._rawCep ? previousAddress._rawCep : null;
-                    const currentRawCep = this.input.val();
-                    this.addressData = { ...address, _rawCep: currentRawCep };
-                    this.updateCheckboxLabel(address);
-                    $checkboxInput.prop('disabled', false);
-                    $checkboxInput.removeClass('wc-better-checkbox-disabled');
-                    $checkboxLabel.removeClass('wc-better-checkbox-disabled-label');
-                    // Garante que a inserção automática ocorra se o endereço mudou OU o CEP digitado mudou
-                    if (
-                        !previousAddress ||
-                        JSON.stringify(previousAddress) !== JSON.stringify(address) ||
-                        previousCep !== currentRawCep
-                    ) {
-                        if ($checkboxInput.prop('checked')) {
-                            this.handleCheckboxChange({ target: $checkboxInput[0] });
-                        }
-                    }
-                } else {
-                    this.addressData = null;
-                    this.showNotFoundLabel();
-                    $checkboxInput.prop('disabled', true);
-                    $checkboxInput.addClass('wc-better-checkbox-disabled');
-                    $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
-                    $checkboxInput.prop('checked', false);
-                    const data = {
-                        action: 'wc_better_insert_address',
-                        address: '',
-                        city: '',
-                        state: '',
-                        district: '',
-                        postcode: this.formatCep(this.input.val()),
-                        context: this.context,
-                        not_found: true,
-                        nonce: (typeof wc_better_checkout_vars !== 'undefined' ? wc_better_checkout_vars.nonce : '')
-                    };
-                    $.ajax({
-                        url: (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.ajax_url) ? wc_better_checkout_vars.ajax_url : '/wp-admin/admin-ajax.php',
-                        method: 'POST',
-                        data: data
-                    });
-                    if (window.wp && window.wp.data && typeof window.wp.data.dispatch === 'function') {
-                        try {
-                            window.wp.data.dispatch('wc/store/cart').invalidateResolutionForStore('shippingAddress');
-                        } catch (e) {
-                            if (this.checkboxLabel.length) {
-                                const $labelSpan = this.checkboxLabel.find('.wc-block-components-checkbox__label');
-                                $labelSpan.stop(true, true).fadeOut(150, function () {
-                                    $labelSpan.text('Não foi possivel atualizar o endereço, tente novamente.').fadeIn(150);
-                                });
-                            }
-                        }
-                    }
+            // Se o usuário mudou o CEP durante a consulta, não faz nada
+            if (this._lastCep !== cep) {
+                return;
+            }
+
+            if (address) {
+                const previousAddress = this.addressData;
+                const previousCep = previousAddress && previousAddress._rawCep ? previousAddress._rawCep : null;
+                const currentRawCep = this.input.val();
+                this.addressData = { ...address, _rawCep: currentRawCep };
+                this.updateCheckboxLabel(address);
+                $checkboxInput.prop('disabled', false);
+                $checkboxInput.removeClass('wc-better-checkbox-disabled');
+                $checkboxLabel.removeClass('wc-better-checkbox-disabled-label');
+                
+                // Garante que a inserção automática ocorra se o endereço mudou OU o CEP digitado mudou
+                const shouldAutoInsert = (
+                    !previousAddress ||
+                    JSON.stringify(previousAddress) !== JSON.stringify(address) ||
+                    previousCep !== currentRawCep
+                );
+                
+                if (shouldAutoInsert && $checkboxInput.prop('checked')) {
+                    this.handleCheckboxChange({ target: $checkboxInput[0] });
                 }
             } else {
-                // Se o CEP não é válido, mantém desabilitado e atualiza texto
-                $checkboxInput.prop('disabled', true);
-                $checkboxInput.addClass('wc-better-checkbox-disabled');
-                $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
-                $checkboxInput.prop('checked', false);
-                if (this.checkboxLabel.length) {
-                    const $labelSpan = this.checkboxLabel.find('.wc-block-components-checkbox__label');
-                    $labelSpan.text('Informe acima o código Postal (CEP).');
+                this._handleAddressNotFound(cep, $checkboxInput, $checkboxLabel);
+            }
+        }
+        
+        _handleInvalidCep($checkboxInput, $checkboxLabel) {
+            $checkboxInput.prop('disabled', true);
+            $checkboxInput.addClass('wc-better-checkbox-disabled');
+            $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
+            $checkboxInput.prop('checked', false);
+            if (this.checkboxLabel.length) {
+                const $labelSpan = this.checkboxLabel.find('.wc-block-components-checkbox__label');
+                $labelSpan.text('Informe acima o código Postal (CEP).');
+            }
+        }
+        
+        _handleAddressNotFound(cep, $checkboxInput, $checkboxLabel) {
+            this.addressData = null;
+            this.showNotFoundLabel();
+            $checkboxInput.prop('disabled', true);
+            $checkboxInput.addClass('wc-better-checkbox-disabled');
+            $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
+            $checkboxInput.prop('checked', false);
+            
+            const data = {
+                action: 'wc_better_insert_address',
+                address: '',
+                city: '',
+                state: '',
+                district: '',
+                postcode: this.formatCep(this.input.val()),
+                context: this.context,
+                not_found: true,
+                nonce: (typeof wc_better_checkout_vars !== 'undefined' ? wc_better_checkout_vars.nonce : '')
+            };
+            
+            // Não bloqueia a UI com esta requisição
+            $.ajax({
+                url: (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.ajax_url) ? wc_better_checkout_vars.ajax_url : '/wp-admin/admin-ajax.php',
+                method: 'POST',
+                data: data
+            }).fail(() => {
+                
+            });
+            
+            if (window.wp && window.wp.data && typeof window.wp.data.dispatch === 'function') {
+                try {
+                    window.wp.data.dispatch('wc/store/cart').invalidateResolutionForStore('shippingAddress');
+                } catch (e) {
+                    
                 }
             }
         }
@@ -421,9 +691,18 @@ jQuery(function ($) {
         }
         async fetchFromBrasilApi(cep, signal) {
             try {
-                const response = await fetch(`https://brasilapi.com.br/api/cep/v2/${cep}`, { signal });
-                if (!response.ok) return null;
+                const response = await fetch(`https://brasilapi.com.br/api/cep/v2/${cep}`, { 
+                    signal,
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                    mode: 'cors'
+                });
+                if (!response.ok) {
+                    return null;
+                }
                 const data = await response.json();
+                
                 if (data.cep) {
                     return {
                         city: data.city,
@@ -440,10 +719,19 @@ jQuery(function ($) {
         }
         async fetchFromViaCep(cep, signal) {
             try {
-                const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`, { signal });
-                if (!response.ok) return null;
+                const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`, { 
+                    signal,
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                    mode: 'cors'
+                });
+                if (!response.ok) {
+                    return null;
+                }
                 const data = await response.json();
-                if (data.cep) {
+                
+                if (data.cep && !data.erro) {
                     return {
                         city: data.localidade,
                         state: data.uf,
@@ -518,6 +806,9 @@ jQuery(function ($) {
             // Só insere o checkbox se ele ainda não existe
             if ($checkboxLabel.length === 0) {
                 insertCustomCheckboxBelowPostcode(baseId);
+            } else if (!activeCepFetchers[baseId]) {
+                // Se o checkbox existe mas não há instância ativa, cria uma nova
+                activeCepFetchers[baseId] = new CepAddressFetcher('#' + baseId + '-postcode', 'label[for="' + checkboxId + '"]', baseId);
             }
 
             // Esconde/mostra checkbox conforme país

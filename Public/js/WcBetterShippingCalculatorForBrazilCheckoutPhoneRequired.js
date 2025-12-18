@@ -1,519 +1,740 @@
-// Máscaras de telefone por país
-const phoneMasks = {
-    '+1': '(999) 999-9999', // Estados Unidos
-    '+7': '9 (999) 999-99-99', // Rússia
-    '+20': '9999 999 9999', // Egito
-    '+27': '999 999 9999', // África do Sul
-    '+30': '999 9999 9999', // Grécia
-    '+31': '99 999 9999', // Holanda
-    '+32': '999 99 99 99', // Bélgica
-    '+33': '99 99 99 99 99', // França
-    '+34': '999 99 99 99', // Espanha
-    '+36': '99 999 9999', // Hungria
-    '+39': '999 999 9999', // Itália
-    '+40': '9999 999 999', // Romênia
-    '+41': '99 999 99 99', // Suíça
-    '+43': '9999 999999', // Áustria
-    '+44': '9999 999999', // Reino Unido
-    '+45': '99 99 99 99', // Dinamarca
-    '+46': '99-999 99 99', // Suécia
-    '+47': '999 99 999', // Noruega
-    '+48': '999-999-999', // Polônia
-    '+49': '9999 9999999', // Alemanha
-    '+51': '999 999 999', // Peru
-    '+52': '999 999 9999', // México
-    '+53': '999 999 9999', // Cuba
-    '+54': '999 9999-9999', // Argentina
-    '+55': '(99) 99999-9999', // Brasil
-    '+56': '9 9999 9999', // Chile
-    '+57': '999 9999999', // Colômbia
-    '+58': '9999-9999999', // Venezuela
-    '+60': '999-999 9999', // Malásia
-    '+61': '9999 999 999', // Austrália
-    '+62': '999-9999-9999', // Indonésia
-    '+63': '9999 999 9999', // Filipinas
-    '+64': '999 999 999', // Nova Zelândia
-    '+65': '9999 9999', // Singapura
-    '+66': '99 9999 9999', // Tailândia
-    '+81': '99-9999-9999', // Japão
-    '+82': '99-999-9999', // Coreia do Sul
-    '+84': '9999 999 999', // Vietnã
-    '+86': '999 9999 9999', // China
-    '+90': '999 999 9999', // Turquia
-    '+91': '99999-99999', // Índia
-    '+92': '9999-9999999', // Paquistão
-    '+93': '99 999 9999', // Afeganistão
-    '+94': '999-9999999', // Sri Lanka
-    '+98': '999 999 9999', // Irã
-    '+212': '999-999999', // Marrocos
-    '+213': '999 99 99 99', // Argélia
-    '+216': '99 999 999', // Tunísia
-    '+218': '99-9999999', // Líbia
-    '+220': '999 9999', // Gâmbia
-    '+221': '99 999 99 99', // Senegal
-    '+222': '9999 9999', // Mauritânia
-    '+223': '99 99 99 99', // Mali
-    '+224': '999 99 99 99', // Guiné
-    '+225': '99 999 999', // Costa do Marfim
-    '+226': '99 99 99 99', // Burkina Faso
-    '+227': '99 99 99 99', // Níger
-    '+228': '99 99 99 99', // Togo
-    '+229': '99 99 99 99', // Benin
-    '+230': '999 9999', // Maurício
-    '+231': '999 999 9999', // Libéria
-    '+232': '99 999999', // Serra Leoa
-    '+233': '999 999 9999', // Gana
-    '+234': '999 999 9999', // Nigéria
-    '+351': '99 999 99 99', // Portugal
-};
+import intlTelInput from 'intl-tel-input';
+import 'intl-tel-input/build/css/intlTelInput.css';
+import intlTelInputUtils from 'intl-tel-input/build/js/utils.js';
+import { pt } from 'intl-tel-input/i18n';
 
-function applyMask(value, mask) {
-    let v = value.replace(/\D/g, '');
-    // Lógica especial para Brasil (+55)
-    if (mask === '(99) 99999-9999' || mask === '(99) 9999-9999') {
-        if (v.length === 10) {
-            mask = '(99) 9999-9999';
-        } else if (v.length === 11) {
-            mask = '(99) 99999-9999';
-        }
-    }
-    let m = mask;
-    let i = 0;
-    let formatted = '';
-    for (let c of m) {
-        if (c === '9') {
-            if (v[i]) {
-                formatted += v[i++];
-            } else {
-                break;
-            }
-        } else {
-            if (i < v.length) {
-                formatted += c;
-            }
-        }
-    }
-    return formatted;
-}
+document.addEventListener('DOMContentLoaded', function() {
+    function initPhoneInput() {
+        const phoneFields = [
+            '#billing_phone',
+            '#shipping_phone',
+            '#billing-phone',
+            '#shipping-phone'
+        ];
 
-jQuery(function ($) {
-    // Dados dos países
-    var countries = [
-        { code: '+1', name: 'Estados Unidos', flag: '🇺🇸' },
-        { code: '+7', name: 'Rússia', flag: '🇷🇺' },
-        { code: '+20', name: 'Egito', flag: '🇪🇬' },
-        { code: '+27', name: 'África do Sul', flag: '🇿🇦' },
-        { code: '+30', name: 'Grécia', flag: '🇬🇷' },
-        { code: '+31', name: 'Holanda', flag: '🇳🇱' },
-        { code: '+32', name: 'Bélgica', flag: '🇧🇪' },
-        { code: '+33', name: 'França', flag: '🇫🇷' },
-        { code: '+34', name: 'Espanha', flag: '🇪🇸' },
-        { code: '+36', name: 'Hungria', flag: '🇭🇺' },
-        { code: '+39', name: 'Itália', flag: '🇮🇹' },
-        { code: '+40', name: 'Romênia', flag: '🇷🇴' },
-        { code: '+41', name: 'Suíça', flag: '🇨🇭' },
-        { code: '+43', name: 'Áustria', flag: '🇦🇹' },
-        { code: '+44', name: 'Reino Unido', flag: '🇬🇧' },
-        { code: '+45', name: 'Dinamarca', flag: '🇩🇰' },
-        { code: '+46', name: 'Suécia', flag: '🇸🇪' },
-        { code: '+47', name: 'Noruega', flag: '🇳🇴' },
-        { code: '+48', name: 'Polônia', flag: '🇵🇱' },
-        { code: '+49', name: 'Alemanha', flag: '🇩🇪' },
-        { code: '+51', name: 'Peru', flag: '🇵🇪' },
-        { code: '+52', name: 'México', flag: '🇲🇽' },
-        { code: '+53', name: 'Cuba', flag: '🇨🇺' },
-        { code: '+54', name: 'Argentina', flag: '🇦🇷' },
-        { code: '+55', name: 'Brasil', flag: '🇧🇷' },
-        { code: '+56', name: 'Chile', flag: '🇨🇱' },
-        { code: '+57', name: 'Colômbia', flag: '🇨🇴' },
-        { code: '+58', name: 'Venezuela', flag: '🇻🇪' },
-        { code: '+60', name: 'Malásia', flag: '🇲🇾' },
-        { code: '+61', name: 'Austrália', flag: '🇦🇺' },
-        { code: '+62', name: 'Indonésia', flag: '🇮🇩' },
-        { code: '+63', name: 'Filipinas', flag: '🇵🇭' },
-        { code: '+64', name: 'Nova Zelândia', flag: '🇳🇿' },
-        { code: '+65', name: 'Singapura', flag: '🇸🇬' },
-        { code: '+66', name: 'Tailândia', flag: '🇹🇭' },
-        { code: '+81', name: 'Japão', flag: '🇯🇵' },
-        { code: '+82', name: 'Coreia do Sul', flag: '🇰🇷' },
-        { code: '+84', name: 'Vietnã', flag: '🇻🇳' },
-        { code: '+86', name: 'China', flag: '🇨🇳' },
-        { code: '+90', name: 'Turquia', flag: '🇹🇷' },
-        { code: '+91', name: 'Índia', flag: '🇮🇳' },
-        { code: '+92', name: 'Paquistão', flag: '🇵🇰' },
-        { code: '+93', name: 'Afeganistão', flag: '🇦🇫' },
-        { code: '+94', name: 'Sri Lanka', flag: '🇱🇰' },
-        { code: '+98', name: 'Irã', flag: '🇮🇷' },
-        { code: '+212', name: 'Marrocos', flag: '🇲🇦' },
-        { code: '+213', name: 'Argélia', flag: '🇩🇿' },
-        { code: '+216', name: 'Tunísia', flag: '🇹🇳' },
-        { code: '+218', name: 'Líbia', flag: '🇱🇾' },
-        { code: '+220', name: 'Gâmbia', flag: '🇬🇲' },
-        { code: '+221', name: 'Senegal', flag: '🇸🇳' },
-        { code: '+222', name: 'Mauritânia', flag: '🇲🇷' },
-        { code: '+223', name: 'Mali', flag: '🇲🇱' },
-        { code: '+224', name: 'Guiné', flag: '🇬🇳' },
-        { code: '+225', name: 'Costa do Marfim', flag: '🇨🇮' },
-        { code: '+226', name: 'Burkina Faso', flag: '🇧🇫' },
-        { code: '+227', name: 'Níger', flag: '🇳🇪' },
-        { code: '+228', name: 'Togo', flag: '🇹🇬' },
-        { code: '+229', name: 'Benin', flag: '🇧🇯' },
-        { code: '+230', name: 'Maurício', flag: '🇲🇺' },
-        { code: '+231', name: 'Libéria', flag: '🇱🇷' },
-        { code: '+232', name: 'Serra Leoa', flag: '🇸🇱' },
-        { code: '+233', name: 'Gana', flag: '🇬🇭' },
-        { code: '+234', name: 'Nigéria', flag: '🇳🇬' },
-        { code: '+351', name: 'Portugal', flag: '🇵🇹' },
-        // ...adicione mais países se quiser
-    ];
+        phoneFields.forEach(function(fieldSelector) {
+            const phoneField = document.querySelector(fieldSelector);
+            let countryChanged = false;
+            
+            if (phoneField && !phoneField.dataset.intlTelInputInitialized) {
+                let iti = intlTelInput(phoneField, {
+                    initialCountry: 'br',
+                    preferredCountries: ['br'],
+                    separateDialCode: false,
+                    nationalMode: false,
+                    formatOnDisplay: false,
+                    autoHideDialCode: false,
+                    placeholderNumberType: "MOBILE",
+                    showSelectedDialCode: false,
+                    allowDropdown: true,
+                    autoPlaceholder: "off",
+                    strictMode: false,
+                    validation: false,
+                    i18n: pt,
+                    utilsScript: intlTelInputUtils
+                });
 
-    function createCountrySelect(fieldId) {
-        var $field = $('#' + fieldId);
-        if ($field.length === 0) {
-            return;
-        }
-        var $parentDiv = $field.parent();
-        if ($parentDiv.find('.phone-country-select').length) {
-            return;
-        }
-
-        var selectWidth = 118;
-        $parentDiv.css('position', 'relative');
-        var fieldHeight = $field.outerHeight() || 40;
-        var $select = $('<select></select>')
-            .addClass('phone-country-select')
-            .attr('id', 'woo-better-country-select-' + fieldId)
-            .css({
-                position: 'absolute',
-                left: '0',
-                top: '0',
-                width: selectWidth + 'px',
-                height: '100%',
-                maxHeight: fieldHeight + 'px',
-                overflowY: 'auto',
-                zIndex: 2,
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                background: '#fff',
-                paddingLeft: '4px',
-                fontSize: 'medium',
-                appearance: 'auto',
-                '-webkit-appearance': 'menulist',
-                '-moz-appearance': 'menulist'
-            });
-
-        // Função para atualizar o max-height do select
-        function updateSelectHeight() {
-            var newHeight = $field.outerHeight() || 40;
-            $select.css('maxHeight', newHeight + 'px');
-        }
-        // Observa mudanças no parentDiv (ex: erro de validação)
-        var heightObserver = new MutationObserver(function () {
-            updateSelectHeight();
-        });
-        heightObserver.observe($parentDiv[0], { childList: true, subtree: true });
-        // Atualiza também ao focar, desfocar e ao inicializar
-        $field.on('focus blur input', updateSelectHeight);
-        updateSelectHeight();
-        // Atualiza ao redimensionar a janela (mobile/desktop)
-        $(window).on('resize', updateSelectHeight);
-
-        // Define o valor do país pelo PHP/session, se disponível
-        let countryCode = '+55';
-        if (typeof wc_better_phone_country !== 'undefined') {
-            if (fieldId === 'billing-phone' && wc_better_phone_country.billing_phone_country) {
-                countryCode = wc_better_phone_country.billing_phone_country;
-            }
-            if (fieldId === 'shipping-phone' && wc_better_phone_country.shipping_phone_country) {
-                countryCode = wc_better_phone_country.shipping_phone_country;
-            }
-        }
-        $.each(countries, function (_, country) {
-            var $option = $('<option></option>')
-                .val(country.code)
-                .text(country.flag + ' ' + country.code);
-            if (country.code === countryCode) {
-                $option.attr('selected', 'selected');
-            }
-            $select.append($option);
-        });
-
-        $parentDiv.prepend($select);
-        $field.css({
-            paddingLeft: (selectWidth + 10) + 'px',
-            boxSizing: 'border-box'
-        });
-        var $label = $parentDiv.find('label[for="' + fieldId + '"]');
-        var initialPadding = (selectWidth + 10) + 'px';
-        if ($field.val()) {
-            initialPadding = (selectWidth + 40) + 'px';
-        }
-        $label.css({
-            paddingLeft: initialPadding,
-            display: 'block',
-            transition: 'padding-left 0.2s'
-        });
-        // Detecta country code no início do campo ao inicializar
-        (function detectAndSetCountryCode() {
-            let val = $field.val();
-            if (val && val.startsWith('+')) {
-                let match = val.match(/^(\+\d{1,3})\s?/);
-                if (match) {
-                    let code = match[1];
-                    // Verifica se o código existe no select
-                    if ($select.find('option[value="' + code + '"]').length) {
-                        $select.val(code).trigger('change');
-                        // Remove o código do campo
-                        let newVal = val.replace(new RegExp('^' + code + '\s?'), '');
-                        $field.val(newVal);
+                phoneField.dataset.intlTelInputInitialized = 'true';
+                adjustPhoneLabel(phoneField);
+                
+                // Atualiza o campo de código do país na inicialização
+                setTimeout(() => {
+                    const countryData = iti.getSelectedCountryData();
+                    const dialCode = '+' + countryData.dialCode;
+                    
+                    // Cria ou atualiza campos hidden dinâmicos para capturar via hook
+                    updateHiddenCountryCodeField(fieldSelector, dialCode);
+                    
+                    // Mantém compatibilidade com campos existentes se necessário
+                    let targetFieldId = '';
+                    if (fieldSelector.includes('billing')) {
+                        targetFieldId = 'billing-phone_number-country_code';
+                    } else if (fieldSelector.includes('shipping')) {
+                        targetFieldId = 'shipping-phone_number-country_code';
                     }
-                }
-            }
-        })();
-        $field.on('focus', function () {
-            $label.css('paddingLeft', (selectWidth + 40) + 'px');
-        });
-        $field.on('blur', function () {
-            if ($field.val()) {
-                $label.css('paddingLeft', (selectWidth + 40) + 'px');
-            } else {
-                $label.css('paddingLeft', (selectWidth + 10) + 'px');
-            }
-            // Aplica máscara e força valor formatado no input
-            const input = $field[0];
-            if (!input) return;
-            const code = $select.val();
-            const mask = phoneMasks[code] || '';
-            let currentValue = $field.val();
-            let numeric = currentValue.replace(/\D/g, '');
-            let maxDigits = (mask.match(/9/g) || []).length;
-            numeric = numeric.substring(0, maxDigits);
-            const maskedValue = applyMask(numeric, mask);
-            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-            nativeSetter.call(input, maskedValue);
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-        });
-        // Remove todos os eventos antigos relacionados à máscara
-        $field.off('input keypress change');
-        $select.off('change');
-
-        // Callback para input
-        function maskInputCallback(e) {
-
-            let input = $field[0];
-            let currentValue = $field.val();
-            // Detecta se começa com +
-            if (currentValue.startsWith('+')) {
-                // Impede digitar outro '+' se já existe
-                if (e.inputType === 'insertText' && e.data === '+' && currentValue.indexOf('+') === 0) {
-                    // Remove o último caractere inserido
-                    $field.val(currentValue.slice(0, -1));
-                    $field[0].setAttribute('value', currentValue.slice(0, -1));
-                    $field[0].dispatchEvent(new Event('input', { bubbles: true }));
-                    return;
-                }
-                // Captura até 4 caracteres (+ e até 3 dígitos)
-                let match = currentValue.match(/^(\+\d{1,3})/);
-                let code = match ? match[1] : '';
-                // Se o usuário digitou apenas '+', permite continuar digitando normalmente
-                if (currentValue === '+') {
-                    return;
-                }
-                // Atualiza select se código existir
-                if (code && phoneMasks[code]) {
-                    $select.val(code);
-                }
-                // Só remove o código e aplica a máscara se o código tiver pelo menos dois dígitos após '+'
-                if (code && !phoneMasks[code] && code.length > 2) {
-                    // Busca o último código válido digitado
-                    let lastValidCode = null;
-                    // Tenta +1, +12, +123 (prioridade para maior)
-                    let possibleCodes = [currentValue.substring(0, 4), currentValue.substring(0, 3), currentValue.substring(0, 2)];
-                    for (let c of possibleCodes) {
-                        if (phoneMasks[c]) {
-                            lastValidCode = c;
-                            break;
+                    
+                    if (targetFieldId) {
+                        const countryCodeField = document.getElementById(targetFieldId);
+                        if (countryCodeField) {
+                            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                            nativeSetter.call(countryCodeField, dialCode);
+                            
+                            const events = [
+                                new Event('input', { bubbles: true }),
+                                new Event('change', { bubbles: true })
+                            ];
+                            
+                            events.forEach(event => {
+                                countryCodeField.dispatchEvent(event);
+                            });
+                            
+                            triggerReactChange(countryCodeField, dialCode);
                         }
                     }
-                    // fallback para o valor atual do select
-                    if (!lastValidCode) lastValidCode = $select.val();
-                    $select.val(lastValidCode);
-                    // Remove o código do campo e inicia com o restante
-                    let rest = currentValue.substring(lastValidCode.length);
-                    const mask = phoneMasks[lastValidCode] || '';
-                    let numeric = rest.replace(/\D/g, '');
-                    let maxDigits = (mask.match(/9/g) || []).length;
-                    numeric = numeric.substring(0, maxDigits);
-                    let maskedValue = applyMask(numeric, mask);
-                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                    nativeSetter.call(input, maskedValue);
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                    return;
-                }
-                // Se exceder 4 caracteres, trava e aplica máscara
-                if (code && currentValue.length > code.length) {
-                    // Se o próximo caractere for espaço, remove o código e aplica máscara
-                    if (currentValue[code.length] === ' ') {
-                        // Remove o código do campo
-                        let rest = currentValue.substring(code.length + 1);
-                        const mask = phoneMasks[$select.val()] || '';
-                        let numeric = rest.replace(/\D/g, '');
-                        let maxDigits = (mask.match(/9/g) || []).length;
-                        numeric = numeric.substring(0, maxDigits);
-                        let maskedValue = applyMask(numeric, mask);
-                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                        nativeSetter.call(input, maskedValue);
-                        input.dispatchEvent(new Event('input', { bubbles: true }));
-                        return;
-                    } else {
-                        // Se não for espaço, impede digitação extra
-                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                        nativeSetter.call(input, code);
-                        input.dispatchEvent(new Event('input', { bubbles: true }));
-                        return;
-                    }
-                }
-                // Não aplica máscara enquanto estiver digitando o código
-                return;
-            }
-            // Lógica normal de máscara
-            const code = $select.val();
-            const mask = phoneMasks[code] || '';
-            if (mask) {
-                let maxDigits = (mask.match(/9/g) || []).length;
-                // Permite digitar apenas números, (, ), - e espaço
-                if (e.inputType === 'insertText' && e.data && !(/[0-9\(\)\- ]/.test(e.data))) {
-                    // Remove o último caractere inserido se não for permitido
-                    $field.val(currentValue.slice(0, -1));
-                    $field[0].setAttribute('value', currentValue.slice(0, -1));
-                    $field[0].dispatchEvent(new Event('input', { bubbles: true }));
-                    return;
-                }
-                // Extrai todos os dígitos do campo
-                let numeric = '';
-                let cursorPos = input.selectionStart;
-                let digitsBeforeCursor = 0;
-                for (let i = 0; i < currentValue.length; i++) {
-                    if (/\d/.test(currentValue[i])) {
-                        numeric += currentValue[i];
-                        if (i < cursorPos) digitsBeforeCursor++;
-                    }
-                }
-                // Permite digitação livre se não houver números
-                if (numeric.length === 0) {
-                    return;
-                }
-                // Aplica máscara normalmente se houver números
-                numeric = numeric.substring(0, maxDigits);
-                let maskedValue = applyMask(numeric, mask);
-                if (maskedValue !== currentValue) {
-                    // Mantém caracteres especiais permitidos digitados manualmente
-                    let specials = currentValue.replace(/[0-9]/g, '');
-                    let finalValue = '';
-                    let digitIdx = 0;
-                    for (let i = 0; i < maskedValue.length; i++) {
-                        if (/[0-9]/.test(maskedValue[i])) {
-                            finalValue += maskedValue[i];
-                            digitIdx++;
-                        } else {
-                            finalValue += maskedValue[i];
+                }, 50);
+                
+                function applyPhoneFormatting(event, context = 'input') {
+                    try {
+                        const currentValue = phoneField.value;
+                        
+                        // Se o campo está vazio, só notifica o React e retorna
+                        if (!currentValue || currentValue.trim() === '') {
+                            triggerReactChange(phoneField, currentValue);
+                            return;
                         }
-                    }
-                    for (let c of specials) {
-                        if (!finalValue.includes(c) && /[\(\)\- ]/.test(c)) {
-                            finalValue += c;
-                        }
-                    }
-                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                    if (input.value !== finalValue) {
-                        nativeSetter.call(input, finalValue);
-                        // Reposiciona o cursor na posição equivalente ao número inserido
-                        let maskCursorPos = 0;
-                        let digitsCounted = 0;
-                        while (maskCursorPos < finalValue.length && digitsCounted < digitsBeforeCursor) {
-                            if (/\d/.test(finalValue[maskCursorPos])) {
-                                digitsCounted++;
+                        
+                        // Detecta código internacional seguido de espaço (ex: "+55 11987654321")
+                        const internationalWithSpace = currentValue.match(/^\+(\d{1,4})\s+(.*)$/);
+                        if (internationalWithSpace) {
+                            const dialCode = internationalWithSpace[1];
+                            const localNumber = internationalWithSpace[2];
+                            
+                            // Tenta encontrar o país pelo código
+                            const countryByDialCode = findCountryByDialCode(dialCode);
+                            if (countryByDialCode) {
+                                // Seleciona o país automaticamente
+                                iti.setCountry(countryByDialCode);
+                                
+                                // Formata o número local e reconecta com código
+                                const cleanLocalNumber = localNumber.replace(/\D/g, '');
+                                if (cleanLocalNumber.length > 0) {
+                                    try {
+                                        const countryData = iti.getSelectedCountryData();
+                                        const formatted = intlTelInputUtils.formatNumber(
+                                            cleanLocalNumber, 
+                                            countryData.iso2, 
+                                            intlTelInputUtils.numberFormat.NATIONAL
+                                        );
+
+                                        if (formatted && formatted !== 'Invalid number') {
+                                            // Reconecta: código + espaço + número formatado
+                                            const finalValue = `+${dialCode} ${formatted}`;
+                                            setTimeout(() => {
+                                                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                                nativeSetter.call(phoneField, finalValue);
+                                                triggerReactChange(phoneField, finalValue);
+                                            }, 10);
+                                            return;
+                                        }
+                                    } catch (formatError) {
+                                        // Se erro na formatação, mantém o valor original
+                                        triggerReactChange(phoneField, currentValue);
+                                        return;
+                                    }
+                                }
                             }
-                            maskCursorPos++;
                         }
-                        maskCursorPos = Math.min(maskCursorPos, finalValue.length);
-                        input.setSelectionRange(maskCursorPos, maskCursorPos);
+                        
+                        // Detecta código internacional sem espaço mas com números após (ex: "+5511987654321")
+                        const internationalWithoutSpace = currentValue.match(/^\+(\d{1,4})(.+)$/);
+                        if (internationalWithoutSpace) {
+                            const dialCode = internationalWithoutSpace[1];
+                            const restOfNumber = internationalWithoutSpace[2];
+                            
+                            // Se tem números após o código, tenta encontrar o país
+                            if (restOfNumber.length > 0 && /\d/.test(restOfNumber)) {
+                                const countryByDialCode = findCountryByDialCode(dialCode);
+                                if (countryByDialCode) {
+                                    // Seleciona o país automaticamente
+                                    iti.setCountry(countryByDialCode);
+                                    
+                                    // Separa em: código internacional + número local formatado
+                                    const cleanLocalNumber = restOfNumber.replace(/\D/g, '');
+                                    if (cleanLocalNumber.length > 0) {
+                                        try {
+                                            const countryData = iti.getSelectedCountryData();
+                                            const formatted = intlTelInputUtils.formatNumber(
+                                                cleanLocalNumber, 
+                                                countryData.iso2, 
+                                                intlTelInputUtils.numberFormat.NATIONAL
+                                            );
+
+                                            if (formatted && formatted !== 'Invalid number') {
+                                                // Reconecta: código + espaço + número formatado
+                                                const finalValue = `+${dialCode} ${formatted}`;
+                                                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                                nativeSetter.call(phoneField, finalValue);
+                                                triggerReactChange(phoneField, finalValue);
+                                                return;
+                                            }
+                                        } catch (formatError) {
+                                            // Se erro na formatação, mantém o valor original
+                                            triggerReactChange(phoneField, currentValue);
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Se é um número internacional sem espaço (ainda digitando), preserva
+                        if (currentValue.startsWith('+')) {
+                            triggerReactChange(phoneField, currentValue);
+                            return;
+                        }
+                        
+                        const cleanValue = currentValue.replace(/\D/g, '');
+                        const countryData = iti.getSelectedCountryData();
+                        
+                        if (cleanValue.length > 0) {
+                            try {
+                                const formatted = intlTelInputUtils.formatNumber(
+                                    cleanValue, 
+                                    countryData.iso2, 
+                                    intlTelInputUtils.numberFormat.NATIONAL
+                                );
+
+                                if (formatted && formatted !== 'Invalid number' && formatted !== currentValue) {
+                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                    nativeSetter.call(phoneField, formatted);
+                                    triggerReactChange(phoneField, formatted);
+                                    return;
+                                }
+                            } catch (formatError) {
+                                // Se houve erro na formatação, notifica o React com valor atual
+                                triggerReactChange(phoneField, currentValue);
+                                return;
+                            }
+                        }
+                        
+                        // Para qualquer outro caso, notifica o React
+                        triggerReactChange(phoneField, currentValue);
+                    } catch (error) {
+                        console.warn('Erro na aplicação da máscara:', error);
                     }
                 }
-            }
-        }
 
-        // Evento de input para aplicar máscara
-        $field.on('input', maskInputCallback);
-        $select.on('change', function () {
-            const input = $field[0];
-            if (!input) return;
+                // Função para encontrar país pelo código de discagem
+                function findCountryByDialCode(dialCode) {
+                    const dialCodeMap = {
+                        '1': 'us',    // Estados Unidos/Canadá
+                        '7': 'ru',    // Rússia
+                        '20': 'eg',   // Egito
+                        '27': 'za',   // África do Sul
+                        '30': 'gr',   // Grécia
+                        '31': 'nl',   // Holanda
+                        '32': 'be',   // Bélgica
+                        '33': 'fr',   // França
+                        '34': 'es',   // Espanha
+                        '36': 'hu',   // Hungria
+                        '39': 'it',   // Itália
+                        '40': 'ro',   // Romênia
+                        '41': 'ch',   // Suíça
+                        '43': 'at',   // Áustria
+                        '44': 'gb',   // Reino Unido
+                        '45': 'dk',   // Dinamarca
+                        '46': 'se',   // Suécia
+                        '47': 'no',   // Noruega
+                        '48': 'pl',   // Polônia
+                        '49': 'de',   // Alemanha
+                        '51': 'pe',   // Peru
+                        '52': 'mx',   // México
+                        '53': 'cu',   // Cuba
+                        '54': 'ar',   // Argentina
+                        '55': 'br',   // Brasil
+                        '56': 'cl',   // Chile
+                        '57': 'co',   // Colômbia
+                        '58': 've',   // Venezuela
+                        '60': 'my',   // Malásia
+                        '61': 'au',   // Austrália
+                        '62': 'id',   // Indonésia
+                        '63': 'ph',   // Filipinas
+                        '64': 'nz',   // Nova Zelândia
+                        '65': 'sg',   // Singapura
+                        '66': 'th',   // Tailândia
+                        '81': 'jp',   // Japão
+                        '82': 'kr',   // Coreia do Sul
+                        '84': 'vn',   // Vietnã
+                        '86': 'cn',   // China
+                        '90': 'tr',   // Turquia
+                        '91': 'in',   // Índia
+                        '92': 'pk',   // Paquistão
+                        '93': 'af',   // Afeganistão
+                        '94': 'lk',   // Sri Lanka
+                        '95': 'mm',   // Myanmar
+                        '98': 'ir',   // Irã
+                        '212': 'ma',  // Marrocos
+                        '213': 'dz',  // Argélia
+                        '216': 'tn',  // Tunísia
+                        '218': 'ly',  // Líbia
+                        '220': 'gm',  // Gâmbia
+                        '221': 'sn',  // Senegal
+                        '222': 'mr',  // Mauritânia
+                        '223': 'ml',  // Mali
+                        '224': 'gn',  // Guiné
+                        '225': 'ci',  // Costa do Marfim
+                        '226': 'bf',  // Burkina Faso
+                        '227': 'ne',  // Níger
+                        '228': 'tg',  // Togo
+                        '229': 'bj',  // Benin
+                        '230': 'mu',  // Maurício
+                        '231': 'lr',  // Libéria
+                        '232': 'sl',  // Serra Leoa
+                        '233': 'gh',  // Gana
+                        '234': 'ng',  // Nigéria
+                        '235': 'td',  // Chade
+                        '236': 'cf',  // República Centro-Africana
+                        '237': 'cm',  // Camarões
+                        '238': 'cv',  // Cabo Verde
+                        '239': 'st',  // São Tomé e Príncipe
+                        '240': 'gq',  // Guiné Equatorial
+                        '241': 'ga',  // Gabão
+                        '242': 'cg',  // Congo
+                        '243': 'cd',  // República Democrática do Congo
+                        '244': 'ao',  // Angola
+                        '245': 'gw',  // Guiné-Bissau
+                        '246': 'io',  // Território Britânico do Oceano Índico
+                        '247': 'ac',  // Ilha de Ascensão
+                        '248': 'sc',  // Seychelles
+                        '249': 'sd',  // Sudão
+                        '250': 'rw',  // Ruanda
+                        '251': 'et',  // Etiópia
+                        '252': 'so',  // Somália
+                        '253': 'dj',  // Djibuti
+                        '254': 'ke',  // Quênia
+                        '255': 'tz',  // Tanzânia
+                        '256': 'ug',  // Uganda
+                        '257': 'bi',  // Burundi
+                        '258': 'mz',  // Moçambique
+                        '260': 'zm',  // Zâmbia
+                        '261': 'mg',  // Madagascar
+                        '262': 're',  // Reunião
+                        '263': 'zw',  // Zimbábue
+                        '264': 'na',  // Namíbia
+                        '265': 'mw',  // Malawi
+                        '266': 'ls',  // Lesoto
+                        '267': 'bw',  // Botswana
+                        '268': 'sz',  // Suazilândia
+                        '269': 'km',  // Comores
+                        '290': 'sh',  // Santa Helena
+                        '291': 'er',  // Eritreia
+                        '297': 'aw',  // Aruba
+                        '298': 'fo',  // Ilhas Faroé
+                        '299': 'gl',  // Groenlândia
+                        '350': 'gi',  // Gibraltar
+                        '351': 'pt',  // Portugal
+                        '352': 'lu',  // Luxemburgo
+                        '353': 'ie',  // Irlanda
+                        '354': 'is',  // Islândia
+                        '355': 'al',  // Albânia
+                        '356': 'mt',  // Malta
+                        '357': 'cy',  // Chipre
+                        '358': 'fi',  // Finlândia
+                        '359': 'bg',  // Bulgária
+                        '370': 'lt',  // Lituânia
+                        '371': 'lv',  // Letônia
+                        '372': 'ee',  // Estônia
+                        '373': 'md',  // Moldávia
+                        '374': 'am',  // Armênia
+                        '375': 'by',  // Bielorrússia
+                        '376': 'ad',  // Andorra
+                        '377': 'mc',  // Mônaco
+                        '378': 'sm',  // San Marino
+                        '380': 'ua',  // Ucrânia
+                        '381': 'rs',  // Sérvia
+                        '382': 'me',  // Montenegro
+                        '383': 'xk',  // Kosovo
+                        '385': 'hr',  // Croácia
+                        '386': 'si',  // Eslovênia
+                        '387': 'ba',  // Bósnia e Herzegovina
+                        '389': 'mk',  // Macedônia do Norte
+                        '420': 'cz',  // República Checa
+                        '421': 'sk',  // Eslováquia
+                        '423': 'li',  // Liechtenstein
+                        '500': 'fk',  // Ilhas Malvinas
+                        '501': 'bz',  // Belize
+                        '502': 'gt',  // Guatemala
+                        '503': 'sv',  // El Salvador
+                        '504': 'hn',  // Honduras
+                        '505': 'ni',  // Nicarágua
+                        '506': 'cr',  // Costa Rica
+                        '507': 'pa',  // Panamá
+                        '508': 'pm',  // São Pedro e Miquelon
+                        '509': 'ht',  // Haiti
+                        '590': 'gp',  // Guadalupe
+                        '591': 'bo',  // Bolívia
+                        '592': 'gy',  // Guiana
+                        '593': 'ec',  // Equador
+                        '594': 'gf',  // Guiana Francesa
+                        '595': 'py',  // Paraguai
+                        '596': 'mq',  // Martinica
+                        '597': 'sr',  // Suriname
+                        '598': 'uy',  // Uruguai
+                        '599': 'cw',  // Curaçao
+                        '670': 'tl',  // Timor-Leste
+                        '672': 'aq',  // Antártida
+                        '673': 'bn',  // Brunei
+                        '674': 'nr',  // Nauru
+                        '675': 'pg',  // Papua-Nova Guiné
+                        '676': 'to',  // Tonga
+                        '677': 'sb',  // Ilhas Salomão
+                        '678': 'vu',  // Vanuatu
+                        '679': 'fj',  // Fiji
+                        '680': 'pw',  // Palau
+                        '681': 'wf',  // Wallis e Futuna
+                        '682': 'ck',  // Ilhas Cook
+                        '683': 'nu',  // Niue
+                        '684': 'as',  // Samoa Americana
+                        '685': 'ws',  // Samoa
+                        '686': 'ki',  // Kiribati
+                        '687': 'nc',  // Nova Caledônia
+                        '688': 'tv',  // Tuvalu
+                        '689': 'pf',  // Polinésia Francesa
+                        '690': 'tk',  // Tokelau
+                        '691': 'fm',  // Estados Federados da Micronésia
+                        '692': 'mh',  // Ilhas Marshall
+                        '850': 'kp',  // Coreia do Norte
+                        '852': 'hk',  // Hong Kong
+                        '853': 'mo',  // Macau
+                        '855': 'kh',  // Camboja
+                        '856': 'la',  // Laos
+                        '880': 'bd',  // Bangladesh
+                        '886': 'tw',  // Taiwan
+                        '960': 'mv',  // Maldivas
+                        '961': 'lb',  // Líbano
+                        '962': 'jo',  // Jordânia
+                        '963': 'sy',  // Síria
+                        '964': 'iq',  // Iraque
+                        '965': 'kw',  // Kuwait
+                        '966': 'sa',  // Arábia Saudita
+                        '967': 'ye',  // Iêmen
+                        '968': 'om',  // Omã
+                        '970': 'ps',  // Palestina
+                        '971': 'ae',  // Emirados Árabes Unidos
+                        '972': 'il',  // Israel
+                        '973': 'bh',  // Bahrein
+                        '974': 'qa',  // Catar
+                        '975': 'bt',  // Butão
+                        '976': 'mn',  // Mongólia
+                        '977': 'np',  // Nepal
+                        '992': 'tj',  // Tadjiquistão
+                        '993': 'tm',  // Turcomenistão
+                        '994': 'az',  // Azerbaijão
+                        '995': 'ge',  // Geórgia
+                        '996': 'kg',  // Quirguistão
+                        '998': 'uz'   // Uzbequistão
+                    };
+                    
+                    return dialCodeMap[dialCode] || null;
+                }
 
-            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-            nativeSetter.call(input, '');
-            input.dispatchEvent(new Event('input', { bubbles: true }));
+                function triggerReactChange(input, newValue) {
+                    const reactKey = Object.keys(input).find(key => key.startsWith('__reactInternalInstance') || key.startsWith('__reactFiber'));
+                    
+                    if (reactKey) {
+                        const reactInstance = input[reactKey];
+                        if (reactInstance && reactInstance.memoizedProps && reactInstance.memoizedProps.onChange) {
+                            const fakeEvent = {
+                                target: input,
+                                currentTarget: input,
+                                preventDefault: () => {},
+                                stopPropagation: () => {}
+                            };
+                            
+                            reactInstance.memoizedProps.onChange(fakeEvent);
+                            return;
+                        }
+                    }
 
-            // Ajusta o padding do label se o campo estiver vazio
-            const $label = $parentDiv.find('label[for="' + fieldId + '"]');
-            if ($field.val() === '') {
-                $label.css('paddingLeft', (selectWidth + 10) + 'px');
+                    const tracker = input._valueTracker;
+                    if (tracker) {
+                        tracker.setValue('');
+                    }
+                    
+                    const events = [
+                        new Event('focusin', { bubbles: true }),
+                        new Event('focus', { bubbles: true }),
+                        new InputEvent('beforeinput', { bubbles: true, cancelable: true, data: newValue }),
+                        new Event('input', { bubbles: true }),
+                        new Event('change', { bubbles: true }),
+                        new Event('blur', { bubbles: true }),
+                        new Event('focusout', { bubbles: true })
+                    ];
+
+                    events.forEach(event => {
+                        Object.defineProperty(event, 'target', {
+                            writable: false,
+                            value: input
+                        });
+                        
+                        Object.defineProperty(event, 'currentTarget', {
+                            writable: false,
+                            value: input
+                        });
+                    });
+
+                    setTimeout(() => {
+                        events.forEach((event, index) => {
+                            setTimeout(() => {
+                                input.dispatchEvent(event);
+                            }, index * 5);
+                        });
+                    }, 0);
+                }
+                
+                // Função para criar/atualizar campos hidden dinâmicos
+                function updateHiddenCountryCodeField(fieldSelector, dialCode) {
+                    // Garante que dialCode seja uma string válida
+                    const countryCode = String(dialCode || '+55');
+                    
+                    let fieldName = '';
+                    let otherFieldName = '';
+                    if (fieldSelector.includes('billing')) {
+                        fieldName = 'billing_phone_country_code';
+                        otherFieldName = 'shipping_phone_country_code';
+                    } else if (fieldSelector.includes('shipping')) {
+                        fieldName = 'shipping_phone_country_code';
+                        otherFieldName = 'billing_phone_country_code';
+                    }
+                    if (fieldName) {
+                        // Para Block Checkout
+                        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+                            try {
+                                const { dispatch, select } = wp.data;
+                                
+                                // Verifica se é WooCommerce Blocks
+                                if (dispatch('wc/store/checkout')) {
+                                    const checkoutDispatch = dispatch('wc/store/checkout');
+                                    
+                                    // Usa o método correto para definir extension data
+                                    if (checkoutDispatch.setExtensionData) {
+                                        const currentData = select('wc/store/checkout').getExtensionData() || {};
+                                        let phoneCountryData = currentData['woo_better_phone_country'] || {};
+                                        
+                                        // Sempre garantir que ambos os campos existam como strings
+                                        phoneCountryData['billing_phone_country_code'] = phoneCountryData['billing_phone_country_code'] || '+55';
+                                        phoneCountryData['shipping_phone_country_code'] = phoneCountryData['shipping_phone_country_code'] || '+55';
+                                        
+                                        // Define o campo específico
+                                        phoneCountryData[fieldName] = countryCode;
+                                        
+                                        // Se o outro campo não existir no DOM, define o mesmo valor para ambos
+                                        const otherFieldSelector = fieldSelector.includes('billing') ? 
+                                            '#shipping_phone, #shipping-phone' : 
+                                            '#billing_phone, #billing-phone';
+                                        const otherFieldExists = document.querySelector(otherFieldSelector);
+                                        
+                                        if (!otherFieldExists) {
+                                            phoneCountryData[otherFieldName] = countryCode;
+                                        }
+                                        
+                                        checkoutDispatch.setExtensionData('woo_better_phone_country', phoneCountryData);
+                                    } else if (checkoutDispatch.__unstableSetExtensionData) {
+                                        // Fallback para versões antigas
+                                        const currentData = select('wc/store/checkout').getExtensionData() || {};
+                                        let phoneCountryData = currentData['woo_better_phone_country'] || {};
+                                        
+                                        // Sempre garantir que ambos os campos existam como strings
+                                        phoneCountryData['billing_phone_country_code'] = phoneCountryData['billing_phone_country_code'] || '+55';
+                                        phoneCountryData['shipping_phone_country_code'] = phoneCountryData['shipping_phone_country_code'] || '+55';
+                                        
+                                        // Define o campo específico
+                                        phoneCountryData[fieldName] = countryCode;
+                                        
+                                        // Se o outro campo não existir no DOM, define o mesmo valor para ambos
+                                        const otherFieldSelector = fieldSelector.includes('billing') ? 
+                                            '#shipping_phone, #shipping-phone' : 
+                                            '#billing_phone, #billing-phone';
+                                        const otherFieldExists = document.querySelector(otherFieldSelector);
+                                        
+                                        if (!otherFieldExists) {
+                                            phoneCountryData[otherFieldName] = countryCode;
+                                        }
+                                        
+                                        checkoutDispatch.__unstableSetExtensionData('woo_better_phone_country', phoneCountryData);
+                                    }
+                                }
+                            } catch (error) {
+                                // Silenciar erro
+                            }
+                        }
+                        
+                        // Para checkout tradicional
+                        // Remove campo existente se houver
+                        const existingField = document.querySelector(`input[name="${fieldName}"]`);
+                        if (existingField) {
+                            existingField.remove();
+                        }
+                        
+                        // Cria novo campo hidden
+                        const hiddenField = document.createElement('input');
+                        hiddenField.type = 'hidden';
+                        hiddenField.name = fieldName;
+                        hiddenField.value = countryCode;
+                        
+                        // Verifica se o outro campo de telefone existe no formulário tradicional
+                        const otherFieldSelector = fieldSelector.includes('billing') ? 
+                            '#shipping_phone, #shipping-phone' : 
+                            '#billing_phone, #billing-phone';
+                        const otherFieldExists = document.querySelector(otherFieldSelector);
+                        
+                        // Se o outro campo não existir, cria também o hidden para o outro endereço
+                        if (!otherFieldExists) {
+                            const existingOtherField = document.querySelector(`input[name="${otherFieldName}"]`);
+                            if (existingOtherField) {
+                                existingOtherField.remove();
+                            }
+                            
+                            const otherHiddenField = document.createElement('input');
+                            otherHiddenField.type = 'hidden';
+                            otherHiddenField.name = otherFieldName;
+                            otherHiddenField.value = countryCode;
+                            
+                            const checkoutForm = document.querySelector('form.checkout');
+                            if (checkoutForm) {
+                                checkoutForm.appendChild(otherHiddenField);
+                            }
+                        }
+                        
+                        // Adiciona o campo principal ao formulário tradicional
+                        const checkoutForm = document.querySelector('form.checkout');
+                        if (checkoutForm) {
+                            checkoutForm.appendChild(hiddenField);
+                        }
+                    }
+                }
+                
+                if (!phoneField.dataset.inputListenerAdded) {
+                    phoneField.addEventListener('input', function(event) {
+                        Promise.resolve().then(() => {
+                            applyPhoneFormatting(event, 'Input');
+                        });
+                    }, { passive: true });
+                    phoneField.dataset.inputListenerAdded = 'true';
+                }
+
+                if (!phoneField.dataset.countryChangeListenerAdded) {
+                    phoneField.addEventListener('countrychange', function(event) {
+                        countryChanged = true;
+                        
+                        // Captura o código do país selecionado
+                        const countryData = iti.getSelectedCountryData();
+                        const dialCode = '+' + countryData.dialCode;
+                        
+                        // Atualiza campos hidden dinâmicos
+                        updateHiddenCountryCodeField(fieldSelector, dialCode);
+                        
+                        // Mantém compatibilidade com campos existentes se necessário
+                        let targetFieldId = '';
+                        if (fieldSelector.includes('billing')) {
+                            targetFieldId = 'billing-phone_number-country_code';
+                        } else if (fieldSelector.includes('shipping')) {
+                            targetFieldId = 'shipping-phone_number-country_code';
+                        }
+                        
+                        if (targetFieldId) {
+                            const countryCodeField = document.getElementById(targetFieldId);
+                            if (countryCodeField) {
+                                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                nativeSetter.call(countryCodeField, dialCode);
+                                
+                                const events = [
+                                    new Event('input', { bubbles: true }),
+                                    new Event('change', { bubbles: true })
+                                ];
+                                
+                                events.forEach(event => {
+                                    countryCodeField.dispatchEvent(event);
+                                });
+                                
+                                triggerReactChange(countryCodeField, dialCode);
+                            }
+                        }
+                        
+                        Promise.resolve().then(() => {
+                            applyPhoneFormatting(event, 'Country Change');
+                        });
+                    }, { passive: true });
+                    phoneField.dataset.countryChangeListenerAdded = 'true';
+                }
             }
         });
     }
 
-    function updatePhoneCountryData() {
-        var $billingSelect = $('#woo-better-country-select-billing-phone');
-        if ($billingSelect) {
-            $billingSelect.css('flex', '1 0 calc(100%)');
+    function adjustPhoneLabel(phoneField) {
+        const label = phoneField.closest('.form-row, .wc-block-components-text-input')?.querySelector('label');
+        if (label) {
+            label.style.paddingLeft = '52px';
+            label.style.transition = 'all 0.3s ease';
+            
+            if (label.classList.contains('screen-reader-text') || 
+                getComputedStyle(label).position === 'absolute') {
+                label.style.left = '52px';
+                label.style.paddingLeft = '0px';
+            }
         }
-        var $shippingSelect = $('#woo-better-country-select-shipping-phone');
-        if ($shippingSelect) {
-            $shippingSelect.css('flex', '1 0 calc(100%)');
+        
+        const blockLabel = phoneField.closest('.wc-block-components-text-input')?.querySelector('.wc-block-components-text-input__label');
+        if (blockLabel) {
+            blockLabel.style.paddingLeft = '52px';
+            blockLabel.style.transition = 'all 0.3s ease';
         }
-        var billingCode = $billingSelect.length ? $billingSelect.val() : null;
-        var shippingCode = $shippingSelect.length ? $shippingSelect.val() : null;
-
-        // Se só um dos selects existe, usa o mesmo código para ambos
-        if (billingCode && !shippingCode) {
-            shippingCode = billingCode;
-        } else if (!billingCode && shippingCode) {
-            billingCode = shippingCode;
-        }
-
-        var data = {};
-        if (billingCode) {
-            data.billing_phone_country = billingCode;
-        }
-        if (shippingCode) {
-            data.shipping_phone_country = shippingCode;
-        }
-
-        window.wc.blocksCheckout.extensionCartUpdate({
-            namespace: 'woo_better_phone_validation',
-            data: data
-        });
     }
 
-    function observeFields(fieldIds) {
-        var observer = new MutationObserver(function () {
-            $.each(fieldIds, function (_, id) {
-                createCountrySelect(id);
-            });
-            // Atualiza ambos os campos no WooCommerce Blocks sempre que houver mutação
-            if (window.wc && window.wc.blocksCheckout) {
-                updatePhoneCountryData();
+    // Função para inicializar campos no Store API
+    function initializeStoreAPIFields() {
+        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+            try {
+                const { dispatch, select } = wp.data;
+                
+                if (dispatch('wc/store/checkout')) {
+                    const checkoutDispatch = dispatch('wc/store/checkout');
+                    
+                    if (checkoutDispatch.setExtensionData) {
+                        const currentData = select('wc/store/checkout').getExtensionData() || {};
+                        const phoneCountryData = currentData['woo_better_phone_country'] || {};
+                        
+                        // Sempre garantir que ambos os campos existam como strings
+                        if (!phoneCountryData['billing_phone_country_code']) {
+                            phoneCountryData['billing_phone_country_code'] = '+55';
+                        }
+                        if (!phoneCountryData['shipping_phone_country_code']) {
+                            phoneCountryData['shipping_phone_country_code'] = '+55';
+                        }
+                        
+                        checkoutDispatch.setExtensionData('woo_better_phone_country', phoneCountryData);
+                    }
+                }
+            } catch (error) {
+                // Silenciar erro
+            }
+        }
+    }
+
+    // Inicializar campos do Store API
+    initializeStoreAPIFields();
+    
+    initPhoneInput();
+
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        const phoneInputs = node.querySelectorAll ? 
+                            node.querySelectorAll('input[id*="phone"], input[type="tel"]') : [];
+                        
+                        if (phoneInputs.length > 0 || 
+                            (node.id && node.id.includes('phone')) ||
+                            (node.type === 'tel')) {
+                            setTimeout(initPhoneInput, 100);
+                        }
+                        
+                        if (node.className && 
+                            (node.className.includes('wc-block-components-address-form') ||
+                             node.className.includes('wc-block-checkout'))) {
+                            setTimeout(initPhoneInput, 200);
+                        }
+                    }
+                });
             }
         });
-        observer.observe(document.body, { childList: true, subtree: true });
-        // Checagem inicial
-        $.each(fieldIds, function (_, id) {
-            createCountrySelect(id);
-        });
-        // Atualiza ambos os campos no WooCommerce Blocks na checagem inicial
-        if (window.wc && window.wc.blocksCheckout) {
-            updatePhoneCountryData();
-        }
-    }
+    });
 
-    observeFields(['billing-phone', 'shipping-phone']);
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'id']
+    });
 });

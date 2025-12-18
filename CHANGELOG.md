@@ -1,3 +1,8 @@
+# 4.6.0 - 15/12/25
+* NOVO: Atualização na logica de frete grátis.
+* NOVO: Atualização do campo de número de telefone.
+* NOVO: Todas as funcionalidades do editor de blocos estão disponíveis no shortcode.
+
 # 4.5.0 - 24/10/25
 * NOVO: Sistema de configuração da fonte do texto nos componente de produto + carrinho.
 * NOVO: Preenchimento automático de endereço na página de Checkout.

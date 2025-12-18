@@ -30,7 +30,5 @@ if (! defined('WP_UNINSTALL_PLUGIN')) {
     exit;
 }
 
-delete_option('woo_better_calc_cep_required');
 delete_option('woo_better_calc_number_required');
-delete_option('woo_better_hidden_cart_address');
 delete_option('woo_better_calc_disabled_shipping');
