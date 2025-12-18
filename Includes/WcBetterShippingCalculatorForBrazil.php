@@ -851,8 +851,8 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('woocommerce_init', $this, 'init_woocommerce');
 
-        $this->loader->add_action('woocommerce_checkout_order_processed', $this, 'save_phone_country_codes', 10, 2);
-        $this->loader->add_action('woocommerce_store_api_checkout_update_order_from_request', $this, 'save_phone_country_codes_from_request', 10, 2);
+        $this->loader->add_action('woocommerce_checkout_order_processed', $this, 'process_checkout_data_classic', 10, 2);
+        $this->loader->add_action('woocommerce_store_api_checkout_update_order_from_request', $this, 'process_checkout_data_blocks', 10, 2);
 
         $this->loader->add_action('woocommerce_admin_order_data_after_billing_address', $this, 'woo_better_billing_country_code');
         $this->loader->add_action('woocommerce_admin_order_data_after_shipping_address', $this, 'woo_better_shipping_country_code');
@@ -887,12 +887,15 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
-    public function save_phone_country_codes($order_id, $data)
+    public function process_checkout_data_classic($order_id, $data)
     {
         $order = wc_get_order($order_id);
         if (!$order) {
             return;
         }
+        
+        // Processa números de endereço primeiro
+        $this->process_address_numbers_from_data($order, $data);
         
         $billing_country_code = '';
         $shipping_country_code = '';
@@ -953,7 +956,7 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     // Função específica para WooCommerce Block Checkout
-    public function save_phone_country_codes_from_request($order, $request)
+    public function process_checkout_data_blocks($order, $request)
     {
         if (!$order) {
             return;
@@ -1036,6 +1039,65 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Processa os números dos endereços no checkout tradicional
+     *
+     * @param WC_Order $order
+     * @param array $data
+     * @return void
+     */
+    private function process_address_numbers_from_data($order, $data)
+    {
+        $number_field = get_option('woo_better_calc_number_required', 'no');
+
+        if ($number_field === 'yes') {
+            $shipping_number = '';
+            $billing_number = '';
+
+            // Captura dos dados do checkout tradicional
+            if (isset($_POST['lkn_billing_number'])) {
+                $billing_number = sanitize_text_field(wp_unslash($_POST['lkn_billing_number']));
+            }
+
+            if (isset($_POST['lkn_shipping_number'])) {
+                $shipping_number = sanitize_text_field(wp_unslash($_POST['lkn_shipping_number']));
+            }
+
+            // Aplica mesma lógica da função lkn_merge_address_checkout
+            if (empty($shipping_number) && !empty($billing_number)) {
+                $shipping_number = $billing_number;
+            }
+
+            if (empty($billing_number) && !empty($shipping_number)) {
+                $billing_number = $shipping_number;
+            }
+
+            if (empty($shipping_number) && empty($billing_number)) {
+                $shipping_number = "S/N";
+                $billing_number = "S/N";
+            }
+
+            // Obtém os valores dos endereços do pedido
+            $billing_address = $order->get_billing_address_1();
+            $shipping_address = $order->get_shipping_address_1();
+
+            if (!empty($billing_address)) {
+                $new_billing = $billing_address . ' - ' . $billing_number;
+                $order->set_billing_address_1($new_billing);
+                WC()->session->set('woo_better_shipping_number', $billing_number);
+            }
+
+            if (!empty($shipping_address)) {
+                if($billing_address == $shipping_address){
+                    $shipping_number = $billing_number;
+                }
+                $new_shipping = $shipping_address . ' - ' . $shipping_number;
+                $order->set_shipping_address_1($new_shipping);
+                WC()->session->set('woo_better_billing_number', $shipping_number);
+            }
+        }
+    }
+
+    /**
      * Processa os números dos endereços no checkout de blocos
      *
      * @param WC_Order $order
@@ -1045,24 +1107,8 @@ class WcBetterShippingCalculatorForBrazil
     private function process_address_numbers_from_request($order, $request)
     {
         $number_field = get_option('woo_better_calc_number_required', 'no');
-        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
 
-        $only_virtual = false;
-        if (function_exists('WC')) {
-            if (isset(WC()->cart)) {
-                foreach (WC()->cart->get_cart() as $cart_item) {
-                    $product = $cart_item['data'];
-                    if ($product->is_virtual() || $product->is_downloadable()) {
-                        $only_virtual = true;
-                    } else {
-                        $only_virtual = false;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if ($number_field === 'yes' && ($disabled_shipping === 'default' || !$only_virtual && $disabled_shipping === 'digital')) {
+        if ($number_field === 'yes') {
             $shipping_number = '';
             $billing_number = '';
 
@@ -1109,13 +1155,13 @@ class WcBetterShippingCalculatorForBrazil
             $billing_address = $order->get_billing_address_1();
             $shipping_address = $order->get_shipping_address_1();
 
-            if (!empty($billing_address) && !$only_virtual) {
+            if (!empty($billing_address)) {
                 $new_billing = $billing_address . ' - ' . $billing_number;
                 $order->set_billing_address_1($new_billing);
                 WC()->session->set('woo_better_shipping_number', $billing_number);
             }
 
-            if (!empty($shipping_address) && !$only_virtual) {
+            if (!empty($shipping_address)) {
                 if($billing_address == $shipping_address){
                     $shipping_number = $billing_number;
                 }
