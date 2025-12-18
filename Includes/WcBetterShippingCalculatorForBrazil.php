@@ -127,7 +127,6 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100, 1);
 
         $this->loader->add_action('rest_api_init', $this, 'lkn_register_custom_cep_route');
-        $this->loader->add_action('woocommerce_checkout_create_order', $this, 'lkn_merge_address_checkout', 999, 2);
 
         $this->loader->add_filter('woocommerce_get_settings_pages', $this, 'lkn_add_woo_better_settings_page');
 
@@ -608,73 +607,6 @@ class WcBetterShippingCalculatorForBrazil
         return $fields;
     }
 
-    public function lkn_merge_address_checkout($order, $data)
-    {
-        $number_field = get_option('woo_better_calc_number_required', 'no');
-        $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
-
-        $only_virtual = false;
-        if (function_exists('WC')) {
-            if (isset(WC()->cart)) {
-                foreach (WC()->cart->get_cart() as $cart_item) {
-                    $product = $cart_item['data'];
-                    if ($product->is_virtual() || $product->is_downloadable()) {
-                        $only_virtual = true;
-                    } else {
-                        $only_virtual = false;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if ($number_field === 'yes' && ($disabled_shipping === 'default' || !$only_virtual && $disabled_shipping === 'digital')) {
-            $shipping_number = '';
-            $billing_number = '';
-
-            if (isset($_POST['lkn_billing_number'])) {
-                $billing_number = sanitize_text_field(wp_unslash($_POST['lkn_billing_number']));
-            }
-
-            if (isset($_POST['lkn_shipping_number'])) {
-                $shipping_number = sanitize_text_field(wp_unslash($_POST['lkn_shipping_number']));
-            }
-
-            if (empty($shipping_number) && isset($billing_number)) {
-                $shipping_number = $billing_number;
-            }
-
-            if (empty($billing_number) && isset($shipping_number)) {
-                $billing_number = $shipping_number;
-            }
-
-            if (empty($shipping_number) && empty($billing_number)) {
-                $shipping_number = "S/N";
-                $billing_number = "S/N";
-            }
-
-            // Obtém os valores dos campos preenchidos pelo usuário
-            $billing_address = $data['billing_address_1'] ?? '';
-
-            $shipping_address = $data['shipping_address_1'] ?? '';
-
-            if (!empty($billing_address) && !$only_virtual) {
-                $new_billing = $billing_address . ' - ' . $billing_number;
-                $order->set_billing_address_1($new_billing);
-                WC()->session->set('woo_better_shipping_number', $billing_number);
-            }
-
-            if (!empty($shipping_address) && !$only_virtual) {
-                if($billing_address == $shipping_address){
-                    $shipping_number = $billing_number;
-                }
-                $new_shipping = $shipping_address . ' - ' . $shipping_number;
-                $order->set_shipping_address_1($new_shipping);
-                WC()->session->set('woo_better_billing_number', $shipping_number);
-            }
-        }
-    }
-
     public function lkn_register_custom_cep_route()
     {
         register_rest_route('lknwcbettershipping/v1', '/cep/', array(
@@ -893,7 +825,7 @@ class WcBetterShippingCalculatorForBrazil
         if (!$order) {
             return;
         }
-        
+        error_log('chamou 1');
         // Processa números de endereço primeiro
         $this->process_address_numbers_from_data($order, $data);
         
@@ -961,6 +893,8 @@ class WcBetterShippingCalculatorForBrazil
         if (!$order) {
             return;
         }
+
+        error_log('chamou 2');
         
         // Processa números de endereço primeiro
         $this->process_address_numbers_from_request($order, $request);
@@ -1062,7 +996,6 @@ class WcBetterShippingCalculatorForBrazil
                 $shipping_number = sanitize_text_field(wp_unslash($_POST['lkn_shipping_number']));
             }
 
-            // Aplica mesma lógica da função lkn_merge_address_checkout
             if (empty($shipping_number) && !empty($billing_number)) {
                 $shipping_number = $billing_number;
             }
@@ -1137,7 +1070,6 @@ class WcBetterShippingCalculatorForBrazil
                 $shipping_number = sanitize_text_field(wp_unslash($_POST['lkn_shipping_number']));
             }
 
-            // Aplica mesma lógica da função lkn_merge_address_checkout
             if (empty($shipping_number) && !empty($billing_number)) {
                 $shipping_number = $billing_number;
             }
