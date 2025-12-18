@@ -825,7 +825,6 @@ class WcBetterShippingCalculatorForBrazil
         if (!$order) {
             return;
         }
-        error_log('chamou 1');
         // Processa números de endereço primeiro
         $this->process_address_numbers_from_data($order, $data);
         
@@ -894,8 +893,6 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        error_log('chamou 2');
-        
         // Processa números de endereço primeiro
         $this->process_address_numbers_from_request($order, $request);
         
