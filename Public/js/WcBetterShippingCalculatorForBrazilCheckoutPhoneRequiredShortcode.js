@@ -39,6 +39,30 @@ jQuery(function ($) {
 
                 phoneField.dataset.intlTelInputInitialized = 'true';
                 
+                // Define valor padrão (+55 Brasil) nos campos hidden se estiverem vazios
+                function setDefaultCountryCode() {
+                    let hiddenFieldId = '';
+                    if (phoneField.id === 'billing_phone' || phoneField.id === 'billing-phone') {
+                        hiddenFieldId = '#billing_phone_country';
+                    } else if (phoneField.id === 'shipping_phone' || phoneField.id === 'shipping-phone') {
+                        hiddenFieldId = '#shipping_phone_country';
+                    }
+                    
+                    if (hiddenFieldId) {
+                        const hiddenField = document.querySelector(hiddenFieldId);
+                        if (hiddenField && (!hiddenField.value || hiddenField.value.trim() === '')) {
+                            hiddenField.value = '+55';
+                            // Dispara evento change no campo hidden
+                            if (window.jQuery) {
+                                $(hiddenField).trigger('change');
+                            }
+                        }
+                    }
+                }
+                
+                // Executa a definição do valor padrão imediatamente
+                setDefaultCountryCode();
+                
                 // Verifica se o número já tem código internacional e ajusta o país
                 function checkAndSetInitialCountry() {
                     const currentValue = phoneField.value;
