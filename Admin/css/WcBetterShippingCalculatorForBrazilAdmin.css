@@ -1,0 +1,25 @@
+/**
+ * Order data styling for WooBetter Shipping Calculator
+ */
+
+.woo-better-calc-address {
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 3px;
+    padding: 12px;
+    margin: 10px 0;
+}
+
+.woo-better-calc-address p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+.woo-better-calc-address strong {
+    color: #555;
+}
+
+.woo-better-calc-address small {
+    color: #666;
+    font-style: italic;
+}

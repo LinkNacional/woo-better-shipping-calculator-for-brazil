@@ -762,6 +762,24 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Escolha se o campo de CEP deve ser destacado no checkout.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'person_type_select' => array(
+                'title'    => __('Tipo de Cliente', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_person_type_select',
+                'desc_tip' => false,
+                'default'  => 'none',
+                'type'     => 'select',
+                'options'  => array(
+                    'none'     => __('Nenhum', 'woo-better-shipping-calculator-for-brazil'),
+                    'both'     => __('Pessoa Física e Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil'),
+                    'physical' => __('Pessoa Física apenas', 'woo-better-shipping-calculator-for-brazil'),
+                    'legal'    => __('Pessoa Jurídica apenas', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Defina que tipo de cliente pode realizar compras no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Escolha se apenas pessoas físicas, apenas pessoas jurídicas ou ambos podem finalizar compras.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Configure o tipo de cliente permitido no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'enable_auto_address_fill' => array(
                 'title'    => __('Preenchimento automatico por CEP', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_enable_auto_address_fill',

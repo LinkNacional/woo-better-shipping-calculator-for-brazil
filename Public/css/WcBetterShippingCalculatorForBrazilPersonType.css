@@ -1,0 +1,9 @@
+.wc-block-components-text-input.wc-block-components-address-form__document.wc-better-billing-document {
+    flex: 0 0 100%;
+}
+
+#billing_persontype_field,
+#billing_cpf_field,
+#billing_cnpj_field {
+    margin: 0px;
+}
