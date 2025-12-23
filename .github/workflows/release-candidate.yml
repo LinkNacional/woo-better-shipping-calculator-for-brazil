@@ -76,3 +76,31 @@ jobs:
         prerelease: true
         tag: ${{ steps.tag_version.outputs.new_tag }}
         name: Release ${{ steps.tag_version.outputs.new_tag }}
+
+    # Remove -rc.1 suffix from version files and commit final release version
+    - name: Update to final release version
+      run: |
+        # Extract base version from DEPLOY_TAG (remove everything after first -)
+        BASE_VERSION=$(echo "${{ env.DEPLOY_TAG }}" | cut -d'-' -f1)
+        FULL_VERSION="${{ env.DEPLOY_TAG }}"
+        
+        echo "Converting from: $FULL_VERSION to: $BASE_VERSION"
+        
+        # Checkout fresh copy to avoid conflicts
+        git checkout release-candidate
+        git pull origin release-candidate
+        
+        # Remove suffix from main plugin file
+        sed -i "s/${FULL_VERSION}/${BASE_VERSION}/g" wc-better-shipping-calculator-for-brazil.php
+        
+        # Remove suffix from README.txt
+        sed -i "s/${FULL_VERSION}/${BASE_VERSION}/g" README.txt
+        
+        # Configure git
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        
+        # Commit the version changes
+        git add wc-better-shipping-calculator-for-brazil.php README.txt
+        git commit -m ":bookmark: mudança na versão para lançamento"
+        git push origin release-candidate
