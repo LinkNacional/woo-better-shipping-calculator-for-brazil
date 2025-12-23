@@ -64,6 +64,7 @@ jobs:
             hidden_files
             WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
             WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+            WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
           categories: |
             performance
             accessibility
