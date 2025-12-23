@@ -120,6 +120,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+= 4.7.0 - 23/12/2025
+* NEW: CPF/CNPJ field
+* NEW: Neighborhood field.
+
 = 4.6.0 - 15/12/2025 =
 * NEW: Dynamic progress bar for free shipping with customizable messages.
 * NEW: Automatic capture and formatting of country codes in phone numbers.
