@@ -150,6 +150,9 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('admin_notices', $this, 'lkn_show_admin_notice');
         $this->loader->add_action('wp_ajax_woo_better_calc_dismiss_notice', $this, 'lkn_dismiss_admin_notice');
         $this->loader->add_action('wp_ajax_woo_better_calc_update_cache_token', $this, 'lkn_update_cache_token');
+        
+        // Hook para desabilitar validações de campos específicos
+        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_set_checkout_fields_optional', 99998);
     }
 
     public function lkn_show_admin_notice()
@@ -775,7 +778,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_nopriv_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
 
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'wc_better_calc_checkout_fields', 999);
-
+        
         $this->loader->add_action('wp_ajax_wc_better_insert_address', $this, 'wc_better_insert_address');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_insert_address', $this, 'wc_better_insert_address');
 
@@ -792,6 +795,12 @@ class WcBetterShippingCalculatorForBrazil
         // Hooks para customizar campos do admin
         $this->loader->add_filter('woocommerce_admin_billing_fields', $this, 'customize_admin_billing_fields');
         $this->loader->add_filter('woocommerce_admin_shipping_fields', $this, 'customize_admin_shipping_fields');
+        
+        // Hooks para integrar bairro no endereço formatado dentro do bloco
+        $this->loader->add_filter('woocommerce_formatted_address_replacements', $this, 'add_neighborhood_replacement', 10, 2);
+        $this->loader->add_filter('woocommerce_localisation_address_formats', $this, 'add_neighborhood_to_address_format', 10, 1);
+        $this->loader->add_filter('woocommerce_order_formatted_billing_address', $this, 'add_neighborhood_to_billing_address', 10, 2);
+        $this->loader->add_filter('woocommerce_order_formatted_shipping_address', $this, 'add_neighborhood_to_shipping_address', 10, 2);
         
         // NOVO: Hook para restaurar endereço quando carrinho for modificado
         $this->loader->add_action('woocommerce_cart_updated', $this, 'restore_address_after_cart_change');
@@ -825,6 +834,86 @@ class WcBetterShippingCalculatorForBrazil
         unset($fields['phone']); // Remove telefone padrão
         
         return $fields;
+    }
+
+    /**
+     * Adiciona substituição de bairro no endereço formatado
+     *
+     * @param array $replacements
+     * @param array $address
+     * @return array
+     */
+    public function add_neighborhood_replacement($replacements, $address)
+    {
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        
+        if ($neighborhood_enabled === 'yes' && isset($address['neighborhood'])) {
+            $replacements['{neighborhood}'] = $address['neighborhood'];
+        } else {
+            $replacements['{neighborhood}'] = '';
+        }
+        
+        return $replacements;
+    }
+
+    /**
+     * Modifica formato de endereço para incluir bairro
+     *
+     * @param array $formats
+     * @return array
+     */
+    public function add_neighborhood_to_address_format($formats)
+    {
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        
+        if ($neighborhood_enabled === 'yes') {
+            // Modifica o formato do Brasil para incluir bairro após o endereço principal
+            $formats['BR'] = "{name}\n{company}\n{address_1}\n{neighborhood}\n{address_2}\n{city}\n{state}\n{postcode}\n{country}";
+        }
+        
+        return $formats;
+    }
+
+    /**
+     * Adiciona bairro ao endereço de cobrança formatado
+     *
+     * @param array $address
+     * @param WC_Order $order
+     * @return array
+     */
+    public function add_neighborhood_to_billing_address($address, $order)
+    {
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        
+        if ($neighborhood_enabled === 'yes') {
+            $billing_neighborhood = $order->get_meta('_billing_neighborhood');
+            if (!empty($billing_neighborhood)) {
+                $address['neighborhood'] = $billing_neighborhood;
+            }
+        }
+        
+        return $address;
+    }
+
+    /**
+     * Adiciona bairro ao endereço de entrega formatado
+     *
+     * @param array $address
+     * @param WC_Order $order
+     * @return array
+     */
+    public function add_neighborhood_to_shipping_address($address, $order)
+    {
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        
+        if ($neighborhood_enabled === 'yes') {
+            $shipping_neighborhood = $order->get_meta('_shipping_neighborhood');
+            if (!empty($shipping_neighborhood)) {
+                $address['neighborhood'] = $shipping_neighborhood;
+            }
+        }
+        
+        return $address;
     }
 
     /**
@@ -892,6 +981,9 @@ class WcBetterShippingCalculatorForBrazil
         // Processa dados de tipo de pessoa
         $this->process_person_type_from_data($order, $data);
         
+        // Processa dados de bairro
+        $this->process_neighborhood_from_data($order, $data);
+        
         $billing_country_code = '';
         $shipping_country_code = '';
         
@@ -925,23 +1017,15 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
-        // Processar telefone de faturação
+        error_log('aqui o billing: ' . $billing_country_code);
+
+        // Salvar código do país do telefone de faturação
         if (!empty($billing_country_code)) {
-            $billing_phone = $order->get_billing_phone();
-            if (!empty($billing_phone)) {
-                $clean_phone = $this->clean_and_format_phone($billing_country_code, $billing_phone);
-                $order->set_billing_phone($clean_phone);
-            }
             $order->update_meta_data('_billing_phone_country_code', $billing_country_code);
         }
         
-        // Processar telefone de entrega
+        // Salvar código do país do telefone de entrega
         if (!empty($shipping_country_code)) {
-            $shipping_phone = $order->get_shipping_phone();
-            if (!empty($shipping_phone)) {
-                $clean_phone = $this->clean_and_format_phone($shipping_country_code, $shipping_phone);
-                $order->set_shipping_phone($clean_phone);
-            }
             $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
         }
 
@@ -962,6 +1046,9 @@ class WcBetterShippingCalculatorForBrazil
         
         // Processa dados de tipo de pessoa
         $this->process_person_type_from_request($order, $request);
+        
+        // Processa dados de bairro
+        $this->process_neighborhood_from_request($order, $request);
         
         $billing_country_code = '';
         $shipping_country_code = '';
@@ -1011,23 +1098,13 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
         
-        // Processar telefone de faturação
+        // Salvar código do país do telefone de faturação
         if (!empty($billing_country_code)) {
-            $billing_phone = $order->get_billing_phone();
-            if (!empty($billing_phone)) {
-                $clean_phone = $this->clean_and_format_phone($billing_country_code, $billing_phone);
-                $order->set_billing_phone($clean_phone);
-            }
             $order->update_meta_data('_billing_phone_country_code', $billing_country_code);
         }
         
-        // Processar telefone de entrega
+        // Salvar código do país do telefone de entrega
         if (!empty($shipping_country_code)) {
-            $shipping_phone = $order->get_shipping_phone();
-            if (!empty($shipping_phone)) {
-                $clean_phone = $this->clean_and_format_phone($shipping_country_code, $shipping_phone);
-                $order->set_shipping_phone($clean_phone);
-            }
             $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
         }
         
@@ -1080,7 +1157,7 @@ class WcBetterShippingCalculatorForBrazil
             if (!empty($billing_address)) {
                 $new_billing = $billing_address . ' - ' . $billing_number;
                 $order->set_billing_address_1($new_billing);
-                WC()->session->set('woo_better_shipping_number', $billing_number);
+                WC()->session->set('woo_better_billing_number', $billing_number);
             }
 
             if (!empty($shipping_address)) {
@@ -1089,7 +1166,7 @@ class WcBetterShippingCalculatorForBrazil
                 }
                 $new_shipping = $shipping_address . ' - ' . $shipping_number;
                 $order->set_shipping_address_1($new_shipping);
-                WC()->session->set('woo_better_billing_number', $shipping_number);
+                WC()->session->set('woo_better_shipping_number', $shipping_number);
             }
             
             // Salva os números como meta dados separados
@@ -1163,7 +1240,7 @@ class WcBetterShippingCalculatorForBrazil
             if (!empty($billing_address)) {
                 $new_billing = $billing_address . ' - ' . $billing_number;
                 $order->set_billing_address_1($new_billing);
-                WC()->session->set('woo_better_shipping_number', $billing_number);
+                WC()->session->set('woo_better_billing_number', $billing_number);
             }
 
             if (!empty($shipping_address)) {
@@ -1172,7 +1249,7 @@ class WcBetterShippingCalculatorForBrazil
                 }
                 $new_shipping = $shipping_address . ' - ' . $shipping_number;
                 $order->set_shipping_address_1($new_shipping);
-                WC()->session->set('woo_better_billing_number', $shipping_number);
+                WC()->session->set('woo_better_shipping_number', $shipping_number);
             }
             
             // Salva os números como meta dados separados
@@ -1463,40 +1540,7 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
-    /**
-     * Limpa e formata o telefone concatenando código do país + número limpo
-     *
-     * @param string $country_code Código do país (ex: +55)
-     * @param string $phone Número de telefone original
-     * @return string Telefone formatado limpo (ex: +5589999999835)
-     */
-    private function clean_and_format_phone($country_code, $phone)
-    {
-        if (empty($phone)) {
-            return $phone;
-        }
-        
-        // Se o telefone já tem código do país, apenas limpa os caracteres especiais
-        if (strpos($phone, '+') === 0) {
-            // Remove caracteres especiais do telefone: (, ), -, espaços
-            $clean_phone = preg_replace('/[()\\s-]/', '', $phone);
-            return $clean_phone;
-        }
-        
-        // Limpa o código do país (garante que tenha o +)
-        $clean_country_code = trim($country_code);
-        if (!str_starts_with($clean_country_code, '+')) {
-            $clean_country_code = '+' . $clean_country_code;
-        }
-        
-        // Remove caracteres especiais do telefone: (, ), -, espaços
-        $clean_phone = preg_replace('/[()\\s-]/', '', $phone);
-        
-        // Concatena código do país + número limpo
-        $full_phone = $clean_country_code . $clean_phone;
-        
-        return $full_phone;
-    }
+
 
     public function init_woocommerce()
     {
@@ -1577,6 +1621,30 @@ class WcBetterShippingCalculatorForBrazil
                     ];
                 },
             ]);
+            
+            // Registra campos para bairro
+            woocommerce_store_api_register_endpoint_data( [
+                'endpoint'        => 'checkout',
+                'namespace'       => 'woo_better_neighborhood',
+                'schema_callback' => function() {
+                    return [
+                        'billing_neighborhood' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                        'shipping_neighborhood' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                    ];
+                },
+                'data_callback' => function() {
+                    return [
+                        'billing_neighborhood'  => '', 
+                        'shipping_neighborhood' => '', 
+                    ];
+                },
+            ]);
         }
 
         if ( function_exists( 'woocommerce_store_api_register_update_callback' ) ) {
@@ -1596,6 +1664,12 @@ class WcBetterShippingCalculatorForBrazil
             woocommerce_store_api_register_update_callback([
                 'namespace' => 'woo_better_person_type',
                 'callback'  => [ $this, 'handle_person_type_update' ],
+            ]);
+            
+            // Callback para campos de bairro
+            woocommerce_store_api_register_update_callback([
+                'namespace' => 'woo_better_neighborhood',
+                'callback'  => [ $this, 'handle_neighborhood_update' ],
             ]);
         }
     }
@@ -1660,6 +1734,23 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
+    public function handle_neighborhood_update( $data ) {
+        if (! function_exists('WC') || ! WC()->session ) {
+            return;
+        }
+
+        // Guarda os dados de bairro na sessão
+        if ( isset( $data['billing_neighborhood'] ) ) {
+            $billing_neighborhood = sanitize_text_field( (string) $data['billing_neighborhood'] );
+            WC()->session->set( 'billing_neighborhood', $billing_neighborhood );
+        }
+
+        if ( isset( $data['shipping_neighborhood'] ) ) {
+            $shipping_neighborhood = sanitize_text_field( (string) $data['shipping_neighborhood'] );
+            WC()->session->set( 'shipping_neighborhood', $shipping_neighborhood );
+        }
+    }
+
     public function wc_better_calc_phone_number($locale)
     {
         // Torna o campo phone do shipping obrigatório no Brasil se a opção estiver ativada
@@ -1677,7 +1768,7 @@ class WcBetterShippingCalculatorForBrazil
         $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
-        
+
         // Forçar limpeza do cache se necessário  
         if (false === $person_type || empty($person_type)) {
             wp_cache_delete('woo_better_calc_person_type_select', 'options');
@@ -1728,6 +1819,28 @@ class WcBetterShippingCalculatorForBrazil
                 'type'        => 'hidden',
                 'required'    => false,
                 'priority'    => 29
+            );
+        }
+
+        // Campos de bairro
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        if ($neighborhood_enabled === 'yes') {
+            $fields['billing']['billing_neighborhood'] = array(
+                'label'       => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Digite o nome do bairro', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => true,
+                'class'       => array('form-row-wide'),
+                'priority'    => 50,
+                'type'        => 'text'
+            );
+            
+            $fields['shipping']['shipping_neighborhood'] = array(
+                'label'       => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Digite o nome do bairro', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => true,
+                'class'       => array('form-row-wide'),
+                'priority'    => 50,
+                'type'        => 'text'
             );
         }
 
@@ -1832,10 +1945,8 @@ class WcBetterShippingCalculatorForBrazil
         $updated = false;
         if (function_exists('WC') && WC()->customer) {
             if ($context === 'shipping') {
-                if ($address !== '' && $district !== '') {
-                    WC()->customer->set_shipping_address_1($address . ' - ' . $district);
-                    $updated = true;
-                } else if ($address !== '') {
+                // Não concatena mais endereço e bairro - cada campo vai para seu lugar próprio
+                if ($address !== '') {
                     WC()->customer->set_shipping_address_1($address);
                     $updated = true;
                 }
@@ -1851,11 +1962,14 @@ class WcBetterShippingCalculatorForBrazil
                     WC()->customer->set_shipping_postcode($postcode);
                     $updated = true;
                 }
-            } else {
-                if( $address !== '' && $district !== '') {
-                    WC()->customer->set_billing_address_1($address . ' - ' . $district);
+                // Define o bairro no campo personalizado se houver
+                if ($district !== '' && method_exists(WC()->customer, 'update_meta')) {
+                    WC()->customer->update_meta('shipping_neighborhood', $district);
                     $updated = true;
-                } else if ($address !== '') {
+                }
+            } else {
+                // Não concatena mais endereço e bairro - cada campo vai para seu lugar próprio
+                if ($address !== '') {
                     WC()->customer->set_billing_address_1($address);
                     $updated = true;
                 }
@@ -1869,6 +1983,11 @@ class WcBetterShippingCalculatorForBrazil
                 }
                 if ($postcode !== '') {
                     WC()->customer->set_billing_postcode($postcode);
+                    $updated = true;
+                }
+                // Define o bairro no campo personalizado se houver
+                if ($district !== '' && method_exists(WC()->customer, 'update_meta')) {
+                    WC()->customer->update_meta('billing_neighborhood', $district);
                     $updated = true;
                 }
             }
@@ -2381,5 +2500,135 @@ class WcBetterShippingCalculatorForBrazil
         } else {
             return $sigla;
         }
+    }
+
+    /**
+     * Processa os dados de bairro no checkout tradicional
+     *
+     * @param WC_Order $order
+     * @param array $data
+     * @return void
+     */
+    private function process_neighborhood_from_data($order, $data)
+    {
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        
+        if ($neighborhood_enabled === 'yes') {
+            // Captura dos dados do checkout tradicional
+            $billing_neighborhood = isset($_POST['billing_neighborhood']) ? sanitize_text_field(wp_unslash($_POST['billing_neighborhood'])) : '';
+            $shipping_neighborhood = isset($_POST['shipping_neighborhood']) ? sanitize_text_field(wp_unslash($_POST['shipping_neighborhood'])) : '';
+
+            // Salva os bairros
+            if (!empty($billing_neighborhood)) {
+                $order->update_meta_data('_billing_neighborhood', $billing_neighborhood);
+            }
+            if (!empty($shipping_neighborhood)) {
+                $order->update_meta_data('_shipping_neighborhood', $shipping_neighborhood);
+            }
+        }
+    }
+
+    /**
+     * Processa os dados de bairro no checkout de blocos
+     *
+     * @param WC_Order $order
+     * @param WP_REST_Request $request
+     * @return void
+     */
+    private function process_neighborhood_from_request($order, $request)
+    {
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        
+        if ($neighborhood_enabled === 'yes') {
+            // Captura dos dados do request do Block Checkout
+            $extensions = $request->get_param('extensions') ?? [];
+            
+            $billing_neighborhood = '';
+            $shipping_neighborhood = '';
+            
+            // Verifica o namespace dos dados de bairro
+            if (isset($extensions['woo_better_neighborhood'])) {
+                $neighborhood_data = $extensions['woo_better_neighborhood'];
+                
+                if (isset($neighborhood_data['billing_neighborhood'])) {
+                    $billing_neighborhood = sanitize_text_field($neighborhood_data['billing_neighborhood']);
+                }
+                if (isset($neighborhood_data['shipping_neighborhood'])) {
+                    $shipping_neighborhood = sanitize_text_field($neighborhood_data['shipping_neighborhood']);
+                }
+            }
+            
+            // Fallback para $_POST se não encontrar nos extensions
+            if (empty($billing_neighborhood) && isset($_POST['billing_neighborhood'])) {
+                $billing_neighborhood = sanitize_text_field(wp_unslash($_POST['billing_neighborhood']));
+            }
+            if (empty($shipping_neighborhood) && isset($_POST['shipping_neighborhood'])) {
+                $shipping_neighborhood = sanitize_text_field(wp_unslash($_POST['shipping_neighborhood']));
+            }
+
+            // Salva os bairros
+            if (!empty($billing_neighborhood)) {
+                $order->update_meta_data('_billing_neighborhood', $billing_neighborhood);
+            }
+            if (!empty($shipping_neighborhood)) {
+                $order->update_meta_data('_shipping_neighborhood', $shipping_neighborhood);
+            }
+        }
+    }
+    /**
+     * Função para tornar campos específicos do checkout opcionais
+     * Inclui CPF/CNPJ, bairro e outros campos customizados
+     *
+     * @param array $fields
+     * @return array
+     */
+    public function lkn_set_checkout_fields_optional($fields)
+    {
+        $should_disable = false;
+        
+        // Se WooCommerce estiver carregado, verifica o país
+        if (function_exists('WC') && WC()->customer) {
+            $billing_country = WC()->customer->get_billing_country();
+            $shipping_country = WC()->customer->get_shipping_country();
+            
+            // Se qualquer um dos países não for BR, desabilita validação
+            if ($billing_country !== 'BR' || $shipping_country !== 'BR') {
+                $should_disable = true;
+            }
+        }
+        
+        // Também verifica os campos de país nos próprios fields (para casos onde ainda não foi salvo no customer)
+        if (isset($fields['billing']['billing_country']['default']) && $fields['billing']['billing_country']['default'] !== 'BR') {
+            $should_disable = true;
+        }
+        if (isset($fields['shipping']['shipping_country']['default']) && $fields['shipping']['shipping_country']['default'] !== 'BR') {
+            $should_disable = true;
+        }
+        
+        if ($should_disable) {
+            // Campos CPF/CNPJ
+            if (isset($fields['billing']['billing_document'])) {
+                $fields['billing']['billing_document']['required'] = false;
+                $fields['billing']['billing_document']['validate'] = array();
+            }
+            if (isset($fields['billing']['billing_cpf'])) {
+                $fields['billing']['billing_cpf']['required'] = false;
+                $fields['billing']['billing_cpf']['validate'] = array();
+            }
+            if (isset($fields['billing']['billing_cnpj'])) {
+                $fields['billing']['billing_cnpj']['required'] = false;
+                $fields['billing']['billing_cnpj']['validate'] = array();
+            }
+
+            // Campos de bairro
+            if (isset($fields['billing']['billing_neighborhood'])) {
+                $fields['billing']['billing_neighborhood']['required'] = false;
+            }
+            if (isset($fields['shipping']['shipping_neighborhood'])) {
+                $fields['shipping']['shipping_neighborhood']['required'] = false;
+            }
+        }
+        
+        return $fields;
     }
 }

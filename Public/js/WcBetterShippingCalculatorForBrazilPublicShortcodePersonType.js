@@ -8,8 +8,127 @@ document.addEventListener("DOMContentLoaded", function () {
             setupFieldEvents();
         }
         
+        // Configurar controle por país
+        setupCountryControl();
+        
         // Configurar validação no botão de finalizar pedido
         setupOrderSubmitValidation();
+    }
+
+    function setupCountryControl() {
+        const billingCountrySelect = document.getElementById('billing_country');
+        const billingDocumentField = document.getElementById('billing_document_field');
+        
+        if (billingCountrySelect && billingDocumentField) {
+            // Aplicar controle inicial baseado no país atual
+            toggleFieldVisibility(billingCountrySelect.value);
+            
+            // Monitorar mudanças no país de cobrança
+            billingCountrySelect.addEventListener('change', function() {
+                const selectedCountry = this.value;
+                
+                // Primeiro aplicar visibilidade
+                toggleFieldVisibility(selectedCountry);
+                
+                // Se não for Brasil, resetar todos os campos (já é feito dentro do toggleFieldVisibility)
+                // Adicionar trigger extra para garantir atualização do checkout
+                if (typeof jQuery !== 'undefined') {
+                    setTimeout(() => {
+                        jQuery('body').trigger('update_checkout');
+                    }, 100);
+                }
+            });
+        }
+    }
+
+    function toggleFieldVisibility(country) {
+        const billingDocumentField = document.getElementById('billing_document_field');
+        
+        if (billingDocumentField) {
+            if (country !== 'BR') {
+                // Esconder campo e aplicar padding/margin 0px
+                billingDocumentField.style.display = 'none';
+                billingDocumentField.style.padding = '0px';
+                billingDocumentField.style.margin = '0px';
+                billingDocumentField.style.height = '0px';
+                billingDocumentField.style.overflow = 'hidden';
+                
+                // Limpar imediatamente e triggerar eventos
+                resetDocumentFields();
+            } else {
+                // Exibir campo e remover estilos de padding/margin
+                billingDocumentField.style.display = '';
+                billingDocumentField.style.padding = '';
+                billingDocumentField.style.margin = '';
+                billingDocumentField.style.height = '';
+                billingDocumentField.style.overflow = '';
+            }
+        }
+    }
+
+    function resetDocumentFields() {
+        const documentInput = document.getElementById('billing_document');
+        const personTypeInput = document.getElementById('billing_persontype');
+        const cpfInput = document.getElementById('billing_cpf');
+        const cnpjInput = document.getElementById('billing_cnpj');
+        const billingDocumentField = document.getElementById('billing_document_field');
+        
+        // Resetar valores dos campos
+        if (documentInput) {
+            documentInput.value = '';
+            documentInput.setAttribute('value', '');
+        }
+        if (personTypeInput) {
+            personTypeInput.value = '';
+            personTypeInput.setAttribute('value', '');
+        }
+        if (cpfInput) {
+            cpfInput.value = '';
+            cpfInput.setAttribute('value', '');
+        }
+        if (cnpjInput) {
+            cnpjInput.value = '';
+            cnpjInput.setAttribute('value', '');
+        }
+        
+        // Remover classes de validação e limpar erros
+        if (billingDocumentField) {
+            billingDocumentField.classList.remove('woocommerce-validated');
+            billingDocumentField.classList.remove('woocommerce-invalid');
+            billingDocumentField.classList.remove('woocommerce-invalid-required-field');
+            
+            // Remover qualquer mensagem de erro existente
+            const errorElements = billingDocumentField.querySelectorAll('.woocommerce-error, .woocommerce-message');
+            errorElements.forEach(el => el.remove());
+        }
+        
+        // Trigger eventos nativos primeiro
+        [documentInput, personTypeInput, cpfInput, cnpjInput].forEach(field => {
+            if (field) {
+                // Dispatch eventos nativos
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+                field.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+        
+        // Trigger jQuery events com delay para garantir que sejam processados
+        if (typeof jQuery !== 'undefined') {
+            setTimeout(() => {
+                if (documentInput) jQuery(documentInput).trigger('input').trigger('change');
+                if (personTypeInput) jQuery(personTypeInput).trigger('change');
+                if (cpfInput) jQuery(cpfInput).trigger('change');
+                if (cnpjInput) jQuery(cnpjInput).trigger('change');
+                
+                // Trigger eventos do WooCommerce para atualizar totais
+                jQuery('body').trigger('update_checkout');
+                jQuery('body').trigger('wc_update_cart');
+            }, 100);
+            
+            // Segundo trigger com delay maior para garantir
+            setTimeout(() => {
+                jQuery('body').trigger('update_checkout');
+            }, 300);
+        }
     }
 
     function setupOrderSubmitValidation() {
@@ -22,8 +141,8 @@ document.addEventListener("DOMContentLoaded", function () {
             function handlePlaceOrderClick(event) {
                 const billingDocumentInput = document.getElementById('billing_document');
 
-                // Validação do campo de documento unificado
-                if (billingDocumentInput) {
+                // Só validar se o campo de documento for necessário (país BR e campo visível)
+                if (billingDocumentInput && isDocumentValidationRequired()) {
                     const documentValue = billingDocumentInput.value.trim();
                     const cleanValue = documentValue.replace(/\D/g, '');
                     const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
@@ -80,6 +199,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         // Se for válido, ocultar erro
                         hideDocumentValidationError();
                     }
+                } else {
+                    // Se validação não é necessária (país não é BR), ocultar erro
+                    hideDocumentValidationError();
                 }
             }
         }
@@ -98,6 +220,12 @@ document.addEventListener("DOMContentLoaded", function () {
                         if (node.id === 'billing_document' || 
                             (node.querySelector && node.querySelector('#billing_document'))) {
                             setTimeout(initPersonTypeFields, 100);
+                        }
+                        
+                        // Se o campo billing_country foi adicionado, configurar controle por país
+                        if (node.id === 'billing_country' || 
+                            (node.querySelector && node.querySelector('#billing_country'))) {
+                            setTimeout(setupCountryControl, 100);
                         }
                         
                         // Se o botão place_order foi adicionado, configurar validação
@@ -194,6 +322,21 @@ document.addEventListener("DOMContentLoaded", function () {
             fieldContainer.classList.remove('woocommerce-invalid-required-field');
             fieldContainer.classList.add('woocommerce-validated');
         }
+    }
+
+    // Validação personalizada que considera se o campo está visível
+    function isDocumentValidationRequired() {
+        const billingCountrySelect = document.getElementById('billing_country');
+        const billingDocumentField = document.getElementById('billing_document_field');
+        
+        // Só validar se o país for Brasil e o campo estiver visível
+        if (billingCountrySelect && billingCountrySelect.value === 'BR') {
+            if (billingDocumentField && billingDocumentField.style.display !== 'none') {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     // Máscaras de formatação

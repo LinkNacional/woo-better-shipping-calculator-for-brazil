@@ -8,6 +8,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let intervalCount = 0
     let checkboxCount = 0
 
+    console.log('chamouuuu')
+
     const observer = new MutationObserver((mutationsList) => {
         const shippingBlock = document.querySelector('#shipping')
 
@@ -60,10 +62,54 @@ document.addEventListener("DOMContentLoaded", function () {
                         input.setAttribute('aria-invalid', 'false');
                         input.setAttribute('autocapitalize', 'sentences');
                         // Valor inicial
-                        const initialValue = (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.shipping_number) ? WooBetterNumberData.shipping_number : '';
+                        let initialValue = '';
+                        let extractedNumber = '';
+                        
+                        if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.shipping_number) {
+                            initialValue = WooBetterNumberData.shipping_number;
+                        } else {
+                            // Tenta extrair número do endereço se não houver dados salvos
+                            const addressInput = shippingAddress1.querySelector('input');
+                            if (addressInput && addressInput.value) {
+                                const addressValue = addressInput.value.trim();
+                                // Regex para capturar número no final do endereço
+                                const numberMatch = addressValue.match(/[–-]\s*(\d+|S\/N)\s*$/);
+                                if (numberMatch) {
+                                    extractedNumber = numberMatch[1];
+                                    initialValue = extractedNumber;
+                                    
+                                    // Remove o número do endereço
+                                    const cleanAddress = addressValue.replace(/\s*[–-]\s*(\d+|S\/N)\s*$/, '').trim();
+                                    if (cleanAddress !== addressValue) {
+                                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                        nativeSetter.call(addressInput, cleanAddress);
+                                        addressInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                    }
+                                }
+                            } else {
+                            }
+                        }
+                        
                         input.value = initialValue;
                         if (initialValue !== '') {
                             customInputDiv.classList.add('is-active');
+                        }
+                        
+                        // Se extraiu número automaticamente, atualiza Store API
+                        if (extractedNumber && window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                            setTimeout(() => {
+                                let data = { woo_better_shipping_number: extractedNumber, woo_better_billing_number: '' };
+                                const billingNumberInput = document.getElementById('billing-number');
+                                if (!billingNumberInput) {
+                                    data.woo_better_billing_number = extractedNumber;
+                                } else {
+                                    data.woo_better_billing_number = billingNumberInput.value;
+                                }
+                                window.wc.blocksCheckout.extensionCartUpdate({
+                                    namespace: 'woo_better_number_validation',
+                                    data: data
+                                });
+                            }, 100);
                         }
 
                         // Criando o checkbox
@@ -73,7 +119,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         shippingCheckboxInput.type = 'checkbox';
                         shippingCheckboxInput.setAttribute('aria-invalid', 'false');
                         // Estado inicial do checkbox/input
-                        if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.shipping_number === 'S/N') {
+                        if (initialValue === 'S/N') {
                             shippingCheckboxInput.checked = true;
                             input.disabled = true;
                             input.style.backgroundColor = '#e0e0e0';
@@ -151,7 +197,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         checkboxInput.type = 'checkbox';
                         checkboxInput.setAttribute('aria-invalid', 'false');
                         // Estado inicial do checkbox/input
-                        if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.shipping_number === 'S/N') {
+                        if (initialValue === 'S/N') {
                             checkboxInput.checked = true;
                             input.disabled = true;
                             input.style.backgroundColor = '#e0e0e0';
@@ -360,10 +406,54 @@ document.addEventListener("DOMContentLoaded", function () {
                 input.setAttribute('aria-invalid', 'false');
                 input.setAttribute('autocapitalize', 'sentences');
                 // Valor inicial
-                const initialValue = (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.billing_number) ? WooBetterNumberData.billing_number : '';
+                let initialValue = '';
+                let extractedNumber = '';
+                
+                if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.billing_number) {
+                    initialValue = WooBetterNumberData.billing_number;
+                } else {
+                    // Tenta extrair número do endereço se não houver dados salvos
+                    const addressInput = billingAddress1.querySelector('input');
+                    if (addressInput && addressInput.value) {
+                        const addressValue = addressInput.value.trim();
+                        // Regex para capturar número no final do endereço
+                        const numberMatch = addressValue.match(/[–-]\s*(\d+|S\/N)\s*$/);
+                        if (numberMatch) {
+                            extractedNumber = numberMatch[1];
+                            initialValue = extractedNumber;
+                            
+                            // Remove o número do endereço
+                            const cleanAddress = addressValue.replace(/\s*[–-]\s*(\d+|S\/N)\s*$/, '').trim();
+                            if (cleanAddress !== addressValue) {
+                                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                nativeSetter.call(addressInput, cleanAddress);
+                                addressInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        }
+                    } else {
+                    }
+                }
+                
                 input.value = initialValue;
                 if (initialValue !== '') {
                     customInputDiv.classList.add('is-active'); // animação label
+                }
+                
+                // Se extraiu número automaticamente, atualiza Store API
+                if (extractedNumber && window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                    setTimeout(() => {
+                        let data = { woo_better_shipping_number: '', woo_better_billing_number: extractedNumber };
+                        const shippingNumberInput = document.getElementById('shipping-number');
+                        if (!shippingNumberInput) {
+                            data.woo_better_shipping_number = extractedNumber;
+                        } else {
+                            data.woo_better_shipping_number = shippingNumberInput.value;
+                        }
+                        window.wc.blocksCheckout.extensionCartUpdate({
+                            namespace: 'woo_better_number_validation',
+                            data: data
+                        });
+                    }, 100);
                 }
 
                 // Criando o checkbox
@@ -373,7 +463,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 billingCheckboxInput.type = 'checkbox';
                 billingCheckboxInput.setAttribute('aria-invalid', 'false');
                 // Estado inicial do checkbox/input
-                if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.billing_number === 'S/N') {
+                if (initialValue === 'S/N') {
                     billingCheckboxInput.checked = true;
                     input.disabled = true;
                     input.style.backgroundColor = '#e0e0e0';
@@ -452,7 +542,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 checkboxInput.type = 'checkbox';
                 checkboxInput.setAttribute('aria-invalid', 'false');
                 // Estado inicial do checkbox/input
-                if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.billing_number === 'S/N') {
+                if (initialValue === 'S/N') {
                     checkboxInput.checked = true;
                     input.disabled = true;
                     input.style.backgroundColor = '#e0e0e0';

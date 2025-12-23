@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 
-<?php if ( $phone_required === 'yes' && ! empty( $shipping_phone_country_code ) ) : ?>
+<?php if ( $phone_required === 'yes' && ! empty( $order->get_shipping_phone() ) ) : ?>
 <div class="clear"></div>
 <h3><?php esc_html_e( 'Dados do Cliente', 'woo-better-shipping-calculator-for-brazil' ); ?></h3>
 <div class="woo-better-calc-address">
@@ -21,7 +21,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 			$phone = $order->get_shipping_phone();
 			echo '<a href="tel:' . esc_attr( $phone ) . '">' . esc_html( $phone ) . '</a>';
 			?><br />
-			<?php if ( ! empty( $shipping_phone_country_code ) ) : ?>
+			<?php 
+			$shipping_phone_country_code = $order->get_meta('_shipping_phone_country_code');
+			// Só mostra código do país se o telefone começar com + e o meta existir
+			if ( str_starts_with($phone, '+') && ! empty( $shipping_phone_country_code ) ) : ?>
 				<?php 
 				$clean_country_code = trim($shipping_phone_country_code);
 				if (!str_starts_with($clean_country_code, '+')) {

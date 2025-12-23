@@ -113,6 +113,19 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
+            $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+            error_log('Neighborhood Enabled: ' . $neighborhood_enabled);
+                
+            if ($neighborhood_enabled === 'yes') {
+                wp_enqueue_style(
+                    $this->plugin_name . '-neighborhood',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilNeighborhood.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
+
             $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
             if($cep_position === 'yes')
             {
@@ -334,6 +347,37 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
+            // Registrar script para campos de bairro no checkout de blocos
+            $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+            
+            if ($neighborhood_enabled === 'yes') {
+                // Obter dados de sessão para campos de bairro
+                $billing_neighborhood = '';
+                $shipping_neighborhood = '';
+                
+                if (function_exists('WC') && WC()->session) {
+                    $billing_neighborhood = WC()->session->get('billing_neighborhood', '');
+                    $shipping_neighborhood = WC()->session->get('shipping_neighborhood', '');
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-neighborhood',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergNeighborhood.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-neighborhood',
+                    'WooBetterNeighborhoodData',
+                    array(
+                        'billing_neighborhood' => $billing_neighborhood,
+                        'shipping_neighborhood' => $shipping_neighborhood
+                    )
+                );
+            }
+
             if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-disabled-shipping',
@@ -385,6 +429,37 @@ class WcBetterShippingCalculatorForBrazilPublic
                     array(
                         'person_type' => $person_type,
                         'show_select' => ($person_type === 'both') // Só mostrar select quando for 'both'
+                    )
+                );
+            }
+            
+            // Registrar script para campos de bairro no checkout shortcode (tradicional)
+            $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+            
+            if ($neighborhood_enabled === 'yes') {
+                // Obter dados de sessão para campos de bairro
+                $billing_neighborhood = '';
+                $shipping_neighborhood = '';
+                
+                if (function_exists('WC') && WC()->session) {
+                    $billing_neighborhood = WC()->session->get('billing_neighborhood', '');
+                    $shipping_neighborhood = WC()->session->get('shipping_neighborhood', '');
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-shortcode-neighborhood',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeNeighborhood.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-shortcode-neighborhood',
+                    'WooBetterNeighborhoodData',
+                    array(
+                        'billing_neighborhood' => $billing_neighborhood,
+                        'shipping_neighborhood' => $shipping_neighborhood
                     )
                 );
             }

@@ -780,6 +780,22 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Configure o tipo de cliente permitido no checkout.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'enable_neighborhood_field' => array(
+                'title'    => __('Campo de Bairro', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_enable_neighborhood_field',
+                'desc_tip' => false,
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Adiciona um campo obrigatório de Bairro no formulário de endereço do checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para adicionar o campo "Bairro" tanto nos endereços de cobrança quanto de entrega.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Adiciona o campo de Bairro, posicionado após o endereço principal.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'enable_auto_address_fill' => array(
                 'title'    => __('Preenchimento automatico por CEP', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_enable_auto_address_fill',

@@ -194,7 +194,11 @@ jQuery(function ($) {
             let parts = [];
             if (address.address) parts.push(address.address);
             if (address.city) parts.push(address.city);
-            if (address.district) parts.push(address.district);
+            
+            // Só inclui o bairro se NÃO existir um campo de bairro separado
+            const neighborhoodField = document.getElementById(`${this.context}_neighborhood`);
+            if (!neighborhoodField && address.district) parts.push(address.district);
+            
             if (address.state) parts.push(address.state);
             const labelText = `Endereço inserido: ${parts.join(' - ')}`;
             $labelSpan.stop(true, true).css('opacity', 1).text(labelText).show();
@@ -406,7 +410,11 @@ jQuery(function ($) {
             let parts = [];
             if (address.address) parts.push(address.address);
             if (address.city) parts.push(address.city);
-            if (address.district) parts.push(address.district);
+            
+            // Só inclui o bairro se NÃO existir um campo de bairro separado
+            const neighborhoodField = document.getElementById(`${this.context}_neighborhood`);
+            if (!neighborhoodField && address.district) parts.push(address.district);
+            
             if (address.state) parts.push(address.state);
             const labelText = `Usar o endereço: ${parts.join(' - ')}`;
             $labelSpan.stop(true, true).text(labelText).show();
@@ -481,7 +489,13 @@ jQuery(function ($) {
                 let parts = [];
                 if (addressObj.address) parts.push(addressObj.address);
                 if (addressObj.city) parts.push(addressObj.city);
-                if (addressObj.district || addressObj.neighborhood) parts.push(addressObj.district || addressObj.neighborhood);
+                
+                // Só inclui o bairro se NÃO existir um campo de bairro separado
+                const neighborhoodField = document.getElementById(`${type}_neighborhood`);
+                if (!neighborhoodField && (addressObj.district || addressObj.neighborhood)) {
+                    parts.push(addressObj.district || addressObj.neighborhood);
+                }
+                
                 if (addressObj.state) parts.push(addressObj.state);
                 labelText = 'Endereço inserido: ' + parts.join(' - ');
             } else {
@@ -493,7 +507,13 @@ jQuery(function ($) {
                 let parts = [];
                 if (addressObj.address) parts.push(addressObj.address);
                 if (addressObj.city) parts.push(addressObj.city);
-                if (addressObj.district || addressObj.neighborhood) parts.push(addressObj.district || addressObj.neighborhood);
+                
+                // Só inclui o bairro se NÃO existir um campo de bairro separado
+                const neighborhoodField = document.getElementById(`${type}_neighborhood`);
+                if (!neighborhoodField && (addressObj.district || addressObj.neighborhood)) {
+                    parts.push(addressObj.district || addressObj.neighborhood);
+                }
+                
                 if (addressObj.state) parts.push(addressObj.state);
                 labelText = 'Usar o endereço: ' + parts.join(' - ');
             } else {
@@ -565,9 +585,12 @@ jQuery(function ($) {
 
         // Bairro
         let neighborhood = data.neighborhood ? data.neighborhood : '';
-        if ($("#" + field + "_neighborhood").length) {
+        const neighborhoodField = document.getElementById(field + '_neighborhood');
+        if (neighborhoodField) {
+            // Se existe campo de bairro separado, insere nele
             $("#" + field + "_neighborhood").val(neighborhood).trigger("change");
         } else {
+            // Se não existe campo separado E tem bairro, concatena no endereço
             if (data.address !== '' && neighborhood !== '') {
                 $("#" + field + "_address_1").val(data.address + ' - ' + neighborhood).trigger("change");
             }
@@ -581,6 +604,8 @@ jQuery(function ($) {
         if (customNumberId && $("#" + customNumberId).length) {
             var $customNumber = $("#" + customNumberId);
             $customNumber.val('').prop('disabled', false).trigger('change');
+            // Remove opacidade do campo pai
+            $customNumber.closest('.form-row').removeAttr('style').css('opacity', '');
             if (customCheckboxId && $("#" + customCheckboxId).length) {
                 $("#" + customCheckboxId).prop('checked', false).trigger('change');
             }

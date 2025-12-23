@@ -6,8 +6,97 @@ document.addEventListener("DOMContentLoaded", function () {
     let intervalCount = 0
     let checkInterval = null
     let updateDataTimeout = null // Timeout para debounce do salvamento
+    let countryObserver = null // Observer para mudanças no campo de país
+    let personTypeFieldsActive = false // Flag para controlar se os campos estão ativos
+
+    // Variáveis para salvar dados dos campos
+    let savedPersonTypeData = {
+        billing_persontype: '',
+        billing_cpf: '',
+        billing_cnpj: '',
+        billing_document: '' // Campo unificado
+    };
+
+    // Função para verificar se o país selecionado é Brasil
+    function isBrazilSelected() {
+        const countryField = document.querySelector('#billing-country') ||
+                           document.querySelector('select[name="billing_country"]') ||
+                           document.querySelector('input[name="billing_country"]');
+        
+        if (countryField) {
+            return countryField.value === 'BR';
+        }
+        return false;
+    }
+
+    // Função para remover campos de person type
+    function removePersonTypeFields() {
+        const documentField = document.querySelector('.wc-better-billing-document');
+        const personTypeInput = document.getElementById('billing-persontype');
+        const cpfInput = document.getElementById('billing-cpf');
+        const cnpjInput = document.getElementById('billing-cnpj');
+        
+        if (documentField) {
+            documentField.remove();
+        }
+        if (personTypeInput) {
+            personTypeInput.remove();
+        }
+        if (cpfInput) {
+            cpfInput.remove();
+        }
+        if (cnpjInput) {
+            cnpjInput.remove();
+        }
+        
+        personTypeFieldsActive = false;
+        
+        // Limpar dados do Store API
+        clearPersonTypeDataFromStore();
+    }
+
+    // Função para limpar dados do Store API
+    function clearPersonTypeDataFromStore() {
+        const emptyData = {
+            billing_persontype: '',
+            billing_cpf: '',
+            billing_cnpj: ''
+        };
+
+        // Usar setExtensionData
+        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+            try {
+                const { dispatch } = wp.data;
+                if (dispatch('wc/store/checkout')) {
+                    const checkoutDispatch = dispatch('wc/store/checkout');
+                    if (checkoutDispatch.setExtensionData) {
+                        checkoutDispatch.setExtensionData('woo_better_person_type', emptyData);
+                    }
+                }
+            } catch (error) {
+                // Silenciar erro
+            }
+        }
+
+        // Usar extensionCartUpdate como backup
+        if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+            window.wc.blocksCheckout.extensionCartUpdate({
+                namespace: 'woo_better_person_type',
+                data: emptyData
+            });
+        }
+    }
 
     const observer = new MutationObserver((mutationsList) => {
+        // Verificar se o país é Brasil antes de processar qualquer lógica
+        if (!isBrazilSelected()) {
+            // Se não for Brasil e temos campos ativos, removê-los
+            if (personTypeFieldsActive) {
+                removePersonTypeFields();
+            }
+            return;
+        }
+
         const billingBlock = document.querySelector('#billing')
 
         if (!billingBlock) {
@@ -17,6 +106,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (billingBlock && !billingBlockFound) {
             billingPersonTypeHandle(billingBlock)
+        }
+
+        // Observar mudanças no campo de país
+        const countryField = document.querySelector('#billing-country');
+        if (countryField && !countryObserver) {
+            observeCountryChanges();
         }
 
         const placeOrderContainer = document.querySelector('.wc-block-checkout__actions_row')
@@ -36,6 +131,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 placeOrderButton.addEventListener('click', handlePlaceOrderClick);
 
                 function handlePlaceOrderClick(event) {
+                    // Só validar se o país for Brasil
+                    if (!isBrazilSelected()) {
+                        return;
+                    }
+
                     billingPersonTypeInput = document.getElementById('billing-persontype');
                     const billingDocumentInput = document.getElementById('billing_document');
 
@@ -107,6 +207,11 @@ document.addEventListener("DOMContentLoaded", function () {
     observer.observe(document.body, { childList: true, subtree: true });
 
     function billingPersonTypeHandle(billingBlock) {
+        // Só processar se o país for Brasil
+        if (!isBrazilSelected()) {
+            return;
+        }
+
         const editBillingButton = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="billing"]');
         
         if (!editBillingButton) {
@@ -129,6 +234,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function addPersonTypeFields(billingBlock) {
+        // Só adicionar campos se o país for Brasil
+        if (!isBrazilSelected()) {
+            return;
+        }
+
         // Verificar se os campos já existem
         if (document.getElementById('billing_document')) {
             return;
@@ -141,9 +251,27 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // Obter valores iniciais dos dados da página
-        const initialPersonType = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_persontype) ? WooBetterPersonTypeData.billing_persontype : '';
-        const initialCpf = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cpf) ? WooBetterPersonTypeData.billing_cpf : '';
-        const initialCnpj = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cnpj) ? WooBetterPersonTypeData.billing_cnpj : '';
+        let initialPersonType = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_persontype) ? WooBetterPersonTypeData.billing_persontype : '';
+        let initialCpf = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cpf) ? WooBetterPersonTypeData.billing_cpf : '';
+        let initialCnpj = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cnpj) ? WooBetterPersonTypeData.billing_cnpj : '';
+
+        // Usar valores salvos se existirem (prioridade sobre dados iniciais)
+        if (savedPersonTypeData.billing_document) {
+            // Se temos dados salvos, usar eles
+            initialPersonType = savedPersonTypeData.billing_persontype;
+            initialCpf = savedPersonTypeData.billing_cpf;
+            initialCnpj = savedPersonTypeData.billing_cnpj;
+        } else {
+            // Se não temos dados salvos, salvar os dados iniciais
+            savedPersonTypeData.billing_persontype = initialPersonType;
+            savedPersonTypeData.billing_cpf = initialCpf;
+            savedPersonTypeData.billing_cnpj = initialCnpj;
+            if (initialCpf) {
+                savedPersonTypeData.billing_document = initialCpf;
+            } else if (initialCnpj) {
+                savedPersonTypeData.billing_document = initialCnpj;
+            }
+        }
 
         // Obter configuração do tipo de pessoa
         const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
@@ -151,16 +279,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
         let lastInsertedElement = billingLastName.parentElement; // Começar da div pai do last_name
 
-        // Determinar valor inicial do documento (CPF ou CNPJ existente)
-        let initialDocument = '';
-        let detectedPersonType = '';
+        // Determinar valor inicial do documento (usar dados salvos)
+        let initialDocument = savedPersonTypeData.billing_document || '';
+        let detectedPersonType = savedPersonTypeData.billing_persontype || '';
         
-        if (initialCpf) {
-            initialDocument = initialCpf;
-            detectedPersonType = 'physical';
-        } else if (initialCnpj) {
-            initialDocument = initialCnpj;
-            detectedPersonType = 'legal';
+        if (!detectedPersonType) {
+            if (initialCpf) {
+                initialDocument = initialCpf;
+                detectedPersonType = 'physical';
+            } else if (initialCnpj) {
+                initialDocument = initialCnpj;
+                detectedPersonType = 'legal';
+            }
         }
 
         // Criar o campo unificado CPF/CNPJ
@@ -192,8 +322,97 @@ document.addEventListener("DOMContentLoaded", function () {
         // Configurar eventos do campo unificado
         setupUnifiedDocumentEvents();
 
+        // Marcar campos como ativos
+        personTypeFieldsActive = true;
+
+        // Se temos valor salvo, executar evento de input para sincronizar
+        if (initialDocument) {
+            setTimeout(() => {
+                const documentInput = document.getElementById('billing_document');
+                if (documentInput) {
+                    // Executar evento de input para manter sincronização
+                    const inputEvent = new Event('input', { bubbles: true });
+                    documentInput.dispatchEvent(inputEvent);
+                }
+            }, 100);
+        }
+
         // Atualizar dados imediatamente
         updatePersonTypeData(true);
+    }
+
+    // Função para observar mudanças no campo de país
+    function observeCountryChanges() {
+        const countryField = document.querySelector('#billing-country');
+        if (!countryField) {
+            return;
+        }
+
+        // Observar mudanças diretamente no select do país
+        if (!countryField.dataset.personTypeListener) {
+            countryField.addEventListener('change', function() {
+                setTimeout(() => {
+                    if (isBrazilSelected()) {
+                        // Se mudou para Brasil e não temos campos, criar
+                        if (!personTypeFieldsActive) {
+                            const billingBlock = document.querySelector('#billing');
+                            if (billingBlock) {
+                                billingPersonTypeHandle(billingBlock);
+                            }
+                        }
+                    } else {
+                        // Se mudou para outro país, remover campos
+                        if (personTypeFieldsActive) {
+                            removePersonTypeFields();
+                        }
+                    }
+                }, 300);
+            });
+            countryField.dataset.personTypeListener = 'true';
+        }
+
+        // Criar observer específico para mudanças no campo de país
+        if (!countryObserver) {
+            countryObserver = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList' || mutation.type === 'attributes') {
+                        // Re-configurar listeners se o campo foi recriado
+                        setTimeout(() => {
+                            const newCountryField = document.querySelector('#billing-country');
+                            if (newCountryField && !newCountryField.dataset.personTypeListener) {
+                                newCountryField.addEventListener('change', function() {
+                                    setTimeout(() => {
+                                        if (isBrazilSelected()) {
+                                            if (!personTypeFieldsActive) {
+                                                const billingBlock = document.querySelector('#billing');
+                                                if (billingBlock) {
+                                                    billingPersonTypeHandle(billingBlock);
+                                                }
+                                            }
+                                        } else {
+                                            if (personTypeFieldsActive) {
+                                                removePersonTypeFields();
+                                            }
+                                        }
+                                    }, 300);
+                                });
+                                newCountryField.dataset.personTypeListener = 'true';
+                            }
+                        }, 100);
+                    }
+                });
+            });
+            
+            // Observar mudanças no container do campo de país
+            const billingContainer = document.querySelector('#billing');
+            if (billingContainer) {
+                countryObserver.observe(billingContainer, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true
+                });
+            }
+        }
     }
 
     function createUnifiedDocumentField(insertAfter, initialValue, personTypeConfig) {
@@ -243,6 +462,9 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             
             this.value = formattedValue;
+            
+            // Salvar na variável global
+            savedPersonTypeData.billing_document = formattedValue;
             
             // Só atualizar se o valor realmente mudou (evitar salvamentos desnecessários quando no limite)
             if (formattedValue !== lastValue) {
@@ -364,10 +586,20 @@ document.addEventListener("DOMContentLoaded", function () {
             if (personTypeInput) personTypeInput.value = 'physical';
             if (cpfInput) cpfInput.value = documentValue;
             if (cnpjInput) cnpjInput.value = '';
+            
+            // Salvar na variável global
+            savedPersonTypeData.billing_persontype = 'physical';
+            savedPersonTypeData.billing_cpf = documentValue;
+            savedPersonTypeData.billing_cnpj = '';
         } else if (detectedType === 'cnpj') {
             if (personTypeInput) personTypeInput.value = 'legal';
             if (cpfInput) cpfInput.value = '';
             if (cnpjInput) cnpjInput.value = documentValue;
+            
+            // Salvar na variável global
+            savedPersonTypeData.billing_persontype = 'legal';
+            savedPersonTypeData.billing_cpf = '';
+            savedPersonTypeData.billing_cnpj = documentValue;
         } else {
             // Indeterminado - manter valor no campo apropriado baseado na configuração
             const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
@@ -376,19 +608,33 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (personTypeInput) personTypeInput.value = 'physical';
                 if (cpfInput) cpfInput.value = documentValue;
                 if (cnpjInput) cnpjInput.value = '';
+                
+                savedPersonTypeData.billing_persontype = 'physical';
+                savedPersonTypeData.billing_cpf = documentValue;
+                savedPersonTypeData.billing_cnpj = '';
             } else if (personTypeConfig === 'legal') {
                 if (personTypeInput) personTypeInput.value = 'legal';
                 if (cpfInput) cpfInput.value = '';
                 if (cnpjInput) cnpjInput.value = documentValue;
+                
+                savedPersonTypeData.billing_persontype = 'legal';
+                savedPersonTypeData.billing_cpf = '';
+                savedPersonTypeData.billing_cnpj = documentValue;
             } else {
                 // Para 'both', decidir baseado no comprimento parcial
                 const cleanValue = documentValue.replace(/\D/g, '');
                 if (cleanValue.length <= 11) {
                     if (cpfInput) cpfInput.value = documentValue;
                     if (cnpjInput) cnpjInput.value = '';
+                    
+                    savedPersonTypeData.billing_cpf = documentValue;
+                    savedPersonTypeData.billing_cnpj = '';
                 } else {
                     if (cpfInput) cpfInput.value = '';
                     if (cnpjInput) cnpjInput.value = documentValue;
+                    
+                    savedPersonTypeData.billing_cpf = '';
+                    savedPersonTypeData.billing_cnpj = documentValue;
                 }
             }
         }
@@ -497,6 +743,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Função para atualizar dados no Store API com debounce
     function updatePersonTypeData(immediate = false) {
+        // Só atualizar se o país for Brasil
+        if (!isBrazilSelected()) {
+            return;
+        }
+
         // Cancelar timeout anterior se existir
         if (updateDataTimeout) {
             clearTimeout(updateDataTimeout);
@@ -518,6 +769,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Função que efetivamente executa a atualização
     function executeDataUpdate() {
+        // Só executar se o país for Brasil
+        if (!isBrazilSelected()) {
+            return;
+        }
+
         const personTypeInput = document.getElementById('billing-persontype');
         const cpfInput = document.getElementById('billing-cpf');
         const cnpjInput = document.getElementById('billing-cnpj');
@@ -554,6 +810,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Função para inicializar os campos no Store API
     function initializeStoreAPIPersonTypeFields() {
+        // Só inicializar se o país for Brasil
+        if (!isBrazilSelected()) {
+            return;
+        }
+
         if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
             try {
                 const { dispatch, select } = wp.data;
@@ -670,9 +931,11 @@ document.addEventListener("DOMContentLoaded", function () {
         subtree: true
     });
 
-    // Configurar listeners iniciais se os campos já existirem
+    // Configurar listeners iniciais se os campos já existirem e país for Brasil
     setTimeout(() => {
-                updatePersonTypeData(true);
+        // Verificar se é Brasil antes de fazer qualquer coisa
+        if (isBrazilSelected()) {
+            updatePersonTypeData(true);
         const personTypeInput = document.getElementById('billing-persontype');
         const documentInput = document.getElementById('billing_document');
         const cpfInput = document.getElementById('billing-cpf');
@@ -714,6 +977,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             });
             documentInput.dataset.storeApiListener = 'true';
+        }
         }
     }, 500);
 });

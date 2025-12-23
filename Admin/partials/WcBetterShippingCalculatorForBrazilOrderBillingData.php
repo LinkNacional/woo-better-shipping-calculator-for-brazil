@@ -53,7 +53,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 			$phone = $order->get_billing_phone();
 			echo '<a href="tel:' . esc_attr( $phone ) . '">' . esc_html( $phone ) . '</a>';
 			?><br />
-			<?php if ( ! empty( $billing_phone_country_code ) ) : ?>
+			<?php 
+			$billing_phone_country_code = $order->get_meta('_billing_phone_country_code');
+			// Só mostra código do país se o telefone começar com + e o meta existir
+			if ( str_starts_with($phone, '+') && ! empty( $billing_phone_country_code ) ) : ?>
 				<?php 
 				$clean_country_code = trim($billing_phone_country_code);
 				if (!str_starts_with($clean_country_code, '+')) {
