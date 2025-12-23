@@ -332,7 +332,6 @@ document.addEventListener("DOMContentLoaded", function () {
         // Observar mudanças diretamente no select do país
         if (!countryField.dataset.neighborhoodListener) {
             countryField.addEventListener('change', function() {
-                console.log('Country changed:', context, 'to:', this.value);
                 setTimeout(() => {
                     handleCountryChange();
                 }, 300);
@@ -381,14 +380,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function handleCountryChange() {
-        console.log('handleCountryChange called. isAnyCountryBrazil:', isAnyCountryBrazil());
-        console.log('billing country BR:', isBrazilSelected('billing'));
-        console.log('shipping country BR:', isBrazilSelected('shipping'));
-        console.log('neighborhoodFieldsActive:', neighborhoodFieldsActive);
-        
         if (!isAnyCountryBrazil()) {
             // Se NENHUM país é Brasil, remover TODOS os campos
-            console.log('Removing all neighborhood fields - no Brazil country');
             if (neighborhoodFieldsActive) {
                 removeNeighborhoodFields();
             }
@@ -397,7 +390,6 @@ document.addEventListener("DOMContentLoaded", function () {
         
         // Se pelo menos um país é Brasil, verificar campos individuais
         if (!isBrazilSelected('billing')) {
-            console.log('Removing billing neighborhood - not Brazil');
             const billingField = document.querySelector('.wc-better-billing-neighborhood');
             if (billingField) {
                 billingField.remove();
@@ -413,7 +405,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         
         if (!isBrazilSelected('shipping')) {
-            console.log('Removing shipping neighborhood - not Brazil');
             const shippingField = document.querySelector('.wc-better-shipping-neighborhood');
             if (shippingField) {
                 shippingField.remove();
@@ -432,8 +423,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const hasFields = document.querySelector('.wc-better-billing-neighborhood') || 
                          document.querySelector('.wc-better-shipping-neighborhood');
         neighborhoodFieldsActive = !!hasFields;
-        
-        console.log('After handleCountryChange, neighborhoodFieldsActive:', neighborhoodFieldsActive);
     }
 
     function createNeighborhoodField(insertAfter, fieldId, labelText, initialValue) {

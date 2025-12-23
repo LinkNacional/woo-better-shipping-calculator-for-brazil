@@ -114,7 +114,6 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
 
             $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
-            error_log('Neighborhood Enabled: ' . $neighborhood_enabled);
                 
             if ($neighborhood_enabled === 'yes') {
                 wp_enqueue_style(

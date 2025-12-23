@@ -1017,8 +1017,6 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
-        error_log('aqui o billing: ' . $billing_country_code);
-
         // Salvar código do país do telefone de faturação
         if (!empty($billing_country_code)) {
             $order->update_meta_data('_billing_phone_country_code', $billing_country_code);

@@ -8,8 +8,6 @@ document.addEventListener("DOMContentLoaded", function () {
     let intervalCount = 0
     let checkboxCount = 0
 
-    console.log('chamouuuu')
-
     const observer = new MutationObserver((mutationsList) => {
         const shippingBlock = document.querySelector('#shipping')
 
