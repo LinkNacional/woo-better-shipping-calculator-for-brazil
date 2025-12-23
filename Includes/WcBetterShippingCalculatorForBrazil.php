@@ -809,6 +809,9 @@ class WcBetterShippingCalculatorForBrazil
         // Hooks para formatação de telefone no pedido final
         $this->loader->add_filter('woocommerce_order_get_billing_phone', $this, 'format_order_billing_phone', 10, 2);
         $this->loader->add_filter('woocommerce_order_get_shipping_phone', $this, 'format_order_shipping_phone', 10, 2);
+        
+        // Hook para validação de CPF/CNPJ no checkout
+        $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_person_type_documents');
     }
 
     /**
@@ -1272,6 +1275,247 @@ class WcBetterShippingCalculatorForBrazil
         }
         
         return $phone;
+    }
+    
+    /**
+     * Valida CPF usando algoritmo matemático
+     * @param string $cpf - CPF apenas com números
+     * @return boolean
+     */
+    private function validate_cpf($cpf) {
+        // Remove caracteres não numéricos
+        $cpf = preg_replace('/[^0-9]/', '', $cpf);
+        
+        // Verifica se tem 11 dígitos
+        if (strlen($cpf) !== 11) {
+            return false;
+        }
+        
+        // Verifica sequências inválidas (111.111.111-11, 222.222.222-22, etc.)
+        if (preg_match('/^(\d)\1{10}$/', $cpf)) {
+            return false;
+        }
+        
+        // Calcula primeiro dígito verificador
+        $sum = 0;
+        for ($i = 0; $i < 9; $i++) {
+            $sum += intval($cpf[$i]) * (10 - $i);
+        }
+        $first_digit = 11 - ($sum % 11);
+        if ($first_digit >= 10) {
+            $first_digit = 0;
+        }
+        
+        // Verifica primeiro dígito
+        if (intval($cpf[9]) !== $first_digit) {
+            return false;
+        }
+        
+        // Calcula segundo dígito verificador
+        $sum = 0;
+        for ($i = 0; $i < 10; $i++) {
+            $sum += intval($cpf[$i]) * (11 - $i);
+        }
+        $second_digit = 11 - ($sum % 11);
+        if ($second_digit >= 10) {
+            $second_digit = 0;
+        }
+        
+        // Verifica segundo dígito
+        return intval($cpf[10]) === $second_digit;
+    }
+    
+    /**
+     * Valida CNPJ usando algoritmo matemático
+     * @param string $cnpj - CNPJ apenas com números
+     * @return boolean
+     */
+    private function validate_cnpj($cnpj) {
+        // Remove caracteres não numéricos
+        $cnpj = preg_replace('/[^0-9]/', '', $cnpj);
+        
+        // Verifica se tem 14 dígitos
+        if (strlen($cnpj) !== 14) {
+            return false;
+        }
+        
+        // Verifica sequências inválidas
+        if (preg_match('/^(\d)\1{13}$/', $cnpj)) {
+            return false;
+        }
+        
+        // Pesos para o cálculo dos dígitos verificadores
+        $weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+        $weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+        
+        // Calcula primeiro dígito verificador
+        $sum = 0;
+        for ($i = 0; $i < 12; $i++) {
+            $sum += intval($cnpj[$i]) * $weights1[$i];
+        }
+        $first_digit = $sum % 11;
+        $first_digit = $first_digit < 2 ? 0 : 11 - $first_digit;
+        
+        // Verifica primeiro dígito
+        if (intval($cnpj[12]) !== $first_digit) {
+            return false;
+        }
+        
+        // Calcula segundo dígito verificador
+        $sum = 0;
+        for ($i = 0; $i < 13; $i++) {
+            $sum += intval($cnpj[$i]) * $weights2[$i];
+        }
+        $second_digit = $sum % 11;
+        $second_digit = $second_digit < 2 ? 0 : 11 - $second_digit;
+        
+        // Verifica segundo dígito
+        return intval($cnpj[13]) === $second_digit;
+    }
+    
+    /**
+     * Valida documento (CPF ou CNPJ) baseado no tamanho
+     * @param string $document - Documento com ou sem formatação
+     * @return array - ['is_valid' => boolean, 'type' => 'cpf'|'cnpj'|null, 'message' => string]
+     */
+    private function validate_document($document) {
+        $clean_doc = preg_replace('/[^0-9]/', '', $document);
+        
+        if (strlen($clean_doc) === 11) {
+            $is_valid_cpf = $this->validate_cpf($clean_doc);
+            return [
+                'is_valid' => $is_valid_cpf,
+                'type' => 'cpf',
+                'message' => $is_valid_cpf ? '' : 'CPF inválido. Verifique os números informados.'
+            ];
+        } elseif (strlen($clean_doc) === 14) {
+            $is_valid_cnpj = $this->validate_cnpj($clean_doc);
+            return [
+                'is_valid' => $is_valid_cnpj,
+                'type' => 'cnpj',
+                'message' => $is_valid_cnpj ? '' : 'CNPJ inválido. Verifique os números informados.'
+            ];
+        } else {
+            return [
+                'is_valid' => false,
+                'type' => null,
+                'message' => 'Documento deve ter 11 dígitos (CPF) ou 14 dígitos (CNPJ).'
+            ];
+        }
+    }
+    
+    /**
+     * Valida documentos de tipo de pessoa no checkout tradicional
+     */
+    public function validate_person_type_documents() {
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+        
+        // Só valida se o recurso estiver habilitado
+        if ($person_type === 'none') {
+            return;
+        }
+        
+        // Verifica se é Brasil
+        if (!$this->is_brazil_checkout()) {
+            return;
+        }
+        
+        // Captura dados do formulário
+        $billing_cpf = isset($_POST['billing_cpf']) ? sanitize_text_field(wp_unslash($_POST['billing_cpf'])) : '';
+        $billing_cnpj = isset($_POST['billing_cnpj']) ? sanitize_text_field(wp_unslash($_POST['billing_cnpj'])) : '';
+        $billing_document = isset($_POST['billing_document']) ? sanitize_text_field(wp_unslash($_POST['billing_document'])) : '';
+        
+        $document_to_validate = '';
+        $expected_type = null;
+        
+        // Determina qual documento validar
+        if (!empty($billing_document)) {
+            $document_to_validate = $billing_document;
+        } elseif (!empty($billing_cpf)) {
+            $document_to_validate = $billing_cpf;
+            $expected_type = 'cpf';
+        } elseif (!empty($billing_cnpj)) {
+            $document_to_validate = $billing_cnpj;
+            $expected_type = 'cnpj';
+        }
+        
+        // Se não há documento para validar, verifica se é obrigatório
+        if (empty($document_to_validate)) {
+            $error_message = $this->get_document_required_message($person_type);
+            if (!empty($error_message)) {
+                wc_add_notice($error_message, 'error');
+            }
+            return;
+        }
+        
+        // Valida o documento
+        $validation = $this->validate_document($document_to_validate);
+        
+        // Verifica se é válido
+        if (!$validation['is_valid']) {
+            wc_add_notice($validation['message'], 'error');
+            return;
+        }
+        
+        // Verifica se o tipo está correto com a configuração
+        if (!$this->is_document_type_allowed($validation['type'], $person_type)) {
+            $error_message = $this->get_document_type_error_message($validation['type'], $person_type);
+            wc_add_notice($error_message, 'error');
+        }
+    }
+    
+    /**
+     * Verifica se é checkout do Brasil
+     */
+    private function is_brazil_checkout() {
+        if (function_exists('WC') && WC()->customer) {
+            $billing_country = WC()->customer->get_billing_country();
+            $shipping_country = WC()->customer->get_shipping_country();
+            return $billing_country === 'BR' || $shipping_country === 'BR';
+        }
+        return true; // Assume Brasil por padrão
+    }
+    
+    /**
+     * Verifica se o tipo de documento é permitido na configuração
+     */
+    private function is_document_type_allowed($document_type, $person_type_config) {
+        if ($person_type_config === 'both') {
+            return true; // Qualquer tipo é permitido
+        }
+        if ($person_type_config === 'physical') {
+            return $document_type === 'cpf';
+        }
+        if ($person_type_config === 'legal') {
+            return $document_type === 'cnpj';
+        }
+        return false;
+    }
+    
+    /**
+     * Retorna mensagem de erro para documento obrigatório
+     */
+    private function get_document_required_message($person_type) {
+        if ($person_type === 'physical') {
+            return 'Por favor, insira seu CPF.';
+        } elseif ($person_type === 'legal') {
+            return 'Por favor, insira seu CNPJ.';
+        } elseif ($person_type === 'both') {
+            return 'Por favor, insira seu CPF ou CNPJ.';
+        }
+        return '';
+    }
+    
+    /**
+     * Retorna mensagem de erro para tipo de documento incorreto
+     */
+    private function get_document_type_error_message($document_type, $person_type_config) {
+        if ($person_type_config === 'physical' && $document_type === 'cnpj') {
+            return 'CNPJ não é permitido. Por favor, insira seu CPF.';
+        } elseif ($person_type_config === 'legal' && $document_type === 'cpf') {
+            return 'CPF não é permitido. Por favor, insira seu CNPJ.';
+        }
+        return 'Tipo de documento não permitido.';
     }
 
     public function process_checkout_data_classic($order_id, $data)

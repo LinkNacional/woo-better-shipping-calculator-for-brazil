@@ -17,6 +17,133 @@ document.addEventListener("DOMContentLoaded", function () {
         billing_document: '' // Campo unificado
     };
 
+    /**
+     * Valida CPF usando algoritmo matemático
+     * @param {string} cpf - CPF apenas com números
+     * @returns {boolean}
+     */
+    function validateCPF(cpf) {
+        // Remove caracteres não numéricos
+        cpf = cpf.replace(/[^0-9]/g, '');
+        
+        // Verifica se tem 11 dígitos
+        if (cpf.length !== 11) {
+            return false;
+        }
+        
+        // Verifica sequências inválidas (111.111.111-11, 222.222.222-22, etc.)
+        if (/^(\d)\1{10}$/.test(cpf)) {
+            return false;
+        }
+        
+        // Calcula primeiro dígito verificador
+        let sum = 0;
+        for (let i = 0; i < 9; i++) {
+            sum += parseInt(cpf[i]) * (10 - i);
+        }
+        let firstDigit = 11 - (sum % 11);
+        if (firstDigit >= 10) {
+            firstDigit = 0;
+        }
+        
+        // Verifica primeiro dígito
+        if (parseInt(cpf[9]) !== firstDigit) {
+            return false;
+        }
+        
+        // Calcula segundo dígito verificador
+        sum = 0;
+        for (let i = 0; i < 10; i++) {
+            sum += parseInt(cpf[i]) * (11 - i);
+        }
+        let secondDigit = 11 - (sum % 11);
+        if (secondDigit >= 10) {
+            secondDigit = 0;
+        }
+        
+        // Verifica segundo dígito
+        return parseInt(cpf[10]) === secondDigit;
+    }
+
+    /**
+     * Valida CNPJ usando algoritmo matemático
+     * @param {string} cnpj - CNPJ apenas com números
+     * @returns {boolean}
+     */
+    function validateCNPJ(cnpj) {
+        // Remove caracteres não numéricos
+        cnpj = cnpj.replace(/[^0-9]/g, '');
+        
+        // Verifica se tem 14 dígitos
+        if (cnpj.length !== 14) {
+            return false;
+        }
+        
+        // Verifica sequências inválidas (11.111.111/0001-11, 22.222.222/0001-22, etc.)
+        if (/^(\d)\1{13}$/.test(cnpj)) {
+            return false;
+        }
+        
+        // Pesos para o cálculo dos dígitos verificadores
+        const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+        const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+        
+        // Calcula primeiro dígito verificador
+        let sum = 0;
+        for (let i = 0; i < 12; i++) {
+            sum += parseInt(cnpj[i]) * weights1[i];
+        }
+        let firstDigit = sum % 11;
+        firstDigit = firstDigit < 2 ? 0 : 11 - firstDigit;
+        
+        // Verifica primeiro dígito
+        if (parseInt(cnpj[12]) !== firstDigit) {
+            return false;
+        }
+        
+        // Calcula segundo dígito verificador
+        sum = 0;
+        for (let i = 0; i < 13; i++) {
+            sum += parseInt(cnpj[i]) * weights2[i];
+        }
+        let secondDigit = sum % 11;
+        secondDigit = secondDigit < 2 ? 0 : 11 - secondDigit;
+        
+        // Verifica segundo dígito
+        return parseInt(cnpj[13]) === secondDigit;
+    }
+
+    /**
+     * Valida documento (CPF ou CNPJ) baseado no tamanho
+     * @param {string} document - Documento com ou sem formatação
+     * @returns {object} - {isValid: boolean, type: 'cpf'|'cnpj'|null, message: string}
+     */
+    function validateDocument(document) {
+        const cleanDoc = document.replace(/[^0-9]/g, '');
+        
+        if (cleanDoc.length === 11) {
+            const isValidCPF = validateCPF(cleanDoc);
+            return {
+                isValid: isValidCPF,
+                type: 'cpf',
+                message: isValidCPF ? '' : 'CPF inválido. Verifique os números informados.'
+            };
+        } else if (cleanDoc.length === 14) {
+            const isValidCNPJ = validateCNPJ(cleanDoc);
+            return {
+                isValid: isValidCNPJ,
+                type: 'cnpj',
+                message: isValidCNPJ ? '' : 'CNPJ inválido. Verifique os números informados.'
+            };
+        } else {
+            return {
+                isValid: false,
+                type: null,
+                message: 'Documento deve ter 11 dígitos (CPF) ou 14 dígitos (CNPJ).'
+            };
+        }
+    }
+
     // Função para verificar se o país selecionado é Brasil
     function isBrazilSelected() {
         const countryField = document.querySelector('#billing-country') ||
@@ -161,21 +288,39 @@ document.addEventListener("DOMContentLoaded", function () {
                             if (personTypeConfig === 'physical') {
                                 // Apenas CPF permitido
                                 if (cleanValue.length === 11) {
-                                    isValid = true;
+                                    // Validação matemática do CPF
+                                    const validation = validateDocument(cleanValue);
+                                    if (validation.isValid && validation.type === 'cpf') {
+                                        isValid = true;
+                                    } else {
+                                        errorMessage = validation.message || 'CPF inválido.';
+                                    }
                                 } else {
                                     errorMessage = 'Por favor, insira um CPF válido com 11 dígitos.';
                                 }
                             } else if (personTypeConfig === 'legal') {
                                 // Apenas CNPJ permitido
                                 if (cleanValue.length === 14) {
-                                    isValid = true;
+                                    // Validação matemática do CNPJ
+                                    const validation = validateDocument(cleanValue);
+                                    if (validation.isValid && validation.type === 'cnpj') {
+                                        isValid = true;
+                                    } else {
+                                        errorMessage = validation.message || 'CNPJ inválido.';
+                                    }
                                 } else {
                                     errorMessage = 'Por favor, insira um CNPJ válido com 14 dígitos.';
                                 }
                             } else if (personTypeConfig === 'both') {
                                 // CPF ou CNPJ permitidos
                                 if (cleanValue.length === 11 || cleanValue.length === 14) {
-                                    isValid = true;
+                                    // Validação matemática do documento
+                                    const validation = validateDocument(cleanValue);
+                                    if (validation.isValid) {
+                                        isValid = true;
+                                    } else {
+                                        errorMessage = validation.message || 'Documento inválido.';
+                                    }
                                 } else {
                                     errorMessage = 'Por favor, insira um CPF completo (11 dígitos) ou CNPJ completo (14 dígitos).';
                                 }
