@@ -2260,14 +2260,60 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        // Guarda os dados de bairro na sessão
+        $billing_neighborhood = '';
+        $shipping_neighborhood = '';
+
+        // Captura os dados de bairro
         if ( isset( $data['billing_neighborhood'] ) ) {
             $billing_neighborhood = sanitize_text_field( (string) $data['billing_neighborhood'] );
-            WC()->session->set( 'billing_neighborhood', $billing_neighborhood );
         }
 
         if ( isset( $data['shipping_neighborhood'] ) ) {
             $shipping_neighborhood = sanitize_text_field( (string) $data['shipping_neighborhood'] );
+        }
+
+        // Detecta se está usando o mesmo endereço para cobrança
+        $use_same_address = false;
+        if (WC()->customer) {
+            // Verifica se os endereços de entrega e cobrança são iguais
+            $billing_address = WC()->customer->get_billing_address_1();
+            $shipping_address = WC()->customer->get_shipping_address_1();
+            $billing_city = WC()->customer->get_billing_city();
+            $shipping_city = WC()->customer->get_shipping_city();
+            $billing_postcode = WC()->customer->get_billing_postcode();
+            $shipping_postcode = WC()->customer->get_shipping_postcode();
+            
+            if (!empty($billing_address) && !empty($shipping_address) && 
+                $billing_address === $shipping_address && 
+                $billing_city === $shipping_city && 
+                $billing_postcode === $shipping_postcode) {
+                $use_same_address = true;
+            }
+        }
+        
+        // Lógica de sincronização considerando o checkbox de mesmo endereço
+        if ($use_same_address) {
+            // Se usar mesmo endereço, prioriza o bairro de entrega (shipping)
+            if (!empty($shipping_neighborhood)) {
+                $billing_neighborhood = $shipping_neighborhood;
+            } elseif (!empty($billing_neighborhood)) {
+                $shipping_neighborhood = $billing_neighborhood;
+            }
+        } else {
+            // Lógica original quando não usa mesmo endereço
+            if (!empty($billing_neighborhood) && empty($shipping_neighborhood)) {
+                $shipping_neighborhood = $billing_neighborhood;
+            } elseif (!empty($shipping_neighborhood) && empty($billing_neighborhood)) {
+                $billing_neighborhood = $shipping_neighborhood;
+            }
+        }
+
+        // Guarda os dados de bairro na sessão
+        if (!empty($billing_neighborhood)) {
+            WC()->session->set( 'billing_neighborhood', $billing_neighborhood );
+        }
+
+        if (!empty($shipping_neighborhood)) {
             WC()->session->set( 'shipping_neighborhood', $shipping_neighborhood );
         }
     }
@@ -3085,6 +3131,26 @@ class WcBetterShippingCalculatorForBrazil
             }
             if (empty($shipping_neighborhood) && isset($_POST['shipping_neighborhood'])) {
                 $shipping_neighborhood = sanitize_text_field(wp_unslash($_POST['shipping_neighborhood']));
+            }
+
+            // Detecta se está usando o mesmo endereço
+            $use_same_address = $this->detect_same_address_usage_from_request($order, $request);
+            
+            // Lógica de sincronização considerando o checkbox de mesmo endereço
+            if ($use_same_address) {
+                // Se usar mesmo endereço, prioriza o bairro de entrega (shipping)
+                if (!empty($shipping_neighborhood)) {
+                    $billing_neighborhood = $shipping_neighborhood;
+                } elseif (!empty($billing_neighborhood)) {
+                    $shipping_neighborhood = $billing_neighborhood;
+                }
+            } else {
+                // Lógica original quando não usa mesmo endereço
+                if (!empty($billing_neighborhood) && empty($shipping_neighborhood)) {
+                    $shipping_neighborhood = $billing_neighborhood;
+                } elseif (!empty($shipping_neighborhood) && empty($billing_neighborhood)) {
+                    $billing_neighborhood = $shipping_neighborhood;
+                }
             }
 
             // Salva os bairros
