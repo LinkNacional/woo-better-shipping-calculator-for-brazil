@@ -13,7 +13,7 @@
  * @package           WcBetterShippingCalculatorForBrazil
  *
  * @wordpress-plugin
- * Plugin Name:       Calculadora de Frete para o Brasil
+ * Plugin Name:       Calculadora de Frete e Campos Checkout para o Brasil
  * Plugin URI:        https://www.linknacional.com.br/wordpress
  * Description:       Calculadora automática de Frete com CEP para Woocommerce. Sem necessidade de informar o Pais e estado. Compatível com Gutenberg e shortcodes. Ideal para Lojas Brasileiras.
  * Version:           4.7.0-rc.1

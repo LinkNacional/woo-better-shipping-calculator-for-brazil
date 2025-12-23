@@ -1,4 +1,4 @@
-=== Calculadora de Frete para o Brasil ===
+=== Calculadora de Frete e Campos Checkout para o Brasil ===
 Contributors: LinkNacional, luizbills
 Donate link:
 Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
