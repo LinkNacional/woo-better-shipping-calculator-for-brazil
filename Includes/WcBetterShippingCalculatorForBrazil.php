@@ -929,11 +929,54 @@ class WcBetterShippingCalculatorForBrazil
         // Get order meta data
         $shipping_phone_country_code = $order->get_meta('_shipping_phone_country_code');
         
-        // Determine phone label
-        $phone_label = __('Telefone', 'woo-better-shipping-calculator-for-brazil');
+        // Prepare display data
+        $display_data = $this->prepare_shipping_display_data($order, $phone_required, $shipping_phone_country_code);
         
-        // Include the shipping data view
-        include dirname(__FILE__) . '/../Admin/partials/WcBetterShippingCalculatorForBrazilOrderShippingData.php';
+        // Only show section if there's data to display
+        if (!empty($display_data)) {
+            // Include the shipping data view
+            include dirname(__FILE__) . '/../Admin/partials/WcBetterShippingCalculatorForBrazilOrderShippingData.php';
+        }
+    }
+    
+    /**
+     * Prepare shipping display data
+     * 
+     * @param WC_Order $order
+     * @param string $phone_required
+     * @param string $shipping_phone_country_code
+     * @return array
+     */
+    private function prepare_shipping_display_data($order, $phone_required, $shipping_phone_country_code)
+    {
+        $display_data = [];
+        
+        // Phone data
+        if ($phone_required === 'yes') {
+            $phone = $order->get_shipping_phone();
+            if (!empty($phone)) {
+                $display_data['phone'] = [
+                    'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
+                    'value' => $phone,
+                    'is_link' => true
+                ];
+                
+                // Country code
+                if (str_starts_with($phone, '+') && !empty($shipping_phone_country_code)) {
+                    $clean_country_code = trim($shipping_phone_country_code);
+                    if (!str_starts_with($clean_country_code, '+')) {
+                        $clean_country_code = '+' . $clean_country_code;
+                    }
+                    
+                    $display_data['phone_country'] = [
+                        'label' => __('Código do país', 'woo-better-shipping-calculator-for-brazil'),
+                        'value' => $clean_country_code
+                    ];
+                }
+            }
+        }
+        
+        return $display_data;
     }
 
     /**
@@ -962,11 +1005,145 @@ class WcBetterShippingCalculatorForBrazil
         $billing_cnpj = $order->get_meta('_billing_cnpj');
         $billing_phone_country_code = $order->get_meta('_billing_phone_country_code');
         
-        // Determine phone label
-        $phone_label = __('Telefone', 'woo-better-shipping-calculator-for-brazil');
+        // Prepare display data
+        $display_data = $this->prepare_billing_display_data($order, $person_type, $phone_required, $billing_persontype, $billing_cpf, $billing_cnpj, $billing_phone_country_code);
         
-        // Include the billing data view
-        include dirname(__FILE__) . '/../Admin/partials/WcBetterShippingCalculatorForBrazilOrderBillingData.php';
+        // Only show section if there's data to display
+        if (!empty($display_data)) {
+            // Include the billing data view
+            include dirname(__FILE__) . '/../Admin/partials/WcBetterShippingCalculatorForBrazilOrderBillingData.php';
+        }
+    }
+    
+    /**
+     * Prepare billing display data
+     * 
+     * @param WC_Order $order
+     * @param string $person_type
+     * @param string $phone_required
+     * @param string $billing_persontype
+     * @param string $billing_cpf
+     * @param string $billing_cnpj
+     * @param string $billing_phone_country_code
+     * @return array
+     */
+    private function prepare_billing_display_data($order, $person_type, $phone_required, $billing_persontype, $billing_cpf, $billing_cnpj, $billing_phone_country_code)
+    {
+        $display_data = [];
+        
+        // Convert numeric persontype to string (1 = physical, 2 = legal)
+        if (is_numeric($billing_persontype)) {
+            $billing_persontype = ($billing_persontype == '1') ? 'physical' : 'legal';
+        }
+        
+        // Process person type data
+        if ($person_type !== 'none') {
+            // Physical person data (CPF)
+            if ($this->should_show_physical_data($person_type, $billing_persontype)) {
+                if (!empty($billing_cpf)) {
+                    $display_data['cpf'] = [
+                        'label' => __('CPF', 'woo-better-shipping-calculator-for-brazil'),
+                        'value' => $billing_cpf
+                    ];
+                }
+            }
+            
+            // Legal person data (Company and CNPJ)
+            if ($this->should_show_legal_data($person_type, $billing_persontype)) {
+                $company = $order->get_billing_company();
+                if (!empty($company)) {
+                    $display_data['company'] = [
+                        'label' => __('Empresa', 'woo-better-shipping-calculator-for-brazil'),
+                        'value' => $company
+                    ];
+                }
+                if (!empty($billing_cnpj)) {
+                    $display_data['cnpj'] = [
+                        'label' => __('CNPJ', 'woo-better-shipping-calculator-for-brazil'),
+                        'value' => $billing_cnpj
+                    ];
+                }
+            }
+            
+            // Person type label (only for 'both' setting)
+            if ($person_type === 'both' && !empty($billing_persontype)) {
+                $person_type_label = '';
+                if ($billing_persontype === 'physical') {
+                    $person_type_label = __('Pessoa Física', 'woo-better-shipping-calculator-for-brazil');
+                } elseif ($billing_persontype === 'legal') {
+                    $person_type_label = __('Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil');
+                }
+                
+                if (!empty($person_type_label)) {
+                    $display_data['person_type'] = [
+                        'label' => __('Tipo de Pessoa', 'woo-better-shipping-calculator-for-brazil'),
+                        'value' => $person_type_label
+                    ];
+                }
+            }
+        } else {
+            // When person type is 'none', only show company if available
+            $company = $order->get_billing_company();
+            if (!empty($company)) {
+                $display_data['company'] = [
+                    'label' => __('Empresa', 'woo-better-shipping-calculator-for-brazil'),
+                    'value' => $company
+                ];
+            }
+        }
+        
+        // Phone data
+        if ($phone_required === 'yes') {
+            $phone = $order->get_billing_phone();
+            if (!empty($phone)) {
+                $display_data['phone'] = [
+                    'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
+                    'value' => $phone,
+                    'is_link' => true
+                ];
+                
+                // Country code
+                if (str_starts_with($phone, '+') && !empty($billing_phone_country_code)) {
+                    $clean_country_code = trim($billing_phone_country_code);
+                    if (!str_starts_with($clean_country_code, '+')) {
+                        $clean_country_code = '+' . $clean_country_code;
+                    }
+                    
+                    $display_data['phone_country'] = [
+                        'label' => __('Código do país', 'woo-better-shipping-calculator-for-brazil'),
+                        'value' => $clean_country_code
+                    ];
+                }
+            }
+        }
+        
+        // Email data
+        $email = $order->get_billing_email();
+        if (!empty($email)) {
+            $display_data['email'] = [
+                'label' => __('Email', 'woo-better-shipping-calculator-for-brazil'),
+                'value' => $email,
+                'is_clickable' => true
+            ];
+        }
+        
+        return $display_data;
+    }
+    
+    /**
+     * Check if should show physical person data
+     */
+    private function should_show_physical_data($person_type, $billing_persontype)
+    {
+        return ($billing_persontype === 'physical' && ($person_type === 'both' || $person_type === 'physical')) || $person_type === 'physical';
+    }
+    
+    /**
+     * Check if should show legal person data
+     */
+    private function should_show_legal_data($person_type, $billing_persontype)
+    {
+        return ($billing_persontype === 'legal' && ($person_type === 'both' || $person_type === 'legal')) || $person_type === 'legal';
     }
 
     public function process_checkout_data_classic($order_id, $data)
