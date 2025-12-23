@@ -39,7 +39,7 @@ jobs:
       run: |
         mkdir -p dist
         mkdir -p build/${{ env.PLUGIN_NAME }}
-        mv ./Admin ./Includes ./languages ./Public *.php *.txt ./build/${{ env.PLUGIN_NAME }}
+        cp -r ./Admin ./Includes ./languages ./Public *.php *.txt ./build/${{ env.PLUGIN_NAME }}
         cp -r vendor build/${{ env.PLUGIN_NAME }}/vendor
         find ./build -type f -exec chmod 0644 {} +
         find ./build -type d -exec chmod 0755 {} +
@@ -85,10 +85,6 @@ jobs:
         FULL_VERSION="${{ env.DEPLOY_TAG }}"
         
         echo "Converting from: $FULL_VERSION to: $BASE_VERSION"
-        
-        # Checkout fresh copy to avoid conflicts
-        git checkout release-candidate
-        git pull origin release-candidate
         
         # Remove suffix from main plugin file
         sed -i "s/${FULL_VERSION}/${BASE_VERSION}/g" wc-better-shipping-calculator-for-brazil.php
