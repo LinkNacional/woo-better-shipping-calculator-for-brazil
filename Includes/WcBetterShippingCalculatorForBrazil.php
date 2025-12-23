@@ -1524,6 +1524,10 @@ class WcBetterShippingCalculatorForBrazil
         if (!$order) {
             return;
         }
+        // LOG: Captura números de telefone do pedido para debug
+        $billing_phone = $order->get_billing_phone();
+        $shipping_phone = $order->get_shipping_phone();
+
         // Processa números de endereço primeiro
         $this->process_address_numbers_from_data($order, $data);
         
@@ -1587,6 +1591,10 @@ class WcBetterShippingCalculatorForBrazil
         if (!$order) {
             return;
         }
+
+        // LOG: Captura números de telefone do pedido para debug
+        $billing_phone = $order->get_billing_phone();
+        $shipping_phone = $order->get_shipping_phone();
 
         // Processa números de endereço primeiro
         $this->process_address_numbers_from_request($order, $request);

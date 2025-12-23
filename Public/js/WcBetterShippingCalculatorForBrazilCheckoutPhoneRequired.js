@@ -37,6 +37,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 phoneField.dataset.intlTelInputInitialized = 'true';
                 adjustPhoneLabel(phoneField);
                 
+                // Formata valor inicial se já existir um número com +
+                const initialValue = phoneField.value;
+                if (initialValue && initialValue.includes('+')) {
+                    setTimeout(() => {
+                        formatInitialPhoneValue(initialValue);
+                    }, 100);
+                }
+                
                 // Atualiza o campo de código do país na inicialização
                 setTimeout(() => {
                     const countryData = iti.getSelectedCountryData();
@@ -72,6 +80,102 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 }, 50);
+                
+                function formatInitialPhoneValue(initialValue) {
+                    try {
+                        if (!initialValue || !initialValue.includes('+')) {
+                            return;
+                        }
+                        
+                        // Remove espaços e caracteres especiais, mantém só números após o +
+                        const cleanValue = initialValue.replace(/[^\d+]/g, '');
+                        
+                        if (cleanValue.startsWith('+') && cleanValue.length > 1) {
+                            // Extrai apenas os números após o +
+                            const numbers = cleanValue.substring(1);
+                            
+                            if (numbers.length > 0) {
+                                // Tenta diferentes tamanhos de código de país (1-4 dígitos)
+                                let countryDetected = false;
+                                
+                                for (let codeLength = 1; codeLength <= 4 && !countryDetected; codeLength++) {
+                                    if (numbers.length >= codeLength) {
+                                        const potentialCode = numbers.substring(0, codeLength);
+                                        const remainingNumber = numbers.substring(codeLength);
+                                        
+                                        // Tenta definir o país pelo código
+                                        try {
+                                            const testCountries = iti.getCountryData();
+                                            const foundCountry = testCountries.find(country => 
+                                                country.dialCode === potentialCode
+                                            );
+                                            
+                                            if (foundCountry && remainingNumber.length > 0) {
+                                                // País encontrado, define ele
+                                                iti.setCountry(foundCountry.iso2);
+                                                
+                                                // Agora formata o número restante
+                                                try {
+                                                    const formatted = intlTelInputUtils.formatNumber(
+                                                        remainingNumber, 
+                                                        foundCountry.iso2, 
+                                                        intlTelInputUtils.numberFormat.NATIONAL
+                                                    );
+
+                                                    if (formatted && formatted !== 'Invalid number') {
+                                                        // Formato final: +{country_code} {número formatado}
+                                                        const finalValue = `+${potentialCode} ${formatted}`;
+                                                        
+                                                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                                        nativeSetter.call(phoneField, finalValue);
+                                                        
+                                                        // Atualiza campos hidden
+                                                        updateHiddenCountryCodeField(fieldSelector, `+${potentialCode}`);
+                                                        
+                                                        triggerReactChange(phoneField, finalValue);
+                                                        countryDetected = true;
+                                                    }
+                                                } catch (formatError) {
+                                                    // Continua tentando outros tamanhos de código
+                                                }
+                                            }
+                                        } catch (error) {
+                                            // Continua tentando outros tamanhos de código
+                                        }
+                                    }
+                                }
+                                
+                                // Se não conseguiu detectar o país, usa o país padrão
+                                if (!countryDetected) {
+                                    const countryData = iti.getSelectedCountryData();
+                                    const dialCode = '+' + countryData.dialCode;
+                                    
+                                    try {
+                                        const formatted = intlTelInputUtils.formatNumber(
+                                            numbers, 
+                                            countryData.iso2, 
+                                            intlTelInputUtils.numberFormat.NATIONAL
+                                        );
+
+                                        if (formatted && formatted !== 'Invalid number') {
+                                            const finalValue = `${dialCode} ${formatted}`;
+                                            
+                                            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                            nativeSetter.call(phoneField, finalValue);
+                                            
+                                            updateHiddenCountryCodeField(fieldSelector, dialCode);
+                                            triggerReactChange(phoneField, finalValue);
+                                        }
+                                    } catch (formatError) {
+                                        // Erro na formatação com país padrão
+                                    }
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Erro na formatação inicial do telefone:', error);
+                    }
+                }
                 
                 function applyPhoneFormatting(event, context = 'input') {
                     try {
