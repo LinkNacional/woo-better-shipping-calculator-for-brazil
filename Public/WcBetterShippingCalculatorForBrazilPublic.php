@@ -100,6 +100,31 @@ class WcBetterShippingCalculatorForBrazilPublic
         }
         
         if ($is_checkout_page) {
+
+            $person_type = get_option('woo_better_calc_person_type_select', 'none');
+                
+            if ($person_type !== 'none') {
+                wp_enqueue_style(
+                    $this->plugin_name . '-person-type',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPersonType.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
+
+            $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+                
+            if ($neighborhood_enabled === 'yes') {
+                wp_enqueue_style(
+                    $this->plugin_name . '-neighborhood',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilNeighborhood.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
+
             $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
             if($cep_position === 'yes')
             {
@@ -251,7 +276,50 @@ class WcBetterShippingCalculatorForBrazilPublic
                 }
             }
 
-            if ($number_field === 'yes' && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
+            // Registrar script para campos de pessoa física/jurídica no checkout de blocos
+            $person_type = get_option('woo_better_calc_person_type_select', 'none');
+            
+            if ($person_type !== 'none') {
+                // Obter dados de sessão para pessoa física/jurídica
+                $billing_persontype = '';
+                $billing_cpf = '';
+                $billing_cnpj = '';
+                
+                if (function_exists('WC') && WC()->session) {
+                    $billing_persontype = WC()->session->get('billing_persontype', '');
+                    $billing_cpf = WC()->session->get('billing_cpf', '');
+                    $billing_cnpj = WC()->session->get('billing_cnpj', '');
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-person-type',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergPersonType.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-person-type',
+                    'WooBetterPersonTypeData',
+                    array(
+                        'billing_persontype' => $billing_persontype,
+                        'billing_cpf' => $billing_cpf,
+                        'billing_cnpj' => $billing_cnpj
+                    )
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-person-type',
+                    'WooBetterPersonTypeConfig',
+                    array(
+                        'person_type' => $person_type,
+                        'show_select' => ($person_type === 'both') // Só mostrar select quando for 'both'
+                    )
+                );
+            }
+
+            if ($number_field === 'yes') {
 
                 $billing_number = '';
                 $shipping_number = '';
@@ -278,6 +346,37 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
+            // Registrar script para campos de bairro no checkout de blocos
+            $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+            
+            if ($neighborhood_enabled === 'yes') {
+                // Obter dados de sessão para campos de bairro
+                $billing_neighborhood = '';
+                $shipping_neighborhood = '';
+                
+                if (function_exists('WC') && WC()->session) {
+                    $billing_neighborhood = WC()->session->get('billing_neighborhood', '');
+                    $shipping_neighborhood = WC()->session->get('shipping_neighborhood', '');
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-neighborhood',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergNeighborhood.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-neighborhood',
+                    'WooBetterNeighborhoodData',
+                    array(
+                        'billing_neighborhood' => $billing_neighborhood,
+                        'shipping_neighborhood' => $shipping_neighborhood
+                    )
+                );
+            }
+
             if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-disabled-shipping',
@@ -285,6 +384,82 @@ class WcBetterShippingCalculatorForBrazilPublic
                     array(),
                     $this->version,
                     false
+                );
+            }
+        }
+
+        // Registrar scripts para checkout shortcode (tradicional)
+        if ($has_checkout_shortcode) {
+            $person_type = get_option('woo_better_calc_person_type_select', 'none');
+            
+            if ($person_type !== 'none') {
+                // Obter dados de sessão para pessoa física/jurídica
+                $billing_persontype = '';
+                $billing_cpf = '';
+                $billing_cnpj = '';
+                
+                if (function_exists('WC') && WC()->session) {
+                    $billing_persontype = WC()->session->get('billing_persontype', '');
+                    $billing_cpf = WC()->session->get('billing_cpf', '');
+                    $billing_cnpj = WC()->session->get('billing_cnpj', '');
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-shortcode-person-type',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodePersonType.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-shortcode-person-type',
+                    'WooBetterPersonTypeData',
+                    array(
+                        'billing_persontype' => $billing_persontype,
+                        'billing_cpf' => $billing_cpf,
+                        'billing_cnpj' => $billing_cnpj
+                    )
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-shortcode-person-type',
+                    'WooBetterPersonTypeConfig',
+                    array(
+                        'person_type' => $person_type,
+                        'show_select' => ($person_type === 'both') // Só mostrar select quando for 'both'
+                    )
+                );
+            }
+            
+            // Registrar script para campos de bairro no checkout shortcode (tradicional)
+            $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+            
+            if ($neighborhood_enabled === 'yes') {
+                // Obter dados de sessão para campos de bairro
+                $billing_neighborhood = '';
+                $shipping_neighborhood = '';
+                
+                if (function_exists('WC') && WC()->session) {
+                    $billing_neighborhood = WC()->session->get('billing_neighborhood', '');
+                    $shipping_neighborhood = WC()->session->get('shipping_neighborhood', '');
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-shortcode-neighborhood',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeNeighborhood.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-shortcode-neighborhood',
+                    'WooBetterNeighborhoodData',
+                    array(
+                        'billing_neighborhood' => $billing_neighborhood,
+                        'shipping_neighborhood' => $shipping_neighborhood
+                    )
                 );
             }
         }
