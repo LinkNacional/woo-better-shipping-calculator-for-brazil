@@ -805,6 +805,10 @@ class WcBetterShippingCalculatorForBrazil
         // NOVO: Hook para restaurar endereço quando carrinho for modificado
         $this->loader->add_action('woocommerce_cart_updated', $this, 'restore_address_after_cart_change');
         $this->loader->add_action('woocommerce_add_to_cart', $this, 'restore_address_after_cart_change');
+        
+        // Hooks para formatação de telefone no pedido final
+        $this->loader->add_filter('woocommerce_order_get_billing_phone', $this, 'format_order_billing_phone', 10, 2);
+        $this->loader->add_filter('woocommerce_order_get_shipping_phone', $this, 'format_order_shipping_phone', 10, 2);
     }
 
     /**
@@ -853,6 +857,15 @@ class WcBetterShippingCalculatorForBrazil
             $replacements['{neighborhood}'] = '';
         }
         
+        // Adiciona substituição para número do endereço
+        $number_enabled = get_option('woo_better_calc_number_required', 'no');
+        
+        if ($number_enabled === 'yes' && isset($address['number'])) {
+            $replacements['{number}'] = ' - ' . $address['number'];
+        } else {
+            $replacements['{number}'] = '';
+        }
+        
         return $replacements;
     }
 
@@ -865,10 +878,17 @@ class WcBetterShippingCalculatorForBrazil
     public function add_neighborhood_to_address_format($formats)
     {
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        $number_enabled = get_option('woo_better_calc_number_required', 'no');
         
-        if ($neighborhood_enabled === 'yes') {
-            // Modifica o formato do Brasil para incluir bairro após o endereço principal
+        if ($neighborhood_enabled === 'yes' && $number_enabled === 'yes') {
+            // Modifica o formato do Brasil para incluir bairro e número
+            $formats['BR'] = "{name}\n{company}\n{address_1}{number}\n{neighborhood}\n{address_2}\n{city}\n{state}\n{postcode}\n{country}";
+        } elseif ($neighborhood_enabled === 'yes') {
+            // Só bairro
             $formats['BR'] = "{name}\n{company}\n{address_1}\n{neighborhood}\n{address_2}\n{city}\n{state}\n{postcode}\n{country}";
+        } elseif ($number_enabled === 'yes') {
+            // Só número
+            $formats['BR'] = "{name}\n{company}\n{address_1}{number}\n{address_2}\n{city}\n{state}\n{postcode}\n{country}";
         }
         
         return $formats;
@@ -884,11 +904,19 @@ class WcBetterShippingCalculatorForBrazil
     public function add_neighborhood_to_billing_address($address, $order)
     {
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        $number_enabled = get_option('woo_better_calc_number_required', 'no');
         
         if ($neighborhood_enabled === 'yes') {
             $billing_neighborhood = $order->get_meta('_billing_neighborhood');
             if (!empty($billing_neighborhood)) {
                 $address['neighborhood'] = $billing_neighborhood;
+            }
+        }
+        
+        if ($number_enabled === 'yes') {
+            $billing_number = $order->get_meta('_billing_number');
+            if (!empty($billing_number)) {
+                $address['number'] = $billing_number;
             }
         }
         
@@ -905,11 +933,19 @@ class WcBetterShippingCalculatorForBrazil
     public function add_neighborhood_to_shipping_address($address, $order)
     {
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        $number_enabled = get_option('woo_better_calc_number_required', 'no');
         
         if ($neighborhood_enabled === 'yes') {
             $shipping_neighborhood = $order->get_meta('_shipping_neighborhood');
             if (!empty($shipping_neighborhood)) {
                 $address['neighborhood'] = $shipping_neighborhood;
+            }
+        }
+        
+        if ($number_enabled === 'yes') {
+            $shipping_number = $order->get_meta('_shipping_number');
+            if (!empty($shipping_number)) {
+                $address['number'] = $shipping_number;
             }
         }
         
@@ -955,13 +991,16 @@ class WcBetterShippingCalculatorForBrazil
         if ($phone_required === 'yes') {
             $phone = $order->get_shipping_phone();
             if (!empty($phone)) {
+                // Formatar telefone completo
+                $formatted_phone = $this->format_complete_phone($phone, $shipping_phone_country_code);
+                
                 $display_data['phone'] = [
                     'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => $phone,
+                    'value' => $formatted_phone, // Usar telefone formatado
                     'is_link' => true
                 ];
                 
-                // Country code
+                // Country code (opcional, já que está incluído no telefone formatado)
                 if (str_starts_with($phone, '+') && !empty($shipping_phone_country_code)) {
                     $clean_country_code = trim($shipping_phone_country_code);
                     if (!str_starts_with($clean_country_code, '+')) {
@@ -1096,13 +1135,16 @@ class WcBetterShippingCalculatorForBrazil
         if ($phone_required === 'yes') {
             $phone = $order->get_billing_phone();
             if (!empty($phone)) {
+                // Formatar telefone completo
+                $formatted_phone = $this->format_complete_phone($phone, $billing_phone_country_code);
+                
                 $display_data['phone'] = [
                     'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => $phone,
+                    'value' => $formatted_phone, // Usar telefone formatado
                     'is_link' => true
                 ];
                 
-                // Country code
+                // Country code (opcional, já que está incluído no telefone formatado)
                 if (str_starts_with($phone, '+') && !empty($billing_phone_country_code)) {
                     $clean_country_code = trim($billing_phone_country_code);
                     if (!str_starts_with($clean_country_code, '+')) {
@@ -1144,6 +1186,92 @@ class WcBetterShippingCalculatorForBrazil
     private function should_show_legal_data($person_type, $billing_persontype)
     {
         return ($billing_persontype === 'legal' && ($person_type === 'both' || $person_type === 'legal')) || $person_type === 'legal';
+    }
+    
+    /**
+     * Formata telefone completo removendo caracteres especiais
+     * 
+     * @param string $phone Número de telefone
+     * @param string $country_code Código do país
+     * @return string Telefone formatado como +5599999999999
+     */
+    private function format_complete_phone($phone, $country_code = '')
+    {
+        if (empty($phone)) {
+            return '';
+        }
+        
+        // Remove todos os caracteres especiais, deixa apenas números e +
+        $clean_phone = preg_replace('/[^0-9+]/', '', $phone);
+        
+        // Se já começa com +, usa como está
+        if (strpos($clean_phone, '+') === 0) {
+            return $clean_phone;
+        }
+        
+        // Tenta usar o código do país se fornecido
+        if (!empty($country_code)) {
+            $clean_country_code = preg_replace('/[^0-9+]/', '', $country_code);
+            
+            // Garante que o código do país começa com +
+            if (strpos($clean_country_code, '+') !== 0) {
+                $clean_country_code = '+' . $clean_country_code;
+            }
+            
+            // Remove o código do país do telefone se já estiver lá
+            $country_digits = substr($clean_country_code, 1); // Remove o +
+            if (strpos($clean_phone, $country_digits) === 0) {
+                $clean_phone = substr($clean_phone, strlen($country_digits));
+            }
+            
+            return $clean_country_code . $clean_phone;
+        }
+        
+        // Se não tem código do país, assume Brasil (+55) se não começar com código internacional
+        if (strlen($clean_phone) <= 11) {
+            return '+55' . $clean_phone;
+        }
+        
+        // Se tem mais de 11 dígitos, adiciona + no início
+        return '+' . $clean_phone;
+    }
+    
+    /**
+     * Formatar telefone de cobrança no pedido final
+     *
+     * @param string $phone
+     * @param WC_Order $order
+     * @return string
+     */
+    public function format_order_billing_phone($phone, $order)
+    {
+        $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        
+        if ($phone_required === 'yes' && !empty($phone)) {
+            $country_code = $order->get_meta('_billing_phone_country_code');
+            return $this->format_complete_phone($phone, $country_code);
+        }
+        
+        return $phone;
+    }
+    
+    /**
+     * Formatar telefone de entrega no pedido final
+     *
+     * @param string $phone
+     * @param WC_Order $order
+     * @return string
+     */
+    public function format_order_shipping_phone($phone, $order)
+    {
+        $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        
+        if ($phone_required === 'yes' && !empty($phone)) {
+            $country_code = $order->get_meta('_shipping_phone_country_code');
+            return $this->format_complete_phone($phone, $country_code);
+        }
+        
+        return $phone;
     }
 
     public function process_checkout_data_classic($order_id, $data)
@@ -1324,33 +1452,16 @@ class WcBetterShippingCalculatorForBrazil
                 $shipping_number = "S/N";
                 $billing_number = "S/N";
             }
-
-            // Obtém os valores dos endereços do pedido
-            $billing_address = $order->get_billing_address_1();
-            $shipping_address = $order->get_shipping_address_1();
-
-            if (!empty($billing_address)) {
-                $new_billing = $billing_address . ' - ' . $billing_number;
-                $order->set_billing_address_1($new_billing);
-                WC()->session->set('woo_better_billing_number', $billing_number);
-            }
-
-            if (!empty($shipping_address)) {
-                if($billing_address == $shipping_address){
-                    $shipping_number = $billing_number;
-                }
-                $new_shipping = $shipping_address . ' - ' . $shipping_number;
-                $order->set_shipping_address_1($new_shipping);
-                WC()->session->set('woo_better_shipping_number', $shipping_number);
-            }
             
-            // Salva os números como meta dados separados
+            // Salva os números como meta dados separados (sem concatenar no endereço)
             if (!empty($billing_number)) {
                 $order->update_meta_data('_billing_number', $billing_number);
+                WC()->session->set('woo_better_billing_number', $billing_number);
             }
             
             if (!empty($shipping_number)) {
                 $order->update_meta_data('_shipping_number', $shipping_number);
+                WC()->session->set('woo_better_shipping_number', $shipping_number);
             }
         }
     }
@@ -1407,33 +1518,16 @@ class WcBetterShippingCalculatorForBrazil
                 $shipping_number = "S/N";
                 $billing_number = "S/N";
             }
-
-            // Obtém os valores dos endereços do pedido
-            $billing_address = $order->get_billing_address_1();
-            $shipping_address = $order->get_shipping_address_1();
-
-            if (!empty($billing_address)) {
-                $new_billing = $billing_address . ' - ' . $billing_number;
-                $order->set_billing_address_1($new_billing);
-                WC()->session->set('woo_better_billing_number', $billing_number);
-            }
-
-            if (!empty($shipping_address)) {
-                if($billing_address == $shipping_address){
-                    $shipping_number = $billing_number;
-                }
-                $new_shipping = $shipping_address . ' - ' . $shipping_number;
-                $order->set_shipping_address_1($new_shipping);
-                WC()->session->set('woo_better_shipping_number', $shipping_number);
-            }
             
-            // Salva os números como meta dados separados
+            // Salva os números como meta dados separados (sem concatenar no endereço)
             if (!empty($billing_number)) {
                 $order->update_meta_data('_billing_number', $billing_number);
+                WC()->session->set('woo_better_billing_number', $billing_number);
             }
             
             if (!empty($shipping_number)) {
                 $order->update_meta_data('_shipping_number', $shipping_number);
+                WC()->session->set('woo_better_shipping_number', $shipping_number);
             }
         }
     }
