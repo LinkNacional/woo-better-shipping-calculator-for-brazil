@@ -1532,6 +1532,59 @@ class WcBetterShippingCalculatorForBrazil
     }
     
     /**
+     * Formata CPF baseado na configuração de máscara
+     * @param string $cpf - CPF com ou sem formatação
+     * @return string CPF formatado ou apenas números
+     */
+    private function cpf_number_format($cpf) {
+        $apply_mask = get_option('woo_better_calc_apply_cpf_mask', 'yes');
+        
+        // Remove todos os caracteres não numéricos
+        $clean_cpf = preg_replace('/[^0-9]/', '', $cpf);
+        
+        // Se deve aplicar máscara, formata; senão retorna apenas números
+        if ($apply_mask === 'yes') {
+            // Aplica máscara ###.###.###-##
+            if (strlen($clean_cpf) === 11) {
+                return substr($clean_cpf, 0, 3) . '.' . 
+                       substr($clean_cpf, 3, 3) . '.' . 
+                       substr($clean_cpf, 6, 3) . '-' . 
+                       substr($clean_cpf, 9, 2);
+            }
+            return $cpf; // Retorna original se não tem 11 dígitos
+        }
+        
+        return $clean_cpf; // Retorna apenas números
+    }
+    
+    /**
+     * Formata CNPJ baseado na configuração de máscara
+     * @param string $cnpj - CNPJ com ou sem formatação
+     * @return string CNPJ formatado ou apenas números
+     */
+    private function cnpj_number_format($cnpj) {
+        $apply_mask = get_option('woo_better_calc_apply_cnpj_mask', 'yes');
+        
+        // Remove todos os caracteres não numéricos
+        $clean_cnpj = preg_replace('/[^0-9]/', '', $cnpj);
+        
+        // Se deve aplicar máscara, formata; senão retorna apenas números
+        if ($apply_mask === 'yes') {
+            // Aplica máscara ##.###.###/####-##
+            if (strlen($clean_cnpj) === 14) {
+                return substr($clean_cnpj, 0, 2) . '.' . 
+                       substr($clean_cnpj, 2, 3) . '.' . 
+                       substr($clean_cnpj, 5, 3) . '/' . 
+                       substr($clean_cnpj, 8, 4) . '-' . 
+                       substr($clean_cnpj, 12, 2);
+            }
+            return $cnpj; // Retorna original se não tem 14 dígitos
+        }
+        
+        return $clean_cnpj; // Retorna apenas números
+    }
+    
+    /**
      * Verifica se o tipo de documento é permitido na configuração
      */
     private function is_document_type_allowed($document_type, $person_type_config) {
@@ -1877,15 +1930,19 @@ class WcBetterShippingCalculatorForBrazil
 
             // Salva os tipos de pessoa
             if (!empty($billing_persontype)) {
-                $order->update_meta_data('_billing_persontype', $billing_persontype);
+                // Converte para número: 1 = physical (CPF), 2 = legal (CNPJ)
+                $persontype_number = ($billing_persontype === 'physical') ? 1 : 2;
+                $order->update_meta_data('_billing_persontype', $persontype_number);
             }
 
-            // Salva os documentos
+            // Salva os documentos aplicando formatação conforme configuração
             if (!empty($billing_cpf)) {
-                $order->update_meta_data('_billing_cpf', $billing_cpf);
+                $formatted_cpf = $this->cpf_number_format($billing_cpf);
+                $order->update_meta_data('_billing_cpf', $formatted_cpf);
             }
             if (!empty($billing_cnpj)) {
-                $order->update_meta_data('_billing_cnpj', $billing_cnpj);
+                $formatted_cnpj = $this->cnpj_number_format($billing_cnpj);
+                $order->update_meta_data('_billing_cnpj', $formatted_cnpj);
             }
 
             // Salva a empresa apenas para CNPJ, limpa para CPF
@@ -1975,15 +2032,19 @@ class WcBetterShippingCalculatorForBrazil
 
             // Salva os tipos de pessoa
             if (!empty($billing_persontype)) {
-                $order->update_meta_data('_billing_persontype', $billing_persontype);
+                // Converte para número: 1 = physical (CPF), 2 = legal (CNPJ)
+                $persontype_number = ($billing_persontype === 'physical') ? 1 : 2;
+                $order->update_meta_data('_billing_persontype', $persontype_number);
             }
 
-            // Salva os documentos
+            // Salva os documentos aplicando formatação conforme configuração
             if (!empty($billing_cpf)) {
-                $order->update_meta_data('_billing_cpf', $billing_cpf);
+                $formatted_cpf = $this->cpf_number_format($billing_cpf);
+                $order->update_meta_data('_billing_cpf', $formatted_cpf);
             }
             if (!empty($billing_cnpj)) {
-                $order->update_meta_data('_billing_cnpj', $billing_cnpj);
+                $formatted_cnpj = $this->cnpj_number_format($billing_cnpj);
+                $order->update_meta_data('_billing_cnpj', $formatted_cnpj);
             }
 
             // Salva a empresa apenas para CNPJ, limpa para CPF
@@ -2490,7 +2551,7 @@ class WcBetterShippingCalculatorForBrazil
                     $fields['billing']['billing_company']['required'] = true;
                     $fields['billing']['billing_company']['label'] = __('Nome da Empresa', 'woo-better-shipping-calculator-for-brazil');
                     $fields['billing']['billing_company']['placeholder'] = __('Digite o nome da empresa', 'woo-better-shipping-calculator-for-brazil');
-                    $fields['billing']['billing_company']['priority'] = 25;
+                    $fields['billing']['billing_company']['priority'] = 30;
                     $fields['billing']['billing_company']['class'] = array('form-row-wide');
                 } else {
                     // Se não existir, criar o campo
@@ -2499,7 +2560,7 @@ class WcBetterShippingCalculatorForBrazil
                         'placeholder' => __('Digite o nome da empresa', 'woo-better-shipping-calculator-for-brazil'),
                         'required'    => true,
                         'class'       => array('form-row-wide'),
-                        'priority'    => 25,
+                        'priority'    => 30,
                         'type'        => 'text'
                     );
                 }

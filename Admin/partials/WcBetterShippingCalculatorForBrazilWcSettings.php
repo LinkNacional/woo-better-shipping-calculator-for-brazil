@@ -796,6 +796,38 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Configure a validação de documentos no checkout. Importante: se o formulário não estiver priorizando o endereço de cobrança, ative "Forçar entrega para o endereço de cobrança" nas Configurações de Entrega do WooCommerce.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'apply_cpf_mask' => array(
+                'title'    => __('Aplicar Máscara no CPF', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_apply_cpf_mask',
+                'desc_tip' => false,
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Define se o CPF será salvo com máscara (###.###.###-##) ou apenas números.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para salvar o CPF com formatação (pontos e hífen) ou desabilite para salvar apenas os números.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Controla a formatação do CPF ao salvar os dados do cliente.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'apply_cnpj_mask' => array(
+                'title'    => __('Aplicar Máscara no CNPJ', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_apply_cnpj_mask',
+                'desc_tip' => false,
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Define se o CNPJ será salvo com máscara (##.###.###/####-##) ou apenas números.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para salvar o CNPJ com formatação (pontos, barra e hífen) ou desabilite para salvar apenas os números.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Controla a formatação do CNPJ ao salvar os dados do cliente.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'enable_neighborhood_field' => array(
                 'title'    => __('Campo de Bairro', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_enable_neighborhood_field',

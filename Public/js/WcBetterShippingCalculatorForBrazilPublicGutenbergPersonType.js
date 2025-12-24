@@ -513,14 +513,20 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // Criar o campo company (fica inicialmente oculto)
+        // Criar o campo unificado CPF/CNPJ primeiro
+        createUnifiedDocumentField(lastInsertedElement, initialDocument, personTypeConfig);
+        
+        // Atualizar lastInsertedElement para apontar para o campo CPF/CNPJ recém criado
+        const documentFieldContainer = document.querySelector('.wc-better-billing-document');
+        if (documentFieldContainer) {
+            lastInsertedElement = documentFieldContainer;
+        }
+
+        // Criar o campo company depois do CPF/CNPJ (fica inicialmente oculto)
         const companyFieldContainer = createCompanyField(lastInsertedElement, initialCompany, personTypeConfig);
         if (companyFieldContainer) {
             lastInsertedElement = companyFieldContainer;
         }
-
-        // Criar o campo unificado CPF/CNPJ
-        createUnifiedDocumentField(lastInsertedElement, initialDocument, personTypeConfig);
 
         // Criar input hidden para o tipo de pessoa (gerenciado automaticamente)
         const hiddenPersonTypeInput = document.createElement('input');
