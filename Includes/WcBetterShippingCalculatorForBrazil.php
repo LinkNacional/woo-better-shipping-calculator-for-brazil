@@ -844,6 +844,12 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function customize_admin_billing_fields($fields)
     {
+        // Verifica se a exibição de detalhes está habilitada
+        $enable_order_details = get_option('woo_better_calc_enable_order_details', 'yes');
+        if ($enable_order_details !== 'yes') {
+            return $fields;
+        }
+        
         // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
         if (!function_exists('is_plugin_active')) {
             include_once(ABSPATH . 'wp-admin/includes/plugin.php');
@@ -994,6 +1000,12 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function woo_better_shipping_customer_data($order)
     {
+        // Verifica se a exibição de detalhes está habilitada
+        $enable_order_details = get_option('woo_better_calc_enable_order_details', 'yes');
+        if ($enable_order_details !== 'yes') {
+            return;
+        }
+        
         // Get plugin settings
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
         
@@ -1069,6 +1081,12 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function woo_better_billing_customer_data($order)
     {   
+        // Verifica se a exibição de detalhes está habilitada
+        $enable_order_details = get_option('woo_better_calc_enable_order_details', 'yes');
+        if ($enable_order_details !== 'yes') {
+            return;
+        }
+        
         // Get plugin settings
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
