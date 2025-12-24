@@ -352,10 +352,14 @@ document.addEventListener("DOMContentLoaded", function () {
             companyField.style.height = '0px';
             companyField.style.overflow = 'hidden';
             
-            // Inserir valor específico no campo de empresa para CPF
+            // Definir valor específico apenas se campo estiver vazio
             const companyInput = document.getElementById('billing_company');
             if (companyInput) {
-                companyInput.value = 'woonomedaempresa';
+                const currentValue = companyInput.value.trim();
+                if (!currentValue) {
+                    companyInput.value = 'woonomedaempresa';
+                }
+                // Se já tem valor, não mexe nele
             }
             
             // Remover classes de erro se existirem
@@ -374,11 +378,12 @@ document.addEventListener("DOMContentLoaded", function () {
             companyField.style.height = '';
             companyField.style.overflow = '';
             
-            // Limpar apenas se tiver o valor específico, manter se usuário digitou algo
+            // Limpar apenas se tiver o valor específico (campo que estava vazio)
             const companyInput = document.getElementById('billing_company');
             if (companyInput && companyInput.value === 'woonomedaempresa') {
                 companyInput.value = '';
             }
+            // Se tiver qualquer outro valor, mantém como está
         }
     }
 
