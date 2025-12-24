@@ -14,8 +14,27 @@ document.addEventListener("DOMContentLoaded", function () {
         billing_persontype: '',
         billing_cpf: '',
         billing_cnpj: '',
-        billing_document: '' // Campo unificado
+        billing_document: '', // Campo unificado
+        billing_company: ''
     };
+
+    /**
+     * Observer para esconder campo shipping-company imediatamente
+     */
+    const shippingCompanyObserver = new MutationObserver((mutations) => {
+        const shippingCompanyInput = document.querySelector('#shipping-company');
+        if (shippingCompanyInput) {
+            const companyContainer = shippingCompanyInput.closest('.wc-block-components-text-input');
+            if (companyContainer) {
+                companyContainer.style.padding = '0';
+                companyContainer.style.margin = '0';
+                companyContainer.style.display = 'none';
+            }
+        }
+    });
+
+    // Inicia observer para shipping-company imediatamente
+    shippingCompanyObserver.observe(document.body, { childList: true, subtree: true });
 
     /**
      * Valida CPF usando algoritmo matemático
@@ -159,12 +178,16 @@ document.addEventListener("DOMContentLoaded", function () {
     // Função para remover campos de person type
     function removePersonTypeFields() {
         const documentField = document.querySelector('.wc-better-billing-document');
+        const companyField = document.querySelector('.wc-better-billing-company');
         const personTypeInput = document.getElementById('billing-persontype');
         const cpfInput = document.getElementById('billing-cpf');
         const cnpjInput = document.getElementById('billing-cnpj');
         
         if (documentField) {
             documentField.remove();
+        }
+        if (companyField) {
+            companyField.remove();
         }
         if (personTypeInput) {
             personTypeInput.remove();
@@ -187,7 +210,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const emptyData = {
             billing_persontype: '',
             billing_cpf: '',
-            billing_cnpj: ''
+            billing_cnpj: '',
+            billing_company: ''
         };
 
         // Usar setExtensionData
@@ -343,6 +367,54 @@ document.addEventListener("DOMContentLoaded", function () {
                             hideDocumentValidationError();
                         }
                     }
+
+                    // Validação do campo de empresa para CNPJ
+                    const companyInput = document.getElementById('billing-company');
+                    let companyContainer = document.querySelector('.wc-better-billing-company');
+                    
+                    // Se não encontrou nosso container, procurar o nativo
+                    if (!companyContainer && companyInput) {
+                        companyContainer = companyInput.closest('.wc-block-components-text-input') || 
+                                          companyInput.closest('.wc-better-company-controlled') || 
+                                          companyInput.parentElement;
+                    }
+                    
+                    if (companyInput && companyContainer && companyContainer.style.display === 'block') {
+                        // Campo company está visível, validar se está preenchido para CNPJ
+                        const companyValue = companyInput.value.trim();
+                        
+                        if (!companyValue) {
+                            event.stopPropagation();
+                            event.preventDefault();
+                            
+                            // Destacar o campo como obrigatório
+                            companyContainer.classList.add('has-error');
+                            if (companyInput.style) {
+                                companyInput.style.borderColor = '#d63638';
+                            }
+                            companyInput.setAttribute('aria-invalid', 'true');
+                            
+                            // Mostrar mensagem de erro
+                            showCompanyValidationError('Este campo é obrigatório.');
+                            
+                            // Scroll para o campo
+                            companyInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            
+                            // Focar no campo após o scroll
+                            setTimeout(() => {
+                                companyInput.focus();
+                            }, 300);
+                            return;
+                        } else {
+                            // Se está preenchido, remover erro
+                            companyContainer.classList.remove('has-error');
+                            if (companyInput.style) {
+                                companyInput.style.borderColor = '';
+                            }
+                            companyInput.setAttribute('aria-invalid', 'false');
+                            hideCompanyValidationError();
+                        }
+                    }
                 }
             }
         }
@@ -399,6 +471,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let initialPersonType = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_persontype) ? WooBetterPersonTypeData.billing_persontype : '';
         let initialCpf = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cpf) ? WooBetterPersonTypeData.billing_cpf : '';
         let initialCnpj = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cnpj) ? WooBetterPersonTypeData.billing_cnpj : '';
+        let initialCompany = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_company) ? WooBetterPersonTypeData.billing_company : '';
 
         // Usar valores salvos se existirem (prioridade sobre dados iniciais)
         if (savedPersonTypeData.billing_document) {
@@ -406,11 +479,13 @@ document.addEventListener("DOMContentLoaded", function () {
             initialPersonType = savedPersonTypeData.billing_persontype;
             initialCpf = savedPersonTypeData.billing_cpf;
             initialCnpj = savedPersonTypeData.billing_cnpj;
+            initialCompany = savedPersonTypeData.billing_company;
         } else {
             // Se não temos dados salvos, salvar os dados iniciais
             savedPersonTypeData.billing_persontype = initialPersonType;
             savedPersonTypeData.billing_cpf = initialCpf;
             savedPersonTypeData.billing_cnpj = initialCnpj;
+            savedPersonTypeData.billing_company = initialCompany;
             if (initialCpf) {
                 savedPersonTypeData.billing_document = initialCpf;
             } else if (initialCnpj) {
@@ -436,6 +511,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 initialDocument = initialCnpj;
                 detectedPersonType = 'legal';
             }
+        }
+
+        // Criar o campo company (fica inicialmente oculto)
+        const companyFieldContainer = createCompanyField(lastInsertedElement, initialCompany, personTypeConfig);
+        if (companyFieldContainer) {
+            lastInsertedElement = companyFieldContainer;
         }
 
         // Criar o campo unificado CPF/CNPJ
@@ -557,6 +638,288 @@ document.addEventListener("DOMContentLoaded", function () {
                     attributes: true
                 });
             }
+        }
+    }
+
+    // Função para disparar eventos nativos em campos controlados pelo React/WooCommerce
+    function setNativeValue(element, value) {
+        if (!element) return;
+        
+        // Usar o setter nativo do HTMLInputElement
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+        nativeSetter.call(element, value);
+        
+        // Disparar evento input
+        const inputEvent = new Event('input', { bubbles: true });
+        element.dispatchEvent(inputEvent);
+    }
+
+    function createCompanyField(insertAfter, initialValue, personTypeConfig) {
+        // Só processar se config permitir pessoa jurídica
+        if (personTypeConfig === 'physical') {
+            return;
+        }
+
+        // Verificar se já existe um campo billing-company nativo e removê-lo
+        const existingCompanyInput = document.getElementById('billing-company');
+        const existingCompanyContainer = existingCompanyInput ? existingCompanyInput.closest('.wc-block-components-text-input') : null;
+        
+        if (existingCompanyInput && existingCompanyContainer) {
+            // Salvar o valor do campo existente se não temos um valor inicial
+            if (!initialValue && existingCompanyInput.value) {
+                initialValue = existingCompanyInput.value;
+            }
+            // Remover o campo existente para substituí-lo pelo nosso personalizado
+            existingCompanyContainer.remove();
+        }
+        
+        // Verificar se já criamos nosso próprio campo
+        if (document.querySelector('.wc-better-billing-company')) {
+            return document.querySelector('.wc-better-billing-company');
+        }
+
+        // Criar nosso próprio campo se não existir nenhum
+        const fieldContainer = document.createElement('div');
+        fieldContainer.className = 'wc-block-components-text-input wc-block-components-address-form__company wc-better-billing-company';
+        
+        // Verificar se deve mostrar inicialmente (se há CNPJ completo nos dados)
+        const initialCnpj = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cnpj) ? WooBetterPersonTypeData.billing_cnpj : '';
+        const initialDocument = savedPersonTypeData.billing_document || '';
+        
+        let shouldShowInitially = false;
+        if (initialCnpj) {
+            const cleanCnpj = initialCnpj.replace(/\D/g, '');
+            if (cleanCnpj.length === 14) {
+                shouldShowInitially = true;
+            }
+        }
+        if (initialDocument && !shouldShowInitially) {
+            const cleanDocument = initialDocument.replace(/\D/g, '');
+            if (cleanDocument.length === 14) {
+                shouldShowInitially = true;
+            }
+        }
+        
+        fieldContainer.style.display = shouldShowInitially ? 'block' : 'none';
+        fieldContainer.style.borderColor = ''; // Para controle de erro visual
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'billing-company';
+        input.name = 'billing_company';
+        input.setAttribute('autocomplete', 'organization');
+        input.setAttribute('aria-label', 'Nome da Empresa');
+        input.setAttribute('aria-invalid', 'false');
+        input.setAttribute('autocapitalize', 'words');
+        input.value = initialValue;
+        input.style.borderColor = ''; // Para controle de erro visual
+
+        // Aplicar is-active apenas se o campo tem valor e está visível
+        if (shouldShowInitially && input.value && input.value.trim()) {
+            fieldContainer.classList.add('is-active');
+        }
+
+        const label = document.createElement('label');
+        label.setAttribute('for', 'billing-company');
+        label.textContent = 'Nome da Empresa';
+
+        fieldContainer.appendChild(input);
+        fieldContainer.appendChild(label);
+
+        // Criar div de erro (inicialmente oculta)
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'wc-block-components-validation-error wc-better-company-error';
+        errorDiv.setAttribute('role', 'alert');
+        errorDiv.style.display = 'none';
+
+        const errorParagraph = document.createElement('p');
+        errorParagraph.id = 'validate-error-billing-company';
+
+        const errorSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        errorSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        errorSvg.setAttribute('viewBox', '-2 -2 24 24');
+        errorSvg.setAttribute('width', '24');
+        errorSvg.setAttribute('height', '24');
+        errorSvg.setAttribute('aria-hidden', 'true');
+        errorSvg.setAttribute('focusable', 'false');
+
+        const errorPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        errorPath.setAttribute('d', 'M10 2c4.42 0 8 3.58 8 8s-3.58 8-8 8-8-3.58-8-8 3.58-8 8-8zm1.13 9.38l.35-6.46H8.52l.35 6.46h2.26zm-.09 3.36c.24-.23.37-.55.37-.96 0-.42-.12-.74-.36-.97s-.59-.35-1.06-.35-.82.12-1.07.35-.37.55-.37.97c0 .41.13.73.38.96.26.23.61.34 1.06.34s.8-.11 1.05-.34z');
+
+        errorSvg.appendChild(errorPath);
+        const errorMessage = document.createElement('span');
+        errorMessage.textContent = 'Este campo é obrigatório.';
+
+        errorParagraph.appendChild(errorSvg);
+        errorParagraph.appendChild(errorMessage);
+        errorDiv.appendChild(errorParagraph);
+        fieldContainer.appendChild(errorDiv);
+
+        if (initialValue) {
+            fieldContainer.classList.add('is-active');
+        }
+
+        input.addEventListener('focus', () => {
+            fieldContainer.classList.add('is-active');
+        });
+
+        input.addEventListener('blur', () => {
+            if (!input.value || !input.value.trim()) {
+                fieldContainer.classList.remove('is-active');
+                
+                // Se o campo está visível e vazio, exibir erro
+                if (fieldContainer.style.display === 'block') {
+                    showCompanyValidationError('Este campo é obrigatório.');
+                    fieldContainer.classList.add('has-error');
+                    if (input.style) {
+                        input.style.borderColor = '#d63638';
+                    }
+                    input.setAttribute('aria-invalid', 'true');
+                }
+            } else {
+                // Se tem conteúdo, remover erro
+                hideCompanyValidationError();
+                fieldContainer.classList.remove('has-error');
+                if (input.style) {
+                    input.style.borderColor = '';
+                }
+                input.setAttribute('aria-invalid', 'false');
+            }
+        });
+
+        input.addEventListener('input', () => {
+            savedPersonTypeData.billing_company = input.value;
+            updatePersonTypeData();
+            
+            // Apenas adicionar is-active quando há conteúdo, não remover
+            if (input.value && input.value.trim()) {
+                fieldContainer.classList.add('is-active');
+            }
+            
+            // Esconder erro quando começar a digitar
+            if (input.value && input.value.trim()) {
+                hideCompanyValidationError();
+                fieldContainer.classList.remove('has-error');
+                if (input.style) {
+                    input.style.borderColor = '';
+                }
+                input.setAttribute('aria-invalid', 'false');
+            }
+            
+            // Remover estilo de erro quando começar a digitar
+            fieldContainer.classList.remove('has-error');
+            input.style.borderColor = '';
+            input.setAttribute('aria-invalid', 'false');
+        });
+
+        insertAfter.insertAdjacentElement('afterend', fieldContainer);
+        return fieldContainer;
+    }
+
+    function setupExistingCompanyField(input, container, initialValue) {
+        // Aplicar valor inicial se fornecido e campo estiver vazio
+        if (initialValue && !input.value) {
+            setNativeValue(input, initialValue);
+            if (container.classList) {
+                container.classList.add('is-active');
+            }
+        }
+
+        // Verificar se deve mostrar inicialmente (se há CNPJ completo nos dados)
+        const initialCnpj = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cnpj) ? WooBetterPersonTypeData.billing_cnpj : '';
+        const initialDocument = savedPersonTypeData.billing_document || '';
+        
+        // Verificar se há CNPJ completo inicial
+        let shouldShowInitially = false;
+        if (initialCnpj) {
+            const cleanCnpj = initialCnpj.replace(/\D/g, '');
+            if (cleanCnpj.length === 14) {
+                shouldShowInitially = true;
+            }
+        }
+        if (initialDocument && !shouldShowInitially) {
+            const cleanDocument = initialDocument.replace(/\D/g, '');
+            if (cleanDocument.length === 14) {
+                shouldShowInitially = true;
+            }
+        }
+        
+        if (shouldShowInitially) {
+            container.style.display = 'block';
+            // Aplicar is-active apenas se o campo tem valor
+            if (input.value && input.value.trim()) {
+                container.classList.add('is-active');
+            }
+        } else {
+            container.style.display = 'none';
+        }
+
+        // Adicionar classe identificadora
+        if (container.classList) {
+            container.classList.add('wc-better-company-controlled');
+        }
+        
+        // Verificar se já existe div de erro, se não, criar
+        let existingErrorDiv = container.querySelector('.wc-better-company-error');
+        if (!existingErrorDiv) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'wc-block-components-validation-error wc-better-company-error';
+            errorDiv.setAttribute('role', 'alert');
+            errorDiv.style.display = 'none';
+
+            const errorParagraph = document.createElement('p');
+            errorParagraph.id = 'validate-error-billing-company';
+
+            const errorSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            errorSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            errorSvg.setAttribute('viewBox', '-2 -2 24 24');
+            errorSvg.setAttribute('width', '24');
+            errorSvg.setAttribute('height', '24');
+            errorSvg.setAttribute('aria-hidden', 'true');
+            errorSvg.setAttribute('focusable', 'false');
+
+            const errorPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            errorPath.setAttribute('d', 'M10 2c4.42 0 8 3.58 8 8s-3.58 8-8 8-8-3.58-8-8 3.58-8 8-8zm1.13 9.38l.35-6.46H8.52l.35 6.46h2.26zm-.09 3.36c.24-.23.37-.55.37-.96 0-.42-.12-.74-.36-.97s-.59-.35-1.06-.35-.82.12-1.07.35-.37.55-.37.97c0 .41.13.73.38.96.26.23.61.34 1.06.34s.8-.11 1.05-.34z');
+
+            errorSvg.appendChild(errorPath);
+            const errorMessage = document.createElement('span');
+            errorMessage.textContent = 'Este campo é obrigatório.';
+
+            errorParagraph.appendChild(errorSvg);
+            errorParagraph.appendChild(errorMessage);
+            errorDiv.appendChild(errorParagraph);
+            container.appendChild(errorDiv);
+        }
+
+        // Adicionar evento de input se ainda não tem
+        if (!input.dataset.betterListener) {
+            input.addEventListener('input', () => {
+                savedPersonTypeData.billing_company = input.value;
+                updatePersonTypeData();
+                
+                // Apenas adicionar is-active quando há conteúdo, não remover
+                if (input.value && input.value.trim()) {
+                    container.classList.add('is-active');
+                }
+                
+                // Remover estilo de erro quando começar a digitar
+                if (input.value && input.value.trim()) {
+                    hideCompanyValidationError();
+                    container.classList.remove('has-error');
+                    if (input.style) {
+                        input.style.borderColor = '';
+                    }
+                    input.setAttribute('aria-invalid', 'false');
+                }
+            });
+            
+            input.addEventListener('blur', () => {
+                if (!input.value || !input.value.trim()) {
+                    container.classList.remove('is-active');
+                }
+            });
+            
+            input.dataset.betterListener = 'true';
         }
     }
 
@@ -727,6 +1090,48 @@ document.addEventListener("DOMContentLoaded", function () {
         const cpfInput = document.getElementById('billing-cpf');
         const cnpjInput = document.getElementById('billing-cnpj');
         
+        // Buscar campo company (tanto nosso quanto nativo)
+        const companyInput = document.getElementById('billing-company');
+        let companyFieldContainer = document.querySelector('.wc-better-billing-company');
+        
+        // Se não encontrou nosso container, procurar o nativo
+        if (!companyFieldContainer && companyInput) {
+            companyFieldContainer = companyInput.closest('.wc-block-components-text-input') || 
+                                   companyInput.closest('.wc-better-company-controlled') || 
+                                   companyInput.parentElement;
+        }
+        
+        // Lógica para controlar visibilidade do campo company
+        const cleanValue = documentValue.replace(/\D/g, '');
+        const isCnpjComplete = cleanValue.length === 14;
+        
+        // Controlar visibilidade do campo company
+        if (companyFieldContainer && companyInput) {
+            if (isCnpjComplete) {
+                companyFieldContainer.style.display = 'block';
+                // Se o campo tem valor salvo, aplicá-lo
+                if (savedPersonTypeData.billing_company && !companyInput.value) {
+                    setNativeValue(companyInput, savedPersonTypeData.billing_company);
+                }
+                // Aplicar is-active apenas se o campo tem valor
+                if (companyInput.value && companyInput.value.trim()) {
+                    companyFieldContainer.classList.add('is-active');
+                } else {
+                    companyFieldContainer.classList.remove('is-active');
+                }
+            } else {
+                companyFieldContainer.style.display = 'none';
+                // Não limpar o campo, apenas esconder para manter flexibilidade
+                companyFieldContainer.classList.remove('is-active');
+                // Remover qualquer erro visual
+                companyFieldContainer.classList.remove('has-error');
+                if (companyInput.style) {
+                    companyInput.style.borderColor = '';
+                }
+                companyInput.setAttribute('aria-invalid', 'false');
+            }
+        }
+        
         if (detectedType === 'cpf') {
             if (personTypeInput) personTypeInput.value = 'physical';
             if (cpfInput) cpfInput.value = documentValue;
@@ -782,6 +1187,40 @@ document.addEventListener("DOMContentLoaded", function () {
                     savedPersonTypeData.billing_cnpj = documentValue;
                 }
             }
+        }
+    }
+
+    function showCompanyValidationError(message) {
+        const errorDiv = document.querySelector('.wc-better-company-error');
+        const fieldContainer = document.querySelector('.wc-better-billing-company') || 
+                              document.querySelector('.wc-better-company-controlled');
+        
+        if (errorDiv) {
+            const errorMessage = errorDiv.querySelector('span');
+            if (errorMessage) {
+                errorMessage.textContent = message;
+            }
+            errorDiv.style.display = 'block';
+        }
+        
+        // Adicionar classe de erro ao container
+        if (fieldContainer) {
+            fieldContainer.classList.add('has-error');
+        }
+    }
+
+    function hideCompanyValidationError() {
+        const errorDiv = document.querySelector('.wc-better-company-error');
+        const fieldContainer = document.querySelector('.wc-better-billing-company') ||
+                              document.querySelector('.wc-better-company-controlled');
+        
+        if (errorDiv) {
+            errorDiv.style.display = 'none';
+        }
+        
+        // Remover classe de erro do container
+        if (fieldContainer) {
+            fieldContainer.classList.remove('has-error');
         }
     }
 
@@ -922,11 +1361,13 @@ document.addEventListener("DOMContentLoaded", function () {
         const personTypeInput = document.getElementById('billing-persontype');
         const cpfInput = document.getElementById('billing-cpf');
         const cnpjInput = document.getElementById('billing-cnpj');
+        const companyInput = document.getElementById('billing-company');
 
         const data = {
             billing_persontype: personTypeInput ? personTypeInput.value : '',
             billing_cpf: cpfInput ? cpfInput.value : '',
-            billing_cnpj: cnpjInput ? cnpjInput.value : ''
+            billing_cnpj: cnpjInput ? cnpjInput.value : '',
+            billing_company: companyInput ? companyInput.value : ''
         };
 
         // Usar setExtensionData
@@ -975,6 +1416,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         const initialPersonType = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_persontype) ? WooBetterPersonTypeData.billing_persontype : '';
                         const initialCpf = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cpf) ? WooBetterPersonTypeData.billing_cpf : '';
                         const initialCnpj = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cnpj) ? WooBetterPersonTypeData.billing_cnpj : '';
+                        const initialCompany = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_company) ? WooBetterPersonTypeData.billing_company : '';
                         
                         // Inicializar os campos se não existirem
                         if (!personTypeData.hasOwnProperty('billing_persontype')) {
@@ -985,6 +1427,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         }
                         if (!personTypeData.hasOwnProperty('billing_cnpj')) {
                             personTypeData['billing_cnpj'] = initialCnpj;
+                        }
+                        if (!personTypeData.hasOwnProperty('billing_company')) {
+                            personTypeData['billing_company'] = initialCompany;
                         }
                         
                         checkoutDispatch.setExtensionData('woo_better_person_type', personTypeData);

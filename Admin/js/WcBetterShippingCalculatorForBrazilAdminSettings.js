@@ -170,4 +170,40 @@ document.addEventListener('DOMContentLoaded', function () {
         // Tenta inicializar imediatamente caso o componente já esteja disponível
         initializeDescriptionUpdater();
     }
+
+    // Função para processar links em campos específicos
+    function processShippingLinks() {
+        // Procura especificamente pelo campo person_type_select
+        const personTypeField = document.getElementById('woo_better_calc_person_type_select');
+        
+        if (personTypeField) {
+            const container = personTypeField.closest('.forminp');
+            const descSpan = container?.querySelector('.woo-forminp-header span');
+            
+            if (descSpan) {
+                const linkText = 'Configurações de Entrega do WooCommerce';
+                const currentText = descSpan.textContent || '';
+                
+                if (currentText.includes(linkText) && !descSpan.querySelector('a')) {
+                    // Cria a URL dinamicamente
+                    const shippingUrl = window.location.origin + '/wp-admin/admin.php?page=wc-settings&tab=shipping&section=options';
+                    
+                    const beforeLink = currentText.split(linkText)[0];
+                    const afterLink = currentText.split(linkText)[1] || '';
+                    
+                    descSpan.innerHTML = `${beforeLink}<a href="${shippingUrl}" target="_blank" style="color: #0073aa; text-decoration: none;">${linkText}</a>${afterLink}`;
+                }
+            }
+        }
+    }
+
+    // Processa os links quando o DOM está carregado
+    processShippingLinks();
+    
+    // Também processa após mudanças no DOM (caso o campo seja carregado dinamicamente)
+    const linkObserver = new MutationObserver(function() {
+        processShippingLinks();
+    });
+    
+    linkObserver.observe(document.body, { childList: true, subtree: true });
 });

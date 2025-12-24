@@ -152,7 +152,7 @@
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Campo de Telefone Aprimorado: Agora com Código de País (DDI) e de preenchimento obrigatório.'
+      '<strong>NOVO:</strong> Campos de CPF/CNPJ e Bairro para válidação dos dados do cliente.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento
