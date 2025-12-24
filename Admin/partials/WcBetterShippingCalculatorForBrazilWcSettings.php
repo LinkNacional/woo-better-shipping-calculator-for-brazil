@@ -775,9 +775,9 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'legal'    => __('Pessoa Jurídica apenas', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-desc-tip' => __('Defina que tipo de cliente pode realizar compras no checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Escolha se apenas pessoas físicas, apenas pessoas jurídicas ou ambos podem finalizar compras.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Configure o tipo de cliente permitido no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-desc-tip' => __('Configure a validação de tipo de cliente no checkout. A opção "Nenhum" desativa a validação.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Selecione "Nenhum" para desativar a validação, ou escolha entre Pessoa Física (CPF), Pessoa Jurídica (CNPJ) ou ambos. Os campos CPF/CNPJ aparecem exclusivamente no endereço de cobrança.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Configure a validação de documentos no checkout. Importante: se o formulário não estiver priorizando o endereço de cobrança, ative "Forçar entrega para o endereço de cobrança" nas Configurações de Entrega do WooCommerce.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'enable_neighborhood_field' => array(
