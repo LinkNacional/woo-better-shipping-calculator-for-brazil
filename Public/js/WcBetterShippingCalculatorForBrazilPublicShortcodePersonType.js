@@ -8,6 +8,9 @@ document.addEventListener("DOMContentLoaded", function () {
             setupFieldEvents();
         }
         
+        // Configurar campo de empresa
+        setupCompanyField();
+        
         // Configurar controle por país
         setupCountryControl();
         
@@ -90,6 +93,9 @@ document.addEventListener("DOMContentLoaded", function () {
             cnpjInput.value = '';
             cnpjInput.setAttribute('value', '');
         }
+        
+        // Esconder campo de empresa quando resetar
+        hideCompanyField();
         
         // Remover classes de validação e limpar erros
         if (billingDocumentField) {
@@ -210,7 +216,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Inicializar campos de pessoa
     initPersonTypeFields();
 
-    // Observer para detectar quando o campo billing_document aparece no DOM
+    // Observer para detectar quando os campos aparecem no DOM
     const observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
             if (mutation.type === 'childList') {
@@ -220,6 +226,12 @@ document.addEventListener("DOMContentLoaded", function () {
                         if (node.id === 'billing_document' || 
                             (node.querySelector && node.querySelector('#billing_document'))) {
                             setTimeout(initPersonTypeFields, 100);
+                        }
+                        
+                        // Se o campo billing_company foi adicionado, configurar eventos
+                        if (node.id === 'billing_company' || 
+                            (node.querySelector && node.querySelector('#billing_company'))) {
+                            setTimeout(setupCompanyField, 100);
                         }
                         
                         // Se o campo billing_country foi adicionado, configurar controle por país
@@ -272,10 +284,21 @@ document.addEventListener("DOMContentLoaded", function () {
             if (personTypeInput) personTypeInput.value = 'physical';
             if (cpfInput) cpfInput.value = documentValue;
             if (cnpjInput) cnpjInput.value = '';
+            
+            // Esconder campo de empresa para CPF
+            hideCompanyField();
         } else if (detectedType === 'cnpj') {
             if (personTypeInput) personTypeInput.value = 'legal';
             if (cpfInput) cpfInput.value = '';
             if (cnpjInput) cnpjInput.value = documentValue;
+            
+            // Exibir campo de empresa para CNPJ completo
+            const cleanValue = documentValue.replace(/\D/g, '');
+            if (cleanValue.length === 14) {
+                showCompanyField();
+            } else {
+                hideCompanyField();
+            }
         } else {
             // Indeterminado - manter valor no campo apropriado baseado na configuração
             const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
@@ -284,21 +307,106 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (personTypeInput) personTypeInput.value = 'physical';
                 if (cpfInput) cpfInput.value = documentValue;
                 if (cnpjInput) cnpjInput.value = '';
+                hideCompanyField();
             } else if (personTypeConfig === 'legal') {
                 if (personTypeInput) personTypeInput.value = 'legal';
                 if (cpfInput) cpfInput.value = '';
                 if (cnpjInput) cnpjInput.value = documentValue;
+                
+                // Para legal, verificar se CNPJ está completo
+                const cleanValue = documentValue.replace(/\D/g, '');
+                if (cleanValue.length === 14) {
+                    showCompanyField();
+                } else {
+                    hideCompanyField();
+                }
             } else {
                 // Para 'both', decidir baseado no comprimento parcial
                 const cleanValue = documentValue.replace(/\D/g, '');
                 if (cleanValue.length <= 11) {
                     if (cpfInput) cpfInput.value = documentValue;
                     if (cnpjInput) cnpjInput.value = '';
+                    hideCompanyField();
                 } else {
                     if (cpfInput) cpfInput.value = '';
                     if (cnpjInput) cnpjInput.value = documentValue;
+                    
+                    // Para CNPJ, só exibir campo quando completo (14 dígitos)
+                    if (cleanValue.length === 14) {
+                        showCompanyField();
+                    } else {
+                        hideCompanyField();
+                    }
                 }
             }
+        }
+    }
+
+    function hideCompanyField() {
+        const companyField = document.getElementById('billing_company_field');
+        
+        if (companyField) {
+            companyField.style.display = 'none';
+            companyField.style.padding = '0px';
+            companyField.style.margin = '0px';
+            companyField.style.height = '0px';
+            companyField.style.overflow = 'hidden';
+            
+            // Inserir valor específico no campo de empresa para CPF
+            const companyInput = document.getElementById('billing_company');
+            if (companyInput) {
+                companyInput.value = 'woonomedaempresa';
+            }
+            
+            // Remover classes de erro se existirem
+            companyField.classList.remove('woocommerce-invalid');
+            companyField.classList.remove('woocommerce-invalid-required-field');
+        }
+    }
+
+    function showCompanyField() {
+        const companyField = document.getElementById('billing_company_field');
+        
+        if (companyField) {
+            companyField.style.display = '';
+            companyField.style.padding = '';
+            companyField.style.margin = '';
+            companyField.style.height = '';
+            companyField.style.overflow = '';
+            
+            // Limpar apenas se tiver o valor específico, manter se usuário digitou algo
+            const companyInput = document.getElementById('billing_company');
+            if (companyInput && companyInput.value === 'woonomedaempresa') {
+                companyInput.value = '';
+            }
+        }
+    }
+
+    function setupCompanyField() {
+        const companyInput = document.getElementById('billing_company');
+        
+        if (companyInput && !companyInput.dataset.eventsSetup) {
+            // Verificar se já existe CNPJ completo no campo de documento
+            const documentInput = document.getElementById('billing_document');
+            let shouldShowCompany = false;
+            
+            if (documentInput && documentInput.value) {
+                const cleanValue = documentInput.value.replace(/\D/g, '');
+                
+                // Se tem 14 dígitos (CNPJ completo), mostrar campo da empresa
+                if (cleanValue.length === 14) {
+                    shouldShowCompany = true;
+                }
+            }
+            
+            // Mostrar ou esconder campo baseado na presença de CNPJ completo
+            if (shouldShowCompany) {
+                showCompanyField();
+            } else {
+                hideCompanyField();
+            }
+            
+            companyInput.dataset.eventsSetup = 'true';
         }
     }
 

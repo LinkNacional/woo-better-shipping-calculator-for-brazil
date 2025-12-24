@@ -284,11 +284,13 @@ class WcBetterShippingCalculatorForBrazilPublic
                 $billing_persontype = '';
                 $billing_cpf = '';
                 $billing_cnpj = '';
+                $billing_company = '';
                 
                 if (function_exists('WC') && WC()->session) {
                     $billing_persontype = WC()->session->get('billing_persontype', '');
                     $billing_cpf = WC()->session->get('billing_cpf', '');
                     $billing_cnpj = WC()->session->get('billing_cnpj', '');
+                    $billing_company = WC()->session->get('billing_company', '');
                 }
 
                 wp_enqueue_script(
@@ -305,7 +307,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     array(
                         'billing_persontype' => $billing_persontype,
                         'billing_cpf' => $billing_cpf,
-                        'billing_cnpj' => $billing_cnpj
+                        'billing_cnpj' => $billing_cnpj,
+                        'billing_company' => $billing_company
                     )
                 );
 
