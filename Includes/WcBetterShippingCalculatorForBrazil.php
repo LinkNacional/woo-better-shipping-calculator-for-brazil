@@ -834,6 +834,18 @@ class WcBetterShippingCalculatorForBrazil
         
         // Hook para validação de CPF/CNPJ no checkout
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_person_type_documents');
+        
+        // Hooks para compatibilidade com APIs REST (conversão F/J) - apenas se plugin oficial não estiver ativo
+        if (!$this->is_brazilian_plugin_active()) {
+            // Legacy REST API
+            $this->loader->add_filter('woocommerce_api_order_response', $this, 'legacy_orders_response', 100, 4);
+            $this->loader->add_filter('woocommerce_api_customer_response', $this, 'legacy_customers_response', 100, 4);
+            
+            // WP REST API
+            $this->loader->add_filter('woocommerce_rest_prepare_customer', $this, 'customers_response', 100, 2);
+            $this->loader->add_filter('woocommerce_rest_prepare_shop_order', $this, 'orders_v1_response', 100, 2);
+            $this->loader->add_filter('woocommerce_rest_prepare_shop_order_object', $this, 'orders_response', 100, 2);
+        }
     }
 
     /**
@@ -3400,5 +3412,185 @@ class WcBetterShippingCalculatorForBrazil
         }
         
         return $fields;
+    }
+
+    /**
+     * Verifica se o plugin oficial "Extra Checkout Fields For Brazil" está ativo
+     * 
+     * @return bool
+     */
+    private function is_brazilian_plugin_active()
+    {
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        return is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php');
+    }
+
+    /**
+     * Converte tipo de pessoa numérico para letra (F/J)
+     * 
+     * @param int|string $type Tipo de pessoa (1 = physical/CPF, 2 = legal/CNPJ)
+     * @return string F para física, J para jurídica, vazio se inválido
+     */
+    private function get_person_type_letter($type)
+    {
+        $person_type_config = get_option('woo_better_calc_person_type_select', 'none');
+        
+        // Se tipo de pessoa está desabilitado, retorna vazio
+        if ($person_type_config === 'none') {
+            return '';
+        }
+        
+        $type_int = intval($type);
+        
+        switch ($person_type_config) {
+            case 'both':
+                // Para 'both', usar a lógica: 1 = F, 2 = J
+                return $type_int === 2 ? 'J' : ($type_int === 1 ? 'F' : '');
+            case 'physical':
+                // Se configuração é só CPF, sempre F
+                return 'F';
+            case 'legal':
+                // Se configuração é só CNPJ, sempre J
+                return 'J';
+            default:
+                return '';
+        }
+    }
+
+    /**
+     * Remove formatação de números (CPF/CNPJ)
+     * 
+     * @param string $string Número formatado
+     * @return string Número apenas com dígitos
+     */
+    private function format_number($string)
+    {
+        return str_replace(array('.', '-', '/'), '', $string);
+    }
+
+    /**
+     * Adiciona campos extras na resposta da Legacy REST API para pedidos
+     * 
+     * @param array $order_data Dados do pedido
+     * @param WC_Order $order Objeto do pedido
+     * @param array $fields Filtros de campos
+     * @param WC_API_Server $server Instância do servidor
+     * @return array
+     */
+    public function legacy_orders_response($order_data, $order, $fields, $server)
+    {
+        // Billing fields
+        $order_data['billing_address']['persontype']   = $this->get_person_type_letter($order->get_meta('_billing_persontype'));
+        $order_data['billing_address']['cpf']          = $this->format_number($order->get_meta('_billing_cpf'));
+        $order_data['billing_address']['cnpj']         = $this->format_number($order->get_meta('_billing_cnpj'));
+        $order_data['billing_address']['number']       = $order->get_meta('_billing_number');
+        $order_data['billing_address']['neighborhood'] = $order->get_meta('_billing_neighborhood');
+
+        // Shipping fields
+        $order_data['shipping_address']['number']       = $order->get_meta('_shipping_number');
+        $order_data['shipping_address']['neighborhood'] = $order->get_meta('_shipping_neighborhood');
+
+        // Customer fields (para pedidos de convidados)
+        if (0 === intval($order->get_customer_id()) && isset($order_data['customer'])) {
+            $order_data['customer']['billing_address']['persontype']   = $this->get_person_type_letter($order->get_meta('_billing_persontype'));
+            $order_data['customer']['billing_address']['cpf']          = $this->format_number($order->get_meta('_billing_cpf'));
+            $order_data['customer']['billing_address']['cnpj']         = $this->format_number($order->get_meta('_billing_cnpj'));
+            $order_data['customer']['billing_address']['number']       = $order->get_meta('_billing_number');
+            $order_data['customer']['billing_address']['neighborhood'] = $order->get_meta('_billing_neighborhood');
+
+            $order_data['customer']['shipping_address']['number']       = $order->get_meta('_shipping_number');
+            $order_data['customer']['shipping_address']['neighborhood'] = $order->get_meta('_shipping_neighborhood');
+        }
+
+        return $order_data;
+    }
+
+    /**
+     * Adiciona campos extras na resposta da Legacy REST API para clientes
+     * 
+     * @param array $customer_data Dados do cliente
+     * @param WC_Customer $customer Objeto do cliente
+     * @param array $fields Filtros de campos
+     * @param WC_API_Server $server Instância do servidor
+     * @return array
+     */
+    public function legacy_customers_response($customer_data, $customer, $fields, $server)
+    {
+        // Billing fields
+        $customer_data['billing_address']['persontype']   = $this->get_person_type_letter($customer->get_meta('billing_persontype'));
+        $customer_data['billing_address']['cpf']          = $this->format_number($customer->get_meta('billing_cpf'));
+        $customer_data['billing_address']['cnpj']         = $this->format_number($customer->get_meta('billing_cnpj'));
+        $customer_data['billing_address']['number']       = $customer->get_meta('billing_number');
+        $customer_data['billing_address']['neighborhood'] = $customer->get_meta('billing_neighborhood');
+
+        // Shipping fields
+        $customer_data['shipping_address']['number']       = $customer->get_meta('shipping_number');
+        $customer_data['shipping_address']['neighborhood'] = $customer->get_meta('shipping_neighborhood');
+
+        return $customer_data;
+    }
+
+    /**
+     * Adiciona campos extras na resposta da REST API para clientes
+     * 
+     * @param WP_REST_Response $response Objeto da resposta
+     * @param WP_User $user Objeto do usuário
+     * @return WP_REST_Response
+     */
+    public function customers_response($response, $user)
+    {
+        $customer = new WC_Customer($user->ID);
+
+        // Billing fields
+        $response->data['billing']['persontype']   = $this->get_person_type_letter($customer->get_meta('billing_persontype'));
+        $response->data['billing']['cpf']          = $this->format_number($customer->get_meta('billing_cpf'));
+        $response->data['billing']['cnpj']         = $this->format_number($customer->get_meta('billing_cnpj'));
+        $response->data['billing']['number']       = $customer->get_meta('billing_number');
+        $response->data['billing']['neighborhood'] = $customer->get_meta('billing_neighborhood');
+
+        // Shipping fields
+        $response->data['shipping']['number']       = $customer->get_meta('shipping_number');
+        $response->data['shipping']['neighborhood'] = $customer->get_meta('shipping_neighborhood');
+
+        return $response;
+    }
+
+    /**
+     * Adiciona campos extras na resposta da REST API v1 para pedidos
+     * 
+     * @param WP_REST_Response $response Objeto da resposta
+     * @param WP_Post $post Objeto do post
+     * @return WP_REST_Response
+     */
+    public function orders_v1_response($response, $post)
+    {
+        $order = wc_get_order($post->ID);
+        return $this->orders_response($response, $order);
+    }
+
+    /**
+     * Adiciona campos extras na resposta da REST API para pedidos
+     * 
+     * @param WP_REST_Response $response Objeto da resposta
+     * @param WC_Order $order Objeto do pedido
+     * @return WP_REST_Response
+     */
+    public function orders_response($response, $order)
+    {
+        // Billing fields
+        $response->data['billing']['persontype']   = $this->get_person_type_letter($order->get_meta('_billing_persontype'));
+        $response->data['billing']['cpf']          = $this->format_number($order->get_meta('_billing_cpf'));
+        $response->data['billing']['cnpj']         = $this->format_number($order->get_meta('_billing_cnpj'));
+        $response->data['billing']['number']       = $order->get_meta('_billing_number');
+        $response->data['billing']['neighborhood'] = $order->get_meta('_billing_neighborhood');
+
+        // Shipping fields
+        $response->data['shipping']['number']       = $order->get_meta('_shipping_number');
+        $response->data['shipping']['neighborhood'] = $order->get_meta('_shipping_neighborhood');
+
+        return $response;
     }
 }
