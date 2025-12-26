@@ -98,6 +98,32 @@ function deactivateWcBetterShippingCalculatorForBrazil()
 register_activation_hook(__FILE__, 'activateWcBetterShippingCalculatorForBrazil');
 register_deactivation_hook(__FILE__, 'deactivateWcBetterShippingCalculatorForBrazil');
 
+// Multisite support
+if (is_multisite()) {
+    add_action('wp_initialize_site', 'activateWcBetterShippingCalculatorForBrazilOnNewSite');
+    add_action('wp_delete_site', 'deactivateWcBetterShippingCalculatorForBrazilOnDeleteSite');
+}
+
+/**
+ * Ativação em novo site no multisite
+ */
+function activateWcBetterShippingCalculatorForBrazilOnNewSite($new_site) {
+    if (is_plugin_active_for_network(plugin_basename(__FILE__))) {
+        switch_to_blog($new_site->blog_id);
+        activateWcBetterShippingCalculatorForBrazil();
+        restore_current_blog();
+    }
+}
+
+/**
+ * Desativação quando site é deletado do multisite
+ */
+function deactivateWcBetterShippingCalculatorForBrazilOnDeleteSite($site) {
+    switch_to_blog($site->blog_id);
+    deactivateWcBetterShippingCalculatorForBrazil();
+    restore_current_blog();
+}
+
 
 /**
  * Begins execution of the plugin.

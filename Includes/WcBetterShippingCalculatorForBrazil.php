@@ -164,8 +164,13 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        // Verifica se o usuário pode gerenciar opções
-        if (!current_user_can('manage_options')) {
+        // Verifica se o usuário pode gerenciar opções (compatível com multisite)
+        if (!$this->user_can_manage_multisite_options()) {
+            return;
+        }
+
+        // Verifica se estamos em um contexto válido do WooCommerce
+        if (!$this->is_valid_woocommerce_context()) {
             return;
         }
 
@@ -211,7 +216,7 @@ class WcBetterShippingCalculatorForBrazil
             wp_die('Unauthorized');
         }
 
-        if (!current_user_can('manage_options')) {
+        if (!$this->user_can_manage_multisite_options()) {
             wp_die('Unauthorized');
         }
 
@@ -229,8 +234,8 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function lkn_update_cache_token()
     {
-        // Verifica permissões
-        if (!current_user_can('manage_options')) {
+        // Verifica permissões (compatível com multisite)
+        if (!$this->user_can_manage_multisite_options()) {
             wp_send_json_error('Unauthorized', 403);
         }
 
@@ -273,7 +278,7 @@ class WcBetterShippingCalculatorForBrazil
         $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
 
 
-        if (strpos(home_url(), 'playground.wordpress.net') !== false) {
+        if ($this->is_playground_environment()) {
             $rates = [];
 
             $rate = new \WC_Shipping_Rate(
@@ -313,16 +318,14 @@ class WcBetterShippingCalculatorForBrazil
         $disable_shipping_option = get_option('woo_better_calc_disabled_shipping', 'default');
 
         $only_virtual = false;
-        if (function_exists('WC')) {
-            if (isset(WC()->cart)) {
-                foreach (WC()->cart->get_cart() as $cart_item) {
-                    $product = $cart_item['data'];
-                    if ($product->is_virtual() || $product->is_downloadable()) {
-                        $only_virtual = true;
-                    } else {
-                        $only_virtual = false;
-                        break;
-                    }
+        if ($this->is_valid_woocommerce_context() && isset(WC()->cart)) {
+            foreach (WC()->cart->get_cart() as $cart_item) {
+                $product = $cart_item['data'];
+                if ($product->is_virtual() || $product->is_downloadable()) {
+                    $only_virtual = true;
+                } else {
+                    $only_virtual = false;
+                    break;
                 }
             }
         }
@@ -337,7 +340,7 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_set_country_brasil()
     {
-        if (!function_exists('WC')) {
+        if (!$this->is_valid_woocommerce_context()) {
             return;
         }
 
@@ -354,16 +357,14 @@ class WcBetterShippingCalculatorForBrazil
     {
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
         $only_virtual = false;
-        if (function_exists('WC')) {
-            if (isset(WC()->cart)) {
-                foreach (WC()->cart->get_cart() as $cart_item) {
-                    $product = $cart_item['data'];
-                    if ($product->is_virtual() || $product->is_downloadable()) {
-                        $only_virtual = true;
-                    } else {
-                        $only_virtual = false;
-                        break;
-                    }
+        if ($this->is_valid_woocommerce_context() && isset(WC()->cart)) {
+            foreach (WC()->cart->get_cart() as $cart_item) {
+                $product = $cart_item['data'];
+                if ($product->is_virtual() || $product->is_downloadable()) {
+                    $only_virtual = true;
+                } else {
+                    $only_virtual = false;
+                    break;
                 }
             }
         }
@@ -657,7 +658,7 @@ class WcBetterShippingCalculatorForBrazil
         // Pega o parâmetro cep da requisição
         $cep = $request->get_param('postcode');
 
-        if (strpos(home_url(), 'playground.wordpress.net') !== false) {
+        if ($this->is_playground_environment()) {
             return new \WP_REST_Response(
                 array(
                     'status' => true,
@@ -3416,6 +3417,7 @@ class WcBetterShippingCalculatorForBrazil
 
     /**
      * Verifica se o plugin oficial "Extra Checkout Fields For Brazil" está ativo
+     * Compatível com multisite
      * 
      * @return bool
      */
@@ -3425,7 +3427,14 @@ class WcBetterShippingCalculatorForBrazil
             include_once(ABSPATH . 'wp-admin/includes/plugin.php');
         }
         
-        return is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php');
+        $plugin_path = 'woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php';
+        
+        // Para multisite, verifica se está ativo na rede ou no site atual
+        if (is_multisite()) {
+            return is_plugin_active_for_network($plugin_path) || is_plugin_active($plugin_path);
+        }
+        
+        return is_plugin_active($plugin_path);
     }
 
     /**
@@ -3592,5 +3601,153 @@ class WcBetterShippingCalculatorForBrazil
         $response->data['shipping']['neighborhood'] = $order->get_meta('_shipping_neighborhood');
 
         return $response;
+    }
+
+    /**
+     * Verifica se o usuário tem permissão para gerenciar opções em multisite
+     * 
+     * @return bool
+     * @since 4.7.0
+     */
+    private function user_can_manage_multisite_options()
+    {
+        if (is_multisite()) {
+            // Para multisite, verifica se é super admin ou se tem permissão no site atual
+            return is_super_admin() || current_user_can('manage_options');
+        }
+        
+        return current_user_can('manage_options');
+    }
+
+    /**
+     * Verifica se o WooCommerce está ativo no site atual (compatível com multisite)
+     * 
+     * @return bool
+     * @since 4.7.0
+     */
+    private function is_woocommerce_active()
+    {
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        $wc_path = 'woocommerce/woocommerce.php';
+        
+        if (is_multisite()) {
+            // Para multisite, verifica se está ativo na rede ou no site atual
+            return is_plugin_active_for_network($wc_path) || is_plugin_active($wc_path);
+        }
+        
+        return is_plugin_active($wc_path);
+    }
+
+    /**
+     * Obtém opção considerando configurações de rede em multisite
+     * 
+     * @param string $option_name Nome da opção
+     * @param mixed $default Valor padrão
+     * @param bool $network_option Se deve buscar como opção de rede
+     * @return mixed
+     * @since 4.7.0
+     */
+    private function get_multisite_option($option_name, $default = false, $network_option = false)
+    {
+        if (is_multisite() && $network_option) {
+            return get_site_option($option_name, $default);
+        }
+        
+        return get_option($option_name, $default);
+    }
+
+    /**
+     * Atualiza opção considerando configurações de rede em multisite
+     * 
+     * @param string $option_name Nome da opção
+     * @param mixed $value Valor da opção
+     * @param bool $network_option Se deve salvar como opção de rede
+     * @return bool
+     * @since 4.7.0
+     */
+    private function update_multisite_option($option_name, $value, $network_option = false)
+    {
+        if (is_multisite() && $network_option) {
+            return update_site_option($option_name, $value);
+        }
+        
+        return update_option($option_name, $value);
+    }
+
+    /**
+     * Remove opção considerando configurações de rede em multisite
+     * 
+     * @param string $option_name Nome da opção
+     * @param bool $network_option Se deve remover como opção de rede
+     * @return bool
+     * @since 4.7.0
+     */
+    private function delete_multisite_option($option_name, $network_option = false)
+    {
+        if (is_multisite() && $network_option) {
+            return delete_site_option($option_name);
+        }
+        
+        return delete_option($option_name);
+    }
+
+    /**
+     * Verifica se estamos no contexto correto para executar funcionalidades do WooCommerce
+     * 
+     * @return bool
+     * @since 4.7.0
+     */
+    private function is_valid_woocommerce_context()
+    {
+        // Verifica se o WooCommerce está ativo
+        if (!$this->is_woocommerce_active()) {
+            return false;
+        }
+
+        // Verifica se a função WC() está disponível
+        if (!function_exists('WC')) {
+            return false;
+        }
+
+        // Se estiver em multisite, verifica se estamos em um blog válido
+        if (is_multisite()) {
+            global $blog_id;
+            return !empty($blog_id) && $blog_id > 0;
+        }
+
+        return true;
+    }
+
+    /**
+     * Verifica se está rodando no WordPress Playground
+     * Compatível com multisite
+     * 
+     * @return bool
+     * @since 4.7.0
+     */
+    private function is_playground_environment()
+    {
+        // Método 1: Verifica URL atual (mais confiável)
+        $current_url = home_url();
+        
+        // Método 2: Para multisite, também verifica URL da rede
+        if (is_multisite()) {
+            $network_url = network_home_url();
+            if (strpos($network_url, 'playground.wordpress.net') !== false) {
+                return true;
+            }
+        }
+        
+        // Método 3: Verifica variáveis de servidor como backup
+        $server_name = $_SERVER['SERVER_NAME'] ?? '';
+        if (strpos($server_name, 'playground.wordpress.net') !== false) {
+            return true;
+        }
+        
+        // Método principal
+        return strpos($current_url, 'playground.wordpress.net') !== false;
     }
 }
