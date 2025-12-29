@@ -2,6 +2,11 @@
 
 namespace Lkn\WcBetterShippingCalculatorForBrazil\PublicView;
 
+// Prevent direct access
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
 /**
  * Provide a public-facing view for the plugin
  *
