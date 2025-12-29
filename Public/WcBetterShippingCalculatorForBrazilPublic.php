@@ -43,6 +43,54 @@ class WcBetterShippingCalculatorForBrazilPublic
     private $version;
 
     /**
+     * Verifica se o usuário tem permissão para gerenciar opções em multisite
+     * 
+     * @return bool
+     * @since 4.7.0
+     */
+    private function user_can_manage_multisite_options()
+    {
+        if (is_multisite()) {
+            // Para multisite, verifica se é super admin ou se tem permissão no site atual
+            return is_super_admin() || current_user_can('manage_options');
+        }
+        
+        return current_user_can('manage_options');
+    }
+
+    /**
+     * Obtém URL do site considerando contexto multisite
+     * 
+     * @return string
+     * @since 4.7.0
+     */
+    private function get_site_url()
+    {
+        if (is_multisite()) {
+            // Para multisite, garante que obtemos a URL do site atual
+            return get_home_url(get_current_blog_id());
+        }
+        
+        return home_url();
+    }
+
+    /**
+     * Obtém URL do admin-ajax.php correta para multisite
+     * 
+     * @return string URL do admin-ajax.php
+     * @since 4.7.0
+     */
+    private function get_admin_ajax_url()
+    {
+        if (is_multisite()) {
+            // Em multisite, sempre usar URL específica do site atual
+            return get_admin_url(get_current_blog_id(), 'admin-ajax.php');
+        }
+        
+        return admin_url('admin-ajax.php');
+    }
+
+    /**
      * Initialize the class and set its properties.
      *
      * @since    1.0.0
@@ -208,7 +256,7 @@ class WcBetterShippingCalculatorForBrazilPublic
         if((has_block('woocommerce/product') || 
         (function_exists('is_product') && is_product())) || 
         has_block('woocommerce/cart')) {
-            if (current_user_can('manage_options') && $link_config === 'yes') {
+            if ($this->user_can_manage_multisite_options() && $link_config === 'yes') {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-cep-settings-link',
                     plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergSettingsLink.COMPILED.js',
@@ -218,7 +266,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
     
                 wp_localize_script($this->plugin_name . '-gutenberg-cep-settings-link', 'lknCartData', array(
-                    'settingsUrl' => admin_url('admin.php?page=wc-settings&tab=wc-better-calc'),
+                    'settingsUrl' => get_admin_url(get_current_blog_id(), 'admin.php?page=wc-settings&tab=wc-better-calc'),
                 ));
             }
         }
@@ -520,8 +568,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                 'update_icon' => array(
                     'updates' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/updates.svg',
                 ),
-                'wooUrl' => home_url(),
-                'ajaxurl' => admin_url('admin-ajax.php'),
+                'wooUrl' => $this->get_site_url(),
+                'ajaxurl' => $this->get_admin_ajax_url(),
                 'product_id' => get_the_ID(),
                 'quantity' => WC_BETTER_SHIPPING_PRODUCT_QUANTITY,
                 'enable_search' => $enable_postcode_search,
@@ -585,8 +633,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                 'update_icon' => array(
                     'updates' => plugin_dir_url(dirname(__FILE__)) . 'Includes/assets/icons/updates.svg',
                 ),
-                'wooUrl' => home_url(),
-                'ajaxurl' => admin_url('admin-ajax.php'),
+                'wooUrl' => $this->get_site_url(),
+                'ajaxurl' => $this->get_admin_ajax_url(),
                 'product_id' => get_the_ID(),
                 'quantity' => WC_BETTER_SHIPPING_PRODUCT_QUANTITY,
                 'enable_search' => $enable_postcode_search,
@@ -643,7 +691,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-checkout-postcode',
                     'wc_better_checkout_vars',
                     array(
-                        'ajax_url' => admin_url('admin-ajax.php'),
+                        'ajax_url' => $this->get_admin_ajax_url(),
                         'fill_checkout_address' => $fill_checkout_address,
                         'billing_number' => $billing_number,
                         'shipping_number' => $shipping_number,
@@ -666,7 +714,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-checkout-postcode-shortcode',
                     'wc_better_checkout_vars_shortcode',
                     array(
-                        'ajax_url' => admin_url('admin-ajax.php'),
+                        'ajax_url' => $this->get_admin_ajax_url(),
                         'fill_checkout_address' => $fill_checkout_address,
                         'billing_number' => $billing_number,
                         'shipping_number' => $shipping_number,

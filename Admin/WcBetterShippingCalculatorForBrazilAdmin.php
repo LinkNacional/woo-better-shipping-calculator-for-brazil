@@ -43,6 +43,43 @@ class WcBetterShippingCalculatorForBrazilAdmin
     private $version;
 
     /**
+     * Obtém URL do admin-ajax.php correta para multisite
+     * 
+     * @return string URL do admin-ajax.php
+     * @since 4.7.0
+     */
+    private function get_admin_ajax_url()
+    {
+        if (is_multisite()) {
+            // Em multisite, sempre usar URL específica do site atual
+            return get_admin_url(get_current_blog_id(), 'admin-ajax.php');
+        }
+        
+        return admin_url('admin-ajax.php');
+    }
+
+    /**
+     * Verifica se o usuário tem permissão para gerenciar opções em multisite
+     * 
+     * @return bool
+     * @since 4.7.0
+     */
+    private function user_can_manage_multisite_options()
+    {
+        if (is_multisite()) {
+            // Super admins podem gerenciar em qualquer site
+            if (is_super_admin()) {
+                return true;
+            }
+            
+            // Site admins só podem gerenciar no próprio site
+            return current_user_can('manage_options');
+        }
+        
+        return current_user_can('manage_options');
+    }
+
+    /**
      * Initialize the class and set its properties.
      *
      * @since    1.0.0
@@ -113,7 +150,7 @@ class WcBetterShippingCalculatorForBrazilAdmin
 
             wp_localize_script('woo-better-calc-admin-notice', 'wooBetterNotice', array(
                 'nonce' => wp_create_nonce('woo_better_calc_dismiss_notice'),
-                'ajaxurl' => admin_url('admin-ajax.php')
+                'ajaxurl' => $this->get_admin_ajax_url()
             ));
         }
     }

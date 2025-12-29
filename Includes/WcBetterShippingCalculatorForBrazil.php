@@ -164,8 +164,13 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        // Verifica se o usuário pode gerenciar opções
-        if (!current_user_can('manage_options')) {
+        // Verifica se o usuário pode gerenciar opções (compatível com multisite)
+        if (!$this->user_can_manage_multisite_options()) {
+            return;
+        }
+
+        // Verifica se estamos em um contexto válido do WooCommerce
+        if (!$this->is_valid_woocommerce_context()) {
             return;
         }
 
@@ -211,7 +216,7 @@ class WcBetterShippingCalculatorForBrazil
             wp_die('Unauthorized');
         }
 
-        if (!current_user_can('manage_options')) {
+        if (!$this->user_can_manage_multisite_options()) {
             wp_die('Unauthorized');
         }
 
@@ -229,8 +234,8 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function lkn_update_cache_token()
     {
-        // Verifica permissões
-        if (!current_user_can('manage_options')) {
+        // Verifica permissões (compatível com multisite)
+        if (!$this->user_can_manage_multisite_options()) {
             wp_send_json_error('Unauthorized', 403);
         }
 
@@ -273,7 +278,7 @@ class WcBetterShippingCalculatorForBrazil
         $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
 
 
-        if (strpos(home_url(), 'playground.wordpress.net') !== false) {
+        if ($this->is_playground_environment()) {
             $rates = [];
 
             $rate = new \WC_Shipping_Rate(
@@ -313,16 +318,14 @@ class WcBetterShippingCalculatorForBrazil
         $disable_shipping_option = get_option('woo_better_calc_disabled_shipping', 'default');
 
         $only_virtual = false;
-        if (function_exists('WC')) {
-            if (isset(WC()->cart)) {
-                foreach (WC()->cart->get_cart() as $cart_item) {
-                    $product = $cart_item['data'];
-                    if ($product->is_virtual() || $product->is_downloadable()) {
-                        $only_virtual = true;
-                    } else {
-                        $only_virtual = false;
-                        break;
-                    }
+        if ($this->is_valid_woocommerce_context() && isset(WC()->cart)) {
+            foreach (WC()->cart->get_cart() as $cart_item) {
+                $product = $cart_item['data'];
+                if ($product->is_virtual() || $product->is_downloadable()) {
+                    $only_virtual = true;
+                } else {
+                    $only_virtual = false;
+                    break;
                 }
             }
         }
@@ -337,7 +340,7 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_set_country_brasil()
     {
-        if (!function_exists('WC')) {
+        if (!$this->is_valid_woocommerce_context()) {
             return;
         }
 
@@ -354,16 +357,14 @@ class WcBetterShippingCalculatorForBrazil
     {
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
         $only_virtual = false;
-        if (function_exists('WC')) {
-            if (isset(WC()->cart)) {
-                foreach (WC()->cart->get_cart() as $cart_item) {
-                    $product = $cart_item['data'];
-                    if ($product->is_virtual() || $product->is_downloadable()) {
-                        $only_virtual = true;
-                    } else {
-                        $only_virtual = false;
-                        break;
-                    }
+        if ($this->is_valid_woocommerce_context() && isset(WC()->cart)) {
+            foreach (WC()->cart->get_cart() as $cart_item) {
+                $product = $cart_item['data'];
+                if ($product->is_virtual() || $product->is_downloadable()) {
+                    $only_virtual = true;
+                } else {
+                    $only_virtual = false;
+                    break;
                 }
             }
         }
@@ -657,7 +658,7 @@ class WcBetterShippingCalculatorForBrazil
         // Pega o parâmetro cep da requisição
         $cep = $request->get_param('postcode');
 
-        if (strpos(home_url(), 'playground.wordpress.net') !== false) {
+        if ($this->is_playground_environment()) {
             return new \WP_REST_Response(
                 array(
                     'status' => true,
@@ -835,17 +836,238 @@ class WcBetterShippingCalculatorForBrazil
         // Hook para validação de CPF/CNPJ no checkout
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_person_type_documents');
         
+        // Hooks para controlar campos da calculadora de frete no carrinho
+        $this->loader->add_filter('woocommerce_shipping_calculator_enable_country', $this, 'maybe_disable_cart_fields');
+        $this->loader->add_filter('woocommerce_shipping_calculator_enable_state', $this, 'maybe_disable_cart_fields');
+        $this->loader->add_filter('woocommerce_shipping_calculator_enable_city', $this, 'maybe_disable_cart_fields');
+        
+        // Hook para auto-preencher endereço baseado no CEP na calculadora de frete
+        $this->loader->add_action('woocommerce_calculated_shipping', $this, 'auto_fill_address_from_postcode');
+        
         // Hooks para compatibilidade com APIs REST (conversão F/J) - apenas se plugin oficial não estiver ativo
         if (!$this->is_brazilian_plugin_active()) {
             // Legacy REST API
-            $this->loader->add_filter('woocommerce_api_order_response', $this, 'legacy_orders_response', 100, 4);
-            $this->loader->add_filter('woocommerce_api_customer_response', $this, 'legacy_customers_response', 100, 4);
+            $this->loader->add_filter('woocommerce_api_order_response', $this, 'legacy_orders_response', 90, 4);
+            $this->loader->add_filter('woocommerce_api_customer_response', $this, 'legacy_customers_response', 90, 4);
             
             // WP REST API
-            $this->loader->add_filter('woocommerce_rest_prepare_customer', $this, 'customers_response', 100, 2);
-            $this->loader->add_filter('woocommerce_rest_prepare_shop_order', $this, 'orders_v1_response', 100, 2);
-            $this->loader->add_filter('woocommerce_rest_prepare_shop_order_object', $this, 'orders_response', 100, 2);
+            $this->loader->add_filter('woocommerce_rest_prepare_customer', $this, 'customers_response', 90, 2);
+            $this->loader->add_filter('woocommerce_rest_prepare_shop_order', $this, 'orders_v1_response', 90, 2);
+            $this->loader->add_filter('woocommerce_rest_prepare_shop_order_object', $this, 'orders_response', 90, 2);
         }
+    }
+
+    /**
+     * Controla se o campo país deve ser exibido na calculadora de frete do carrinho
+     *
+     * @param bool $enabled
+     * @return bool
+     */
+    public function maybe_disable_cart_fields($enabled)
+    {
+        if($this->is_cart_shortcode_page()){
+            return false;
+        }
+
+        return $enabled;
+    }
+
+    /**
+     * Verifica se estamos na página do carrinho via shortcode
+     *
+     * @return bool
+     */
+    private function is_cart_shortcode_page()
+    {
+        global $post;
+        
+        // Verifica se é uma página de carrinho via shortcode
+        $is_cart_page = function_exists('is_cart') && is_cart();
+        $is_cart_shortcode = isset($post) && is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'woocommerce_cart');
+        
+        // Verifica se NÃO é carrinho em blocos
+        $is_blocks_cart = function_exists('has_block') && has_block('woocommerce/cart') && !$is_cart_shortcode;
+        
+        return ($is_cart_page || $is_cart_shortcode) && !$is_blocks_cart;
+    }
+
+    /**
+     * Auto-preenche endereço baseado no CEP quando a calculadora de frete é atualizada
+     *
+     * @return void
+     */
+    public function auto_fill_address_from_postcode($data)
+    {
+        if (!$this->is_valid_woocommerce_context() || !WC()->customer) {
+            return;
+        }
+
+        // Tenta pegar CEP do POST primeiro (quando calculadora é atualizada)
+        $postcode = '';
+        if (isset($_POST['calc_shipping_postcode'])) {
+            $postcode = sanitize_text_field(wp_unslash($_POST['calc_shipping_postcode']));
+        } elseif (isset($_POST['shipping_postcode'])) {
+            $postcode = sanitize_text_field(wp_unslash($_POST['shipping_postcode']));
+        } else {
+            $postcode = WC()->customer->get_shipping_postcode();
+        }
+        
+        // Se não há CEP, mostra erro apenas se foi enviado formulário
+        if (empty($postcode)) {
+            if (isset($_POST['calc_shipping_postcode']) || isset($_POST['shipping_postcode'])) {
+                wc_add_notice(__('Por favor, informe um CEP válido para calcular o frete.', 'wc-better-shipping-calculator-for-brazil'), 'error');
+            }
+            return;
+        }
+
+        // Valida formato do CEP brasileiro
+        if (!preg_match('/^\d{8}$/', $postcode) && !preg_match('/^\d{5}-\d{3}$/', $postcode)) {
+            wc_add_notice(sprintf(__('O CEP "%s" não possui um formato válido. Use o formato 00000-000.', 'wc-better-shipping-calculator-for-brazil'), $postcode), 'error');
+            return;
+        }
+
+        // Remove caracteres não numéricos para validação
+        $clean_postcode = preg_replace('/[^0-9]/', '', $postcode);
+        if (strlen($clean_postcode) !== 8) {
+            wc_add_notice(sprintf(__('O CEP "%s" deve conter exatamente 8 dígitos.', 'wc-better-shipping-calculator-for-brazil'), $postcode), 'error');
+            return;
+        }
+
+        // Busca informações do CEP
+        $cep_data = $this->get_cep_data_for_shipping($postcode);
+        
+        if (!empty($cep_data) && $cep_data['status'] === true) {
+            // Normaliza o CEP para formato XXXXX-XXX
+            $normalized_postcode = preg_replace('/[^0-9]/', '', $postcode);
+            if (strlen($normalized_postcode) === 8) {
+                $normalized_postcode = substr($normalized_postcode, 0, 5) . '-' . substr($normalized_postcode, 5);
+            }
+            
+            // Preenche os dados do cliente
+            WC()->customer->set_shipping_postcode($normalized_postcode);
+            WC()->customer->set_billing_postcode($normalized_postcode);
+            
+            if (!empty($cep_data['city'])) {
+                WC()->customer->set_shipping_city($cep_data['city']);
+                WC()->customer->set_billing_city($cep_data['city']);
+            }
+            
+            if (!empty($cep_data['state_sigla'])) {
+                WC()->customer->set_shipping_state($cep_data['state_sigla']);
+                WC()->customer->set_billing_state($cep_data['state_sigla']);
+            }
+            
+            if (!empty($cep_data['address'])) {
+                WC()->customer->set_shipping_address_1($cep_data['address']);
+                WC()->customer->set_billing_address_1($cep_data['address']);
+            }
+            
+            // Força a atualização dos dados na sessão
+            WC()->customer->save();
+        } else {
+            // Erro ao buscar dados do CEP - usa a mensagem de erro específica se disponível
+            $error_message = '';
+            if (!empty($cep_data) && isset($cep_data['error'])) {
+                $error_message = sprintf(__('Erro ao buscar CEP "%s": %s', 'wc-better-shipping-calculator-for-brazil'), $postcode, $cep_data['error']);
+            } else {
+                $error_message = sprintf(__('Não foi possível encontrar informações para o CEP "%s". Verifique se está correto ou preencha o endereço manualmente.', 'wc-better-shipping-calculator-for-brazil'), $postcode);
+            }
+            wc_add_notice($error_message, 'error');
+        }
+    }
+
+    /**
+     * Busca dados do CEP para preenchimento de endereço de entrega
+     *
+     * @param string $postcode
+     * @return array|null
+     */
+    private function get_cep_data_for_shipping($postcode)
+    {
+        if ($this->is_playground_environment()) {
+            return [
+                'status' => true,
+                'city' => 'Cidade',
+                'state_sigla' => 'SP',
+                'state' => 'Sao Paulo',
+                'address' => 'Endereço'
+            ];
+        }
+
+        // Normaliza o CEP
+        $cep = preg_replace('/[^0-9]/', '', $postcode);
+        if (strlen($cep) === 8) {
+            $cep = substr($cep, 0, 5) . '-' . substr($cep, 5);
+        }
+
+        $last_error = '';
+
+        // Tenta BrasilAPI primeiro
+        $response = wp_remote_get("https://brasilapi.com.br/api/cep/v2/{$cep}", [
+            'timeout' => 10,
+            'headers' => [
+                'User-Agent' => 'WooCommerce-Better-Shipping-Calculator/1.0'
+            ]
+        ]);
+        
+        if (!is_wp_error($response)) {
+            $response_code = wp_remote_retrieve_response_code($response);
+            $body = wp_remote_retrieve_body($response);
+            $data = json_decode($body, true);
+            
+            if ($response_code === 200 && isset($data['cep'])) {
+                $state = $this->lkn_get_state_name_from_sigla($data['state']);
+                
+                return [
+                    'status' => true,
+                    'city' => $data['city'],
+                    'state_sigla' => $data['state'],
+                    'state' => $state,
+                    'address' => $data['street']
+                ];
+            } elseif ($response_code === 404) {
+                $last_error = 'CEP não encontrado';
+            } else {
+                $last_error = 'Erro no serviço BrasilAPI';
+            }
+        } else {
+            $last_error = 'Falha na conexão com BrasilAPI: ' . $response->get_error_message();
+        }
+
+        // Fallback para ViaCEP
+        $ws_response = wp_remote_get("https://viacep.com.br/ws/{$cep}/json/", [
+            'timeout' => 10,
+            'headers' => [
+                'User-Agent' => 'WooCommerce-Better-Shipping-Calculator/1.0'
+            ]
+        ]);
+        
+        if (!is_wp_error($ws_response)) {
+            $response_code = wp_remote_retrieve_response_code($ws_response);
+            $ws_response_body = wp_remote_retrieve_body($ws_response);
+            $ws_response_data = json_decode($ws_response_body, true);
+            
+            if ($response_code === 200 && isset($ws_response_data['cep']) && !isset($ws_response_data['erro'])) {
+                return [
+                    'status' => true,
+                    'city' => $ws_response_data['localidade'],
+                    'state_sigla' => $ws_response_data['uf'],
+                    'state' => $ws_response_data['estado'],
+                    'address' => $ws_response_data['logradouro']
+                ];
+            } elseif (isset($ws_response_data['erro'])) {
+                $last_error = 'CEP não encontrado no ViaCEP';
+            } else {
+                $last_error = 'Erro no serviço ViaCEP';
+            }
+        } else {
+            $last_error = 'Falha na conexão com ViaCEP: ' . $ws_response->get_error_message();
+        }
+
+        return [
+            'status' => false,
+            'error' => $last_error
+        ];
     }
 
     /**
@@ -3416,6 +3638,7 @@ class WcBetterShippingCalculatorForBrazil
 
     /**
      * Verifica se o plugin oficial "Extra Checkout Fields For Brazil" está ativo
+     * Compatível com multisite
      * 
      * @return bool
      */
@@ -3425,7 +3648,14 @@ class WcBetterShippingCalculatorForBrazil
             include_once(ABSPATH . 'wp-admin/includes/plugin.php');
         }
         
-        return is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php');
+        $plugin_path = 'woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php';
+        
+        // Para multisite, verifica se está ativo na rede ou no site atual
+        if (is_multisite()) {
+            return is_plugin_active_for_network($plugin_path) || is_plugin_active($plugin_path);
+        }
+        
+        return is_plugin_active($plugin_path);
     }
 
     /**
@@ -3574,6 +3804,11 @@ class WcBetterShippingCalculatorForBrazil
     /**
      * Adiciona campos extras na resposta da REST API para pedidos
      * 
+     * Inclui também o campo 'cpf' do plugin Pagar.me caso disponível.
+     * O plugin da Pagar.me com checkout de blocos salva o CPF no meta '_wc_billing/address/document'.
+     * @author Hugo da Pequenaweb
+     * @since 2025-12-29 (Adicionado suporte ao CPF do Pagar.me)
+     * 
      * @param WP_REST_Response $response Objeto da resposta
      * @param WC_Order $order Objeto do pedido
      * @return WP_REST_Response
@@ -3587,10 +3822,168 @@ class WcBetterShippingCalculatorForBrazil
         $response->data['billing']['number']       = $order->get_meta('_billing_number');
         $response->data['billing']['neighborhood'] = $order->get_meta('_billing_neighborhood');
 
+        // Recupera o CPF armazenado pelo plugin Pagar.me no meta '_wc_billing/address/document'
+        $cpf_pagarme = $order->get_meta('_wc_billing/address/document', true);
+        
+        // Se o CPF do Pagar.me existir e não houver CPF padrão, usa o CPF do Pagar.me
+        if (!empty($cpf_pagarme) && empty($response->data['billing']['cpf'])) {
+            // Formata o CPF para ficar apenas com números
+            $cpf_numerico = preg_replace('/\D/', '', $cpf_pagarme);
+            $response->data['billing']['cpf'] = $cpf_numerico;
+        }
+
         // Shipping fields
         $response->data['shipping']['number']       = $order->get_meta('_shipping_number');
         $response->data['shipping']['neighborhood'] = $order->get_meta('_shipping_neighborhood');
 
         return $response;
+    }
+
+    /**
+     * Verifica se o usuário tem permissão para gerenciar opções em multisite
+     * 
+     * @return bool
+     * @since 4.7.0
+     */
+    private function user_can_manage_multisite_options()
+    {
+        if (is_multisite()) {
+            // Para multisite, verifica se é super admin ou se tem permissão no site atual
+            return is_super_admin() || current_user_can('manage_options');
+        }
+        
+        return current_user_can('manage_options');
+    }
+
+    /**
+     * Verifica se o WooCommerce está ativo no site atual (compatível com multisite)
+     * 
+     * @return bool
+     * @since 4.7.0
+     */
+    private function is_woocommerce_active()
+    {
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        $wc_path = 'woocommerce/woocommerce.php';
+        
+        if (is_multisite()) {
+            // Para multisite, verifica se está ativo na rede ou no site atual
+            return is_plugin_active_for_network($wc_path) || is_plugin_active($wc_path);
+        }
+        
+        return is_plugin_active($wc_path);
+    }
+
+    /**
+     * Obtém opção considerando configurações de rede em multisite
+     * 
+     * @param string $option_name Nome da opção
+     * @param mixed $default Valor padrão
+     * @param bool $network_option Se deve buscar como opção de rede
+     * @return mixed
+     * @since 4.7.0
+     */
+    private function get_multisite_option($option_name, $default = false, $network_option = false)
+    {
+        if (is_multisite() && $network_option) {
+            return get_site_option($option_name, $default);
+        }
+        
+        return get_option($option_name, $default);
+    }
+
+    /**
+     * Atualiza opção considerando configurações de rede em multisite
+     * 
+     * @param string $option_name Nome da opção
+     * @param mixed $value Valor da opção
+     * @param bool $network_option Se deve salvar como opção de rede
+     * @return bool
+     * @since 4.7.0
+     */
+    private function update_multisite_option($option_name, $value, $network_option = false)
+    {
+        if (is_multisite() && $network_option) {
+            return update_site_option($option_name, $value);
+        }
+        
+        return update_option($option_name, $value);
+    }
+
+    /**
+     * Remove opção considerando configurações de rede em multisite
+     * 
+     * @param string $option_name Nome da opção
+     * @param bool $network_option Se deve remover como opção de rede
+     * @return bool
+     * @since 4.7.0
+     */
+    private function delete_multisite_option($option_name, $network_option = false)
+    {
+        if (is_multisite() && $network_option) {
+            return delete_site_option($option_name);
+        }
+        
+        return delete_option($option_name);
+    }
+
+    /**
+     * Verifica se estamos no contexto correto para executar funcionalidades do WooCommerce
+     * 
+     * @return bool
+     * @since 4.7.0
+     */
+    private function is_valid_woocommerce_context()
+    {
+        // Verifica se o WooCommerce está ativo
+        if (!$this->is_woocommerce_active()) {
+            return false;
+        }
+
+        // Verifica se a função WC() está disponível
+        if (!function_exists('WC')) {
+            return false;
+        }
+
+        // Se estiver em multisite, verifica se estamos em um blog válido
+        if (is_multisite()) {
+            global $blog_id;
+            return !empty($blog_id) && $blog_id > 0;
+        }
+
+        return true;
+    }
+
+    /**
+     * Verifica se está rodando no WordPress Playground
+     * Compatível com multisite
+     * 
+     * @return bool
+     * @since 4.7.0
+     */
+    private function is_playground_environment()
+    {
+        // Método 1: Verifica URL atual (mais confiável)
+        $current_url = home_url();
+        
+        // Método 2: Para multisite, também verifica URL da rede
+        if (is_multisite()) {
+            $network_url = network_home_url();
+            if (strpos($network_url, 'playground.wordpress.net') !== false) {
+                return true;
+            }
+        }
+        
+        // Método 3: Verifica variáveis de servidor como backup
+        $server_name = $_SERVER['SERVER_NAME'] ?? '';
+        if (strpos($server_name, 'playground.wordpress.net') !== false) {
+            return true;
+        }
+        
+        // Método principal
+        return strpos($current_url, 'playground.wordpress.net') !== false;
     }
 }
