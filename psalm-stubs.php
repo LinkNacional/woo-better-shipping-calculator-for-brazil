@@ -1,4 +1,10 @@
 <?php
+
+// Prevent direct access
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
 /**
  * Plugin constants stub for Psalm static analysis
  * This file defines the constants that are dynamically created in the main plugin file
