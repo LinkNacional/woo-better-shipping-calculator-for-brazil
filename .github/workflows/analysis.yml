@@ -52,7 +52,7 @@ jobs:
         uses: wordpress/plugin-check-action@v1
         with:
           build-dir: './'
-          exclude-directories: 'node_modules,vendor,.eslintrc,.gihub,.devcontainer,.vscode'
+          exclude-directories: 'node_modules,vendor,.eslintrc,.github,.devcontainer,.vscode'
           ignore-codes: |
             WordPress.WP.I18n.TextDomainMismatch
             WordPress.Security.NonceVerification.Missing
