@@ -1,0 +1,29 @@
+# Files and directories to ignore when creating distribution packages
+
+# Development files
+.github/
+.devcontainer/
+.vscode/
+.git/
+.gitignore
+node_modules/
+vendor/
+composer.json
+composer.lock
+package.json
+package-lock.json
+webpack.*.js
+psalm.xml
+psalm-stubs.php
+
+# Build tools
+*.config.js
+.editorconfig
+.eslintrc
+.stylelintrc
+
+# Documentation (pode manter ou remover conforme necessário)
+README.md
+
+# Logs
+*.log
