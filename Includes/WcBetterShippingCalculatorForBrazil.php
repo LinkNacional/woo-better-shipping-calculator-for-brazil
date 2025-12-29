@@ -1064,9 +1064,6 @@ class WcBetterShippingCalculatorForBrazil
             $last_error = 'Falha na conexão com ViaCEP: ' . $ws_response->get_error_message();
         }
 
-        // Log do erro para debug
-        error_log("WC Better Shipping Calculator - Erro ao buscar CEP {$cep}: {$last_error}");
-
         return [
             'status' => false,
             'error' => $last_error
