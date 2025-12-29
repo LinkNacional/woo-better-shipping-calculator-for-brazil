@@ -2,6 +2,11 @@
 
 namespace Lkn\WcBetterShippingCalculatorForBrazil\Includes;
 
+// Prevent direct access
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
 /**
  * Fired during plugin deactivation
  *
@@ -71,7 +76,7 @@ class WcBetterShippingCalculatorForBrazilDeactivator
             $files = glob($cache_dir . '*');
             foreach ($files as $file) {
                 if (is_file($file)) {
-                    unlink($file);
+                    wp_delete_file($file);
                 }
             }
         }

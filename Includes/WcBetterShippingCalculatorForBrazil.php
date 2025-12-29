@@ -1,5 +1,11 @@
 <?php
+
 namespace Lkn\WcBetterShippingCalculatorForBrazil\Includes;
+// Prevent direct access
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
 
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilWcSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdmin;
@@ -922,6 +928,7 @@ class WcBetterShippingCalculatorForBrazil
 
         // Valida formato do CEP brasileiro
         if (!preg_match('/^\d{8}$/', $postcode) && !preg_match('/^\d{5}-\d{3}$/', $postcode)) {
+            // translators: %s is the postcode entered by the user
             wc_add_notice(sprintf(__('O CEP "%s" não possui um formato válido. Use o formato 00000-000.', 'wc-better-shipping-calculator-for-brazil'), $postcode), 'error');
             return;
         }
@@ -929,6 +936,7 @@ class WcBetterShippingCalculatorForBrazil
         // Remove caracteres não numéricos para validação
         $clean_postcode = preg_replace('/[^0-9]/', '', $postcode);
         if (strlen($clean_postcode) !== 8) {
+            // translators: %s is the postcode entered by the user
             wc_add_notice(sprintf(__('O CEP "%s" deve conter exatamente 8 dígitos.', 'wc-better-shipping-calculator-for-brazil'), $postcode), 'error');
             return;
         }
@@ -968,8 +976,10 @@ class WcBetterShippingCalculatorForBrazil
             // Erro ao buscar dados do CEP - usa a mensagem de erro específica se disponível
             $error_message = '';
             if (!empty($cep_data) && isset($cep_data['error'])) {
-                $error_message = sprintf(__('Erro ao buscar CEP "%s": %s', 'wc-better-shipping-calculator-for-brazil'), $postcode, $cep_data['error']);
+                // translators: %1$s is the postcode entered by the user, %2$s is the specific error message
+                $error_message = sprintf(__('Erro ao buscar CEP "%1$s": %2$s', 'wc-better-shipping-calculator-for-brazil'), $postcode, $cep_data['error']);
             } else {
+                // translators: %s is the postcode entered by the user
                 $error_message = sprintf(__('Não foi possível encontrar informações para o CEP "%s". Verifique se está correto ou preencha o endereço manualmente.', 'wc-better-shipping-calculator-for-brazil'), $postcode);
             }
             wc_add_notice($error_message, 'error');
@@ -3978,7 +3988,7 @@ class WcBetterShippingCalculatorForBrazil
         }
         
         // Método 3: Verifica variáveis de servidor como backup
-        $server_name = $_SERVER['SERVER_NAME'] ?? '';
+        $server_name = isset($_SERVER['SERVER_NAME']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_NAME'])) : '';
         if (strpos($server_name, 'playground.wordpress.net') !== false) {
             return true;
         }
