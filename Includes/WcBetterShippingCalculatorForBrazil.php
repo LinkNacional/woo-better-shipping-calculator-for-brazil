@@ -847,13 +847,13 @@ class WcBetterShippingCalculatorForBrazil
         // Hooks para compatibilidade com APIs REST (conversão F/J) - apenas se plugin oficial não estiver ativo
         if (!$this->is_brazilian_plugin_active()) {
             // Legacy REST API
-            $this->loader->add_filter('woocommerce_api_order_response', $this, 'legacy_orders_response', 100, 4);
-            $this->loader->add_filter('woocommerce_api_customer_response', $this, 'legacy_customers_response', 100, 4);
+            $this->loader->add_filter('woocommerce_api_order_response', $this, 'legacy_orders_response', 90, 4);
+            $this->loader->add_filter('woocommerce_api_customer_response', $this, 'legacy_customers_response', 90, 4);
             
             // WP REST API
-            $this->loader->add_filter('woocommerce_rest_prepare_customer', $this, 'customers_response', 100, 2);
-            $this->loader->add_filter('woocommerce_rest_prepare_shop_order', $this, 'orders_v1_response', 100, 2);
-            $this->loader->add_filter('woocommerce_rest_prepare_shop_order_object', $this, 'orders_response', 100, 2);
+            $this->loader->add_filter('woocommerce_rest_prepare_customer', $this, 'customers_response', 90, 2);
+            $this->loader->add_filter('woocommerce_rest_prepare_shop_order', $this, 'orders_v1_response', 90, 2);
+            $this->loader->add_filter('woocommerce_rest_prepare_shop_order_object', $this, 'orders_response', 90, 2);
         }
     }
 
