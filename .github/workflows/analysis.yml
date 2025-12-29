@@ -65,6 +65,8 @@ jobs:
             WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
             WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
             WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+            WordPress.DB.DirectDatabaseQuery.NoCaching
+            WordPress.DB.DirectDatabaseQuery.DirectQuery
           categories: |
             performance
             accessibility
