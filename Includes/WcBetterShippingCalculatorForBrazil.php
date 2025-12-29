@@ -921,7 +921,7 @@ class WcBetterShippingCalculatorForBrazil
         // Se não há CEP, mostra erro apenas se foi enviado formulário
         if (empty($postcode)) {
             if (isset($_POST['calc_shipping_postcode']) || isset($_POST['shipping_postcode'])) {
-                wc_add_notice(__('Por favor, informe um CEP válido para calcular o frete.', 'wc-better-shipping-calculator-for-brazil'), 'error');
+                wc_add_notice(__('Por favor, informe um CEP válido para calcular o frete.', 'woo-better-shipping-calculator-for-brazil'), 'error');
             }
             return;
         }
@@ -929,7 +929,7 @@ class WcBetterShippingCalculatorForBrazil
         // Valida formato do CEP brasileiro
         if (!preg_match('/^\d{8}$/', $postcode) && !preg_match('/^\d{5}-\d{3}$/', $postcode)) {
             // translators: %s is the postcode entered by the user
-            wc_add_notice(sprintf(__('O CEP "%s" não possui um formato válido. Use o formato 00000-000.', 'wc-better-shipping-calculator-for-brazil'), $postcode), 'error');
+            wc_add_notice(sprintf(__('O CEP "%s" não possui um formato válido. Use o formato 00000-000.', 'woo-better-shipping-calculator-for-brazil'), $postcode), 'error');
             return;
         }
 
@@ -937,7 +937,7 @@ class WcBetterShippingCalculatorForBrazil
         $clean_postcode = preg_replace('/[^0-9]/', '', $postcode);
         if (strlen($clean_postcode) !== 8) {
             // translators: %s is the postcode entered by the user
-            wc_add_notice(sprintf(__('O CEP "%s" deve conter exatamente 8 dígitos.', 'wc-better-shipping-calculator-for-brazil'), $postcode), 'error');
+            wc_add_notice(sprintf(__('O CEP "%s" deve conter exatamente 8 dígitos.', 'woo-better-shipping-calculator-for-brazil'), $postcode), 'error');
             return;
         }
 
@@ -977,10 +977,10 @@ class WcBetterShippingCalculatorForBrazil
             $error_message = '';
             if (!empty($cep_data) && isset($cep_data['error'])) {
                 // translators: %1$s is the postcode entered by the user, %2$s is the specific error message
-                $error_message = sprintf(__('Erro ao buscar CEP "%1$s": %2$s', 'wc-better-shipping-calculator-for-brazil'), $postcode, $cep_data['error']);
+                $error_message = sprintf(__('Erro ao buscar CEP "%1$s": %2$s', 'woo-better-shipping-calculator-for-brazil'), $postcode, $cep_data['error']);
             } else {
                 // translators: %s is the postcode entered by the user
-                $error_message = sprintf(__('Não foi possível encontrar informações para o CEP "%s". Verifique se está correto ou preencha o endereço manualmente.', 'wc-better-shipping-calculator-for-brazil'), $postcode);
+                $error_message = sprintf(__('Não foi possível encontrar informações para o CEP "%s". Verifique se está correto ou preencha o endereço manualmente.', 'woo-better-shipping-calculator-for-brazil'), $postcode);
             }
             wc_add_notice($error_message, 'error');
         }
