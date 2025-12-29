@@ -3804,6 +3804,11 @@ class WcBetterShippingCalculatorForBrazil
     /**
      * Adiciona campos extras na resposta da REST API para pedidos
      * 
+     * Inclui também o campo 'cpf' do plugin Pagar.me caso disponível.
+     * O plugin da Pagar.me com checkout de blocos salva o CPF no meta '_wc_billing/address/document'.
+     * @author Hugo da Pequenaweb
+     * @since 2025-12-29 (Adicionado suporte ao CPF do Pagar.me)
+     * 
      * @param WP_REST_Response $response Objeto da resposta
      * @param WC_Order $order Objeto do pedido
      * @return WP_REST_Response
@@ -3816,6 +3821,16 @@ class WcBetterShippingCalculatorForBrazil
         $response->data['billing']['cnpj']         = $this->format_number($order->get_meta('_billing_cnpj'));
         $response->data['billing']['number']       = $order->get_meta('_billing_number');
         $response->data['billing']['neighborhood'] = $order->get_meta('_billing_neighborhood');
+
+        // Recupera o CPF armazenado pelo plugin Pagar.me no meta '_wc_billing/address/document'
+        $cpf_pagarme = $order->get_meta('_wc_billing/address/document', true);
+        
+        // Se o CPF do Pagar.me existir e não houver CPF padrão, usa o CPF do Pagar.me
+        if (!empty($cpf_pagarme) && empty($response->data['billing']['cpf'])) {
+            // Formata o CPF para ficar apenas com números
+            $cpf_numerico = preg_replace('/\D/', '', $cpf_pagarme);
+            $response->data['billing']['cpf'] = $cpf_numerico;
+        }
 
         // Shipping fields
         $response->data['shipping']['number']       = $order->get_meta('_shipping_number');
