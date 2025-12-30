@@ -9,7 +9,7 @@
 * Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 * Testado até: 6.8
 * Requer PHP: 7.3
-* Tag estável: 4.7.0-rc.2
+* Tag estável: 4.7.0-rc.3
 * Licença: GPLv2 ou posterior
 * URI da licença: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
