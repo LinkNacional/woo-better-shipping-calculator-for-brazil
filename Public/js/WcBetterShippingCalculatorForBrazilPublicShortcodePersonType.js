@@ -281,14 +281,14 @@ document.addEventListener("DOMContentLoaded", function () {
         const cnpjInput = document.getElementById('billing_cnpj');
         
         if (detectedType === 'cpf') {
-            if (personTypeInput) personTypeInput.value = 'physical';
+            if (personTypeInput) personTypeInput.value = '1';
             if (cpfInput) cpfInput.value = documentValue;
             if (cnpjInput) cnpjInput.value = '';
             
             // Esconder campo de empresa para CPF
             hideCompanyField();
         } else if (detectedType === 'cnpj') {
-            if (personTypeInput) personTypeInput.value = 'legal';
+            if (personTypeInput) personTypeInput.value = '2';
             if (cpfInput) cpfInput.value = '';
             if (cnpjInput) cnpjInput.value = documentValue;
             
@@ -304,12 +304,12 @@ document.addEventListener("DOMContentLoaded", function () {
             const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
             
             if (personTypeConfig === 'physical') {
-                if (personTypeInput) personTypeInput.value = 'physical';
+                if (personTypeInput) personTypeInput.value = '1';
                 if (cpfInput) cpfInput.value = documentValue;
                 if (cnpjInput) cnpjInput.value = '';
                 hideCompanyField();
             } else if (personTypeConfig === 'legal') {
-                if (personTypeInput) personTypeInput.value = 'legal';
+                if (personTypeInput) personTypeInput.value = '2';
                 if (cpfInput) cpfInput.value = '';
                 if (cnpjInput) cnpjInput.value = documentValue;
                 

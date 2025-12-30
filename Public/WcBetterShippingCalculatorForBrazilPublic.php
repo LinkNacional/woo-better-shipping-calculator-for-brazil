@@ -333,12 +333,53 @@ class WcBetterShippingCalculatorForBrazilPublic
                 $billing_cpf = '';
                 $billing_cnpj = '';
                 $billing_company = '';
+                $billing_document = '';
                 
                 if (function_exists('WC') && WC()->session) {
-                    $billing_persontype = WC()->session->get('billing_persontype', '');
-                    $billing_cpf = WC()->session->get('billing_cpf', '');
-                    $billing_cnpj = WC()->session->get('billing_cnpj', '');
-                    $billing_company = WC()->session->get('billing_company', '');
+                    // Se usuário está logado, pega dados dos meta do usuário
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_persontype = get_user_meta($user_id, 'billing_persontype', true);
+                        $billing_cpf = get_user_meta($user_id, 'billing_cpf', true);
+                        $billing_cnpj = get_user_meta($user_id, 'billing_cnpj', true);
+                        $billing_company = get_user_meta($user_id, 'billing_company', true);
+                        $billing_document = get_user_meta($user_id, 'billing_document', true);
+                    }
+                    
+                    // Fallback para sessão se não há dados do usuário
+                    if (empty($billing_persontype)) {
+                        $billing_persontype = WC()->session->get('billing_persontype', '');
+                    }
+                    if (empty($billing_cpf)) {
+                        $billing_cpf = WC()->session->get('billing_cpf', '');
+                    }
+                    if (empty($billing_cnpj)) {
+                        $billing_cnpj = WC()->session->get('billing_cnpj', '');
+                    }
+                    if (empty($billing_company)) {
+                        $billing_company = WC()->session->get('billing_company', '');
+                    }
+                    if (empty($billing_document)) {
+                        $billing_document = WC()->session->get('billing_document', '');
+                    }
+                }
+
+                // Construir campo documento unificado baseado no tipo de pessoa (sempre reconstruir)
+                if ($billing_persontype === '1' && !empty($billing_cpf)) {
+                    // Pessoa física - usar CPF
+                    $billing_document = $billing_cpf;
+                } elseif ($billing_persontype === '2' && !empty($billing_cnpj)) {
+                    // Pessoa jurídica - usar CNPJ
+                    $billing_document = $billing_cnpj;
+                } elseif (empty($billing_persontype)) {
+                    // Fallback quando não há tipo definido - usar documento salvo ou qualquer disponível
+                    if (empty($billing_document)) {
+                        if (!empty($billing_cpf)) {
+                            $billing_document = $billing_cpf;
+                        } elseif (!empty($billing_cnpj)) {
+                            $billing_document = $billing_cnpj;
+                        }
+                    }
                 }
 
                 wp_enqueue_script(
@@ -356,7 +397,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'billing_persontype' => $billing_persontype,
                         'billing_cpf' => $billing_cpf,
                         'billing_cnpj' => $billing_cnpj,
-                        'billing_company' => $billing_company
+                        'billing_company' => $billing_company,
+                        'billing_document' => $billing_document
                     )
                 );
 
@@ -375,8 +417,20 @@ class WcBetterShippingCalculatorForBrazilPublic
                 $billing_number = '';
                 $shipping_number = '';
                 if (function_exists('WC') && WC()->session) {
-                    $billing_number = WC()->session->get('woo_better_billing_number');
-                    $shipping_number = WC()->session->get('woo_better_shipping_number');
+                    // Se usuário está logado, pega dados dos meta do usuário
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_number = get_user_meta($user_id, 'billing_number', true);
+                        $shipping_number = get_user_meta($user_id, 'shipping_number', true);
+                    }
+                    
+                    // Fallback para sessão se não há dados do usuário
+                    if (empty($billing_number)) {
+                        $billing_number = WC()->session->get('billing_number');
+                    }
+                    if (empty($shipping_number)) {
+                        $shipping_number = WC()->session->get('shipping_number');
+                    }
                 }
 
                 wp_enqueue_script(
@@ -406,8 +460,20 @@ class WcBetterShippingCalculatorForBrazilPublic
                 $shipping_neighborhood = '';
                 
                 if (function_exists('WC') && WC()->session) {
-                    $billing_neighborhood = WC()->session->get('billing_neighborhood', '');
-                    $shipping_neighborhood = WC()->session->get('shipping_neighborhood', '');
+                    // Se usuário está logado, pega dados dos meta do usuário
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_neighborhood = get_user_meta($user_id, 'billing_neighborhood', true);
+                        $shipping_neighborhood = get_user_meta($user_id, 'shipping_neighborhood', true);
+                    }
+                    
+                    // Fallback para sessão se não há dados do usuário
+                    if (empty($billing_neighborhood)) {
+                        $billing_neighborhood = WC()->session->get('billing_neighborhood', '');
+                    }
+                    if (empty($shipping_neighborhood)) {
+                        $shipping_neighborhood = WC()->session->get('shipping_neighborhood', '');
+                    }
                 }
 
                 wp_enqueue_script(
@@ -448,12 +514,50 @@ class WcBetterShippingCalculatorForBrazilPublic
                 $billing_persontype = '';
                 $billing_cpf = '';
                 $billing_cnpj = '';
+                $billing_document = '';
                 
                 if (function_exists('WC') && WC()->session) {
-                    $billing_persontype = WC()->session->get('billing_persontype', '');
-                    $billing_cpf = WC()->session->get('billing_cpf', '');
-                    $billing_cnpj = WC()->session->get('billing_cnpj', '');
+                    // Se usuário está logado, pega dados dos meta do usuário
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_persontype = get_user_meta($user_id, 'billing_persontype', true);
+                        $billing_cpf = get_user_meta($user_id, 'billing_cpf', true);
+                        $billing_cnpj = get_user_meta($user_id, 'billing_cnpj', true);
+                        $billing_document = get_user_meta($user_id, 'billing_document', true);
+                    }
+                    
+                    // Fallback para sessão se não há dados do usuário
+                    if (empty($billing_persontype)) {
+                        $billing_persontype = WC()->session->get('billing_persontype', '');
+                    }
+                    if (empty($billing_cpf)) {
+                        $billing_cpf = WC()->session->get('billing_cpf', '');
+                    }
+                    if (empty($billing_cnpj)) {
+                        $billing_cnpj = WC()->session->get('billing_cnpj', '');
+                    }
+                    if (empty($billing_document)) {
+                        $billing_document = WC()->session->get('billing_document', '');
+                    }
                 }
+
+                // Construir campo documento unificado baseado no tipo de pessoa (sempre reconstruir)
+                if ($billing_persontype === '1' && !empty($billing_cpf)) {
+                    // Pessoa física - usar CPF
+                    $billing_document = $billing_cpf;
+                } elseif ($billing_persontype === '2' && !empty($billing_cnpj)) {
+                    // Pessoa jurídica - usar CNPJ
+                    $billing_document = $billing_cnpj;
+                } elseif (empty($billing_persontype)) {
+                    // Fallback quando não há tipo definido - usar documento salvo ou qualquer disponível
+                    if (empty($billing_document)) {
+                        if (!empty($billing_cpf)) {
+                            $billing_document = $billing_cpf;
+                        } elseif (!empty($billing_cnpj)) {
+                            $billing_document = $billing_cnpj;
+                        }
+                    }
+                }    
 
                 wp_enqueue_script(
                     $this->plugin_name . '-shortcode-person-type',
@@ -469,7 +573,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     array(
                         'billing_persontype' => $billing_persontype,
                         'billing_cpf' => $billing_cpf,
-                        'billing_cnpj' => $billing_cnpj
+                        'billing_cnpj' => $billing_cnpj,
+                        'billing_document' => $billing_document
                     )
                 );
 
@@ -492,8 +597,20 @@ class WcBetterShippingCalculatorForBrazilPublic
                 $shipping_neighborhood = '';
                 
                 if (function_exists('WC') && WC()->session) {
-                    $billing_neighborhood = WC()->session->get('billing_neighborhood', '');
-                    $shipping_neighborhood = WC()->session->get('shipping_neighborhood', '');
+                    // Se usuário está logado, pega dados dos meta do usuário
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_neighborhood = get_user_meta($user_id, 'billing_neighborhood', true);
+                        $shipping_neighborhood = get_user_meta($user_id, 'shipping_neighborhood', true);
+                    }
+                    
+                    // Fallback para sessão se não há dados do usuário
+                    if (empty($billing_neighborhood)) {
+                        $billing_neighborhood = WC()->session->get('billing_neighborhood', '');
+                    }
+                    if (empty($shipping_neighborhood)) {
+                        $shipping_neighborhood = WC()->session->get('shipping_neighborhood', '');
+                    }
                 }
 
                 wp_enqueue_script(
@@ -657,8 +774,20 @@ class WcBetterShippingCalculatorForBrazilPublic
             $billing_number = '';
             $shipping_number = '';
             if (function_exists('WC') && WC()->session) {
-                $billing_number = WC()->session->get('woo_better_billing_number');
-                $shipping_number = WC()->session->get('woo_better_shipping_number');
+                // Se usuário está logado, pega dados dos meta do usuário
+                if (is_user_logged_in()) {
+                    $user_id = get_current_user_id();
+                    $billing_number = get_user_meta($user_id, 'billing_number', true);
+                    $shipping_number = get_user_meta($user_id, 'shipping_number', true);
+                }
+                
+                // Fallback para sessão se não há dados do usuário
+                if (empty($billing_number)) {
+                    $billing_number = WC()->session->get('billing_number');
+                }
+                if (empty($shipping_number)) {
+                    $shipping_number = WC()->session->get('shipping_number');
+                }
             }
 
             $only_virtual = false;

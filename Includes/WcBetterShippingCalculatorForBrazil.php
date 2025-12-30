@@ -161,6 +161,11 @@ class WcBetterShippingCalculatorForBrazil
         
         // Hook para desabilitar validações de campos específicos
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_set_checkout_fields_optional', 99998);
+
+        // Hook para atualizar billing_document quando dados do usuário são salvos
+        
+        // Hook para atualizar billing_document quando perfil do usuário é atualizado
+        $this->loader->add_action('profile_update', $this, 'update_billing_document_on_profile_update', 10, 1);
     }
 
     public function lkn_show_admin_notice()
@@ -864,6 +869,9 @@ class WcBetterShippingCalculatorForBrazil
             $this->loader->add_filter('woocommerce_rest_prepare_shop_order', $this, 'orders_v1_response', 90, 2);
             $this->loader->add_filter('woocommerce_rest_prepare_shop_order_object', $this, 'orders_response', 90, 2);
         }
+        
+        // Hook para adicionar campos personalizados na página de perfil do usuário
+        $this->loader->add_filter('woocommerce_customer_meta_fields', $this, 'add_customer_meta_fields');
     }
 
     /**
@@ -1134,6 +1142,7 @@ class WcBetterShippingCalculatorForBrazil
                 'type'  => 'select',
                 'options' => array(
                     '' => __('Selecione', 'woo-better-shipping-calculator-for-brazil'),
+                    '0' => __('Nenhum', 'woo-better-shipping-calculator-for-brazil'),
                     '1' => __('Pessoa Física', 'woo-better-shipping-calculator-for-brazil'),
                     '2' => __('Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil'),
                 ),
@@ -2243,6 +2252,42 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
+    /**
+     * Atualizar billing_document quando o perfil do usuário é atualizado
+     *
+     * @param int $user_id
+     * @since 4.7.0
+     */
+    public function update_billing_document_on_profile_update($user_id)
+    {
+        // Obter dados salvos no user meta
+        $billing_persontype = get_user_meta($user_id, 'billing_persontype', true);
+        $billing_cpf = get_user_meta($user_id, 'billing_cpf', true);
+        $billing_cnpj = get_user_meta($user_id, 'billing_cnpj', true);
+        
+        // Construir billing_document baseado no billing_persontype
+        $billing_document = '';
+        if ($billing_persontype === '1' && !empty($billing_cpf)) {
+            // Pessoa física - usar CPF
+            $billing_document = $billing_cpf;
+        } elseif ($billing_persontype === '2' && !empty($billing_cnpj)) {
+            // Pessoa jurídica - usar CNPJ
+            $billing_document = $billing_cnpj;
+        } elseif (empty($billing_persontype)) {
+            // Fallback quando não há tipo definido - usar qualquer documento disponível
+            if (!empty($billing_cpf)) {
+                $billing_document = $billing_cpf;
+            } elseif (!empty($billing_cnpj)) {
+                $billing_document = $billing_cnpj;
+            }
+        }
+        
+        // Atualizar billing_document no user meta se há documento para salvar
+        if (!empty($billing_document)) {
+            update_user_meta($user_id, 'billing_document', $billing_document);
+        }
+    }
+
     // Função específica para WooCommerce Block Checkout
     public function process_checkout_data_blocks($order, $request)
     {
@@ -2366,12 +2411,18 @@ class WcBetterShippingCalculatorForBrazil
             // Salva os números como meta dados separados (sem concatenar no endereço)
             if (!empty($billing_number)) {
                 $order->update_meta_data('_billing_number', $billing_number);
-                WC()->session->set('woo_better_billing_number', $billing_number);
+                WC()->session->set('billing_number', $billing_number);
+                if (is_user_logged_in()) {
+                    update_user_meta( get_current_user_id(), 'billing_number', $billing_number );
+                }
             }
             
             if (!empty($shipping_number)) {
                 $order->update_meta_data('_shipping_number', $shipping_number);
-                WC()->session->set('woo_better_shipping_number', $shipping_number);
+                WC()->session->set('shipping_number', $shipping_number);
+                if (is_user_logged_in()) {
+                    update_user_meta( get_current_user_id(), 'shipping_number', $shipping_number );
+                }
             }
         }
     }
@@ -2398,12 +2449,12 @@ class WcBetterShippingCalculatorForBrazil
             if (isset($extensions['woo_better_number_validation'])) {
                 $number_data = $extensions['woo_better_number_validation'];
                 
-                if (isset($number_data['woo_better_billing_number'])) {
-                    $billing_number = sanitize_text_field($number_data['woo_better_billing_number']);
+                if (isset($number_data['billing_number'])) {
+                    $billing_number = sanitize_text_field($number_data['billing_number']);
                 }
                 
-                if (isset($number_data['woo_better_shipping_number'])) {
-                    $shipping_number = sanitize_text_field($number_data['woo_better_shipping_number']);
+                if (isset($number_data['shipping_number'])) {
+                    $shipping_number = sanitize_text_field($number_data['shipping_number']);
                 }
             }
 
@@ -2432,12 +2483,18 @@ class WcBetterShippingCalculatorForBrazil
             // Salva os números como meta dados separados (sem concatenar no endereço)
             if (!empty($billing_number)) {
                 $order->update_meta_data('_billing_number', $billing_number);
-                WC()->session->set('woo_better_billing_number', $billing_number);
+                WC()->session->set('billing_number', $billing_number);
+                if (is_user_logged_in()) {
+                    update_user_meta( get_current_user_id(), 'billing_number', $billing_number );
+                }
             }
             
             if (!empty($shipping_number)) {
                 $order->update_meta_data('_shipping_number', $shipping_number);
-                WC()->session->set('woo_better_shipping_number', $shipping_number);
+                WC()->session->set('shipping_number', $shipping_number);
+                if (is_user_logged_in()) {
+                    update_user_meta( get_current_user_id(), 'shipping_number', $shipping_number );
+                }
             }
         }
     }
@@ -2470,18 +2527,25 @@ class WcBetterShippingCalculatorForBrazil
                 if (strlen($clean_value) === 11) {
                     // É CPF
                     $billing_cpf = $billing_document;
-                    $billing_persontype = 'physical';
+                    $billing_persontype = '1'; // Usar valor numérico
                 } elseif (strlen($clean_value) === 14) {
                     // É CNPJ
                     $billing_cnpj = $billing_document;
-                    $billing_persontype = 'legal';
+                    $billing_persontype = '2'; // Usar valor numérico
                 }
             }
 
             // Salva os tipos de pessoa
             if (!empty($billing_persontype)) {
-                // Converte para número: 1 = physical (CPF), 2 = legal (CNPJ)
-                $persontype_number = ($billing_persontype === 'physical') ? 1 : 2;
+                // Se vier como string antiga, converte para número
+                if ($billing_persontype === 'physical') {
+                    $persontype_number = 1;
+                } elseif ($billing_persontype === 'legal') {
+                    $persontype_number = 2;
+                } else {
+                    // Já é numérico, usa diretamente
+                    $persontype_number = (int) $billing_persontype;
+                }
                 $order->update_meta_data('_billing_persontype', $persontype_number);
             }
 
@@ -2496,10 +2560,10 @@ class WcBetterShippingCalculatorForBrazil
             }
 
             // Salva a empresa apenas para CNPJ, limpa para CPF
-            if ($billing_persontype === 'legal' && !empty($billing_company)) {
+            if (($billing_persontype === 'legal' || $billing_persontype === '2' || $billing_persontype === 2) && !empty($billing_company)) {
                 $order->set_billing_company($billing_company);
                 $order->set_shipping_company('');
-            } elseif ($billing_persontype === 'physical') {
+            } elseif ($billing_persontype === 'physical' || $billing_persontype === '1' || $billing_persontype === 1) {
                 // Para CPF, assegura que campos de empresa ficam vazios
                 $order->set_billing_company('');
                 $order->set_shipping_company('');
@@ -2572,18 +2636,25 @@ class WcBetterShippingCalculatorForBrazil
                 if (strlen($clean_value) === 11) {
                     // É CPF
                     $billing_cpf = $billing_document;
-                    $billing_persontype = 'physical';
+                    $billing_persontype = '1'; // Usar valor numérico
                 } elseif (strlen($clean_value) === 14) {
                     // É CNPJ
                     $billing_cnpj = $billing_document;
-                    $billing_persontype = 'legal';
+                    $billing_persontype = '2'; // Usar valor numérico
                 }
             }
 
             // Salva os tipos de pessoa
             if (!empty($billing_persontype)) {
-                // Converte para número: 1 = physical (CPF), 2 = legal (CNPJ)
-                $persontype_number = ($billing_persontype === 'physical') ? 1 : 2;
+                // Se vier como string antiga, converte para número
+                if ($billing_persontype === 'physical') {
+                    $persontype_number = 1;
+                } elseif ($billing_persontype === 'legal') {
+                    $persontype_number = 2;
+                } else {
+                    // Já é numérico, usa diretamente
+                    $persontype_number = (int) $billing_persontype;
+                }
                 $order->update_meta_data('_billing_persontype', $persontype_number);
             }
 
@@ -2598,10 +2669,10 @@ class WcBetterShippingCalculatorForBrazil
             }
 
             // Salva a empresa apenas para CNPJ, limpa para CPF
-            if ($billing_persontype === 'legal' && !empty($billing_company)) {
+            if (($billing_persontype === 'legal' || $billing_persontype === '2' || $billing_persontype === 2) && !empty($billing_company)) {
                 $order->set_billing_company($billing_company);
                 $order->set_shipping_company(''); // Garantir que shipping company fique vazio
-            } elseif ($billing_persontype === 'physical') {
+            } elseif ($billing_persontype === 'physical' || $billing_persontype === '1' || $billing_persontype === 1) {
                 // Para CPF, assegura que campos de empresa ficam vazios
                 $order->set_billing_company('');
                 $order->set_shipping_company('');
@@ -2766,11 +2837,11 @@ class WcBetterShippingCalculatorForBrazil
                 'namespace'       => 'woo_better_number_validation',
                 'schema_callback' => function() {
                     return [
-                        'woo_better_shipping_number' => [
+                        'shipping_number' => [
                             'type'     => 'string',
                             'readonly' => true,
                         ],
-                        'woo_better_billing_number' => [
+                        'billing_number' => [
                             'type'     => 'string',
                             'readonly' => true,
                         ],
@@ -2778,8 +2849,8 @@ class WcBetterShippingCalculatorForBrazil
                 },
                 'data_callback' => function() {
                     return [
-                        'woo_better_shipping_number'  => '', 
-                        'woo_better_billing_number' => '', 
+                        'shipping_number'  => '', 
+                        'billing_number' => '', 
                     ];
                 },
             ]);
@@ -2901,15 +2972,25 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // Guarda o número de faturação na sessão
-        if ( isset( $data['woo_better_billing_number'] ) ) {
-            $billing_number = sanitize_text_field( $data['woo_better_billing_number'] );
-            WC()->session->set( 'woo_better_billing_number', $billing_number );
+        if ( isset( $data['billing_number'] ) ) {
+            $billing_number = sanitize_text_field( $data['billing_number'] );
+            WC()->session->set( 'billing_number', $billing_number );
+            
+            // Sincroniza com user_meta se usuário estiver logado
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'billing_number', $billing_number);
+            }
         }
 
         // Guarda o número de envio na sessão
-        if ( isset( $data['woo_better_shipping_number'] ) ) {
-            $shipping_number = sanitize_text_field( $data['woo_better_shipping_number'] );
-            WC()->session->set( 'woo_better_shipping_number', $shipping_number );
+        if ( isset( $data['shipping_number'] ) ) {
+            $shipping_number = sanitize_text_field( $data['shipping_number'] );
+            WC()->session->set( 'shipping_number', $shipping_number );
+            
+            // Sincroniza com user_meta se usuário estiver logado
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'shipping_number', $shipping_number);
+            }
         }
     }
 
@@ -2922,12 +3003,22 @@ class WcBetterShippingCalculatorForBrazil
         if ( isset( $data['billing_phone_country_code'] ) ) {
             $country_code = sanitize_text_field( (string) $data['billing_phone_country_code'] );
             WC()->session->set( 'billing_phone_country_code', $country_code );
+            
+            // Sincroniza com user_meta se usuário estiver logado
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'billing_phone_country_code', $country_code);
+            }
         }
 
         // Guarda o código do país de envio na sessão
         if ( isset( $data['shipping_phone_country_code'] ) ) {
             $country_code = sanitize_text_field( (string) $data['shipping_phone_country_code'] );
             WC()->session->set( 'shipping_phone_country_code', $country_code );
+            
+            // Sincroniza com user_meta se usuário estiver logado
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'shipping_phone_country_code', $country_code);
+            }
         }
     }
 
@@ -2940,23 +3031,73 @@ class WcBetterShippingCalculatorForBrazil
         if ( isset( $data['billing_persontype'] ) ) {
             $person_type = sanitize_text_field( (string) $data['billing_persontype'] );
             WC()->session->set( 'billing_persontype', $person_type );
+            
+            // Sincroniza com user_meta se usuário estiver logado
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'billing_persontype', $person_type);
+            }
         }
 
         // Guarda os documentos na sessão
         if ( isset( $data['billing_cpf'] ) ) {
             $cpf = sanitize_text_field( (string) $data['billing_cpf'] );
             WC()->session->set( 'billing_cpf', $cpf );
+            
+            // Sincroniza com user_meta se usuário estiver logado
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'billing_cpf', $cpf);
+            }
         }
 
         if ( isset( $data['billing_cnpj'] ) ) {
             $cnpj = sanitize_text_field( (string) $data['billing_cnpj'] );
             WC()->session->set( 'billing_cnpj', $cnpj );
+            
+            // Sincroniza com user_meta se usuário estiver logado
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'billing_cnpj', $cnpj);
+            }
         }
 
         // Guarda a empresa na sessão
         if ( isset( $data['billing_company'] ) ) {
             $company = sanitize_text_field( (string) $data['billing_company'] );
             WC()->session->set( 'billing_company', $company );
+            
+            // Sincroniza com user_meta se usuário estiver logado
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'billing_company', $company);
+            }
+        }
+
+        // Construir e salvar o documento unificado baseado no billing_persontype
+        $billing_document = '';
+        $person_type = WC()->session->get('billing_persontype', '');
+        $cpf = WC()->session->get('billing_cpf', '');
+        $cnpj = WC()->session->get('billing_cnpj', '');
+        
+        if ($person_type === '1' && !empty($cpf)) {
+            // Pessoa física - usar CPF
+            $billing_document = $cpf;
+        } elseif ($person_type === '2' && !empty($cnpj)) {
+            // Pessoa jurídica - usar CNPJ
+            $billing_document = $cnpj;
+        } elseif (empty($person_type)) {
+            // Fallback quando não há tipo definido - usar qualquer documento disponível
+            if (!empty($cpf)) {
+                $billing_document = $cpf;
+            } elseif (!empty($cnpj)) {
+                $billing_document = $cnpj;
+            }
+        }
+        
+        if (!empty($billing_document)) {
+            WC()->session->set('billing_document', $billing_document);
+            
+            // Sincroniza com user_meta se usuário estiver logado
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'billing_document', $billing_document);
+            }
         }
     }
 
@@ -3013,13 +3154,19 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
-        // Guarda os dados de bairro na sessão
+        // Guarda os dados de bairro na sessão e no perfil do usuário
         if (!empty($billing_neighborhood)) {
             WC()->session->set( 'billing_neighborhood', $billing_neighborhood );
+            if (is_user_logged_in()) {
+                update_user_meta( get_current_user_id(), 'billing_neighborhood', $billing_neighborhood );
+            }
         }
 
         if (!empty($shipping_neighborhood)) {
             WC()->session->set( 'shipping_neighborhood', $shipping_neighborhood );
+            if (is_user_logged_in()) {
+                update_user_meta( get_current_user_id(), 'shipping_neighborhood', $shipping_neighborhood );
+            }
         }
     }
 
@@ -4301,5 +4448,157 @@ class WcBetterShippingCalculatorForBrazil
         
         // Método principal
         return strpos($current_url, 'playground.wordpress.net') !== false;
+    }
+    
+    /**
+     * Adiciona campos personalizados nas seções de endereço de cobrança e entrega na página de perfil do usuário
+     *
+     * @param array $fields Array de campos do WooCommerce
+     * @return array
+     */
+    public function add_customer_meta_fields($fields)
+    {
+        // Verifica se o WooCommerce está ativo
+        if (!class_exists('\WC_Customer')) {
+            return $fields;
+        }
+        
+        // Verifica se a exibição dos campos está habilitada
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+        $number_field = get_option('woo_better_calc_number_required', 'no');
+        $neighborhood_field = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        
+        // Se nenhum campo está habilitado, não adiciona nada
+        if ($person_type === 'none' && $number_field === 'no' && $neighborhood_field === 'no') {
+            return $fields;
+        }
+        
+        // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        // Se o plugin estiver ativo, não adiciona os campos para evitar duplicação
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+            return $fields;
+        }
+        
+        // Adiciona campos na seção de cobrança
+        if ($person_type !== 'none') {
+            // Encontra a posição do campo last_name para inserir após ele
+            $billing_fields = $fields['billing']['fields'];
+            $new_billing_fields = array();
+            
+            foreach ($billing_fields as $key => $field) {
+                $new_billing_fields[$key] = $field;
+                
+                // Após o campo billing_last_name, adiciona os campos de pessoa
+                if ($key === 'billing_last_name') {
+                    $new_billing_fields['billing_persontype'] = array(
+                        'label'       => __('Tipo de Pessoa', 'woo-better-shipping-calculator-for-brazil'),
+                        'type'        => 'select',
+                        'options'     => array(
+                            ''  => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
+                            '0' => __('Nenhum', 'woo-better-shipping-calculator-for-brazil'),
+                            '1' => __('Pessoa Física', 'woo-better-shipping-calculator-for-brazil'),
+                            '2' => __('Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil'),
+                        ),
+                        'description' => '',
+                    );
+                    
+                    $new_billing_fields['billing_cpf'] = array(
+                        'label'       => __('CPF', 'woo-better-shipping-calculator-for-brazil'),
+                        'description' => '',
+                    );
+                    
+                    $new_billing_fields['billing_cnpj'] = array(
+                        'label'       => __('CNPJ', 'woo-better-shipping-calculator-for-brazil'),
+                        'description' => '',
+                    );
+                }
+            }
+            
+            $fields['billing']['fields'] = $new_billing_fields;
+        }
+        
+        // Adiciona campo de bairro após address_1
+        if ($neighborhood_field === 'yes') {
+            // Billing
+            $billing_fields = $fields['billing']['fields'];
+            $new_billing_fields = array();
+            
+            foreach ($billing_fields as $key => $field) {
+                $new_billing_fields[$key] = $field;
+                
+                if ($key === 'billing_address_1') {
+                    $new_billing_fields['billing_neighborhood'] = array(
+                        'label'       => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
+                        'description' => '',
+                    );
+                }
+            }
+            
+            $fields['billing']['fields'] = $new_billing_fields;
+            
+            // Shipping
+            $shipping_fields = $fields['shipping']['fields'];
+            $new_shipping_fields = array();
+            
+            foreach ($shipping_fields as $key => $field) {
+                $new_shipping_fields[$key] = $field;
+                
+                if ($key === 'shipping_address_1') {
+                    $new_shipping_fields['shipping_neighborhood'] = array(
+                        'label'       => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
+                        'description' => '',
+                    );
+                }
+            }
+            
+            $fields['shipping']['fields'] = $new_shipping_fields;
+        }
+        
+        // Adiciona campo de número
+        if ($number_field === 'yes') {
+            // Determina após qual campo inserir (bairro se habilitado, senão address_1)
+            $insert_after = ($neighborhood_field === 'yes') ? 'billing_neighborhood' : 'billing_address_1';
+            $insert_after_shipping = ($neighborhood_field === 'yes') ? 'shipping_neighborhood' : 'shipping_address_1';
+            
+            // Billing
+            $billing_fields = $fields['billing']['fields'];
+            $new_billing_fields = array();
+            
+            foreach ($billing_fields as $key => $field) {
+                $new_billing_fields[$key] = $field;
+                
+                if ($key === $insert_after) {
+                    $new_billing_fields['billing_number'] = array(
+                        'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
+                        'description' => '',
+                    );
+                }
+            }
+            
+            $fields['billing']['fields'] = $new_billing_fields;
+            
+            // Shipping
+            $shipping_fields = $fields['shipping']['fields'];
+            $new_shipping_fields = array();
+            
+            foreach ($shipping_fields as $key => $field) {
+                $new_shipping_fields[$key] = $field;
+                
+                if ($key === $insert_after_shipping) {
+                    $new_shipping_fields['shipping_number'] = array(
+                        'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
+                        'description' => '',
+                    );
+                }
+            }
+            
+            $fields['shipping']['fields'] = $new_shipping_fields;
+        }
+        
+        return $fields;
     }
 }
