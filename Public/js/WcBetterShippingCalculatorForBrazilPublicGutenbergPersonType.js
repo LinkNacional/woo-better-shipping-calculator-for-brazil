@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Variáveis para salvar dados dos campos
     let savedPersonTypeData = {
-        billing_persontype: '',
+        billing_persontype: '0',
         billing_cpf: '',
         billing_cnpj: '',
         billing_document: '', // Campo unificado
@@ -208,7 +208,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Função para limpar dados do Store API
     function clearPersonTypeDataFromStore() {
         const emptyData = {
-            billing_persontype: '',
+            billing_persontype: '0',
             billing_cpf: '',
             billing_cnpj: '',
             billing_company: ''
@@ -468,10 +468,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // Obter valores iniciais dos dados da página
-        let initialPersonType = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_persontype) ? WooBetterPersonTypeData.billing_persontype : '';
+        let initialPersonType = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_persontype) ? WooBetterPersonTypeData.billing_persontype : '0';
         let initialCpf = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cpf) ? WooBetterPersonTypeData.billing_cpf : '';
         let initialCnpj = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cnpj) ? WooBetterPersonTypeData.billing_cnpj : '';
         let initialCompany = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_company) ? WooBetterPersonTypeData.billing_company : '';
+        let initialDocument = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_document) ? WooBetterPersonTypeData.billing_document : '';
 
         // Usar valores salvos se existirem (prioridade sobre dados iniciais)
         if (savedPersonTypeData.billing_document) {
@@ -486,7 +487,16 @@ document.addEventListener("DOMContentLoaded", function () {
             savedPersonTypeData.billing_cpf = initialCpf;
             savedPersonTypeData.billing_cnpj = initialCnpj;
             savedPersonTypeData.billing_company = initialCompany;
-            if (initialCpf) {
+            
+            // Construir billing_document baseado no person type
+            if (initialDocument) {
+                // Se já vem do PHP, usar ele
+                savedPersonTypeData.billing_document = initialDocument;
+            } else if (initialPersonType === '1' && initialCpf) {
+                savedPersonTypeData.billing_document = initialCpf;
+            } else if (initialPersonType === '2' && initialCnpj) {
+                savedPersonTypeData.billing_document = initialCnpj;
+            } else if (initialCpf) {
                 savedPersonTypeData.billing_document = initialCpf;
             } else if (initialCnpj) {
                 savedPersonTypeData.billing_document = initialCnpj;
@@ -499,17 +509,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
         let lastInsertedElement = billingLastName.parentElement; // Começar da div pai do last_name
 
-        // Determinar valor inicial do documento (usar dados salvos)
-        let initialDocument = savedPersonTypeData.billing_document || '';
-        let detectedPersonType = savedPersonTypeData.billing_persontype || '';
+        // Determinar valor inicial do documento (usar dados salvos ou dados do PHP)
+        initialDocument = initialDocument || savedPersonTypeData.billing_document || '';
+        let detectedPersonType = savedPersonTypeData.billing_persontype || '0';
         
-        if (!detectedPersonType) {
+        if (!detectedPersonType || detectedPersonType === '0') {
             if (initialCpf) {
                 initialDocument = initialCpf;
-                detectedPersonType = 'physical';
+                detectedPersonType = '1';
             } else if (initialCnpj) {
                 initialDocument = initialCnpj;
-                detectedPersonType = 'legal';
+                detectedPersonType = '2';
             }
         }
 
@@ -1139,21 +1149,21 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         
         if (detectedType === 'cpf') {
-            if (personTypeInput) personTypeInput.value = 'physical';
+            if (personTypeInput) personTypeInput.value = '1';
             if (cpfInput) cpfInput.value = documentValue;
             if (cnpjInput) cnpjInput.value = '';
             
             // Salvar na variável global
-            savedPersonTypeData.billing_persontype = 'physical';
+            savedPersonTypeData.billing_persontype = '1';
             savedPersonTypeData.billing_cpf = documentValue;
             savedPersonTypeData.billing_cnpj = '';
         } else if (detectedType === 'cnpj') {
-            if (personTypeInput) personTypeInput.value = 'legal';
+            if (personTypeInput) personTypeInput.value = '2';
             if (cpfInput) cpfInput.value = '';
             if (cnpjInput) cnpjInput.value = documentValue;
             
             // Salvar na variável global
-            savedPersonTypeData.billing_persontype = 'legal';
+            savedPersonTypeData.billing_persontype = '2';
             savedPersonTypeData.billing_cpf = '';
             savedPersonTypeData.billing_cnpj = documentValue;
         } else {
@@ -1161,19 +1171,19 @@ document.addEventListener("DOMContentLoaded", function () {
             const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
             
             if (personTypeConfig === 'physical') {
-                if (personTypeInput) personTypeInput.value = 'physical';
+                if (personTypeInput) personTypeInput.value = '1';
                 if (cpfInput) cpfInput.value = documentValue;
                 if (cnpjInput) cnpjInput.value = '';
                 
-                savedPersonTypeData.billing_persontype = 'physical';
+                savedPersonTypeData.billing_persontype = '1';
                 savedPersonTypeData.billing_cpf = documentValue;
                 savedPersonTypeData.billing_cnpj = '';
             } else if (personTypeConfig === 'legal') {
-                if (personTypeInput) personTypeInput.value = 'legal';
+                if (personTypeInput) personTypeInput.value = '2';
                 if (cpfInput) cpfInput.value = '';
                 if (cnpjInput) cnpjInput.value = documentValue;
                 
-                savedPersonTypeData.billing_persontype = 'legal';
+                savedPersonTypeData.billing_persontype = '2';
                 savedPersonTypeData.billing_cpf = '';
                 savedPersonTypeData.billing_cnpj = documentValue;
             } else {
@@ -1283,9 +1293,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function getDefaultPersonType(personTypeConfig) {
-        if (personTypeConfig === 'physical') return 'physical';
-        if (personTypeConfig === 'legal') return 'legal';
-        return ''; // Para 'both', deixar vazio até detecção
+        if (personTypeConfig === 'physical') return '1';
+        if (personTypeConfig === 'legal') return '2';
+        return '0'; // Para 'both', deixar vazio até detecção
     }
 
     function setupUnifiedDocumentEvents() {
@@ -1419,7 +1429,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         const personTypeData = currentData['woo_better_person_type'] || {};
                         
                         // Obter valores iniciais dos dados da página
-                        const initialPersonType = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_persontype) ? WooBetterPersonTypeData.billing_persontype : '';
+                        const initialPersonType = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_persontype) ? WooBetterPersonTypeData.billing_persontype : '0';
                         const initialCpf = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cpf) ? WooBetterPersonTypeData.billing_cpf : '';
                         const initialCnpj = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_cnpj) ? WooBetterPersonTypeData.billing_cnpj : '';
                         const initialCompany = (typeof WooBetterPersonTypeData !== 'undefined' && WooBetterPersonTypeData.billing_company) ? WooBetterPersonTypeData.billing_company : '';
