@@ -825,6 +825,9 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_admin_billing_fields', $this, 'customize_admin_billing_fields');
         $this->loader->add_filter('woocommerce_admin_shipping_fields', $this, 'customize_admin_shipping_fields');
         
+        // Hook para salvar campos brasileiros
+        $this->loader->add_action('woocommerce_process_shop_order_meta', $this, 'save_brazilian_fields');
+        
         // Hooks para integrar bairro no endereço formatado dentro do bloco
         $this->loader->add_filter('woocommerce_formatted_address_replacements', $this, 'add_neighborhood_replacement', 10, 2);
         $this->loader->add_filter('woocommerce_localisation_address_formats', $this, 'add_neighborhood_to_address_format', 10, 1);
@@ -1099,14 +1102,132 @@ class WcBetterShippingCalculatorForBrazil
             include_once(ABSPATH . 'wp-admin/includes/plugin.php');
         }
         
-        // Se o plugin estiver ativo, não remove os campos
+        // Se o plugin estiver ativo, não modifica os campos
         if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
             return $fields;
         }
         
-        // Remove campos que estão sendo exibidos na template customizada
-        unset($fields['phone']); // Remove telefone padrão
-        unset($fields['email']); // Remove email padrão
+        // Adicionar campos brasileiros
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+        $number_field = get_option('woo_better_calc_number_required', 'no');
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        
+        // Reorganizar campos para posicionar bairro após address_1
+        $original_fields = $fields;
+        $fields = array();
+        
+        // Adicionar campos na ordem desejada
+        // 1. Nome e sobrenome primeiro
+        if (isset($original_fields['first_name'])) {
+            $fields['first_name'] = $original_fields['first_name'];
+            unset($original_fields['first_name']);
+        }
+        if (isset($original_fields['last_name'])) {
+            $fields['last_name'] = $original_fields['last_name'];
+            unset($original_fields['last_name']);
+        }
+        
+        // 2. Campos brasileiros no topo (após sobrenome)
+        if ($person_type === 'both') {
+            $fields['persontype'] = array(
+                'label' => __('Tipo de Pessoa', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'select',
+                'options' => array(
+                    '' => __('Selecione', 'woo-better-shipping-calculator-for-brazil'),
+                    '1' => __('Pessoa Física', 'woo-better-shipping-calculator-for-brazil'),
+                    '2' => __('Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil'),
+                ),
+                'show'  => false
+            );
+        }
+        
+        if ($person_type === 'physical' || $person_type === 'both') {
+            $fields['cpf'] = array(
+                'label' => __('CPF', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'text',
+                'show'  => false
+            );
+        }
+        
+        if ($person_type === 'legal' || $person_type === 'both') {
+            $fields['cnpj'] = array(
+                'label' => __('CNPJ', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'text',
+                'show'  => false
+            );
+        }
+        
+        // 3. Campo empresa (se for pessoa jurídica)
+        if ($person_type === 'legal' || $person_type === 'both') {
+            if (isset($original_fields['company'])) {
+                $fields['company'] = $original_fields['company'];
+                unset($original_fields['company']);
+            } else {
+                // Criar campo company se não existir
+                $fields['company'] = array(
+                    'label' => __('Empresa', 'woo-better-shipping-calculator-for-brazil'),
+                    'show'  => false
+                );
+            }
+        } else if (isset($original_fields['company'])) {
+            // Se não é pessoa jurídica mas campo existe, manter na posição original
+            $fields['company'] = $original_fields['company'];
+            unset($original_fields['company']);
+        }
+        
+        // 4. Endereço linha 1
+        if (isset($original_fields['address_1'])) {
+            $fields['address_1'] = $original_fields['address_1'];
+            unset($original_fields['address_1']);
+        }
+        
+        // 5. Bairro logo após address_1 (se habilitado)
+        if ($neighborhood_enabled === 'yes') {
+            $fields['neighborhood'] = array(
+                'label' => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'text',
+                'show'  => false
+            );
+        }
+        
+        // 6. Número logo após bairro (ou após address_1 se não tiver bairro)
+        if ($number_field === 'yes') {
+            $fields['number'] = array(
+                'label' => __('Número', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'text',
+                'show'  => false
+            );
+        }
+        
+        // 7. Continuar com address_2 e demais campos
+        $remaining_standard = ['address_2', 'city', 'postcode', 'country', 'state'];
+        foreach ($remaining_standard as $key) {
+            if (isset($original_fields[$key])) {
+                $fields[$key] = $original_fields[$key];
+                unset($original_fields[$key]);
+            }
+        }
+        
+        // Email e telefone
+        $fields['email'] = array(
+            'label' => __('Endereço de e-mail', 'woo-better-shipping-calculator-for-brazil'),
+            'type'  => 'email',
+            'show'  => false
+        );
+        
+        $fields['phone'] = array(
+            'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
+            'type'  => 'tel',
+            'show'  => false
+        );
+        
+        // Adicionar qualquer campo restante não processado
+        foreach ($original_fields as $key => $field) {
+            if (!isset($fields[$key])) {
+                $fields[$key] = $field;
+            }
+        }
+        
         
         return $fields;
     }
@@ -1119,10 +1240,175 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function customize_admin_shipping_fields($fields)
     {
-        // Remove campos que estão sendo exibidos na template customizada
-        unset($fields['phone']); // Remove telefone padrão
+        // Verifica se a exibição de detalhes está habilitada
+        $enable_order_details = get_option('woo_better_calc_enable_order_details', 'yes');
+        if ($enable_order_details !== 'yes') {
+            return $fields;
+        }
+        
+        // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        // Se o plugin estiver ativo, não modifica os campos
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+            return $fields;
+        }
+        
+        // Configurações dos campos
+        $number_field = get_option('woo_better_calc_number_required', 'no');
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        
+        // Salvamos os campos originais
+        $original_fields = $fields;
+        
+        // Iniciamos um novo array reorganizado
+        $fields = array();
+        
+        // Nomes primeiro
+        if (isset($original_fields['first_name'])) {
+            $fields['first_name'] = $original_fields['first_name'];
+            $fields['first_name']['show'] = false;
+        }
+        
+        if (isset($original_fields['last_name'])) {
+            $fields['last_name'] = $original_fields['last_name'];
+            $fields['last_name']['show'] = false;
+        }
+        
+        // Company
+        if (isset($original_fields['company'])) {
+            $fields['company'] = $original_fields['company'];
+            $fields['company']['show'] = false;
+        }
+        
+        // Endereço
+        if (isset($original_fields['address_1'])) {
+            $fields['address_1'] = $original_fields['address_1'];
+            $fields['address_1']['show'] = false;
+        }
+        
+        // Bairro (após address_1)
+        if ($neighborhood_enabled === 'yes') {
+            $fields['neighborhood'] = array(
+                'label' => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'text',
+                'show'  => false
+            );
+        }
+        
+        // Número (após bairro se existir, senão após address_1)
+        if ($number_field === 'yes') {
+            $fields['number'] = array(
+                'label' => __('Número', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'text',
+                'show'  => false
+            );
+        }
+        
+        // Complemento
+        if (isset($original_fields['address_2'])) {
+            $fields['address_2'] = $original_fields['address_2'];
+            $fields['address_2']['show'] = false;
+        }
+        
+        // Cidade
+        if (isset($original_fields['city'])) {
+            $fields['city'] = $original_fields['city'];
+            $fields['city']['show'] = false;
+        }
+        
+        // CEP
+        $fields['postcode'] = array(
+            'label' => __('CEP', 'woo-better-shipping-calculator-for-brazil'),
+            'type'  => 'text',
+            'show'  => false
+        );
+        
+        // País
+        if (isset($original_fields['country'])) {
+            $fields['country'] = $original_fields['country'];
+            $fields['country']['show'] = false;
+        }
+        
+        // Estado
+        if (isset($original_fields['state'])) {
+            $fields['state'] = $original_fields['state'];
+            $fields['state']['show'] = false;
+        }
+        
+        // Campo Telefone
+        $fields['phone'] = array(
+            'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
+            'type'  => 'tel',
+            'show'  => false
+        );
+        
+        // Adicionar qualquer campo restante não processado
+        foreach ($original_fields as $key => $field) {
+            if (!isset($fields[$key])) {
+                $fields[$key] = $field;
+            }
+        }
+        
         
         return $fields;
+    }
+
+    
+    /**
+     * Salva os campos brasileiros quando o pedido é editado
+     * 
+     * @param int $order_id
+     */
+    public function save_brazilian_fields($order_id)
+    {
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+            return;
+        }
+        
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            return;
+        }
+        
+        
+        // Salvar campos de faturação
+        if (isset($_POST['_billing_persontype'])) {
+            $order->update_meta_data('_billing_persontype', sanitize_text_field(wp_unslash($_POST['_billing_persontype'])));
+        }
+        
+        if (isset($_POST['_billing_cpf'])) {
+            $order->update_meta_data('_billing_cpf', sanitize_text_field(wp_unslash($_POST['_billing_cpf'])));
+        }
+        
+        if (isset($_POST['_billing_cnpj'])) {
+            $order->update_meta_data('_billing_cnpj', sanitize_text_field(wp_unslash($_POST['_billing_cnpj'])));
+        }
+        
+        if (isset($_POST['_billing_number'])) {
+            $order->update_meta_data('_billing_number', sanitize_text_field(wp_unslash($_POST['_billing_number'])));
+        }
+        
+        if (isset($_POST['_billing_neighborhood'])) {
+            $order->update_meta_data('_billing_neighborhood', sanitize_text_field(wp_unslash($_POST['_billing_neighborhood'])));
+        }
+        
+        // Salvar campos de entrega
+        if (isset($_POST['_shipping_number'])) {
+            $order->update_meta_data('_shipping_number', sanitize_text_field(wp_unslash($_POST['_shipping_number'])));
+        }
+        
+        if (isset($_POST['_shipping_neighborhood'])) {
+            $order->update_meta_data('_shipping_neighborhood', sanitize_text_field(wp_unslash($_POST['_shipping_neighborhood'])));
+        }
+        
+        $order->save();
     }
 
     /**
@@ -1383,7 +1669,7 @@ class WcBetterShippingCalculatorForBrazil
                     ];
                 }
             }
-            
+
             // Legal person data (Company and CNPJ)
             if ($this->should_show_legal_data($person_type, $billing_persontype)) {
                 $company = $order->get_billing_company();
@@ -1404,9 +1690,9 @@ class WcBetterShippingCalculatorForBrazil
             // Person type label (only for 'both' setting)
             if ($person_type === 'both' && !empty($billing_persontype)) {
                 $person_type_label = '';
-                if ($billing_persontype === 'physical') {
+                if ($billing_persontype === '1' || $billing_persontype === 1 || $billing_persontype === 'physical') {
                     $person_type_label = __('Pessoa Física', 'woo-better-shipping-calculator-for-brazil');
-                } elseif ($billing_persontype === 'legal') {
+                } elseif ($billing_persontype === '2' || $billing_persontype === 2 || $billing_persontype === 'legal') {
                     $person_type_label = __('Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil');
                 }
                 
@@ -1474,7 +1760,17 @@ class WcBetterShippingCalculatorForBrazil
      */
     private function should_show_physical_data($person_type, $billing_persontype)
     {
-        return ($billing_persontype === 'physical' && ($person_type === 'both' || $person_type === 'physical')) || $person_type === 'physical';
+        // Se person_type é physical, sempre mostra
+        if ($person_type === 'physical') {
+            return true;
+        }
+        
+        // Se person_type é both, mostra se billing_persontype é 1 (número) ou 'physical' (string)
+        if ($person_type === 'both') {
+            return ($billing_persontype === '1' || $billing_persontype === 1 || $billing_persontype === 'physical');
+        }
+        
+        return false;
     }
     
     /**
@@ -1482,7 +1778,17 @@ class WcBetterShippingCalculatorForBrazil
      */
     private function should_show_legal_data($person_type, $billing_persontype)
     {
-        return ($billing_persontype === 'legal' && ($person_type === 'both' || $person_type === 'legal')) || $person_type === 'legal';
+        // Se person_type é legal, sempre mostra
+        if ($person_type === 'legal') {
+            return true;
+        }
+        
+        // Se person_type é both, mostra se billing_persontype é 2 (número) ou 'legal' (string)
+        if ($person_type === 'both') {
+            return ($billing_persontype === '2' || $billing_persontype === 2 || $billing_persontype === 'legal');
+        }
+        
+        return false;
     }
     
     /**
