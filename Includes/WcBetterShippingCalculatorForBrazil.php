@@ -306,7 +306,7 @@ class WcBetterShippingCalculatorForBrazil
         // Só aplica se estiver habilitado e valor for maior que zero
         if ($enable_min === 'yes') {
             $cart_total = WC()->cart->get_displayed_subtotal();
-
+            
             if ($cart_total >= $min_value) {
                 // Remove todas as opções de frete e adiciona frete grátis
                 $rates = array();
@@ -3648,10 +3648,29 @@ class WcBetterShippingCalculatorForBrazil
             ),
         );
 
-        // Calcula o frete para o pacote
-        $shipping_instance = new \WC_Shipping();
-        $shipping_methods = $shipping_instance->load_shipping_methods($package);
-
+        // Calcula o frete para o pacote usando a sessão do WooCommerce
+        // Isto garantirá que todos os hooks sejam executados
+        WC()->shipping()->reset_shipping();
+        
+        // Define temporariamente o carrinho com o produto para calcular o frete corretamente
+        $saved_cart = WC()->cart->get_cart();
+        WC()->cart->empty_cart();
+        WC()->cart->add_to_cart($product_id, $quantity);
+        
+        // Define o endereço de entrega na sessão
+        WC()->customer->set_shipping_location(
+            $shipping_data['country'],
+            $shipping_data['state'], 
+            $shipping_data['postcode'],
+            $shipping_data['city']
+        );
+        
+        // Força recalcular totais para aplicar hooks de frete
+        WC()->cart->calculate_totals();
+        
+        // Obtém os pacotes de envio calculados
+        $packages = WC()->shipping()->get_packages();
+        
         $shipping_rates = array();
         $currency_symbol = get_woocommerce_currency_symbol();
         $currency_minor_unit = wc_get_price_decimals();
@@ -3663,12 +3682,10 @@ class WcBetterShippingCalculatorForBrazil
             'currency_minor_unit' => $currency_minor_unit,
         );
 
-        // Itera pelos métodos de envio e calcula as taxas
-        foreach ($shipping_methods as $method) {
-            if ($method->supports('shipping-zones')) {
-                $rates = $method->get_rates_for_package($package);
-
-                foreach ($rates as $rate) {
+        // Itera pelos pacotes e extrai as taxas de envio
+        foreach ($packages as $package) {
+            if (isset($package['rates']) && is_array($package['rates'])) {
+                foreach ($package['rates'] as $rate) {
                     $shipping_rates[] = array(
                         'id'    => $rate->get_id(),
                         'label' => $rate->get_label(),
@@ -3676,6 +3693,12 @@ class WcBetterShippingCalculatorForBrazil
                     );
                 }
             }
+        }
+        
+        // Restaura o carrinho original
+        WC()->cart->empty_cart();
+        foreach ($saved_cart as $cart_item_key => $cart_item) {
+            WC()->cart->restore_cart_item($cart_item_key, $cart_item);
         }
 
         // Retorna os valores calculados
@@ -3835,20 +3858,32 @@ class WcBetterShippingCalculatorForBrazil
             ),
         );
 
-        // Calcula o frete para o pacote
-        $shipping_instance = new \WC_Shipping();
-        $shipping_methods = $shipping_instance->load_shipping_methods($package);
-
+        // Calcula o frete usando a sessão do WooCommerce
+        // Isto garantirá que todos os hooks sejam executados
+        WC()->shipping()->reset_shipping();
+        
+        // Define o endereço de entrega na sessão
+        WC()->customer->set_shipping_location(
+            $shipping_data['country'],
+            $shipping_data['state'], 
+            $shipping_data['postcode'],
+            $shipping_data['city']
+        );
+        
+        // Força recalcular totais para aplicar hooks de frete
+        WC()->cart->calculate_totals();
+        
+        // Obtém os pacotes de envio calculados
+        $packages = WC()->shipping()->get_packages();
+        
         $shipping_rates = array();
         $currency_symbol = get_woocommerce_currency_symbol();
         $currency_minor_unit = wc_get_price_decimals();
 
-        // Itera pelos métodos de envio e calcula as taxas
-        foreach ($shipping_methods as $method) {
-            if ($method->supports('shipping-zones')) {
-                $rates = $method->get_rates_for_package($package);
-
-                foreach ($rates as $rate) {
+        // Itera pelos pacotes e extrai as taxas de envio
+        foreach ($packages as $package) {
+            if (isset($package['rates']) && is_array($package['rates'])) {
+                foreach ($package['rates'] as $rate) {
                     $shipping_rates[] = array(
                         'id'    => $rate->get_id(),
                         'label' => $rate->get_label(),

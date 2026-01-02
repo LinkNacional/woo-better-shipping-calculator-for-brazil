@@ -65,11 +65,11 @@
 		const observer = new MutationObserver(function(mutations) {
 			mutations.forEach(function(mutation) {
 				if (mutation.type === 'childList' || mutation.type === 'characterData') {
-					// Verifica se houve mudança nos totais
+					// Verifica se houve mudança nos valores de total/subtotal (incluindo taxas)
 					const cartTotalElements = document.querySelectorAll([
-						'td[data-title="Subtotal"] .woocommerce-Price-amount.amount bdi',
+						'.order-total .woocommerce-Price-amount.amount bdi',
 						'.cart-subtotal .woocommerce-Price-amount.amount bdi',
-						'.order-total .woocommerce-Price-amount.amount bdi'
+						'.wc-block-formatted-money-amount.wc-block-components-totals-item__value'
 					].join(','));
 					
 					if (cartTotalElements.length > 0) {
@@ -234,18 +234,40 @@
 	// Função fallback para obter total do carrinho via DOM (caso a API não funcione)
 	function getCartTotalFromDOM() {
 		let selectors = [
-			'.wc-block-formatted-money-amount.wc-block-components-totals-item__value',
-			'td[data-title="Subtotal"] .woocommerce-Price-amount.amount bdi',
+			// Específico para subtotal total do carrinho (não itens individuais)
+			'tr.cart-subtotal td[data-title="Subtotal"] .woocommerce-Price-amount.amount bdi',
 			'.cart-subtotal .woocommerce-Price-amount.amount bdi',
-			'.cart-subtotal .woocommerce-Price-amount.amount',
+			'.cart-subtotal .amount bdi',
+			// Para blocos WC
+			'.wc-block-formatted-money-amount.wc-block-components-totals-item__value',
 			'.wc-block-components-totals-item__value .wc-block-formatted-money-amount',
+			// Fallbacks mais gerais
+			'td[data-title="Subtotal"] .woocommerce-Price-amount.amount bdi:last-of-type',
 			'.order-total .woocommerce-Price-amount.amount bdi',
 			'.order-total .woocommerce-Price-amount.amount'
 		];
 
 		let el = null;
+		let foundSelector = '';
 		for (let selector of selectors) {
-			el = document.querySelector(selector);
+			const elements = document.querySelectorAll(selector);
+			
+			// Se há múltiplos elementos, pega o que NÃO está dentro de .cart_item ou .woocommerce-cart-form__cart-item
+			for (let element of elements) {
+				if (element && element.textContent.trim()) {
+					// Verifica se não está dentro de um item individual do carrinho
+					const isWithinCartItem = element.closest('.cart_item, .woocommerce-cart-form__cart-item, .wc-block-cart-item');
+					
+					if (!isWithinCartItem) {
+						el = element;
+						foundSelector = selector;
+						break;
+					} else {
+						// Ignora elementos de itens individuais
+					}
+				}
+			}
+			
 			if (el && el.textContent.trim()) {
 				break;
 			}
@@ -263,18 +285,21 @@
 		const effectiveThousandSeparator = thousandSeparator === '.' || thousandSeparator === ',' ? thousandSeparator : '.';
 
 		let rawText = el.textContent.trim();
+		
 		let value = rawText
 			.replace(new RegExp(`\\${effectiveThousandSeparator}`, 'g'), '')
 			.replace(new RegExp(`\\${effectiveDecimalSeparator}`), '.')
 			.replace(/[^\d.-]/g, '');
 
 		let parsedValue = parseFloat(value) || 0;
+		
 		currentCartTotal = parsedValue;
 		return parsedValue;
 	}
 
 	function insertOrUpdateProgressBar() {
 		let cartTotal = currentCartTotal || getCartTotalFromDOM();
+		
 		let percent = 0;
 		let message = '';
 
@@ -299,6 +324,7 @@
 				barText = enableProgressBarValue ? 'Completo!' : '';
 			} else {
 				percent = Math.min((cartTotal / minValue) * 100, 100);
+				
 				if (cartTotal >= minValue) {
 					message = successMessage;
 					barText = enableProgressBarValue ? 'Completo!' : '';
