@@ -4907,7 +4907,7 @@ class WcBetterShippingCalculatorForBrazil
         // Salvar campos de tipo de pessoa (apenas para billing)
         if ($load_address === 'billing' && $person_type !== 'none') {
             if (isset($_POST['billing_document'])) {
-                $billing_document = sanitize_text_field($_POST['billing_document']);
+                $billing_document = sanitize_text_field(wp_unslash($_POST['billing_document']));
                 update_user_meta($user_id, 'billing_document', $billing_document);
                 
                 // Processar o documento unificado para campos separados
@@ -4930,12 +4930,12 @@ class WcBetterShippingCalculatorForBrazil
         // Salvar campo de bairro
         if ($neighborhood_enabled === 'yes') {
             if ($load_address === 'billing' && isset($_POST['billing_neighborhood'])) {
-                $neighborhood = sanitize_text_field($_POST['billing_neighborhood']);
+                $neighborhood = sanitize_text_field(wp_unslash($_POST['billing_neighborhood']));
                 update_user_meta($user_id, 'billing_neighborhood', $neighborhood);
             }
             
             if ($load_address === 'shipping' && isset($_POST['shipping_neighborhood'])) {
-                $neighborhood = sanitize_text_field($_POST['shipping_neighborhood']);
+                $neighborhood = sanitize_text_field(wp_unslash($_POST['shipping_neighborhood']));
                 update_user_meta($user_id, 'shipping_neighborhood', $neighborhood);
             }
         }
@@ -4943,12 +4943,12 @@ class WcBetterShippingCalculatorForBrazil
         // Salvar campo de número
         if ($number_enabled === 'yes') {
             if ($load_address === 'billing' && isset($_POST['billing_number'])) {
-                $number = sanitize_text_field($_POST['billing_number']);
+                $number = sanitize_text_field(wp_unslash($_POST['billing_number']));
                 update_user_meta($user_id, 'billing_number', $number);
             }
             
             if ($load_address === 'shipping' && isset($_POST['shipping_number'])) {
-                $number = sanitize_text_field($_POST['shipping_number']);
+                $number = sanitize_text_field(wp_unslash($_POST['shipping_number']));
                 update_user_meta($user_id, 'shipping_number', $number);
             }
             
@@ -4967,12 +4967,12 @@ class WcBetterShippingCalculatorForBrazil
         // Salvar campo de telefone
         if ($phone_required === 'yes') {
             if ($load_address === 'billing' && isset($_POST['billing_phone'])) {
-                $phone = sanitize_text_field($_POST['billing_phone']);
+                $phone = sanitize_text_field(wp_unslash($_POST['billing_phone']));
                 update_user_meta($user_id, 'billing_phone', $phone);
             }
             
             if ($load_address === 'shipping' && isset($_POST['shipping_phone'])) {
-                $phone = sanitize_text_field($_POST['shipping_phone']);
+                $phone = sanitize_text_field(wp_unslash($_POST['shipping_phone']));
                 update_user_meta($user_id, 'shipping_phone', $phone);
             }
         }
