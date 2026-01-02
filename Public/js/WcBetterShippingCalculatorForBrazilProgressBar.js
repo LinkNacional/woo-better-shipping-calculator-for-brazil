@@ -27,11 +27,6 @@
 			const successMessage = progressConfig.min_free_shipping_success_message || 'Parabéns! Você tem frete grátis!';
 			let progressMessage = progressConfig.min_free_shipping_message || 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS';
 
-			// Valida se a mensagem personalizada contém o placeholder {value}
-			if (!progressMessage.includes('{value}')) {
-				progressMessage = 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS';
-			}
-
 			// Calcula valores iniciais
 			if (minValue <= 0) {
 				lastValidPercent = 100;
@@ -43,7 +38,7 @@
 				} else {
 					const remainingValue = (minValue - cartTotal).toFixed(2);
 					const formattedValue = currencySymbol + remainingValue;
-					lastValidMessage = progressMessage.replace('{value}', formattedValue);
+				lastValidMessage = progressMessage.includes('{value}') ? progressMessage.replace('{value}', formattedValue) : progressMessage;
 				}
 			}
 		}
@@ -287,36 +282,31 @@
 		const progressConfig = typeof wc_better_shipping_progress !== 'undefined' ? wc_better_shipping_progress : {};
 		const currencySymbol = progressConfig.currency_symbol || 'R$';
 		const successMessage = progressConfig.min_free_shipping_success_message || 'Parabéns! Você tem frete grátis!';
+		const enableProgressBarValue = progressConfig.enable_progress_bar_value !== 'no'; // padrão é true
 		let progressMessage = progressConfig.min_free_shipping_message || 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS';
-
-		// Valida se a mensagem personalizada contém o placeholder {value}
-		if (!progressMessage.includes('{value}')) {
-			// Se não contém {value}, usa a mensagem padrão
-			progressMessage = 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS';
-		}
 
 		// Se está carregando, mantém os valores anteriores
 		let barText = '';
 		if (isLoading) {
 			percent = lastValidPercent;
 			message = 'Carregando...';
-			barText = 'Carregando...';
+			barText = enableProgressBarValue ? 'Carregando...' : '';
 		} else {
 			// Calcula novos valores
 			if (minValue <= 0) {
 				percent = 100;
 				message = successMessage;
-				barText = 'Completo!';
+				barText = enableProgressBarValue ? 'Completo!' : '';
 			} else {
 				percent = Math.min((cartTotal / minValue) * 100, 100);
 				if (cartTotal >= minValue) {
 					message = successMessage;
-					barText = 'Completo!';
+					barText = enableProgressBarValue ? 'Completo!' : '';
 				} else {
 					const remainingValue = (minValue - cartTotal).toFixed(2);
 					const formattedValue = currencySymbol + remainingValue;
-					message = progressMessage.replace('{value}', formattedValue);
-					barText = 'Falta ' + formattedValue;
+				message = progressMessage.includes('{value}') ? progressMessage.replace('{value}', formattedValue) : progressMessage;
+					barText = enableProgressBarValue ? 'Falta ' + formattedValue : '';
 				}
 			}
 			
@@ -356,24 +346,29 @@
 				// Mantém o percent atual, não muda para 30%
 			}
 
-			// Cria o texto dentro da barra
-			let progressBarInnerText = document.createElement('div');
-			progressBarInnerText.className = 'wc-better-shipping-progress-inner-text';
-			progressBarInnerText.style.position = 'absolute';
-			progressBarInnerText.style.top = '50%';
-			progressBarInnerText.style.left = '8px';
-			progressBarInnerText.style.transform = 'translateY(-50%)';
-			progressBarInnerText.style.fontSize = '12px';
-			progressBarInnerText.style.fontWeight = 'bold';
-			progressBarInnerText.style.color = '#fff';
-			progressBarInnerText.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
-			progressBarInnerText.style.whiteSpace = 'nowrap';
-			progressBarInnerText.style.zIndex = '10';
-			progressBarInnerText.textContent = barText;
+			// Cria o texto dentro da barra (apenas se estiver habilitado)
+			if (enableProgressBarValue) {
+				let progressBarInnerText = document.createElement('div');
+				progressBarInnerText.className = 'wc-better-shipping-progress-inner-text';
+				progressBarInnerText.style.position = 'absolute';
+				progressBarInnerText.style.top = '50%';
+				progressBarInnerText.style.left = '8px';
+				progressBarInnerText.style.transform = 'translateY(-50%)';
+				progressBarInnerText.style.fontSize = '12px';
+				progressBarInnerText.style.fontWeight = 'bold';
+				progressBarInnerText.style.color = '#fff';
+				progressBarInnerText.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
+				progressBarInnerText.style.whiteSpace = 'nowrap';
+				progressBarInnerText.style.zIndex = '10';
+				progressBarInnerText.textContent = barText;
 
-			// Adiciona a barra de progresso e o texto ao contêiner
-			progressBarWrapper.appendChild(progressBar);
-			progressBarWrapper.appendChild(progressBarInnerText);
+				// Adiciona a barra de progresso e o texto ao contêiner
+				progressBarWrapper.appendChild(progressBar);
+				progressBarWrapper.appendChild(progressBarInnerText);
+			} else {
+				// Adiciona apenas a barra de progresso ao contêiner
+				progressBarWrapper.appendChild(progressBar);
+			}
 
 			// Cria o texto da barra de progresso
 			let progressBarText = document.createElement('div');
@@ -455,10 +450,34 @@
 						bar.style.animation = 'none';
 					}
 				}
-				// Atualiza o texto interno da barra
+				// Atualiza o texto interno da barra (apenas se estiver habilitado)
 				let innerText = progressBar.querySelector('.wc-better-shipping-progress-inner-text');
-				if (innerText) {
-					innerText.textContent = barText;
+				if (enableProgressBarValue) {
+					if (innerText) {
+						innerText.textContent = barText;
+					} else {
+						// Se não existe mas deveria existir, cria o elemento
+						let progressBarWrapper = progressBar.querySelector('.wc-better-shipping-progress').parentNode;
+						let newInnerText = document.createElement('div');
+						newInnerText.className = 'wc-better-shipping-progress-inner-text';
+						newInnerText.style.position = 'absolute';
+						newInnerText.style.top = '50%';
+						newInnerText.style.left = '8px';
+						newInnerText.style.transform = 'translateY(-50%)';
+						newInnerText.style.fontSize = '12px';
+						newInnerText.style.fontWeight = 'bold';
+						newInnerText.style.color = '#fff';
+						newInnerText.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
+						newInnerText.style.whiteSpace = 'nowrap';
+						newInnerText.style.zIndex = '10';
+						newInnerText.textContent = barText;
+						progressBarWrapper.appendChild(newInnerText);
+					}
+				} else {
+					// Se não deve mostrar o texto mas ele existe, remove
+					if (innerText) {
+						innerText.remove();
+					}
 				}
 				// Atualiza o texto abaixo da barra
 				let text = progressBar.querySelector('.wc-better-shipping-progress-text');

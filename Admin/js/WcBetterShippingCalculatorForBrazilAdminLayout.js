@@ -874,6 +874,7 @@
             const targetComponentCartNames = {
               'woo_better_min_free_shipping_value': 'woo_better_enable_min_free_shipping',
               'woo_better_min_free_shipping_success_message': 'woo_better_min_free_shipping_message',
+              'woo_better_enable_progress_bar_value': 'woo_better_min_free_shipping_message',
 
               //Cart
               'woo_better_calc_cart_input_border_width': 'woo_better_calc_cart_input_background_color_field',

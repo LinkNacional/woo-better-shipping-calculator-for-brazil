@@ -78,12 +78,28 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'id'       => 'woo_better_min_free_shipping_message',
                 'desc_tip' => false,
                 'default'  => 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS',
-                'type'     => 'text',
+                'type'     => 'textarea',
                 'custom_attributes' => array(
                     'data-subtitle' => __('Mensagem de Frete Mínimo', 'woo-better-shipping-calculator-for-brazil'),
                     'data-desc-tip' => __('Defina as mensagens de feedback na barra de progresso.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Use {value} como marcador para o valor restante. Ex: "Falta(m) apenas mais {value} para obter FRETE GRÁTIS"', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Use {value} como marcador para o valor restante (opcional). Ex: "Falta(m) apenas mais {value} para obter FRETE GRÁTIS" ou apenas "Adicione mais produtos para obter frete grátis"', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Mensagem exibida quando o valor do carrinho ainda não atingiu o mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'enable_progress_bar_value' => array(
+                'title'    => __('Valor Restante na Barra de Progresso', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_enable_progress_bar_value',
+                'desc_tip' => false,
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Exibe o valor restante diretamente dentro da barra de progresso.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Quando habilitado, exibe informações dentro da barra de progresso (valor restante ou status de completude). Quando desabilitado, mantém apenas a barra visual sem texto interno.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Controla se o valor restante aparece dentro da própria barra de progresso.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'min_free_shipping_success_message' => array(
