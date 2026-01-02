@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
+    console.log('[DEBUG] DOMContentLoaded - script iniciado');
     let billingBlockFound = false
     let submitFound = false
     let personTypeEventsBound = false
@@ -17,6 +18,11 @@ document.addEventListener("DOMContentLoaded", function () {
         billing_document: '', // Campo unificado
         billing_company: ''
     };
+
+    // Debug das variáveis de configuração
+    console.log('[DEBUG] Variáveis de configuração carregadas:');
+    console.log('[DEBUG] WooBetterPersonTypeConfig:', typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig : 'undefined');
+    console.log('[DEBUG] WooBetterPersonTypeData:', typeof WooBetterPersonTypeData !== 'undefined' ? WooBetterPersonTypeData : 'undefined');
 
     /**
      * Observer para esconder campo shipping-company imediatamente
@@ -169,9 +175,13 @@ document.addEventListener("DOMContentLoaded", function () {
                            document.querySelector('select[name="billing_country"]') ||
                            document.querySelector('input[name="billing_country"]');
         
+        console.log('[DEBUG] isBrazilSelected - countryField:', countryField);
+        
         if (countryField) {
+            console.log('[DEBUG] isBrazilSelected - countryField.value:', countryField.value);
             return countryField.value === 'BR';
         }
+        console.log('[DEBUG] isBrazilSelected - countryField not found, returning false');
         return false;
     }
 
@@ -239,8 +249,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const observer = new MutationObserver((mutationsList) => {
+        console.log('[DEBUG] Observer triggered');
+        
         // Verificar se o país é Brasil antes de processar qualquer lógica
         if (!isBrazilSelected()) {
+            console.log('[DEBUG] Observer - País não é Brasil, removendo campos se ativos');
             // Se não for Brasil e temos campos ativos, removê-los
             if (personTypeFieldsActive) {
                 removePersonTypeFields();
@@ -248,14 +261,18 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+        console.log('[DEBUG] Observer - País é Brasil, continuando processamento');
         const billingBlock = document.querySelector('#billing')
+        console.log('[DEBUG] Observer - billingBlock encontrado:', billingBlock);
 
         if (!billingBlock) {
+            console.log('[DEBUG] Observer - billingBlock não encontrado');
             billingBlockFound = false
             intervalCount = 0
         }
 
         if (billingBlock && !billingBlockFound) {
+            console.log('[DEBUG] Observer - billingBlock encontrado e não processado ainda, chamando billingPersonTypeHandle');
             billingPersonTypeHandle(billingBlock)
         }
 
@@ -424,14 +441,20 @@ document.addEventListener("DOMContentLoaded", function () {
     observer.observe(document.body, { childList: true, subtree: true });
 
     function billingPersonTypeHandle(billingBlock) {
+        console.log('[DEBUG] billingPersonTypeHandle chamada com billingBlock:', billingBlock);
+        
         // Só processar se o país for Brasil
         if (!isBrazilSelected()) {
+            console.log('[DEBUG] billingPersonTypeHandle - País não é Brasil, retornando');
             return;
         }
 
+        console.log('[DEBUG] billingPersonTypeHandle - País é Brasil, procurando botão edit');
         const editBillingButton = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="billing"]');
         
+        console.log('[DEBUG] billingPersonTypeHandle - editBillingButton:', editBillingButton);
         if (!editBillingButton) {
+            console.log('[DEBUG] billingPersonTypeHandle - editBillingButton não encontrado');
             return;
         }
 
@@ -440,9 +463,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (editBillingButton.getAttribute('aria-expanded') == 'true') {
+            console.log('[DEBUG] billingPersonTypeHandle - botão expandido, chamando addPersonTypeFields');
             
             // Aguardar um pouco para que os campos sejam renderizados
             setTimeout(() => {
+                console.log('[DEBUG] billingPersonTypeHandle - timeout executado, chamando addPersonTypeFields');
                 addPersonTypeFields(billingBlock);
             }, 300);
 
@@ -451,19 +476,32 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function addPersonTypeFields(billingBlock) {
+        console.log('[DEBUG] addPersonTypeFields chamada com billingBlock:', billingBlock);
+        
         // Só adicionar campos se o país for Brasil
         if (!isBrazilSelected()) {
+            console.log('[DEBUG] addPersonTypeFields - País não é Brasil, retornando');
             return;
         }
 
         // Verificar se os campos já existem
-        if (document.getElementById('billing_document')) {
+        const existingField = document.getElementById('billing_document');
+        console.log('[DEBUG] addPersonTypeFields - campo billing_document já existe?', existingField);
+        if (existingField) {
+            console.log('[DEBUG] addPersonTypeFields - campos já existem, retornando');
             return;
         }
 
         const billingLastName = billingBlock.querySelector('#billing-last_name');
+        console.log('[DEBUG] addPersonTypeFields - billingLastName encontrado:', billingLastName);
         
         if (!billingLastName) {
+            console.log('[DEBUG] addPersonTypeFields - billingLastName não encontrado, retornando');
+            console.log('[DEBUG] addPersonTypeFields - elementos encontrados no billingBlock:');
+            const allInputs = billingBlock.querySelectorAll('input, select');
+            allInputs.forEach((input, index) => {
+                console.log(`[DEBUG] Input ${index}:`, input.id || input.name || 'sem id/name', input);
+            });
             return;
         }
 
@@ -524,6 +562,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // Criar o campo unificado CPF/CNPJ primeiro
+        console.log('[DEBUG] addPersonTypeFields - chamando createUnifiedDocumentField com:', {
+            lastInsertedElement,
+            initialDocument,
+            personTypeConfig
+        });
         createUnifiedDocumentField(lastInsertedElement, initialDocument, personTypeConfig);
         
         // Atualizar lastInsertedElement para apontar para o campo CPF/CNPJ recém criado
@@ -566,6 +609,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Marcar campos como ativos
         personTypeFieldsActive = true;
+        console.log('[DEBUG] addPersonTypeFields - campos marcados como ativos, personTypeFieldsActive:', personTypeFieldsActive);
+        console.log('[DEBUG] addPersonTypeFields - verificando se campo document foi criado:', document.getElementById('billing_document'));
 
         // Se temos valor salvo, executar evento de input para sincronizar
         if (initialDocument) {
@@ -940,8 +985,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function createUnifiedDocumentField(insertAfter, initialValue, personTypeConfig) {
+        console.log('[DEBUG] createUnifiedDocumentField chamada com:', {
+            insertAfter,
+            initialValue,
+            personTypeConfig
+        });
+        
         const fieldContainer = document.createElement('div');
         fieldContainer.className = 'wc-block-components-text-input wc-block-components-address-form__document wc-better-billing-document';
+        
+        console.log('[DEBUG] createUnifiedDocumentField - fieldContainer criado:', fieldContainer);
 
         const input = document.createElement('input');
         input.type = 'text';
@@ -1063,7 +1116,9 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
+        console.log('[DEBUG] createUnifiedDocumentField - inserindo fieldContainer após:', insertAfter);
         insertAfter.insertAdjacentElement('afterend', fieldContainer);
+        console.log('[DEBUG] createUnifiedDocumentField - campo inserido com sucesso, verificando se está no DOM:', document.querySelector('.wc-better-billing-document'));
     }
 
     function detectDocumentType(cleanValue, personTypeConfig) {
