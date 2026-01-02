@@ -83,8 +83,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-subtitle' => __('Mensagem de Frete Mínimo', 'woo-better-shipping-calculator-for-brazil'),
                     'data-desc-tip' => __('Defina as mensagens de feedback na barra de progresso.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Use {value} como marcador para o valor restante. Ex: "Falta(m) apenas mais {value} para obter FRETE GRÁTIS"', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Mensagem exibida quando o valor do carrinho ainda não atingiu o mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
-                    'pattern' => '.*\{value\}.*'
+                    'data-title-description' => __('Mensagem exibida quando o valor do carrinho ainda não atingiu o mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'min_free_shipping_success_message' => array(
