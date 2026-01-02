@@ -186,6 +186,67 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
             wp_enqueue_style($this->plugin_name . '-phone-require', plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPhoneRequire.COMPILED.css', array(), $this->version, 'all');
         }
+
+        // CSS para página de edição de endereços da conta
+        $is_edit_address = false;
+        if (function_exists('is_wc_endpoint_url')) {
+            $is_edit_address = is_wc_endpoint_url('edit-address');
+        } else if (isset($_GET['edit-address'])) {
+            $is_edit_address = true;
+        }
+
+        if ($is_edit_address) {
+            // CSS obrigatório para intl-tel-input na página de edição de endereços
+            wp_enqueue_style(
+                $this->plugin_name . '-edit-address-phone-require',
+                plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPhoneRequire.COMPILED.css',
+                array(),
+                $this->version,
+                'all'
+            );
+
+            // CSS adicional para intl-tel-input funcionalidade completa
+            wp_enqueue_style(
+                $this->plugin_name . '-edit-address-checkout-phone-required',
+                plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneRequired.COMPILED.css',
+                array(),
+                $this->version,
+                'all'
+            );
+
+            $person_type = get_option('woo_better_calc_person_type_select', 'none');
+            if ($person_type !== 'none') {
+                wp_enqueue_style(
+                    $this->plugin_name . '-edit-address-person-type',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPersonType.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
+
+            $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+            if ($neighborhood_enabled === 'yes') {
+                wp_enqueue_style(
+                    $this->plugin_name . '-edit-address-neighborhood',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilNeighborhood.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
+
+            $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
+            if ($cep_position === 'yes') {
+                wp_enqueue_style(
+                    $this->plugin_name . '-edit-address-postcode',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPostcode.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
+        }
     }
 
     /**
@@ -296,6 +357,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'currency_symbol' => get_woocommerce_currency_symbol(),
                     'min_free_shipping_message' => get_option('woo_better_min_free_shipping_message', 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS'),
                     'min_free_shipping_success_message' => get_option('woo_better_min_free_shipping_success_message', 'Parabéns! Você tem frete grátis!'),
+                    'enable_progress_bar_value' => get_option('woo_better_enable_progress_bar_value', 'no'),
                     'has_cart_block' => has_block('woocommerce/cart'),
                     'current_url' => (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . 
                         (isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '') . 
@@ -914,6 +976,175 @@ class WcBetterShippingCalculatorForBrazilPublic
                     array(),
                     $this->version,
                     false
+                );
+            }
+        }
+
+        // Scripts para página de edição de endereços da conta
+        $is_edit_address = false;
+        if (function_exists('is_wc_endpoint_url')) {
+            $is_edit_address = is_wc_endpoint_url('edit-address');
+        } else if (isset($_GET['edit-address'])) {
+            $is_edit_address = true;
+        }
+
+        if ($is_edit_address) {
+            // Scripts de pessoa física/jurídica
+            $person_type = get_option('woo_better_calc_person_type_select', 'none');
+            
+            if ($person_type !== 'none') {
+                // Obter dados do usuário para pessoa física/jurídica
+                $billing_persontype = '';
+                $billing_cpf = '';
+                $billing_cnpj = '';
+                $billing_document = '';
+                
+                if (is_user_logged_in()) {
+                    $user_id = get_current_user_id();
+                    $billing_persontype = get_user_meta($user_id, 'billing_persontype', true);
+                    $billing_cpf = get_user_meta($user_id, 'billing_cpf', true);
+                    $billing_cnpj = get_user_meta($user_id, 'billing_cnpj', true);
+                    $billing_document = get_user_meta($user_id, 'billing_document', true);
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-edit-address-person-type',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodePersonType.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-person-type',
+                    'WooBetterPersonTypeData',
+                    array(
+                        'billing_persontype' => $billing_persontype,
+                        'billing_cpf' => $billing_cpf,
+                        'billing_cnpj' => $billing_cnpj,
+                        'billing_document' => $billing_document
+                    )
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-person-type',
+                    'WooBetterPersonTypeConfig',
+                    array(
+                        'person_type' => $person_type,
+                        'show_select' => ($person_type === 'both')
+                    )
+                );
+            }
+
+            // Scripts para campo de bairro
+            $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+            
+            if ($neighborhood_enabled === 'yes') {
+                // Obter dados do usuário para campos de bairro
+                $billing_neighborhood = '';
+                $shipping_neighborhood = '';
+                
+                if (is_user_logged_in()) {
+                    $user_id = get_current_user_id();
+                    $billing_neighborhood = get_user_meta($user_id, 'billing_neighborhood', true);
+                    $shipping_neighborhood = get_user_meta($user_id, 'shipping_neighborhood', true);
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-edit-address-neighborhood',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeNeighborhood.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-neighborhood',
+                    'WooBetterNeighborhoodData',
+                    array(
+                        'billing_neighborhood' => $billing_neighborhood,
+                        'shipping_neighborhood' => $shipping_neighborhood
+                    )
+                );
+            }
+
+            // Scripts para campo de telefone obrigatório
+            $phone_required = get_option('woo_better_calc_contact_required', 'no');
+            
+            if ($phone_required === 'yes') {
+                wp_enqueue_script(
+                    $this->plugin_name . '-edit-address-phone-required',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneRequiredShortcode.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+            }
+
+            // Scripts para campo de número
+            $number_field = get_option('woo_better_calc_number_required', 'no');
+            
+            if ($number_field === 'yes') {
+                // Obter dados do usuário para número
+                $billing_number = '';
+                $shipping_number = '';
+                
+                if (is_user_logged_in()) {
+                    $user_id = get_current_user_id();
+                    $billing_number = get_user_meta($user_id, 'billing_number', true);
+                    $shipping_number = get_user_meta($user_id, 'shipping_number', true);
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-edit-address-number',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortNumberField.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-number',
+                    'wc_better_checkout_shortcode_number_vars',
+                    array(
+                        'billing_number' => $billing_number,
+                        'shipping_number' => $shipping_number
+                    )
+                );
+            }
+
+            // Scripts para auto-preenchimento de CEP
+            $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
+            
+            if ($cep_position === 'yes') {
+                // Obter dados do usuário
+                $billing_number = '';
+                $shipping_number = '';
+                
+                if (is_user_logged_in()) {
+                    $user_id = get_current_user_id();
+                    $billing_number = get_user_meta($user_id, 'billing_number', true);
+                    $shipping_number = get_user_meta($user_id, 'shipping_number', true);
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-edit-address-postcode',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPostcodeShortcode.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-postcode',
+                    'wc_better_checkout_vars_shortcode',
+                    array(
+                        'ajax_url' => $this->get_admin_ajax_url(),
+                        'fill_checkout_address' => 'yes', // Always enable for edit-address pages
+                        'billing_number' => $billing_number,
+                        'shipping_number' => $shipping_number,
+                        'nonce' => wp_create_nonce('wc_better_insert_address')
+                    )
                 );
             }
         }

@@ -27,11 +27,6 @@
 			const successMessage = progressConfig.min_free_shipping_success_message || 'Parabéns! Você tem frete grátis!';
 			let progressMessage = progressConfig.min_free_shipping_message || 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS';
 
-			// Valida se a mensagem personalizada contém o placeholder {value}
-			if (!progressMessage.includes('{value}')) {
-				progressMessage = 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS';
-			}
-
 			// Calcula valores iniciais
 			if (minValue <= 0) {
 				lastValidPercent = 100;
@@ -43,7 +38,7 @@
 				} else {
 					const remainingValue = (minValue - cartTotal).toFixed(2);
 					const formattedValue = currencySymbol + remainingValue;
-					lastValidMessage = progressMessage.replace('{value}', formattedValue);
+				lastValidMessage = progressMessage.includes('{value}') ? progressMessage.replace('{value}', formattedValue) : progressMessage;
 				}
 			}
 		}
@@ -56,117 +51,56 @@
 		const currentUrl = progressConfig.current_url || window.location.href;
 
 		if (isShortcode) {
-			// Para shortcode, intercepta requisições de form data
-			interceptShortcodeRequests(currentUrl);
+			// Para shortcode, usa observers do DOM ao invés de interceptar globalmente
+			observeShortcodeChanges(currentUrl);
 		} else {
-			// Para blocks, intercepta API Store
-			interceptStoreAPI();
+			// Para blocks, intercepta apenas URLs específicas da Store API
+			interceptStoreAPISpecific();
 		}
 	}
 
-	// Intercepta requisições do shortcode (update_cart e remove_cart via XHR)
-	function interceptShortcodeRequests(baseUrl) {
-		// Intercepta XMLHttpRequest (usado pelo shortcode)
-		const originalXHROpen = XMLHttpRequest.prototype.open;
-		const originalXHRSend = XMLHttpRequest.prototype.send;
-		
-		XMLHttpRequest.prototype.open = function(method, url, ...args) {
-			this._intercepted_url = url;
-			this._intercepted_method = method;
-			return originalXHROpen.apply(this, [method, url, ...args]);
-		};
-		
-		XMLHttpRequest.prototype.send = function(data) {
-			const url = this._intercepted_url;
-			let isCartAction = false;
-			
-			// Verifica se é atualização do carrinho
-			if (url && url.includes(baseUrl) && data) {
-				if (typeof data === 'string') {
-					if (data.includes('update_cart') || data.includes('remove_item')) {
-						isCartAction = true;
-					}
-				} else if (data instanceof FormData) {
-					const action = data.get('update_cart') || data.get('remove_item');
-					if (action) {
-						isCartAction = true;
-					}
-				}
-			}
-			
-			// Também verifica URLs com parâmetros para remove via GET
-			if (url && url.includes('remove_item') && url.includes(baseUrl.split('?')[0])) {
-				isCartAction = true;
-			}
-			
-			if (isCartAction) {
-				startLoadingState();
-				
-				// Adiciona listener para quando a requisição terminar
-				this.addEventListener('readystatechange', function() {
-					if (this.readyState === 4) {
-						setTimeout(() => {
-							getCartDataViaAjax();
-						}, 500);
-					}
-				});
-			}
-			
-			return originalXHRSend.apply(this, arguments);
-		};
-		
-		// Mantém o interceptor fetch como fallback
-		const originalFetch = window.fetch;
-		
-		window.fetch = function(...args) {
-			const [url, config] = args;
-			
-			// Verifica se é requisição do shortcode para a URL atual
-			if (url && url.includes(baseUrl) && config && config.body) {
-				let isCartAction = false;
-				
-				// Se é FormData, verifica as ações
-				if (config.body instanceof FormData) {
-					const action = config.body.get('update_cart') || config.body.get('remove_item');
-					if (action) {
-						isCartAction = true;
-					}
-				}
-				// Se é URLSearchParams ou string, verifica o conteúdo
-				else if (typeof config.body === 'string') {
-					if (config.body.includes('update_cart') || config.body.includes('remove_item')) {
-						isCartAction = true;
-					}
-				}
-				
-				if (isCartAction) {
-					startLoadingState();
-				}
-			}
-			
-			// Também verifica URLs com parâmetros para remove via GET
-			if (url && url.includes('remove_item') && url.includes(baseUrl.split('?')[0])) {
-				startLoadingState();
-			}
-			
-			return originalFetch.apply(this, args)
-				.then(response => {
-					if (url && (url.includes(baseUrl) || url.includes('remove_item'))) {
-						// Para shortcode, faz uma requisição AJAX para obter dados atualizados do carrinho
-						setTimeout(() => {
-							getCartDataViaAjax();
-						}, 500);
-					}
+	// Abordagem alternativa para shortcode usando MutationObserver
+	function observeShortcodeChanges(baseUrl) {
+		// Observer para mudanças no DOM do carrinho/checkout
+		const observer = new MutationObserver(function(mutations) {
+			mutations.forEach(function(mutation) {
+				if (mutation.type === 'childList' || mutation.type === 'characterData') {
+					// Verifica se houve mudança nos valores de total/subtotal (incluindo taxas)
+					const cartTotalElements = document.querySelectorAll([
+						'.order-total .woocommerce-Price-amount.amount bdi',
+						'.cart-subtotal .woocommerce-Price-amount.amount bdi',
+						'.wc-block-formatted-money-amount.wc-block-components-totals-item__value'
+					].join(','));
 					
-					return response;
-				})
-				.catch(error => {
-					if (url && (url.includes(baseUrl) || url.includes('remove_item'))) {
-						stopLoadingState();
+					if (cartTotalElements.length > 0) {
+						// Debounce para evitar atualizações excessivas
+						clearTimeout(window.wcProgressBarTimeout);
+						window.wcProgressBarTimeout = setTimeout(() => {
+							currentCartTotal = getCartTotalFromDOM();
+							insertOrUpdateProgressBar();
+						}, 500);
 					}
-					throw error;
-				});
-		};
+				}
+			});
+		});
+
+		// Observa mudanças no carrinho e checkout
+		const targets = document.querySelectorAll('.cart, .checkout, .woocommerce-cart, .woocommerce-checkout');
+		targets.forEach(target => {
+			observer.observe(target, {
+				childList: true,
+				subtree: true,
+				characterData: true
+			});
+		});
+
+		// Fallback: escuta eventos do WooCommerce
+		$(document).on('updated_cart_totals updated_checkout', function() {
+			setTimeout(() => {
+				currentCartTotal = getCartTotalFromDOM();
+				insertOrUpdateProgressBar();
+			}, 300);
+		});
 	}
 
 	// Função para obter dados do carrinho via WooCommerce REST API (para shortcode)
@@ -208,37 +142,61 @@
 		}, 300); // Debounce de 300ms
 	}
 
-	// Intercepta requisições para a API do WooCommerce Store (blocks)
-	function interceptStoreAPI() {
+	// Interceptor específico e conservador para Store API
+	function interceptStoreAPISpecific() {
 		const originalFetch = window.fetch;
 		
 		window.fetch = function(...args) {
 			const [url, config] = args;
 			
-			// Verifica se é uma requisição para a API do WooCommerce Store batch
-			if (url && url.includes('/wp-json/wc/store/v1/batch')) {
-				// Inicia o loading quando a requisição é feita
+			// Verificação MUITO específica - só intercepta se for EXATAMENTE Store API
+			const isExactStoreAPI = url && (
+				url.includes('/wp-json/wc/store/v1/batch') ||
+				url.includes('/wp-json/wc/store/v1/cart')
+			) && !url.includes('braspag') && !url.includes('cardinalcommerce');
+			
+			if (!isExactStoreAPI) {
+				return originalFetch.apply(this, args);
+			}
+			
+			// Só processa se for URL local (mesmo domínio)
+			const currentDomain = window.location.hostname;
+			let requestDomain = '';
+			
+			try {
+				if (url.startsWith('http')) {
+					requestDomain = new URL(url).hostname;
+				} else {
+					requestDomain = currentDomain; // URL relativa
+				}
+			} catch (e) {
+				requestDomain = currentDomain;
+			}
+			
+			// Se não for o mesmo domínio, não intercepta
+			if (requestDomain !== currentDomain) {
+				return originalFetch.apply(this, args);
+			}
+
+			// Inicia loading apenas para batch
+			if (url.includes('/wp-json/wc/store/v1/batch')) {
 				startLoadingState();
 			}
 			
 			return originalFetch.apply(this, args)
 				.then(response => {
-					// Clona a response para poder ler o JSON sem consumir o stream original
 					const clonedResponse = response.clone();
 					
-					if (url && url.includes('/wp-json/wc/store/v1/batch')) {
+					if (url.includes('/wp-json/wc/store/v1/batch')) {
 						clonedResponse.json()
 							.then(data => {
 								if (data && data.responses && data.responses[0] && data.responses[0].body) {
 									const cartData = data.responses[0].body;
 									
-									// Extrai o total dos itens do carrinho
 									if (cartData.totals && cartData.totals.total_items) {
-										// O valor vem em centavos, divide por 100 para obter o valor real
 										const totalItems = parseInt(cartData.totals.total_items) / 100;
 										currentCartTotal = totalItems;
 										
-										// Para o loading e atualiza a barra
 										setTimeout(() => {
 											stopLoadingState();
 										}, 300);
@@ -246,16 +204,26 @@
 								}
 							})
 							.catch(error => {
-								// Em caso de erro, para o loading
 								stopLoadingState();
+							});
+					} else if (url.includes('/wp-json/wc/store/v1/cart')) {
+						clonedResponse.json()
+							.then(data => {
+								if (data && data.totals && data.totals.total_items) {
+									const totalItems = parseInt(data.totals.total_items) / 100;
+									currentCartTotal = totalItems;
+									insertOrUpdateProgressBar();
+								}
+							})
+							.catch(error => {
+								// Silencioso
 							});
 					}
 					
 					return response;
 				})
 				.catch(error => {
-					// Para o loading em caso de erro na requisição
-					if (url && url.includes('/wp-json/wc/store/v1/batch')) {
+					if (url.includes('/wp-json/wc/store/v1/batch')) {
 						stopLoadingState();
 					}
 					throw error;
@@ -266,18 +234,40 @@
 	// Função fallback para obter total do carrinho via DOM (caso a API não funcione)
 	function getCartTotalFromDOM() {
 		let selectors = [
-			'.wc-block-formatted-money-amount.wc-block-components-totals-item__value',
-			'td[data-title="Subtotal"] .woocommerce-Price-amount.amount bdi',
+			// Específico para subtotal total do carrinho (não itens individuais)
+			'tr.cart-subtotal td[data-title="Subtotal"] .woocommerce-Price-amount.amount bdi',
 			'.cart-subtotal .woocommerce-Price-amount.amount bdi',
-			'.cart-subtotal .woocommerce-Price-amount.amount',
+			'.cart-subtotal .amount bdi',
+			// Para blocos WC
+			'.wc-block-formatted-money-amount.wc-block-components-totals-item__value',
 			'.wc-block-components-totals-item__value .wc-block-formatted-money-amount',
+			// Fallbacks mais gerais
+			'td[data-title="Subtotal"] .woocommerce-Price-amount.amount bdi:last-of-type',
 			'.order-total .woocommerce-Price-amount.amount bdi',
 			'.order-total .woocommerce-Price-amount.amount'
 		];
 
 		let el = null;
+		let foundSelector = '';
 		for (let selector of selectors) {
-			el = document.querySelector(selector);
+			const elements = document.querySelectorAll(selector);
+			
+			// Se há múltiplos elementos, pega o que NÃO está dentro de .cart_item ou .woocommerce-cart-form__cart-item
+			for (let element of elements) {
+				if (element && element.textContent.trim()) {
+					// Verifica se não está dentro de um item individual do carrinho
+					const isWithinCartItem = element.closest('.cart_item, .woocommerce-cart-form__cart-item, .wc-block-cart-item');
+					
+					if (!isWithinCartItem) {
+						el = element;
+						foundSelector = selector;
+						break;
+					} else {
+						// Ignora elementos de itens individuais
+					}
+				}
+			}
+			
 			if (el && el.textContent.trim()) {
 				break;
 			}
@@ -295,18 +285,21 @@
 		const effectiveThousandSeparator = thousandSeparator === '.' || thousandSeparator === ',' ? thousandSeparator : '.';
 
 		let rawText = el.textContent.trim();
+		
 		let value = rawText
 			.replace(new RegExp(`\\${effectiveThousandSeparator}`, 'g'), '')
 			.replace(new RegExp(`\\${effectiveDecimalSeparator}`), '.')
 			.replace(/[^\d.-]/g, '');
 
 		let parsedValue = parseFloat(value) || 0;
+		
 		currentCartTotal = parsedValue;
 		return parsedValue;
 	}
 
 	function insertOrUpdateProgressBar() {
 		let cartTotal = currentCartTotal || getCartTotalFromDOM();
+		
 		let percent = 0;
 		let message = '';
 
@@ -314,31 +307,32 @@
 		const progressConfig = typeof wc_better_shipping_progress !== 'undefined' ? wc_better_shipping_progress : {};
 		const currencySymbol = progressConfig.currency_symbol || 'R$';
 		const successMessage = progressConfig.min_free_shipping_success_message || 'Parabéns! Você tem frete grátis!';
+		const enableProgressBarValue = progressConfig.enable_progress_bar_value !== 'no'; // padrão é true
 		let progressMessage = progressConfig.min_free_shipping_message || 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS';
 
-		// Valida se a mensagem personalizada contém o placeholder {value}
-		if (!progressMessage.includes('{value}')) {
-			// Se não contém {value}, usa a mensagem padrão
-			progressMessage = 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS';
-		}
-
 		// Se está carregando, mantém os valores anteriores
+		let barText = '';
 		if (isLoading) {
 			percent = lastValidPercent;
 			message = 'Carregando...';
+			barText = enableProgressBarValue ? 'Carregando...' : '';
 		} else {
 			// Calcula novos valores
 			if (minValue <= 0) {
 				percent = 100;
 				message = successMessage;
+				barText = enableProgressBarValue ? 'Completo!' : '';
 			} else {
 				percent = Math.min((cartTotal / minValue) * 100, 100);
+				
 				if (cartTotal >= minValue) {
 					message = successMessage;
+					barText = enableProgressBarValue ? 'Completo!' : '';
 				} else {
 					const remainingValue = (minValue - cartTotal).toFixed(2);
 					const formattedValue = currencySymbol + remainingValue;
-					message = progressMessage.replace('{value}', formattedValue);
+				message = progressMessage.includes('{value}') ? progressMessage.replace('{value}', formattedValue) : progressMessage;
+					barText = enableProgressBarValue ? 'Falta ' + formattedValue : '';
 				}
 			}
 			
@@ -360,6 +354,7 @@
 			progressBarWrapper.style.borderRadius = '4px';
 			progressBarWrapper.style.overflow = 'hidden';
 			progressBarWrapper.style.height = '20px';
+			progressBarWrapper.style.position = 'relative';
 
 			// Cria a barra de progresso
 			let progressBar = document.createElement('div');
@@ -377,8 +372,29 @@
 				// Mantém o percent atual, não muda para 30%
 			}
 
-			// Adiciona a barra de progresso ao contêiner
-			progressBarWrapper.appendChild(progressBar);
+			// Cria o texto dentro da barra (apenas se estiver habilitado)
+			if (enableProgressBarValue) {
+				let progressBarInnerText = document.createElement('div');
+				progressBarInnerText.className = 'wc-better-shipping-progress-inner-text';
+				progressBarInnerText.style.position = 'absolute';
+				progressBarInnerText.style.top = '50%';
+				progressBarInnerText.style.left = '8px';
+				progressBarInnerText.style.transform = 'translateY(-50%)';
+				progressBarInnerText.style.fontSize = '12px';
+				progressBarInnerText.style.fontWeight = 'bold';
+				progressBarInnerText.style.color = '#fff';
+				progressBarInnerText.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
+				progressBarInnerText.style.whiteSpace = 'nowrap';
+				progressBarInnerText.style.zIndex = '10';
+				progressBarInnerText.textContent = barText;
+
+				// Adiciona a barra de progresso e o texto ao contêiner
+				progressBarWrapper.appendChild(progressBar);
+				progressBarWrapper.appendChild(progressBarInnerText);
+			} else {
+				// Adiciona apenas a barra de progresso ao contêiner
+				progressBarWrapper.appendChild(progressBar);
+			}
 
 			// Cria o texto da barra de progresso
 			let progressBarText = document.createElement('div');
@@ -460,6 +476,36 @@
 						bar.style.animation = 'none';
 					}
 				}
+				// Atualiza o texto interno da barra (apenas se estiver habilitado)
+				let innerText = progressBar.querySelector('.wc-better-shipping-progress-inner-text');
+				if (enableProgressBarValue) {
+					if (innerText) {
+						innerText.textContent = barText;
+					} else {
+						// Se não existe mas deveria existir, cria o elemento
+						let progressBarWrapper = progressBar.querySelector('.wc-better-shipping-progress').parentNode;
+						let newInnerText = document.createElement('div');
+						newInnerText.className = 'wc-better-shipping-progress-inner-text';
+						newInnerText.style.position = 'absolute';
+						newInnerText.style.top = '50%';
+						newInnerText.style.left = '8px';
+						newInnerText.style.transform = 'translateY(-50%)';
+						newInnerText.style.fontSize = '12px';
+						newInnerText.style.fontWeight = 'bold';
+						newInnerText.style.color = '#fff';
+						newInnerText.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
+						newInnerText.style.whiteSpace = 'nowrap';
+						newInnerText.style.zIndex = '10';
+						newInnerText.textContent = barText;
+						progressBarWrapper.appendChild(newInnerText);
+					}
+				} else {
+					// Se não deve mostrar o texto mas ele existe, remove
+					if (innerText) {
+						innerText.remove();
+					}
+				}
+				// Atualiza o texto abaixo da barra
 				let text = progressBar.querySelector('.wc-better-shipping-progress-text');
 				if (text) {
 					text.textContent = message;

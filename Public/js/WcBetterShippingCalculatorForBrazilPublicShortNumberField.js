@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const billingNumberField = document.querySelector("#lkn_billing_number");
-    const billingNumberFieldWrapper = document.querySelector("#lkn_billing_number_field");
+    const billingNumberField = document.querySelector("#billing_number");
+    const billingNumberFieldWrapper = document.querySelector("#billing_number_field");
     const checkbox = document.querySelector("#lkn_billing_checkbox");
 
     // Preenche os campos de número com valores vindos do wp_localize_script, se existirem
@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
         // Detecta e preenche o campo de número de shipping se existir
-        var shippingNumberField = document.querySelector("#lkn_shipping_number");
+        var shippingNumberField = document.querySelector("#shipping_number");
         if (shippingNumberField && wc_better_checkout_shortcode_number_vars.shipping_number) {
             if (window.jQuery) {
                 var $shippingField = window.jQuery(shippingNumberField);
@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             // Se o valor preenchido for 'S/N', marca o checkbox e desabilita o campo
             var shippingCheckbox = document.querySelector("#lkn_shipping_checkbox");
-            var shippingNumberFieldWrapper = document.querySelector("#lkn_shipping_number_field");
+            var shippingNumberFieldWrapper = document.querySelector("#shipping_number_field");
             if (wc_better_checkout_shortcode_number_vars.shipping_number === "S/N" && shippingCheckbox) {
                 shippingCheckbox.checked = true;
                 shippingNumberField.setAttribute("disabled", "disabled");
@@ -79,8 +79,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (shippingCheckbox && !shippingFound) {
             shippingFound = true
             shippingCheckbox.addEventListener("change", function () {
-                const shippingNumberField = document.querySelector("#lkn_shipping_number");
-                const shippingNumberFieldWrapper = document.querySelector("#lkn_shipping_number_field");
+                const shippingNumberField = document.querySelector("#shipping_number");
+                const shippingNumberFieldWrapper = document.querySelector("#shipping_number_field");
 
                 if (this.checked) {
                     if (window.jQuery) {
@@ -128,11 +128,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 const params = new URLSearchParams(body);
 
                 if (params.has('lkn_billing_checkbox') && params.get('lkn_billing_checkbox') == '1') {
-                    params.set("lkn_billing_number", "S/N");
+                    params.set("billing_number", "S/N");
                 }
 
                 if (params.has('lkn_shipping_checkbox') && params.get('lkn_shipping_checkbox') == '1') {
-                    params.set("lkn_shipping_number", "S/N");
+                    params.set("shipping_number", "S/N");
                 }
 
                 // Converte de volta para string antes de enviar
