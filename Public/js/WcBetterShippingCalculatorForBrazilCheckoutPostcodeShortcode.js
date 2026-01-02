@@ -598,8 +598,8 @@ jQuery(function ($) {
 
         $("#" + field + "_city").val(data.city ? data.city : '').trigger("change");
         $("#" + field + "_state").val(data.state ? data.state : '').trigger("change");
-        // Limpa campo customizado lkn_billing_number ou lkn_shipping_number se existir
-        var customNumberId = field === 'billing' ? 'lkn_billing_number' : (field === 'shipping' ? 'lkn_shipping_number' : null);
+        // Limpa campo customizado billing_number ou shipping_number se existir
+        var customNumberId = field === 'billing' ? 'billing_number' : (field === 'shipping' ? 'shipping_number' : null);
         var customCheckboxId = field === 'billing' ? 'lkn_billing_checkbox' : (field === 'shipping' ? 'lkn_shipping_checkbox' : null);
         if (customNumberId && $("#" + customNumberId).length) {
             var $customNumber = $("#" + customNumberId);
