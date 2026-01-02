@@ -16,7 +16,7 @@
  * Plugin Name:       Calculadora de Frete e Campos Checkout para o Brasil
  * Plugin URI:        https://www.linknacional.com.br/wordpress
  * Description:       Calculadora automática de Frete com CEP para Woocommerce. Sem necessidade de informar o Pais e estado. Compatível com Gutenberg e shortcodes. Ideal para Lojas Brasileiras.
- * Version:           4.7.0-rc.3
+ * Version:           4.7.0
  * Author:            Link Nacional
  * Author URI:        https://linknacional.com.br/
  * Requires PHP:      7.3
