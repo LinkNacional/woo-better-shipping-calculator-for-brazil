@@ -1271,6 +1271,140 @@
       }
     }
 
+    // Função para adicionar preview visual para o progress bar
+    function addProgressBarPreview() {
+      const progressBarRadios = document.querySelectorAll('input[name="woo_better_enable_progress_bar_value"]');
+      
+      if (progressBarRadios.length > 0) {
+        // Encontra o container principal
+        const firstRadio = progressBarRadios[0];
+        const formBody = firstRadio.closest('.woo-forminp-body');
+        
+        if (formBody && !formBody.querySelector('.woo-better-progress-preview')) {
+          // Obtém os caminhos das imagens via localize
+          const barImages = typeof WCBetterCalcBarImages !== 'undefined' ? WCBetterCalcBarImages : {};
+          
+          // Cria o container do preview
+          const previewContainer = document.createElement('div');
+          previewContainer.className = 'woo-better-progress-preview';
+          previewContainer.style.cssText = `
+            margin-top: 15px;
+          `;
+          
+          // Título do preview
+          const previewTitle = document.createElement('h4');
+          previewTitle.textContent = 'Preview da Barra de Progresso:';
+          previewTitle.style.cssText = `
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #333;
+          `;
+          
+          // Container das imagens
+          const imagesContainer = document.createElement('div');
+          imagesContainer.style.cssText = `
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-start;
+          `;
+          
+          // Preview com label (quando 'yes')
+          const withLabelContainer = document.createElement('div');
+          withLabelContainer.className = 'preview-with-label';
+          withLabelContainer.style.cssText = `
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+          `;
+          
+          const withLabelTitle = document.createElement('p');
+          withLabelTitle.textContent = 'Com valores na barra (Sim)';
+          withLabelTitle.style.cssText = `
+            margin: 0 0 8px 0;
+            font-weight: bold;
+            font-size: 13px;
+            color: #0073aa;
+          `;
+          
+          const withLabelImg = document.createElement('img');
+          withLabelImg.src = barImages.with_label || '/wp-content/plugins/woo-better-shipping-calculator-for-brazil/Includes/assets/images/barWithLabel.png';
+          withLabelImg.alt = 'Barra com valores';
+          withLabelImg.style.cssText = `
+            max-width: 100%;
+            height: auto;
+          `;
+          
+          withLabelContainer.appendChild(withLabelTitle);
+          withLabelContainer.appendChild(withLabelImg);
+          
+          // Preview sem label (quando 'no')
+          const withoutLabelContainer = document.createElement('div');
+          withoutLabelContainer.className = 'preview-without-label';
+          withoutLabelContainer.style.cssText = `
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+          `;
+          
+          const withoutLabelTitle = document.createElement('p');
+          withoutLabelTitle.textContent = 'Sem valores na barra (Não)';
+          withoutLabelTitle.style.cssText = `
+            margin: 0 0 8px 0;
+            font-weight: bold;
+            font-size: 13px;
+            color: #0073aa;
+          `;
+          
+          const withoutLabelImg = document.createElement('img');
+          withoutLabelImg.src = barImages.without_label || '/wp-content/plugins/woo-better-shipping-calculator-for-brazil/Includes/assets/images/barWithoutLabel.png';
+          withoutLabelImg.alt = 'Barra sem valores';
+          withoutLabelImg.style.cssText = `
+            max-width: 100%;
+            height: auto;
+          `;
+          
+          withoutLabelContainer.appendChild(withoutLabelTitle);
+          withoutLabelContainer.appendChild(withoutLabelImg);
+          
+          // Monta a estrutura
+          imagesContainer.appendChild(withLabelContainer);
+          imagesContainer.appendChild(withoutLabelContainer);
+          
+          previewContainer.appendChild(previewTitle);
+          previewContainer.appendChild(imagesContainer);
+          
+          // Adiciona no final do form body
+          formBody.appendChild(previewContainer);
+          
+          // Função para atualizar o highlight baseado na seleção
+          function updatePreviewHighlight() {
+            const selectedValue = Array.from(progressBarRadios).find(radio => radio.checked)?.value;
+            
+            if (selectedValue === 'yes') {
+              withLabelContainer.style.opacity = '1';
+              withoutLabelContainer.style.opacity = '0.5';
+              withLabelTitle.style.color = '#0073aa';
+              withoutLabelTitle.style.color = '#999';
+            } else {
+              withLabelContainer.style.opacity = '0.5';
+              withoutLabelContainer.style.opacity = '1';
+              withLabelTitle.style.color = '#999';
+              withoutLabelTitle.style.color = '#0073aa';
+            }
+          }
+          
+          // Atualiza o highlight inicial
+          updatePreviewHighlight();
+          
+          // Adiciona listeners para mudanças
+          progressBarRadios.forEach(radio => {
+            radio.addEventListener('change', updatePreviewHighlight);
+          });
+        }
+      }
+    }
+
     const shortcodeElements = document.querySelectorAll('.woo-better-shortcode');
 
     shortcodeElements.forEach(function (codeEl) {
@@ -1340,6 +1474,7 @@
     handleCustomPosition('product');
     handleCacheSettings();
     handleClearCacheButton();
+    addProgressBarPreview();
 
     if (WCBetterCalcWooVersion.status === 'invalid') {
       // Seleciona todos os inputs e selects com o padrão de name que contenham "cart" ou "product"

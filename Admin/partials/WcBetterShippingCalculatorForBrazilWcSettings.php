@@ -86,8 +86,20 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Mensagem exibida quando o valor do carrinho ainda não atingiu o mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'min_free_shipping_success_message' => array(
+                'title'    => __('Mensagem de Frete Grátis Ativado', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_min_free_shipping_success_message',
+                'desc_tip' => false,
+                'default'  => 'Parabéns! Você tem frete grátis!',
+                'type'     => 'textarea',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Mensagem exibida quando o valor do carrinho atingiu o mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Mensagem de parabéns exibida quando o cliente se qualifica para frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Esta mensagem será exibida quando o frete grátis estiver ativo.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'enable_progress_bar_value' => array(
-                'title'    => __('Valor Restante na Barra de Progresso', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Exibir o valor restante na barra do frete', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_enable_progress_bar_value',
                 'desc_tip' => false,
                 'default'  => 'no',
@@ -97,21 +109,9 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-desc-tip' => __('Exibe o valor restante diretamente dentro da barra de progresso.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Quando habilitado, exibe informações dentro da barra de progresso (valor restante ou status de completude). Quando desabilitado, mantém apenas a barra visual sem texto interno.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Controla se o valor restante aparece dentro da própria barra de progresso.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-            'min_free_shipping_success_message' => array(
-                'title'    => __('Mensagem de Frete Grátis Ativado', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_min_free_shipping_success_message',
-                'desc_tip' => false,
-                'default'  => 'Parabéns! Você tem frete grátis!',
-                'type'     => 'text',
-                'custom_attributes' => array(
-                    'data-desc-tip' => __('Mensagem exibida quando o valor do carrinho atingiu o mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Mensagem de parabéns exibida quando o cliente se qualifica para frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Esta mensagem será exibida quando o frete grátis estiver ativo.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-desc-tip' => __('Mostra o valor restante para obter frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Ao habilitar esta opção, será exibido as informações de valor restante dentro da barra de progresso.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Mostra o valor restante para obter frete grátis.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'font_source' => array(
