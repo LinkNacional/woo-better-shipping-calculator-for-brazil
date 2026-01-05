@@ -197,9 +197,14 @@
 										const totalItems = parseInt(cartData.totals.total_items) / 100;
 										currentCartTotal = totalItems;
 										
-										setTimeout(() => {
+										// Se carrinho já qualifica para frete grátis, para imediatamente
+										if (totalItems >= minValue && minValue > 0) {
 											stopLoadingState();
-										}, 300);
+										} else {
+											setTimeout(() => {
+												stopLoadingState();
+											}, 300);
+										}
 									}
 								}
 							})
@@ -550,10 +555,21 @@
 			loadingTimeout = null;
 		}
 		
-		// Pequeno delay para suavizar a transição
-		setTimeout(() => {
+		// Força a atualização visual resetando previousPorcent para garantir que a barra seja atualizada
+		previousPorcent = null;
+		
+		// Verifica se o carrinho já qualifica para frete grátis - se sim, atualiza imediatamente
+		const cartTotal = currentCartTotal || getCartTotalFromDOM();
+		
+		if (cartTotal >= minValue && minValue > 0) {
+			// Se já qualifica, atualiza imediatamente sem delay
 			insertOrUpdateProgressBar();
-		}, 200);
+		} else {
+			// Pequeno delay para suavizar a transição apenas quando necessário
+			setTimeout(() => {
+				insertOrUpdateProgressBar();
+			}, 200);
+		}
 	}
 
 	// Inicialização simples
