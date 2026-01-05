@@ -13,10 +13,10 @@
  * @package           WcBetterShippingCalculatorForBrazil
  *
  * @wordpress-plugin
- * Plugin Name:       Calculadora de Frete para o Brasil
+ * Plugin Name:       Calculadora de Frete e Campos Checkout para o Brasil
  * Plugin URI:        https://www.linknacional.com.br/wordpress
  * Description:       Calculadora automática de Frete com CEP para Woocommerce. Sem necessidade de informar o Pais e estado. Compatível com Gutenberg e shortcodes. Ideal para Lojas Brasileiras.
- * Version:           4.6.0
+ * Version:           4.7.0
  * Author:            Link Nacional
  * Author URI:        https://linknacional.com.br/
  * Requires PHP:      7.3
@@ -46,7 +46,7 @@ if (! defined('WPINC')) {
  */
 // Consts
 if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
-    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION', '4.6.0');
+    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION', '4.7.0');
 }
 
 if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_MIN_GIVE_VERSION')) {
@@ -97,6 +97,32 @@ function deactivateWcBetterShippingCalculatorForBrazil()
 
 register_activation_hook(__FILE__, 'activateWcBetterShippingCalculatorForBrazil');
 register_deactivation_hook(__FILE__, 'deactivateWcBetterShippingCalculatorForBrazil');
+
+// Multisite support
+if (is_multisite()) {
+    add_action('wp_initialize_site', 'activateWcBetterShippingCalculatorForBrazilOnNewSite');
+    add_action('wp_delete_site', 'deactivateWcBetterShippingCalculatorForBrazilOnDeleteSite');
+}
+
+/**
+ * Ativação em novo site no multisite
+ */
+function activateWcBetterShippingCalculatorForBrazilOnNewSite($new_site) {
+    if (is_plugin_active_for_network(plugin_basename(__FILE__))) {
+        switch_to_blog($new_site->blog_id);
+        activateWcBetterShippingCalculatorForBrazil();
+        restore_current_blog();
+    }
+}
+
+/**
+ * Desativação quando site é deletado do multisite
+ */
+function deactivateWcBetterShippingCalculatorForBrazilOnDeleteSite($site) {
+    switch_to_blog($site->blog_id);
+    deactivateWcBetterShippingCalculatorForBrazil();
+    restore_current_blog();
+}
 
 
 /**

@@ -78,13 +78,12 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'id'       => 'woo_better_min_free_shipping_message',
                 'desc_tip' => false,
                 'default'  => 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS',
-                'type'     => 'text',
+                'type'     => 'textarea',
                 'custom_attributes' => array(
                     'data-subtitle' => __('Mensagem de Frete Mínimo', 'woo-better-shipping-calculator-for-brazil'),
                     'data-desc-tip' => __('Defina as mensagens de feedback na barra de progresso.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Use {value} como marcador para o valor restante. Ex: "Falta(m) apenas mais {value} para obter FRETE GRÁTIS"', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Mensagem exibida quando o valor do carrinho ainda não atingiu o mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
-                    'pattern' => '.*\{value\}.*'
+                    'data-description' => __('Use {value} como marcador para o valor restante (opcional). Ex: "Falta(m) apenas mais {value} para obter FRETE GRÁTIS" ou apenas "Adicione mais produtos para obter frete grátis"', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Mensagem exibida quando o valor do carrinho ainda não atingiu o mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'min_free_shipping_success_message' => array(
@@ -92,11 +91,27 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'id'       => 'woo_better_min_free_shipping_success_message',
                 'desc_tip' => false,
                 'default'  => 'Parabéns! Você tem frete grátis!',
-                'type'     => 'text',
+                'type'     => 'textarea',
                 'custom_attributes' => array(
                     'data-desc-tip' => __('Mensagem exibida quando o valor do carrinho atingiu o mínimo para frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Mensagem de parabéns exibida quando o cliente se qualifica para frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Esta mensagem será exibida quando o frete grátis estiver ativo.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'enable_progress_bar_value' => array(
+                'title'    => __('Exibir o valor restante na barra do frete', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_enable_progress_bar_value',
+                'desc_tip' => false,
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Mostra o valor restante para obter frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Ao habilitar esta opção, será exibido as informações de valor restante dentro da barra de progresso.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Mostra o valor restante para obter frete grátis.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'font_source' => array(
@@ -131,6 +146,22 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-desc-tip' => __('Exibe um atalho para as configurações do plugin nas páginas de Carrinho e de Produto quando o utilizador for um administrador.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Habilite esta opção para exibir o link de configuração nas páginas frontend (visíveis ao público) para os utilizadores administradores.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Exibir o link de configuração somente para utilizadores administradores.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'enable_order_details' => array(
+                'title'    => __('Exibir Detalhes do Pedido', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_calc_enable_order_details',
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Exibe informações detalhadas dos pedidos para melhor acompanhamento e controle.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para mostrar detalhes adicionais dos pedidos, incluindo informações de entrega e dados complementares.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ative a exibição de detalhes completos dos pedidos.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'geral_section_end' => array(
@@ -760,6 +791,72 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-desc-tip' => __('Defina as configurações de exibição e funcionalidade para o campo de CEP (Checkout).', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Ao habilitar, o campo CEP será exibido no topo do formulário de checkout, posicionado imediatamente após o campo de País.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Escolha se o campo de CEP deve ser destacado no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'person_type_select' => array(
+                'title'    => __('Tipo de Cliente', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_person_type_select',
+                'desc_tip' => false,
+                'default'  => 'none',
+                'type'     => 'select',
+                'options'  => array(
+                    'none'     => __('Nenhum', 'woo-better-shipping-calculator-for-brazil'),
+                    'both'     => __('Pessoa Física e Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil'),
+                    'physical' => __('Pessoa Física apenas', 'woo-better-shipping-calculator-for-brazil'),
+                    'legal'    => __('Pessoa Jurídica apenas', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Configure a validação de tipo de cliente no checkout. A opção "Nenhum" desativa a validação.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Selecione "Nenhum" para desativar a validação, ou escolha entre Pessoa Física (CPF), Pessoa Jurídica (CNPJ) ou ambos. Os campos CPF/CNPJ aparecem exclusivamente no endereço de cobrança.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Configure a validação de documentos no checkout. Importante: se o formulário não estiver priorizando o endereço de cobrança, ative "Forçar entrega para o endereço de cobrança" nas Configurações de Entrega do WooCommerce.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'apply_cpf_mask' => array(
+                'title'    => __('Aplicar Máscara no CPF', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_apply_cpf_mask',
+                'desc_tip' => false,
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Define se o CPF será salvo com máscara (###.###.###-##) ou apenas números.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para salvar o CPF com formatação (pontos e hífen) ou desabilite para salvar apenas os números.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Controla a formatação do CPF ao salvar os dados do cliente.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'apply_cnpj_mask' => array(
+                'title'    => __('Aplicar Máscara no CNPJ', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_apply_cnpj_mask',
+                'desc_tip' => false,
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Define se o CNPJ será salvo com máscara (##.###.###/####-##) ou apenas números.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para salvar o CNPJ com formatação (pontos, barra e hífen) ou desabilite para salvar apenas os números.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Controla a formatação do CNPJ ao salvar os dados do cliente.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'enable_neighborhood_field' => array(
+                'title'    => __('Campo de Bairro', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_enable_neighborhood_field',
+                'desc_tip' => false,
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Adiciona um campo obrigatório de Bairro no formulário de endereço do checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para adicionar o campo "Bairro" tanto nos endereços de cobrança quanto de entrega.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Adiciona o campo de Bairro, posicionado após o endereço principal.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'enable_auto_address_fill' => array(

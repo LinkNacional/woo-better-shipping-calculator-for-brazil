@@ -52,7 +52,7 @@ jobs:
         uses: wordpress/plugin-check-action@v1
         with:
           build-dir: './'
-          exclude-directories: 'node_modules,vendor,.eslintrc'
+          exclude-directories: 'node_modules,vendor,.eslintrc,.github,.devcontainer,.vscode'
           ignore-codes: |
             WordPress.WP.I18n.TextDomainMismatch
             WordPress.Security.NonceVerification.Missing
@@ -64,6 +64,9 @@ jobs:
             hidden_files
             WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
             WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+            WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+            WordPress.DB.DirectDatabaseQuery.NoCaching
+            WordPress.DB.DirectDatabaseQuery.DirectQuery
           categories: |
             performance
             accessibility

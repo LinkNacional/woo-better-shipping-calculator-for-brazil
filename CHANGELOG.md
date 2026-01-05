@@ -1,3 +1,8 @@
+# 4.7.0 - 23/12/25
+* NOVO: Campo de CPF/CNPJ
+* NOVO: Campo de Bairro.
+* Ajuste: barra de frete grátis.
+
 # 4.6.0 - 15/12/25
 * NOVO: Atualização na logica de frete grátis.
 * NOVO: Atualização do campo de número de telefone.

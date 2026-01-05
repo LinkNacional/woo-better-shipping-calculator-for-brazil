@@ -2,6 +2,11 @@
 
 namespace Lkn\WcBetterShippingCalculatorForBrazil\Admin;
 
+// Prevent direct access
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
 /**
  * Provide a admin area view for the plugin
  *

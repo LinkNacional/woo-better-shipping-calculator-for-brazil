@@ -60,10 +60,54 @@ document.addEventListener("DOMContentLoaded", function () {
                         input.setAttribute('aria-invalid', 'false');
                         input.setAttribute('autocapitalize', 'sentences');
                         // Valor inicial
-                        const initialValue = (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.shipping_number) ? WooBetterNumberData.shipping_number : '';
+                        let initialValue = '';
+                        let extractedNumber = '';
+                        
+                        if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.shipping_number) {
+                            initialValue = WooBetterNumberData.shipping_number;
+                        } else {
+                            // Tenta extrair número do endereço se não houver dados salvos
+                            const addressInput = shippingAddress1.querySelector('input');
+                            if (addressInput && addressInput.value) {
+                                const addressValue = addressInput.value.trim();
+                                // Regex para capturar número no final do endereço
+                                const numberMatch = addressValue.match(/[–-]\s*(\d+|S\/N)\s*$/);
+                                if (numberMatch) {
+                                    extractedNumber = numberMatch[1];
+                                    initialValue = extractedNumber;
+                                    
+                                    // Remove o número do endereço
+                                    const cleanAddress = addressValue.replace(/\s*[–-]\s*(\d+|S\/N)\s*$/, '').trim();
+                                    if (cleanAddress !== addressValue) {
+                                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                        nativeSetter.call(addressInput, cleanAddress);
+                                        addressInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                    }
+                                }
+                            } else {
+                            }
+                        }
+                        
                         input.value = initialValue;
                         if (initialValue !== '') {
                             customInputDiv.classList.add('is-active');
+                        }
+                        
+                        // Se extraiu número automaticamente, atualiza Store API
+                        if (extractedNumber && window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                            setTimeout(() => {
+                                let data = { shipping_number: extractedNumber, billing_number: '' };
+                                const billingNumberInput = document.getElementById('billing-number');
+                                if (!billingNumberInput) {
+                                    data.billing_number = extractedNumber;
+                                } else {
+                                    data.billing_number = billingNumberInput.value;
+                                }
+                                window.wc.blocksCheckout.extensionCartUpdate({
+                                    namespace: 'woo_better_number_validation',
+                                    data: data
+                                });
+                            }, 100);
                         }
 
                         // Criando o checkbox
@@ -73,7 +117,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         shippingCheckboxInput.type = 'checkbox';
                         shippingCheckboxInput.setAttribute('aria-invalid', 'false');
                         // Estado inicial do checkbox/input
-                        if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.shipping_number === 'S/N') {
+                        if (initialValue === 'S/N') {
                             shippingCheckboxInput.checked = true;
                             input.disabled = true;
                             input.style.backgroundColor = '#e0e0e0';
@@ -83,12 +127,12 @@ document.addEventListener("DOMContentLoaded", function () {
                         input.addEventListener('input', function () {
                             let val = input.value.trim();
                             if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-                                let data = { woo_better_shipping_number: val, woo_better_billing_number: '' };
+                                let data = { shipping_number: val, billing_number: '' };
                                 const billingNumberInput = document.getElementById('billing-number');
                                 if (!billingNumberInput) {
-                                    data.woo_better_billing_number = val;
+                                    data.billing_number = val;
                                 } else {
-                                    data.woo_better_billing_number = billingNumberInput.value;
+                                    data.billing_number = billingNumberInput.value;
                                 }
                                 window.wc.blocksCheckout.extensionCartUpdate({
                                     namespace: 'woo_better_number_validation',
@@ -151,7 +195,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         checkboxInput.type = 'checkbox';
                         checkboxInput.setAttribute('aria-invalid', 'false');
                         // Estado inicial do checkbox/input
-                        if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.shipping_number === 'S/N') {
+                        if (initialValue === 'S/N') {
                             checkboxInput.checked = true;
                             input.disabled = true;
                             input.style.backgroundColor = '#e0e0e0';
@@ -161,12 +205,12 @@ document.addEventListener("DOMContentLoaded", function () {
                         checkboxInput.addEventListener('change', function () {
                             let val = this.checked ? 'S/N' : '';
                             if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-                                let data = { woo_better_shipping_number: val, woo_better_billing_number: '' };
+                                let data = { shipping_number: val, billing_number: '' };
                                 const billingNumberInput = document.getElementById('billing-number');
                                 if (!billingNumberInput) {
-                                    data.woo_better_billing_number = val;
+                                    data.billing_number = val;
                                 } else {
-                                    data.woo_better_billing_number = billingNumberInput.value;
+                                    data.billing_number = billingNumberInput.value;
                                 }
                                 window.wc.blocksCheckout.extensionCartUpdate({
                                     namespace: 'woo_better_number_validation',
@@ -360,10 +404,54 @@ document.addEventListener("DOMContentLoaded", function () {
                 input.setAttribute('aria-invalid', 'false');
                 input.setAttribute('autocapitalize', 'sentences');
                 // Valor inicial
-                const initialValue = (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.billing_number) ? WooBetterNumberData.billing_number : '';
+                let initialValue = '';
+                let extractedNumber = '';
+                
+                if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.billing_number) {
+                    initialValue = WooBetterNumberData.billing_number;
+                } else {
+                    // Tenta extrair número do endereço se não houver dados salvos
+                    const addressInput = billingAddress1.querySelector('input');
+                    if (addressInput && addressInput.value) {
+                        const addressValue = addressInput.value.trim();
+                        // Regex para capturar número no final do endereço
+                        const numberMatch = addressValue.match(/[–-]\s*(\d+|S\/N)\s*$/);
+                        if (numberMatch) {
+                            extractedNumber = numberMatch[1];
+                            initialValue = extractedNumber;
+                            
+                            // Remove o número do endereço
+                            const cleanAddress = addressValue.replace(/\s*[–-]\s*(\d+|S\/N)\s*$/, '').trim();
+                            if (cleanAddress !== addressValue) {
+                                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                nativeSetter.call(addressInput, cleanAddress);
+                                addressInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        }
+                    } else {
+                    }
+                }
+                
                 input.value = initialValue;
                 if (initialValue !== '') {
                     customInputDiv.classList.add('is-active'); // animação label
+                }
+                
+                // Se extraiu número automaticamente, atualiza Store API
+                if (extractedNumber && window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                    setTimeout(() => {
+                        let data = { shipping_number: '', billing_number: extractedNumber };
+                        const shippingNumberInput = document.getElementById('shipping-number');
+                        if (!shippingNumberInput) {
+                            data.shipping_number = extractedNumber;
+                        } else {
+                            data.shipping_number = shippingNumberInput.value;
+                        }
+                        window.wc.blocksCheckout.extensionCartUpdate({
+                            namespace: 'woo_better_number_validation',
+                            data: data
+                        });
+                    }, 100);
                 }
 
                 // Criando o checkbox
@@ -373,7 +461,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 billingCheckboxInput.type = 'checkbox';
                 billingCheckboxInput.setAttribute('aria-invalid', 'false');
                 // Estado inicial do checkbox/input
-                if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.billing_number === 'S/N') {
+                if (initialValue === 'S/N') {
                     billingCheckboxInput.checked = true;
                     input.disabled = true;
                     input.style.backgroundColor = '#e0e0e0';
@@ -383,12 +471,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 input.addEventListener('input', function () {
                     let val = input.value.trim();
                     if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-                        let data = { woo_better_shipping_number: '', woo_better_billing_number: val };
+                        let data = { shipping_number: '', billing_number: val };
                         const shippingNumberInput = document.getElementById('shipping-number');
                         if (!shippingNumberInput) {
-                            data.woo_better_shipping_number = val;
+                            data.shipping_number = val;
                         } else {
-                            data.woo_better_shipping_number = shippingNumberInput.value;
+                            data.shipping_number = shippingNumberInput.value;
                         }
 
                         window.wc.blocksCheckout.extensionCartUpdate({
@@ -452,7 +540,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 checkboxInput.type = 'checkbox';
                 checkboxInput.setAttribute('aria-invalid', 'false');
                 // Estado inicial do checkbox/input
-                if (typeof WooBetterNumberData !== 'undefined' && WooBetterNumberData.billing_number === 'S/N') {
+                if (initialValue === 'S/N') {
                     checkboxInput.checked = true;
                     input.disabled = true;
                     input.style.backgroundColor = '#e0e0e0';
@@ -462,12 +550,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 checkboxInput.addEventListener('change', function () {
                     let val = this.checked ? 'S/N' : '';
                     if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-                        let data = { woo_better_shipping_number: '', woo_better_billing_number: val };
+                        let data = { shipping_number: '', billing_number: val };
                         const shippingNumberInput = document.getElementById('shipping-number');
                         if (!shippingNumberInput) {
-                            data.woo_better_shipping_number = val;
+                            data.shipping_number = val;
                         } else {
-                            data.woo_better_shipping_number = shippingNumberInput.value;
+                            data.shipping_number = shippingNumberInput.value;
                         }
                         window.wc.blocksCheckout.extensionCartUpdate({
                             namespace: 'woo_better_number_validation',
@@ -571,11 +659,11 @@ document.addEventListener("DOMContentLoaded", function () {
                         const numberData = currentData['woo_better_number_validation'] || {};
                         
                         // Inicializar os campos de número se não existirem
-                        if (!numberData.hasOwnProperty('woo_better_shipping_number')) {
-                            numberData['woo_better_shipping_number'] = '';
+                        if (!numberData.hasOwnProperty('shipping_number')) {
+                            numberData['shipping_number'] = '';
                         }
-                        if (!numberData.hasOwnProperty('woo_better_billing_number')) {
-                            numberData['woo_better_billing_number'] = '';
+                        if (!numberData.hasOwnProperty('billing_number')) {
+                            numberData['billing_number'] = '';
                         }
                         
                         checkoutDispatch.setExtensionData('woo_better_number_validation', numberData);
@@ -601,8 +689,8 @@ document.addEventListener("DOMContentLoaded", function () {
                         const billingNumberInput = document.getElementById('billing-number');
                         
                         const numberData = {
-                            woo_better_shipping_number: shippingNumberInput ? shippingNumberInput.value : '',
-                            woo_better_billing_number: billingNumberInput ? billingNumberInput.value : ''
+                            shipping_number: shippingNumberInput ? shippingNumberInput.value : '',
+                            billing_number: billingNumberInput ? billingNumberInput.value : ''
                         };
                         
                         checkoutDispatch.setExtensionData('woo_better_number_validation', numberData);

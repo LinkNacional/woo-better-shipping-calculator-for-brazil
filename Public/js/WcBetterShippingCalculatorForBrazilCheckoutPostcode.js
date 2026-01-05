@@ -79,7 +79,8 @@ jQuery(function ($) {
             { id: `${type}-address_1`, key: 'address' },
             { id: `${type}-address_2`, key: 'address_2' },
             { id: `${type}-city`, key: 'city' },
-            { id: `${type}-state`, key: 'state' }
+            { id: `${type}-state`, key: 'state' },
+            { id: `${type}-neighborhood`, key: 'district' }  // Adiciona campo de bairro
         ];
 
         fieldMap.forEach(field => {
@@ -102,12 +103,22 @@ jQuery(function ($) {
                     }
                 }
             } else if (field.key === 'address') {
-                // Para o campo endereço principal, sempre atualiza se tiver valor
+                // Para o campo endereço principal, verifica se existe campo de bairro
+                const neighborhoodField = document.getElementById(`${type}-neighborhood`);
+                const hasNeighborhoodField = neighborhoodField !== null;
+                
                 if (value && value.trim() !== '') {
+                    let finalAddressValue = value;
+                    
+                    // Se NÃO tem campo de bairro E tem bairro na API, concatena como fallback
+                    if (!hasNeighborhoodField && apiData.district && apiData.district.trim() !== '') {
+                        finalAddressValue = `${value} - ${apiData.district}`;
+                    }
+                    
                     const currentValue = input.value;
-                    if (currentValue !== value) {
+                    if (currentValue !== finalAddressValue) {
                         const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                        nativeSetter.call(input, value);
+                        nativeSetter.call(input, finalAddressValue);
                         if (skipCheck || updateCount <= 1) {
                             input.dispatchEvent(new Event('input', { bubbles: true }));
                         }
@@ -122,6 +133,27 @@ jQuery(function ($) {
                         nativeSetter.call(input, value);
                         if (skipCheck || updateCount <= 1) {
                             input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    }
+                }
+            } else if (field.key === 'district') {
+                // Para bairro, tenta preencher no campo específico apenas se ele existir
+                const hasNeighborhoodField = input !== null;
+                
+                // Só preenche o campo de bairro se ele realmente existir
+                if (hasNeighborhoodField && value && value.trim() !== '') {
+                    const currentValue = input.value;
+                    if (currentValue !== value) {
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(input, value);
+                        if (skipCheck || updateCount <= 1) {
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                        
+                        // Adiciona classe is-active se o campo tiver valor
+                        const fieldContainer = input.closest('.wc-block-components-text-input');
+                        if (fieldContainer) {
+                            fieldContainer.classList.add('is-active');
                         }
                     }
                 }
@@ -231,6 +263,7 @@ jQuery(function ($) {
             this.checkboxInput = this.checkboxLabel.find('input[type="checkbox"]');
             // Adiciona evento de change para disparar AJAX
             this.checkboxInput.on('change.wcBetterCep', this.handleCheckboxChange.bind(this));
+            
             // Verifica se já existe um CEP preenchido ao carregar
             const initialCep = this.sanitizeCep(this.input.val());
             if (this.isValidCep(initialCep)) {
@@ -279,7 +312,6 @@ jQuery(function ($) {
             this._requestInProgress = false;
         }
         async handleCheckboxChange(event) {
-            
             if (!enableCheckbox) {
                 return; // Não executa requisições nem lógica do checkbox
             }
@@ -467,13 +499,13 @@ jQuery(function ($) {
                 this._loadingPulse = null;
             }
             const $labelSpan = this.checkboxLabel.find('.wc-block-components-checkbox__label');
-            // Monta label dinâmica
+            // Monta label dinâmica sem o bairro (que agora vai para campo próprio)
             let parts = [];
             if (address.address) parts.push(address.address);
             if (address.city) parts.push(address.city);
-            if (address.district) parts.push(address.district);
             if (address.state) parts.push(address.state);
             const labelText = `Endereço inserido: ${parts.join(' - ')}`;
+            
             $labelSpan.stop(true, true).css('opacity', 1).text(labelText).show();
         }
         async handleInput(event) {
@@ -581,8 +613,10 @@ jQuery(function ($) {
                 const previousAddress = this.addressData;
                 const previousCep = previousAddress && previousAddress._rawCep ? previousAddress._rawCep : null;
                 const currentRawCep = this.input.val();
+                
                 this.addressData = { ...address, _rawCep: currentRawCep };
                 this.updateCheckboxLabel(address);
+                
                 $checkboxInput.prop('disabled', false);
                 $checkboxInput.removeClass('wc-better-checkbox-disabled');
                 $checkboxLabel.removeClass('wc-better-checkbox-disabled-label');
@@ -704,12 +738,14 @@ jQuery(function ($) {
                 const data = await response.json();
                 
                 if (data.cep) {
-                    return {
+                    const addressData = {
                         city: data.city,
                         state: data.state,
                         address: data.street,
                         district: data.neighborhood || '',
                     };
+                    
+                    return addressData;
                 }
             } catch (e) {
                 if (e.name === 'AbortError') throw e;
@@ -732,12 +768,14 @@ jQuery(function ($) {
                 const data = await response.json();
                 
                 if (data.cep && !data.erro) {
-                    return {
+                    const addressData = {
                         city: data.localidade,
                         state: data.uf,
                         address: data.logradouro,
                         district: data.bairro || '',
                     };
+                    
+                    return addressData;
                 }
             } catch (e) {
                 if (e.name === 'AbortError') throw e;
@@ -749,13 +787,13 @@ jQuery(function ($) {
             if (!this.checkboxLabel.length) return;
             if (this._loadingPulse) clearInterval(this._loadingPulse);
             const $labelSpan = this.checkboxLabel.find('.wc-block-components-checkbox__label');
-            // Monta label dinâmica
+            // Monta label dinâmica sem o bairro (que agora vai para campo próprio)
             let parts = [];
             if (address.address) parts.push(address.address);
             if (address.city) parts.push(address.city);
-            if (address.district) parts.push(address.district);
             if (address.state) parts.push(address.state);
             const labelText = `Usar o endereço: ${parts.join(' - ')}`;
+            
             $labelSpan.stop(true, true).text(labelText).show();
         }
     }
@@ -793,14 +831,22 @@ jQuery(function ($) {
             var billingNumber = (window.wc_better_checkout_vars && window.wc_better_checkout_vars.billing_number) || '';
             var shippingNumber = (window.wc_better_checkout_vars && window.wc_better_checkout_vars.shipping_number) || '';
             var numero = (baseId === 'billing' ? billingNumber : shippingNumber);
-            if (numero && $addressInput.length) {
+            
+            // Só remove o número se ele existir nos dados e ainda não foi processado
+            if (numero && $addressInput.length && !$addressInput.data('number-processed')) {
                 var currentValue = $addressInput.val();
-                // Remove apenas o número do final, preservando o bairro
-                var regex = new RegExp('\\s*[–-]\\s*' + numero.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$', 'i');
-                var newValue = currentValue.replace(regex, '');
-                var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                nativeSetter.call($addressInput[0], newValue);
-                $addressInput[0].dispatchEvent(new Event('input', { bubbles: true }));
+                if (currentValue && currentValue.includes(numero)) {
+                    // Remove apenas o número do final, preservando o bairro
+                    var regex = new RegExp('\\s*[–-]\\s*' + numero.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$', 'i');
+                    var newValue = currentValue.replace(regex, '').trim();
+                    if (newValue !== currentValue) {
+                        var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call($addressInput[0], newValue);
+                        $addressInput[0].dispatchEvent(new Event('input', { bubbles: true }));
+                        // Marca como processado para evitar múltiplas remoções
+                        $addressInput.data('number-processed', true);
+                    }
+                }
             }
 
             // Só insere o checkbox se ele ainda não existe
@@ -823,4 +869,50 @@ jQuery(function ($) {
         });
     });
     observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Verificação forçada para garantir que billing e shipping sejam processados
+    setTimeout(function() {
+        ['billing', 'shipping'].forEach(function(baseId) {
+            var $addressInput = $('#' + baseId + '-address_1');
+            
+            // Tenta múltiplos seletores para o div do postcode
+            var $divComponent = $('.wc-block-components-address-form__postcode input[id="' + baseId + '-postcode"]').parent();
+            
+            // Se não encontrou, tenta outros seletores
+            if ($divComponent.length === 0) {
+                $divComponent = $('#' + baseId + '-postcode').parent();
+            }
+            
+            if ($divComponent.length === 0) {
+                $divComponent = $('input[id="' + baseId + '-postcode"]').closest('.wc-block-components-address-form__postcode');
+            }
+            
+            var priorityClass = 'woo-better-priority-' + baseId;
+            
+            // Processa independentemente se encontrou o div ou não
+            if ($addressInput.length > 0) {
+                if ($divComponent.length > 0) {
+                    $divComponent.addClass(priorityClass);
+                }
+                
+                var billingNumber = (window.wc_better_checkout_vars && window.wc_better_checkout_vars.billing_number) || '';
+                var shippingNumber = (window.wc_better_checkout_vars && window.wc_better_checkout_vars.shipping_number) || '';
+                var numero = (baseId === 'billing' ? billingNumber : shippingNumber);
+                
+                if (numero && !$addressInput.data('number-processed')) {
+                    var currentValue = $addressInput.val();
+                    if (currentValue && currentValue.includes(numero)) {
+                        var regex = new RegExp('\\s*[–-]\\s*' + numero.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$', 'i');
+                        var newValue = currentValue.replace(regex, '').trim();
+                        if (newValue !== currentValue) {
+                            var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                            nativeSetter.call($addressInput[0], newValue);
+                            $addressInput[0].dispatchEvent(new Event('input', { bubbles: true }));
+                            $addressInput.data('number-processed', true);
+                        }
+                    }
+                }
+            }
+        });
+    }, 1000); // Executa após 1 segundo
 });

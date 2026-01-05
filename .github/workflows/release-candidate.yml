@@ -11,7 +11,7 @@ on:
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
   PHP_VERSION: "7.4"
-  DEPLOY_TAG: "4.6.0-rc.1"
+  DEPLOY_TAG: "4.7.0-rc.4"
 
 jobs:
   release-build:
@@ -39,7 +39,7 @@ jobs:
       run: |
         mkdir -p dist
         mkdir -p build/${{ env.PLUGIN_NAME }}
-        mv ./Admin ./Includes ./languages ./Public *.php *.txt ./build/${{ env.PLUGIN_NAME }}
+        cp -r ./Admin ./Includes ./languages ./Public *.php *.txt ./build/${{ env.PLUGIN_NAME }}
         cp -r vendor build/${{ env.PLUGIN_NAME }}/vendor
         find ./build -type f -exec chmod 0644 {} +
         find ./build -type d -exec chmod 0755 {} +
@@ -76,3 +76,27 @@ jobs:
         prerelease: true
         tag: ${{ steps.tag_version.outputs.new_tag }}
         name: Release ${{ steps.tag_version.outputs.new_tag }}
+
+    # Remove -rc.1 suffix from version files and commit final release version
+    - name: Update to final release version
+      run: |
+        # Extract base version from DEPLOY_TAG (remove everything after first -)
+        BASE_VERSION=$(echo "${{ env.DEPLOY_TAG }}" | cut -d'-' -f1)
+        FULL_VERSION="${{ env.DEPLOY_TAG }}"
+        
+        echo "Converting from: $FULL_VERSION to: $BASE_VERSION"
+        
+        # Remove suffix from main plugin file
+        sed -i "s/${FULL_VERSION}/${BASE_VERSION}/g" wc-better-shipping-calculator-for-brazil.php
+        
+        # Remove suffix from README.txt
+        sed -i "s/${FULL_VERSION}/${BASE_VERSION}/g" README.txt
+        
+        # Configure git
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        
+        # Commit the version changes
+        git add wc-better-shipping-calculator-for-brazil.php README.txt
+        git commit -m ":bookmark: mudança na versão para lançamento"
+        git push origin release-candidate
