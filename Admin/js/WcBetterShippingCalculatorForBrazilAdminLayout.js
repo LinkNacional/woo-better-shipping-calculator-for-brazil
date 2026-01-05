@@ -1274,13 +1274,11 @@
     // Função para adicionar preview visual para o progress bar
     function addProgressBarPreview() {
       const progressBarRadios = document.querySelectorAll('input[name="woo_better_enable_progress_bar_value"]');
-      console.log(progressBarRadios.length > 0 ? 'é verdade' : 'não existe')
       
       if (progressBarRadios.length > 0) {
         // Encontra o container principal
         const firstRadio = progressBarRadios[0];
         const formBody = firstRadio.closest('.woo-forminp-body');
-        console.log(formBody)
         
         if (formBody && !formBody.querySelector('.woo-better-progress-preview')) {
           // Obtém os caminhos das imagens via localize
