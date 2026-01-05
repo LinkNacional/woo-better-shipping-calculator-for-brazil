@@ -345,8 +345,22 @@ class WcBetterShippingCalculatorForBrazilPublic
 
             // Obtém o total dos itens do carrinho
             $cart_total = 0;
+            $only_digital_products = false;
             if (function_exists('WC') && WC()->cart) {
                 $cart_total = floatval(WC()->cart->get_subtotal());
+                
+                // Verifica se todos os produtos são digitais (virtuais ou downloadables)
+                $has_digital_only = true;
+                $has_products = false;
+                foreach (WC()->cart->get_cart() as $cart_item) {
+                    $has_products = true;
+                    $product = $cart_item['data'];
+                    if (!$product->is_virtual() && !$product->is_downloadable()) {
+                        $has_digital_only = false;
+                        break;
+                    }
+                }
+                $only_digital_products = $has_products && $has_digital_only;
             }
 
             wp_localize_script(
@@ -359,6 +373,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'min_free_shipping_success_message' => get_option('woo_better_min_free_shipping_success_message', 'Parabéns! Você tem frete grátis!'),
                     'enable_progress_bar_value' => get_option('woo_better_enable_progress_bar_value', 'no'),
                     'has_cart_block' => has_block('woocommerce/cart'),
+                    'only_digital_products' => $only_digital_products,
                     'current_url' => (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . 
                         (isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '') . 
                         (isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : ''),

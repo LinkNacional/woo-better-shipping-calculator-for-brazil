@@ -302,13 +302,18 @@
 		
 		let percent = 0;
 		let message = '';
+		let barColor = '#4caf50'; // Verde padrão
 
 		// Obtém as configurações do localize
 		const progressConfig = typeof wc_better_shipping_progress !== 'undefined' ? wc_better_shipping_progress : {};
 		const currencySymbol = progressConfig.currency_symbol || 'R$';
-		const successMessage = progressConfig.min_free_shipping_success_message || 'Parabéns! Você tem frete grátis!';
+		// Remove fallbacks automáticos - se usuário deixar vazio, fica vazio
+		const successMessage = progressConfig.min_free_shipping_success_message || '';
 		const enableProgressBarValue = progressConfig.enable_progress_bar_value !== 'no'; // padrão é true
-		let progressMessage = progressConfig.min_free_shipping_message || 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS';
+		let progressMessage = progressConfig.min_free_shipping_message || '';
+		
+		// Verifica se carrinho tem apenas produtos digitais
+		const onlyDigitalProducts = progressConfig.only_digital_products || false;
 
 		// Se está carregando, mantém os valores anteriores
 		let barText = '';
@@ -316,8 +321,14 @@
 			percent = lastValidPercent;
 			message = 'Carregando...';
 			barText = enableProgressBarValue ? 'Carregando...' : '';
+		} else if (onlyDigitalProducts) {
+			// Caso especial: apenas produtos digitais
+			percent = 100;
+			barColor = '#9e9e9e'; // Cinza para produtos digitais
+			message = 'Carrinho contém apenas produto(s) digital(s).';
+			barText = enableProgressBarValue ? 'Digital' : '';
 		} else {
-			// Calcula novos valores
+			// Calcula novos valores para produtos físicos
 			if (minValue <= 0) {
 				percent = 100;
 				message = successMessage;
@@ -359,7 +370,7 @@
 			// Cria a barra de progresso
 			let progressBar = document.createElement('div');
 			progressBar.className = 'wc-better-shipping-progress';
-			progressBar.style.background = '#4caf50';
+			progressBar.style.background = barColor;
 			progressBar.style.width = percent + '%';
 			progressBar.style.height = '100%';
 			progressBar.style.transition = 'width 0.5s ease-in-out';
@@ -472,7 +483,7 @@
 					} else {
 						bar.classList.remove('loading');
 						bar.style.width = percent + '%';
-						bar.style.background = '#4caf50';
+						bar.style.background = barColor;
 						bar.style.animation = 'none';
 					}
 				}

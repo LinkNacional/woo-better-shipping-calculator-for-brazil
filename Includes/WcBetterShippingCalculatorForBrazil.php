@@ -467,6 +467,11 @@ class WcBetterShippingCalculatorForBrazil
             // Passa os dados para o JavaScript
             wp_localize_script('wc-better-calc-settings-layout', 'WCBetterCalcIcons', $icons);
 
+            wp_localize_script('wc-better-calc-settings-layout', 'WCBetterCalcBarImages', array(
+                'with_label' => plugin_dir_url(__FILE__) . 'assets/images/barWithLabel.png',
+                'without_label' => plugin_dir_url(__FILE__) . 'assets/images/barWithoutLabel.png',
+            ));
+
             // Verifica a versão do WooCommerce
             $woo_version_valid = version_compare(WC_VERSION, '10.0.0', '>=') ? 'valid' : 'invalid';
 
@@ -3648,16 +3653,17 @@ class WcBetterShippingCalculatorForBrazil
             ),
         );
 
-        // Calcula o frete para o pacote usando a sessão do WooCommerce
-        // Isto garantirá que todos os hooks sejam executados
-        WC()->shipping()->reset_shipping();
+        // Calcula o frete sem afetar o carrinho atual
+        // Salva o estado atual do carrinho e customer
+        $saved_cart_contents = WC()->cart->get_cart_contents();
+        $saved_customer_shipping = array(
+            'country'   => WC()->customer->get_shipping_country(),
+            'state'     => WC()->customer->get_shipping_state(),
+            'postcode'  => WC()->customer->get_shipping_postcode(),
+            'city'      => WC()->customer->get_shipping_city(),
+        );
         
-        // Define temporariamente o carrinho com o produto para calcular o frete corretamente
-        $saved_cart = WC()->cart->get_cart();
-        WC()->cart->empty_cart();
-        WC()->cart->add_to_cart($product_id, $quantity);
-        
-        // Define o endereço de entrega na sessão
+        // Define temporariamente o endereço de entrega para o cálculo
         WC()->customer->set_shipping_location(
             $shipping_data['country'],
             $shipping_data['state'], 
@@ -3665,7 +3671,15 @@ class WcBetterShippingCalculatorForBrazil
             $shipping_data['city']
         );
         
-        // Força recalcular totais para aplicar hooks de frete
+        // Salva o carrinho atual temporariamente
+        $original_cart_contents = WC()->cart->get_cart_contents();
+        
+        // Limpa o carrinho temporariamente e adiciona apenas o produto para consulta
+        WC()->cart->empty_cart(false); // false = não triggerar hooks
+        WC()->cart->add_to_cart($product_id, $quantity);
+        
+        // Calcula o frete usando o sistema padrão do WooCommerce
+        WC()->shipping()->reset_shipping();
         WC()->cart->calculate_totals();
         
         // Obtém os pacotes de envio calculados
@@ -3682,7 +3696,7 @@ class WcBetterShippingCalculatorForBrazil
             'currency_minor_unit' => $currency_minor_unit,
         );
 
-        // Itera pelos pacotes e extrai as taxas de envio
+        // Extrai as taxas de envio dos pacotes
         foreach ($packages as $package) {
             if (isset($package['rates']) && is_array($package['rates'])) {
                 foreach ($package['rates'] as $rate) {
@@ -3696,10 +3710,27 @@ class WcBetterShippingCalculatorForBrazil
         }
         
         // Restaura o carrinho original
-        WC()->cart->empty_cart();
-        foreach ($saved_cart as $cart_item_key => $cart_item) {
-            WC()->cart->restore_cart_item($cart_item_key, $cart_item);
+        WC()->cart->empty_cart(false); // false = não triggerar hooks
+        foreach ($original_cart_contents as $cart_item_key => $cart_item) {
+            WC()->cart->add_to_cart(
+                $cart_item['product_id'],
+                $cart_item['quantity'],
+                $cart_item['variation_id'],
+                $cart_item['variation'],
+                $cart_item
+            );
         }
+        
+        // Recalcula totais com o carrinho restaurado
+        WC()->cart->calculate_totals();
+        
+        // Restaura o endereço original do customer sem afetar o carrinho
+        WC()->customer->set_shipping_location(
+            $saved_customer_shipping['country'],
+            $saved_customer_shipping['state'],
+            $saved_customer_shipping['postcode'],
+            $saved_customer_shipping['city']
+        );
 
         // Retorna os valores calculados
         wp_send_json_success(array(
@@ -4823,7 +4854,7 @@ class WcBetterShippingCalculatorForBrazil
                 'placeholder' => __('(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
                 'class'       => array('form-row-wide'),
-                'priority'    => 50,
+                'priority'    => 90,
                 'type'        => 'tel',
                 'validate'    => array('phone')
             );
