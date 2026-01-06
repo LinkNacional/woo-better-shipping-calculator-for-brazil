@@ -304,12 +304,6 @@ document.addEventListener("DOMContentLoaded", function () {
             containerObserver = null;
         }
         
-        // Manter compatibilidade com observer antigo
-        if (billingBlockObserver) {
-            billingBlockObserver.disconnect();
-            billingBlockObserver = null;
-        }
-        
         // Limpar dados do Store API
         clearPersonTypeDataFromStore();
     }
