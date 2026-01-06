@@ -120,6 +120,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+= 4.7.1 - 06/01/2026
+* Fix: dynamic CPF/CNPJ field in block editor.
+
 = 4.7.0 - 23/12/2025
 * NEW: CPF/CNPJ field
 * NEW: Neighborhood field.
