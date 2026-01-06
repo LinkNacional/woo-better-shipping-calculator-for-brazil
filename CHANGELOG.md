@@ -1,3 +1,6 @@
+# 4.7.1 - 06/12/26
+* Ajuste: campo de CPFJ/CNPJ dinamico no editor de blocos.
+
 # 4.7.0 - 23/12/25
 * NOVO: Campo de CPF/CNPJ
 * NOVO: Campo de Bairro.
