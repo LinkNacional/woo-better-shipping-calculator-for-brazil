@@ -243,6 +243,31 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    /**
+     * Verifica se devemos validar o campo company baseado no documento atual
+     * @returns {boolean} - true se devemos validar o campo company
+     */
+    function shouldValidateCompanyField() {
+        const billingDocumentInput = document.getElementById('billing_document');
+        
+        if (!billingDocumentInput || !billingDocumentInput.value.trim()) {
+            return false;
+        }
+        
+        const documentValue = billingDocumentInput.value.trim();
+        const cleanValue = documentValue.replace(/\D/g, '');
+        const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
+        const detectedType = detectDocumentType(cleanValue, personTypeConfig);
+        
+        // Só validar company se for CNPJ completo (14 dígitos) e válido
+        if (detectedType === 'cnpj' && cleanValue.length === 14) {
+            const validation = validateDocument(cleanValue);
+            return validation.isValid && validation.type === 'cnpj';
+        }
+        
+        return false;
+    }
+
     // Função para verificar se está usando mesmo endereço para cobrança
     function isUsingSameAddressForBilling() {
         const checkbox = document.querySelector('input[type="checkbox"][id^="checkbox-control"]');
@@ -549,8 +574,11 @@ document.addEventListener("DOMContentLoaded", function () {
                                           companyInput.parentElement;
                     }
                     
-                    if (companyInput && companyContainer && companyContainer.style.display === 'block') {
-                        // Campo company está visível, validar se está preenchido para CNPJ
+                    // Verificar se o documento é realmente CNPJ antes de validar company
+                    const shouldValidate = shouldValidateCompanyField();
+                    
+                    if (companyInput && companyContainer && shouldValidate && companyContainer.style.display === 'block') {
+                        // Campo company está visível e documento é CNPJ válido, validar se está preenchido
                         const companyValue = companyInput.value.trim();
                         
                         if (!companyValue) {
@@ -565,7 +593,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             companyInput.setAttribute('aria-invalid', 'true');
                             
                             // Mostrar mensagem de erro
-                            showCompanyValidationError('Este campo é obrigatório.');
+                            showCompanyValidationError('Este campo é obrigatório para CNPJ.');
                             
                             // Scroll para o campo
                             companyInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -582,6 +610,18 @@ document.addEventListener("DOMContentLoaded", function () {
                                 companyInput.style.borderColor = '';
                             }
                             companyInput.setAttribute('aria-invalid', 'false');
+                            hideCompanyValidationError();
+                        }
+                    } else {
+                        // Se não devemos validar company (CPF ou documento inválido), remover qualquer erro
+                        if (companyContainer) {
+                            companyContainer.classList.remove('has-error');
+                            if (companyInput && companyInput.style) {
+                                companyInput.style.borderColor = '';
+                            }
+                            if (companyInput) {
+                                companyInput.setAttribute('aria-invalid', 'false');
+                            }
                             hideCompanyValidationError();
                         }
                     }
@@ -1009,14 +1049,25 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!input.value || !input.value.trim()) {
                 fieldContainer.classList.remove('is-active');
                 
-                // Se o campo está visível e vazio, exibir erro
-                if (fieldContainer.style.display === 'block') {
-                    showCompanyValidationError('Este campo é obrigatório.');
+                // Verificar se o campo deve ser validado baseado no tipo de documento
+                const shouldValidate = shouldValidateCompanyField();
+                
+                // Se o campo está visível e devemos validar (CNPJ válido), exibir erro
+                if (fieldContainer.style.display === 'block' && shouldValidate) {
+                    showCompanyValidationError('Este campo é obrigatório para CNPJ.');
                     fieldContainer.classList.add('has-error');
                     if (input.style) {
                         input.style.borderColor = '#d63638';
                     }
                     input.setAttribute('aria-invalid', 'true');
+                } else {
+                    // Se não devemos validar, remover erro
+                    hideCompanyValidationError();
+                    fieldContainer.classList.remove('has-error');
+                    if (input.style) {
+                        input.style.borderColor = '';
+                    }
+                    input.setAttribute('aria-invalid', 'false');
                 }
             } else {
                 // Se tem conteúdo, remover erro
@@ -1178,6 +1229,35 @@ document.addEventListener("DOMContentLoaded", function () {
             input.addEventListener('blur', () => {
                 if (!input.value || !input.value.trim()) {
                     container.classList.remove('is-active');
+                    
+                    // Verificar se devemos validar o campo company baseado no documento
+                    const shouldValidate = shouldValidateCompanyField();
+                    
+                    if (shouldValidate && container.style.display !== 'none') {
+                        // Campo deve ser validado e está visível
+                        showCompanyValidationError('Este campo é obrigatório para CNPJ.');
+                        container.classList.add('has-error');
+                        if (input.style) {
+                            input.style.borderColor = '#d63638';
+                        }
+                        input.setAttribute('aria-invalid', 'true');
+                    } else {
+                        // Não devemos validar ou campo está oculto
+                        hideCompanyValidationError();
+                        container.classList.remove('has-error');
+                        if (input.style) {
+                            input.style.borderColor = '';
+                        }
+                        input.setAttribute('aria-invalid', 'false');
+                    }
+                } else {
+                    // Se tem conteúdo, sempre remover erro
+                    hideCompanyValidationError();
+                    container.classList.remove('has-error');
+                    if (input.style) {
+                        input.style.borderColor = '';
+                    }
+                    input.setAttribute('aria-invalid', 'false');
                 }
             });
             
@@ -1391,6 +1471,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     companyInput.style.borderColor = '';
                 }
                 companyInput.setAttribute('aria-invalid', 'false');
+                // Garantir que o erro também seja removido da UI
+                hideCompanyValidationError();
             }
         }
         
