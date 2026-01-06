@@ -37,6 +37,86 @@ document.addEventListener("DOMContentLoaded", function () {
     shippingCompanyObserver.observe(document.body, { childList: true, subtree: true });
 
     /**
+     * Observer específico para monitorar o container (billing ou shipping) e recriar campos quando necessário
+     */
+    let containerObserver = null;
+
+    function startContainerObserver(container, containerType) {
+        if (containerObserver) {
+            containerObserver.disconnect();
+        }
+
+        if (!container) {
+            return;
+        }
+
+        containerObserver = new MutationObserver((mutations) => {
+            // Só processar se for Brasil
+            if (!isBrazilSelected()) {
+                return;
+            }
+
+            let shouldCheckFields = false;
+
+            mutations.forEach((mutation) => {
+                // Verificar se houve mudanças nos filhos do container
+                if (mutation.type === 'childList') {
+                    // Se elementos foram adicionados ou removidos, verificar campos
+                    if (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0) {
+                        shouldCheckFields = true;
+                    }
+                }
+            });
+
+            if (shouldCheckFields) {
+                setTimeout(() => {
+                    const editButton = document.querySelector(`span.wc-block-components-address-card__edit[aria-controls="${containerType}"]`);
+                    const documentField = document.getElementById('billing_document');
+                    
+                    // Se container está expandido mas campos customizados não existem, recriar
+                    if (editButton && editButton.getAttribute('aria-expanded') === 'true' && !documentField) {
+                        const currentContainer = document.querySelector(`#${containerType}`);
+                        if (currentContainer) {
+                            // Resetar flag para permitir recriação
+                            personTypeFieldsActive = false;
+                            billingBlockFound = false;
+                            
+                            // Recriar campos
+                            handlePersonTypeContainer(currentContainer, containerType);
+                            
+                            // Sincronizar campos após recriação
+                            setTimeout(() => {
+                                const documentInput = document.getElementById('billing_document');
+                                if (documentInput && documentInput.value) {
+                                    const cleanValue = documentInput.value.replace(/\D/g, '');
+                                    const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
+                                    const detectedType = detectDocumentType(cleanValue, personTypeConfig);
+                                    updateHiddenFields(documentInput.value, detectedType);
+                                    updatePersonTypeData(true);
+                                }
+                            }, 400);
+                        }
+                    }
+                }, 200);
+            }
+        });
+
+        containerObserver.observe(container, {
+            childList: true,
+            subtree: true,
+            attributes: false
+        });
+    }
+
+    // Manter função original para compatibilidade
+    function startBillingBlockObserver() {
+        const billingBlock = document.querySelector('#billing');
+        if (billingBlock) {
+            startContainerObserver(billingBlock, 'billing');
+        }
+    }
+
+    /**
      * Valida CPF usando algoritmo matemático
      * @param {string} cpf - CPF apenas com números
      * @returns {boolean}
@@ -163,11 +243,27 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    // Função para verificar se está usando mesmo endereço para cobrança
+    function isUsingSameAddressForBilling() {
+        const checkbox = document.querySelector('input[type="checkbox"][id^="checkbox-control"]');
+        if (checkbox) {
+            // Verifica se o checkbox está dentro do container correto
+            const checkboxContainer = checkbox.closest('.wc-block-checkout__use-address-for-billing');
+            if (checkboxContainer) {
+                return checkbox.checked;
+            }
+        }
+        return false;
+    }
+
     // Função para verificar se o país selecionado é Brasil
     function isBrazilSelected() {
         const countryField = document.querySelector('#billing-country') ||
+                           document.querySelector('#shipping-country') ||
                            document.querySelector('select[name="billing_country"]') ||
-                           document.querySelector('input[name="billing_country"]');
+                           document.querySelector('select[name="shipping_country"]') ||
+                           document.querySelector('input[name="billing_country"]') ||
+                           document.querySelector('input[name="shipping_country"]');
         
         if (countryField) {
             return countryField.value === 'BR';
@@ -200,6 +296,19 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         
         personTypeFieldsActive = false;
+        billingBlockFound = false;
+        
+        // Desconectar observer específico do container
+        if (containerObserver) {
+            containerObserver.disconnect();
+            containerObserver = null;
+        }
+        
+        // Manter compatibilidade com observer antigo
+        if (billingBlockObserver) {
+            billingBlockObserver.disconnect();
+            billingBlockObserver = null;
+        }
         
         // Limpar dados do Store API
         clearPersonTypeDataFromStore();
@@ -249,18 +358,85 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         const billingBlock = document.querySelector('#billing')
+        const shippingBlock = document.querySelector('#shipping')
+        const useSameAddress = isUsingSameAddressForBilling()
 
-        if (!billingBlock) {
+        // Determinar qual container usar baseado no checkbox
+        let targetContainer = useSameAddress ? shippingBlock : billingBlock;
+        let containerType = useSameAddress ? 'shipping' : 'billing';
+
+        if (!targetContainer) {
             billingBlockFound = false
             intervalCount = 0
+            personTypeFieldsActive = false
         }
 
-        if (billingBlock && !billingBlockFound) {
-            billingPersonTypeHandle(billingBlock)
+        if (targetContainer && !billingBlockFound) {
+            handlePersonTypeContainer(targetContainer, containerType)
+        }
+
+        // Verificar se os campos customizados ainda existem quando container existe
+        if (targetContainer && billingBlockFound) {
+            const documentField = document.getElementById('billing_document');
+            const editButton = document.querySelector(`span.wc-block-components-address-card__edit[aria-controls="${containerType}"]`);
+            
+            // Se o container existe, está expandido, mas nossos campos não existem, recriar
+            if (editButton && editButton.getAttribute('aria-expanded') === 'true' && !documentField) {
+                // Resetar flags para permitir recriação
+                personTypeFieldsActive = false;
+                billingBlockFound = false;
+                
+                setTimeout(() => {
+                    handlePersonTypeContainer(targetContainer, containerType);
+                }, 100);
+            }
+        }
+
+        // Detectar se o container foi completamente recriado (nova instância)
+        if (targetContainer && billingBlockFound && personTypeFieldsActive) {
+            const currentLastName = targetContainer.querySelector(`#${containerType}-last_name`);
+            const documentField = document.getElementById('billing_document');
+            
+            // Se existe last_name mas não existe nosso campo customizado
+            if (currentLastName && !documentField) {
+                const editButton = document.querySelector(`span.wc-block-components-address-card__edit[aria-controls="${containerType}"]`);
+                
+                if (editButton && editButton.getAttribute('aria-expanded') === 'true') {
+                    // O container foi recriado, precisamos recriar nossos campos
+                    personTypeFieldsActive = false;
+                    setTimeout(() => {
+                        addPersonTypeFields(targetContainer, containerType);
+                        startBillingBlockObserver(); // Reiniciar observer específico
+                    }, 200);
+                }
+            }
+        }
+
+        // Observar mudanças no checkbox de mesmo endereço
+        const sameAddressCheckbox = document.querySelector('.wc-block-checkout__use-address-for-billing input[type="checkbox"]');
+        if (sameAddressCheckbox && !sameAddressCheckbox.dataset.personTypeListener) {
+            sameAddressCheckbox.addEventListener('change', function() {
+                setTimeout(() => {
+                    if (personTypeFieldsActive) {
+                        // Remover campos do container atual
+                        removePersonTypeFields();
+                        
+                        // Recriar nos container apropriado
+                        const newUseSameAddress = isUsingSameAddressForBilling();
+                        const newTargetContainer = newUseSameAddress ? document.querySelector('#shipping') : document.querySelector('#billing');
+                        const newContainerType = newUseSameAddress ? 'shipping' : 'billing';
+                        
+                        if (newTargetContainer) {
+                            handlePersonTypeContainer(newTargetContainer, newContainerType);
+                        }
+                    }
+                }, 300);
+            });
+            sameAddressCheckbox.dataset.personTypeListener = 'true';
         }
 
         // Observar mudanças no campo de país
-        const countryField = document.querySelector('#billing-country');
+        const countryField = document.querySelector('#billing-country') || document.querySelector('#shipping-country');
         if (countryField && !countryObserver) {
             observeCountryChanges();
         }
@@ -423,34 +599,41 @@ document.addEventListener("DOMContentLoaded", function () {
     // Configuração do observer para observar mudanças no corpo do documento
     observer.observe(document.body, { childList: true, subtree: true });
 
-    function billingPersonTypeHandle(billingBlock) {
+    function handlePersonTypeContainer(container, containerType) {
         // Só processar se o país for Brasil
         if (!isBrazilSelected()) {
             return;
         }
 
-        const editBillingButton = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="billing"]');
+        const editButton = document.querySelector(`span.wc-block-components-address-card__edit[aria-controls="${containerType}"]`);
         
-        if (!editBillingButton) {
+        if (!editButton) {
             return;
         }
 
-        if (editBillingButton.getAttribute('aria-expanded') != 'true') {
-            editBillingButton.click()
+        if (editButton.getAttribute('aria-expanded') != 'true') {
+            editButton.click()
         }
 
-        if (editBillingButton.getAttribute('aria-expanded') == 'true') {
+        if (editButton.getAttribute('aria-expanded') == 'true') {
             
             // Aguardar um pouco para que os campos sejam renderizados
             setTimeout(() => {
-                addPersonTypeFields(billingBlock);
+                addPersonTypeFields(container, containerType);
             }, 300);
 
             billingBlockFound = true
+            
+            // Iniciar observer específico para o container
+            startContainerObserver(container, containerType);
         }
     }
 
-    function addPersonTypeFields(billingBlock) {
+    function billingPersonTypeHandle(billingBlock) {
+        return handlePersonTypeContainer(billingBlock, 'billing');
+    }
+
+    function addPersonTypeFields(container, containerType = 'billing') {
         // Só adicionar campos se o país for Brasil
         if (!isBrazilSelected()) {
             return;
@@ -461,9 +644,9 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const billingLastName = billingBlock.querySelector('#billing-last_name');
+        const lastNameField = container.querySelector(`#${containerType}-last_name`);
         
-        if (!billingLastName) {
+        if (!lastNameField) {
             return;
         }
 
@@ -507,7 +690,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
         const showSelect = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.show_select : true;
 
-        let lastInsertedElement = billingLastName.parentElement; // Começar da div pai do last_name
+        let lastInsertedElement = lastNameField.parentElement; // Começar da div pai do last_name
 
         // Determinar valor inicial do documento (usar dados salvos ou dados do PHP)
         initialDocument = initialDocument || savedPersonTypeData.billing_document || '';
@@ -575,9 +758,30 @@ document.addEventListener("DOMContentLoaded", function () {
                     // Executar evento de input para manter sincronização
                     const inputEvent = new Event('input', { bubbles: true });
                     documentInput.dispatchEvent(inputEvent);
+                    
+                    // Garantir que a detecção de tipo seja executada
+                    const cleanValue = documentInput.value.replace(/\D/g, '');
+                    const detectedType = detectDocumentType(cleanValue, personTypeConfig);
+                    updateHiddenFields(documentInput.value, detectedType);
                 }
             }, 100);
         }
+
+        // Forçar sincronização inicial independente do valor
+        setTimeout(() => {
+            const documentInput = document.getElementById('billing_document');
+            if (documentInput && documentInput.value) {
+                const cleanValue = documentInput.value.replace(/\D/g, '');
+                const detectedType = detectDocumentType(cleanValue, personTypeConfig);
+                updateHiddenFields(documentInput.value, detectedType);
+                
+                // Atualizar dados após sincronização
+                updatePersonTypeData(true);
+            } else {
+                // Mesmo sem valor, atualizar dados para limpar estado anterior
+                updatePersonTypeData(true);
+            }
+        }, 200);
 
         // Atualizar dados imediatamente
         updatePersonTypeData(true);
@@ -585,70 +789,98 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Função para observar mudanças no campo de país
     function observeCountryChanges() {
-        const countryField = document.querySelector('#billing-country');
-        if (!countryField) {
-            return;
-        }
-
-        // Observar mudanças diretamente no select do país
-        if (!countryField.dataset.personTypeListener) {
-            countryField.addEventListener('change', function() {
+        const billingCountryField = document.querySelector('#billing-country');
+        const shippingCountryField = document.querySelector('#shipping-country');
+        
+        // Configurar listener para billing country
+        if (billingCountryField && !billingCountryField.dataset.personTypeListener) {
+            billingCountryField.addEventListener('change', function() {
                 setTimeout(() => {
-                    if (isBrazilSelected()) {
-                        // Se mudou para Brasil e não temos campos, criar
-                        if (!personTypeFieldsActive) {
-                            const billingBlock = document.querySelector('#billing');
-                            if (billingBlock) {
-                                billingPersonTypeHandle(billingBlock);
-                            }
-                        }
-                    } else {
-                        // Se mudou para outro país, remover campos
-                        if (personTypeFieldsActive) {
-                            removePersonTypeFields();
-                        }
-                    }
+                    handleCountryChange();
                 }, 300);
             });
-            countryField.dataset.personTypeListener = 'true';
+            billingCountryField.dataset.personTypeListener = 'true';
+        }
+        
+        // Configurar listener para shipping country
+        if (shippingCountryField && !shippingCountryField.dataset.personTypeListener) {
+            shippingCountryField.addEventListener('change', function() {
+                setTimeout(() => {
+                    handleCountryChange();
+                }, 300);
+            });
+            shippingCountryField.dataset.personTypeListener = 'true';
         }
 
-        // Criar observer específico para mudanças no campo de país
+        // Função unificada para lidar com mudanças de país
+        function handleCountryChange() {
+            if (isBrazilSelected()) {
+                // Se mudou para Brasil e não temos campos, criar
+                if (!personTypeFieldsActive) {
+                    const useSameAddress = isUsingSameAddressForBilling();
+                    const targetContainer = useSameAddress ? 
+                        document.querySelector('#shipping') : 
+                        document.querySelector('#billing');
+                    const containerType = useSameAddress ? 'shipping' : 'billing';
+                    
+                    if (targetContainer) {
+                        handlePersonTypeContainer(targetContainer, containerType);
+                    }
+                }
+            } else {
+                // Se mudou para outro país, remover campos
+                if (personTypeFieldsActive) {
+                    removePersonTypeFields();
+                }
+            }
+        }
+
+        // Criar observer específico para mudanças nos campos de país
         if (!countryObserver) {
             countryObserver = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
                     if (mutation.type === 'childList' || mutation.type === 'attributes') {
-                        // Re-configurar listeners se o campo foi recriado
+                        // Re-configurar listeners se os campos foram recriados
                         setTimeout(() => {
-                            const newCountryField = document.querySelector('#billing-country');
-                            if (newCountryField && !newCountryField.dataset.personTypeListener) {
-                                newCountryField.addEventListener('change', function() {
+                            const newBillingCountryField = document.querySelector('#billing-country');
+                            const newShippingCountryField = document.querySelector('#shipping-country');
+                            
+                            if (newBillingCountryField && !newBillingCountryField.dataset.personTypeListener) {
+                                newBillingCountryField.addEventListener('change', function() {
                                     setTimeout(() => {
-                                        if (isBrazilSelected()) {
-                                            if (!personTypeFieldsActive) {
-                                                const billingBlock = document.querySelector('#billing');
-                                                if (billingBlock) {
-                                                    billingPersonTypeHandle(billingBlock);
-                                                }
-                                            }
-                                        } else {
-                                            if (personTypeFieldsActive) {
-                                                removePersonTypeFields();
-                                            }
-                                        }
+                                        handleCountryChange();
                                     }, 300);
                                 });
-                                newCountryField.dataset.personTypeListener = 'true';
+                                newBillingCountryField.dataset.personTypeListener = 'true';
+                            }
+                            
+                            if (newShippingCountryField && !newShippingCountryField.dataset.personTypeListener) {
+                                newShippingCountryField.addEventListener('change', function() {
+                                    setTimeout(() => {
+                                        handleCountryChange();
+                                    }, 300);
+                                });
+                                newShippingCountryField.dataset.personTypeListener = 'true';
                             }
                         }, 100);
                     }
                 });
             });
             
-            // Observar mudanças no container do campo de país
+            // Observar mudanças nos containers de billing e shipping
             const billingContainer = document.querySelector('#billing');
+            const shippingContainer = document.querySelector('#shipping');
+            
             if (billingContainer) {
                 countryObserver.observe(billingContainer, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true
+                });
+            }
+            
+            if (shippingContainer) {
+                countryObserver.observe(shippingContainer, {
                     childList: true,
                     subtree: true,
                     attributes: true
@@ -805,6 +1037,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
         input.addEventListener('input', () => {
             savedPersonTypeData.billing_company = input.value;
+            
+            // Verificar se existe documento preenchido e forçar sincronização
+            const documentInput = document.getElementById('billing_document');
+            if (documentInput && documentInput.value) {
+                const cleanValue = documentInput.value.replace(/\D/g, '');
+                const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
+                const detectedType = detectDocumentType(cleanValue, personTypeConfig);
+                updateHiddenFields(documentInput.value, detectedType);
+            }
+            
             updatePersonTypeData();
             
             // Apenas adicionar is-active quando há conteúdo, não remover
@@ -911,6 +1153,16 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!input.dataset.betterListener) {
             input.addEventListener('input', () => {
                 savedPersonTypeData.billing_company = input.value;
+                
+                // Verificar se existe documento preenchido e forçar sincronização
+                const documentInput = document.getElementById('billing_document');
+                if (documentInput && documentInput.value) {
+                    const cleanValue = documentInput.value.replace(/\D/g, '');
+                    const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
+                    const detectedType = detectDocumentType(cleanValue, personTypeConfig);
+                    updateHiddenFields(documentInput.value, detectedType);
+                }
+                
                 updatePersonTypeData();
                 
                 // Apenas adicionar is-active quando há conteúdo, não remover
@@ -1190,20 +1442,27 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Para 'both', decidir baseado no comprimento parcial
                 const cleanValue = documentValue.replace(/\D/g, '');
                 if (cleanValue.length <= 11) {
+                    if (personTypeInput) personTypeInput.value = cleanValue.length === 11 ? '1' : '0';
                     if (cpfInput) cpfInput.value = documentValue;
                     if (cnpjInput) cnpjInput.value = '';
                     
+                    savedPersonTypeData.billing_persontype = cleanValue.length === 11 ? '1' : '0';
                     savedPersonTypeData.billing_cpf = documentValue;
                     savedPersonTypeData.billing_cnpj = '';
                 } else {
+                    if (personTypeInput) personTypeInput.value = cleanValue.length === 14 ? '2' : '0';
                     if (cpfInput) cpfInput.value = '';
                     if (cnpjInput) cnpjInput.value = documentValue;
                     
+                    savedPersonTypeData.billing_persontype = cleanValue.length === 14 ? '2' : '0';
                     savedPersonTypeData.billing_cpf = '';
                     savedPersonTypeData.billing_cnpj = documentValue;
                 }
             }
         }
+        
+        // Sempre atualizar o document salvo
+        savedPersonTypeData.billing_document = documentValue;
     }
 
     function showCompanyValidationError(message) {
