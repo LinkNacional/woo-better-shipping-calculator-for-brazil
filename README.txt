@@ -147,6 +147,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+= 4.7.2 - 07/01/2026
+ Fix: number field verification + Brazilian plugin compatibility.
+
 = 4.7.1 - 06/01/2026
 * Fix: dynamic CPF/CNPJ field in block editor.
 
