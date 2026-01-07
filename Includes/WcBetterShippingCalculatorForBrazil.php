@@ -84,7 +84,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.7.1';
+            $this->version = '4.7.2';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -1439,21 +1439,28 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function add_neighborhood_replacement($replacements, $address)
     {
+        // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        // Se o plugin estiver ativo, não aplica as modificações
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+            return $replacements;
+        }
+        
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         
         if ($neighborhood_enabled === 'yes' && isset($address['neighborhood'])) {
             $replacements['{neighborhood}'] = $address['neighborhood'];
-        } else {
-            $replacements['{neighborhood}'] = '';
         }
         
         // Adiciona substituição para número do endereço
         $number_enabled = get_option('woo_better_calc_number_required', 'no');
+        $number_enabled = 'no';
         
         if ($number_enabled === 'yes' && isset($address['number'])) {
             $replacements['{number}'] = ' - ' . $address['number'];
-        } else {
-            $replacements['{number}'] = '';
         }
         
         return $replacements;
@@ -1467,6 +1474,16 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function add_neighborhood_to_address_format($formats)
     {
+        // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        // Se o plugin estiver ativo, não aplica as modificações
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+            return $formats;
+        }
+        
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         $number_enabled = get_option('woo_better_calc_number_required', 'no');
         
@@ -1493,6 +1510,16 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function add_neighborhood_to_billing_address($address, $order)
     {
+        // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        // Se o plugin estiver ativo, não aplica as modificações
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+            return $address;
+        }
+        
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         $number_enabled = get_option('woo_better_calc_number_required', 'no');
         
@@ -1522,6 +1549,16 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function add_neighborhood_to_shipping_address($address, $order)
     {
+        // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        // Se o plugin estiver ativo, não aplica as modificações
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+            return $address;
+        }
+        
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         $number_enabled = get_option('woo_better_calc_number_required', 'no');
         
@@ -1552,6 +1589,16 @@ class WcBetterShippingCalculatorForBrazil
         // Verifica se a exibição de detalhes está habilitada
         $enable_order_details = get_option('woo_better_calc_enable_order_details', 'yes');
         if ($enable_order_details !== 'yes') {
+            return;
+        }
+        
+        // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        // Se o plugin estiver ativo, não exibe os dados
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
             return;
         }
         
@@ -1633,6 +1680,16 @@ class WcBetterShippingCalculatorForBrazil
         // Verifica se a exibição de detalhes está habilitada
         $enable_order_details = get_option('woo_better_calc_enable_order_details', 'yes');
         if ($enable_order_details !== 'yes') {
+            return;
+        }
+        
+        // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        // Se o plugin estiver ativo, não exibe os dados
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
             return;
         }
         

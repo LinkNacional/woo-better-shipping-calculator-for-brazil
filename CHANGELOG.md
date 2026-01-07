@@ -1,4 +1,7 @@
-# 4.7.1 - 06/12/26
+# 4.7.2 - 07/01/26
+* Ajuste: na verificação do campo número + plugin do brazilian.
+
+# 4.7.1 - 06/01/26
 * Ajuste: campo de CPFJ/CNPJ dinamico no editor de blocos.
 
 # 4.7.0 - 23/12/25
