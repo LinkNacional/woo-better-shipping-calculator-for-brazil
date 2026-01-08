@@ -523,57 +523,82 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 function triggerReactChange(input, newValue) {
-                    const reactKey = Object.keys(input).find(key => key.startsWith('__reactInternalInstance') || key.startsWith('__reactFiber'));
-                    
-                    if (reactKey) {
-                        const reactInstance = input[reactKey];
-                        if (reactInstance && reactInstance.memoizedProps && reactInstance.memoizedProps.onChange) {
-                            const fakeEvent = {
-                                target: input,
-                                currentTarget: input,
-                                preventDefault: () => {},
-                                stopPropagation: () => {}
-                            };
-                            
-                            reactInstance.memoizedProps.onChange(fakeEvent);
+                    try {
+                        if (!input || typeof input !== 'object') {
                             return;
                         }
-                    }
 
-                    const tracker = input._valueTracker;
-                    if (tracker) {
-                        tracker.setValue('');
-                    }
-                    
-                    const events = [
-                        new Event('focusin', { bubbles: true }),
-                        new Event('focus', { bubbles: true }),
-                        new InputEvent('beforeinput', { bubbles: true, cancelable: true, data: newValue }),
-                        new Event('input', { bubbles: true }),
-                        new Event('change', { bubbles: true }),
-                        new Event('blur', { bubbles: true }),
-                        new Event('focusout', { bubbles: true })
-                    ];
-
-                    events.forEach(event => {
-                        Object.defineProperty(event, 'target', {
-                            writable: false,
-                            value: input
-                        });
+                        const reactKey = Object.keys(input).find(key => 
+                            key.startsWith('__reactInternalInstance') || 
+                            key.startsWith('__reactFiber')
+                        );
                         
-                        Object.defineProperty(event, 'currentTarget', {
-                            writable: false,
-                            value: input
+                        if (reactKey) {
+                            const reactInstance = input[reactKey];
+                            if (reactInstance && reactInstance.memoizedProps && reactInstance.memoizedProps.onChange) {
+                                try {
+                                    const fakeEvent = {
+                                        target: input,
+                                        currentTarget: input,
+                                        preventDefault: () => {},
+                                        stopPropagation: () => {}
+                                    };
+                                    
+                                    reactInstance.memoizedProps.onChange(fakeEvent);
+                                    return;
+                                } catch (reactError) {
+                                    console.debug('React onChange error:', reactError);
+                                }
+                            }
+                        }
+
+                        const tracker = input._valueTracker;
+                        if (tracker) {
+                            tracker.setValue('');
+                        }
+                        
+                        const events = [
+                            new Event('focusin', { bubbles: true }),
+                            new Event('focus', { bubbles: true }),
+                            new InputEvent('beforeinput', { bubbles: true, cancelable: true, data: newValue }),
+                            new Event('input', { bubbles: true }),
+                            new Event('change', { bubbles: true }),
+                            new Event('blur', { bubbles: true }),
+                            new Event('focusout', { bubbles: true })
+                        ];
+
+                        events.forEach(event => {
+                            try {
+                                Object.defineProperty(event, 'target', {
+                                    writable: false,
+                                    value: input
+                                });
+                                
+                                Object.defineProperty(event, 'currentTarget', {
+                                    writable: false,
+                                    value: input
+                                });
+                            } catch (defineError) {
+                                console.debug('Event property definition error:', defineError);
+                            }
                         });
-                    });
 
                     setTimeout(() => {
-                        events.forEach((event, index) => {
-                            setTimeout(() => {
-                                input.dispatchEvent(event);
-                            }, index * 5);
-                        });
-                    }, 0);
+                            try {
+                                events.forEach((event, index) => {
+                                    setTimeout(() => {
+                                        if (input && typeof input.dispatchEvent === 'function') {
+                                            input.dispatchEvent(event);
+                                        }
+                                    }, index * 5);
+                                });
+                            } catch (eventError) {
+                                console.debug('Event dispatch error:', eventError);
+                            }
+                        }, 0);
+                    } catch (mainError) {
+                        console.debug('triggerReactChange error:', mainError);
+                    }
                 }
                 
                 // Função para criar/atualizar campos hidden dinâmicos
@@ -811,28 +836,43 @@ document.addEventListener('DOMContentLoaded', function() {
     initPhoneInput();
 
     const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList') {
-                mutation.addedNodes.forEach(function(node) {
-                    if (node.nodeType === Node.ELEMENT_NODE) {
-                        const phoneInputs = node.querySelectorAll ? 
-                            node.querySelectorAll('input[id*="phone"], input[type="tel"]') : [];
-                        
-                        if (phoneInputs.length > 0 || 
-                            (node.id && node.id.includes('phone')) ||
-                            (node.type === 'tel')) {
-                            setTimeout(initPhoneInput, 100);
-                        }
-                        
-                        if (node.className && 
-                            (node.className.includes('wc-block-components-address-form') ||
-                             node.className.includes('wc-block-checkout'))) {
-                            setTimeout(initPhoneInput, 200);
-                        }
+        try {
+            mutations.forEach(function(mutation) {
+                try {
+                    if (mutation.type === 'childList') {
+                        mutation.addedNodes.forEach(function(node) {
+                            try {
+                                if (node.nodeType === Node.ELEMENT_NODE) {
+                                    const phoneInputs = node.querySelectorAll ? 
+                                        node.querySelectorAll('input[id*="phone"], input[type="tel"]') : [];
+                                    
+                                    if (phoneInputs.length > 0 || 
+                                        (node.id && node.id.includes('phone')) ||
+                                        (node.type === 'tel')) {
+                                        setTimeout(initPhoneInput, 100);
+                                    }
+                                    
+                                    if (node.className && 
+                                        (node.className.includes('wc-block-components-address-form') ||
+                                         node.className.includes('wc-block-checkout'))) {
+                                        setTimeout(initPhoneInput, 200);
+                                    }
+                                }
+                            } catch (nodeError) {
+                                // Silently ignore node processing errors
+                                console.debug('Node processing error:', nodeError);
+                            }
+                        });
                     }
-                });
-            }
-        });
+                } catch (mutationError) {
+                    // Silently ignore mutation processing errors
+                    console.debug('Mutation processing error:', mutationError);
+                }
+            });
+        } catch (observerError) {
+            // Silently ignore observer errors
+            console.debug('Observer error:', observerError);
+        }
     });
 
     observer.observe(document.body, {

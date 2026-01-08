@@ -166,6 +166,9 @@ class WcBetterShippingCalculatorForBrazil
         
         // Hook para atualizar billing_document quando perfil do usuário é atualizado
         $this->loader->add_action('profile_update', $this, 'update_billing_document_on_profile_update', 10, 1);
+        
+        // Hook para sincronizar campo empresa quando meta de post é atualizada
+        $this->loader->add_action('updated_post_meta', $this, 'sync_company_field_on_meta_update', 10, 4);
     }
 
     public function lkn_show_admin_notice()
@@ -402,19 +405,21 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_disable_company_required_based_on_person_type($locale)
     {
-        // Verifica a configuração de tipo de pessoa
-        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+        $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
         
-        // Só desabilita required do company se for 'both' ou 'legal' (CNPJ)
-        if ($person_type === 'both' || $person_type === 'legal') {
-            // Sempre deixa os campos company como opcionais no Brasil
-            if (!isset($locale['BR'])) {
-                $locale['BR'] = array();
+        // Só aplica a lógica se for dinâmico
+        if ($company_behavior === 'dynamic') {
+            $person_type = get_option('woo_better_calc_person_type_select', 'none');
+            
+            if ($person_type === 'both' || $person_type === 'legal') {
+                if (!isset($locale['BR'])) {
+                    $locale['BR'] = array();
+                }
+                if (!isset($locale['BR']['company'])) {
+                    $locale['BR']['company'] = array();
+                }
+                $locale['BR']['company']['required'] = false;
             }
-            if (!isset($locale['BR']['company'])) {
-                $locale['BR']['company'] = array();
-            }
-            $locale['BR']['company']['required'] = false;
         }
         
         return $locale;
@@ -2355,6 +2360,42 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
+    /**
+     * Sincroniza configuração do campo empresa quando página é salva no admin
+     * 
+     * @param int $post_id ID da página/post
+     * @param WP_Post $post Objeto do post
+     * @param bool $update Se é uma atualização (true) ou novo post (false)
+     * @param WP_Post|null $post_before Objeto do post antes da atualização (null para novos posts)
+     * @since 4.7.2
+     */
+
+    /**
+     * Versão para updated_post_meta
+     */
+    public function sync_company_field_on_meta_update($meta_id, $post_id, $meta_key, $meta_value) {
+        // Verificar se é no admin
+        if (!is_admin()) {
+            return;
+        }
+        
+        $this->execute_company_field_sync();
+    }
+
+    /**
+     * Executa a sincronização do campo empresa
+     */
+    private function execute_company_field_sync() {
+        // Pegar a configuração do meu campo
+        $company_company_field = get_option('woocommerce_checkout_company_field', 'hidden');
+
+        if($company_company_field === 'hidden') {
+            update_option('woo_better_calc_company_field_behavior', 'dynamic');
+        } else {
+            update_option('woo_better_calc_company_field_behavior', $company_company_field);
+        }
+    }
+
     // Função específica para WooCommerce Block Checkout
     public function process_checkout_data_blocks($order, $request)
     {
@@ -3315,29 +3356,35 @@ class WcBetterShippingCalculatorForBrazil
 
             // Campo de empresa para pessoa jurídica
             if ($person_type !== 'none') {
-                // Verificar se o campo company nativo já existe
-                if (isset($fields['billing']['billing_company'])) {
-                    // Se existir, tornar obrigatório e customizar
-                    $fields['billing']['billing_company']['required'] = true;
-                    $fields['billing']['billing_company']['label'] = __('Nome da Empresa', 'woo-better-shipping-calculator-for-brazil');
-                    $fields['billing']['billing_company']['placeholder'] = __('Digite o nome da empresa', 'woo-better-shipping-calculator-for-brazil');
-                    $fields['billing']['billing_company']['priority'] = 30;
-                    $fields['billing']['billing_company']['class'] = array('form-row-wide');
-                } else {
-                    // Se não existir, criar o campo
-                    $fields['billing']['billing_company'] = array(
-                        'label'       => __('Nome da Empresa', 'woo-better-shipping-calculator-for-brazil'),
-                        'placeholder' => __('Digite o nome da empresa', 'woo-better-shipping-calculator-for-brazil'),
-                        'required'    => true,
-                        'class'       => array('form-row-wide'),
-                        'priority'    => 30,
-                        'type'        => 'text'
-                    );
-                }
+                // Obter configuração do comportamento do campo empresa
+                $company_field_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
                 
-                // Remover ou limpar o campo shipping_company para evitar duplicação
-                if (isset($fields['shipping']['shipping_company'])) {
-                    unset($fields['shipping']['shipping_company']);
+                // Só criar/modificar o campo company se for dinâmico
+                if ($company_field_behavior === 'dynamic') {
+                    // Verificar se o campo company nativo já existe
+                    if (isset($fields['billing']['billing_company'])) {
+                        // Se existir, tornar obrigatório e customizar
+                        $fields['billing']['billing_company']['required'] = true;
+                        $fields['billing']['billing_company']['label'] = __('Nome da Empresa', 'woo-better-shipping-calculator-for-brazil');
+                        $fields['billing']['billing_company']['placeholder'] = __('Digite o nome da empresa', 'woo-better-shipping-calculator-for-brazil');
+                        $fields['billing']['billing_company']['priority'] = 30;
+                        $fields['billing']['billing_company']['class'] = array('form-row-wide');
+                    } else {
+                        // Se não existir, criar o campo
+                        $fields['billing']['billing_company'] = array(
+                            'label'       => __('Nome da Empresa', 'woo-better-shipping-calculator-for-brazil'),
+                            'placeholder' => __('Digite o nome da empresa', 'woo-better-shipping-calculator-for-brazil'),
+                            'required'    => true,
+                            'class'       => array('form-row-wide'),
+                            'priority'    => 30,
+                            'type'        => 'text'
+                        );
+                    }
+                    
+                    // Remover ou limpar o campo shipping_company para evitar duplicação (só se for dinâmico)
+                    if (isset($fields['shipping']['shipping_company'])) {
+                        unset($fields['shipping']['shipping_company']);
+                    }
                 }
             }
         }
@@ -4804,23 +4851,35 @@ class WcBetterShippingCalculatorForBrazil
                 'autocomplete' => 'off'
             );
             
+            // Campo empresa para pessoa jurídica
+            if ($person_type === 'legal' || $person_type === 'both') {
+                $fields['billing_company'] = array(
+                    'label'       => __('Empresa', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => __('Nome da empresa', 'woo-better-shipping-calculator-for-brazil'),
+                    'required'    => false,
+                    'class'       => array('form-row-wide'),
+                    'priority'    => 27,
+                    'type'        => 'text'
+                );
+            }
+            
             // Campos hidden para compatibilidade
             $fields['billing_persontype'] = array(
-                'type'        => 'hidden',
-                'required'    => false,
-                'priority'    => 27
-            );
-            
-            $fields['billing_cpf'] = array(
                 'type'        => 'hidden',
                 'required'    => false,
                 'priority'    => 28
             );
             
-            $fields['billing_cnpj'] = array(
+            $fields['billing_cpf'] = array(
                 'type'        => 'hidden',
                 'required'    => false,
                 'priority'    => 29
+            );
+            
+            $fields['billing_cnpj'] = array(
+                'type'        => 'hidden',
+                'required'    => false,
+                'priority'    => 30
             );
         }
         
@@ -4903,6 +4962,19 @@ class WcBetterShippingCalculatorForBrazil
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         $number_enabled = get_option('woo_better_calc_number_required', 'no');
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+        
+        // Campo empresa para pessoa jurídica (se configuração permitir)
+        if ($person_type === 'legal' || $person_type === 'both') {
+            $fields['shipping_company'] = array(
+                'label'       => __('Empresa', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Nome da empresa', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => false,
+                'class'       => array('form-row-wide'),
+                'priority'    => 27,
+                'type'        => 'text'
+            );
+        }
         
         // Adicionar campo de telefone
         if ($phone_required === 'yes') {
@@ -5049,6 +5121,19 @@ class WcBetterShippingCalculatorForBrazil
             if ($load_address === 'shipping') {
                 $checkbox_value = isset($_POST['lkn_shipping_checkbox']) ? '1' : '0';
                 update_user_meta($user_id, 'lkn_shipping_checkbox', $checkbox_value);
+            }
+        }
+        
+        // Salvar campo empresa
+        if ($person_type === 'legal' || $person_type === 'both') {
+            if ($load_address === 'billing' && isset($_POST['billing_company'])) {
+                $company = sanitize_text_field(wp_unslash($_POST['billing_company']));
+                update_user_meta($user_id, 'billing_company', $company);
+            }
+            
+            if ($load_address === 'shipping' && isset($_POST['shipping_company'])) {
+                $company = sanitize_text_field(wp_unslash($_POST['shipping_company']));
+                update_user_meta($user_id, 'shipping_company', $company);
             }
         }
         

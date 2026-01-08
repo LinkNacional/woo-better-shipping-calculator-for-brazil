@@ -811,6 +811,23 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Configure a validação de documentos no checkout. Importante: se o formulário não estiver priorizando o endereço de cobrança, ative "Forçar entrega para o endereço de cobrança" nas Configurações de Entrega do WooCommerce.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'company_field_behavior' => array(
+                'title'    => __('Comportamento do Campo Empresa', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_company_field_behavior',
+                'desc_tip' => false,
+                'default'  => $this->get_default_company_field_behavior(),
+                'type'     => 'select',
+                'options'  => array(
+                    'dynamic'   => __('Dinâmico (Recomendado)', 'woo-better-shipping-calculator-for-brazil'),
+                    'optional'  => __('Opcional', 'woo-better-shipping-calculator-for-brazil'),
+                    'required'  => __('Obrigatório', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Define como o campo Empresa será tratado no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Dinâmico: O campo Empresa será exibido apenas quando o usuário digitar um CNPJ válido e o "Tipo de Cliente" estiver configurado como "Pessoa Física e Pessoa Jurídica" ou "Pessoa Jurídica apenas".', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Controla a exibição e obrigatoriedade do campo Empresa no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'apply_cpf_mask' => array(
                 'title'    => __('Aplicar Máscara no CPF', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_apply_cpf_mask',
@@ -990,6 +1007,25 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
         return apply_filters('woocommerce_get_settings_' . $this->id, $settings);
     }
 
+    /**
+     * Determina o valor padrão do comportamento do campo empresa baseado na configuração atual do WooCommerce
+     */
+    private function get_default_company_field_behavior()
+    {
+        $wc_company_setting = get_option('woocommerce_checkout_company_field', 'hidden');
+        
+        switch ($wc_company_setting) {
+            case 'required':
+                return 'required';
+            case 'optional':
+                return 'optional';
+            case 'hidden':
+                return 'dynamic';
+            default:
+                return 'dynamic';
+        }
+    }
+
 
     public function output()
     {
@@ -1011,5 +1047,28 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
         }
 
         \WC_Admin_Settings::save_fields($settings);
+        
+        // Atualiza a opção do WooCommerce baseada no comportamento do campo empresa
+        $this->update_woocommerce_company_field_setting();
+    }
+    
+    /**
+     * Atualiza a configuração do WooCommerce para o campo empresa baseado na escolha do usuário
+     */
+    private function update_woocommerce_company_field_setting()
+    {
+        $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
+        
+        switch ($company_behavior) {
+            case 'dynamic':
+                update_option('woocommerce_checkout_company_field', 'hidden');
+                break;
+            case 'optional':
+                update_option('woocommerce_checkout_company_field', 'optional');
+                break;
+            case 'required':
+                update_option('woocommerce_checkout_company_field', 'required');
+                break;
+        }
     }
 }

@@ -248,6 +248,14 @@ document.addEventListener("DOMContentLoaded", function () {
      * @returns {boolean} - true se devemos validar o campo company
      */
     function shouldValidateCompanyField() {
+        // Verificar configuração do comportamento do campo empresa
+        const companyFieldBehavior = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.company_field_behavior : 'dynamic';
+        
+        // Se não for dynamic, não validar
+        if (companyFieldBehavior !== 'dynamic') {
+            return false;
+        }
+        
         const billingDocumentInput = document.getElementById('billing_document');
         
         if (!billingDocumentInput || !billingDocumentInput.value.trim()) {
@@ -749,10 +757,13 @@ document.addEventListener("DOMContentLoaded", function () {
             lastInsertedElement = documentFieldContainer;
         }
 
-        // Criar o campo company depois do CPF/CNPJ (fica inicialmente oculto)
-        const companyFieldContainer = createCompanyField(lastInsertedElement, initialCompany, personTypeConfig);
-        if (companyFieldContainer) {
-            lastInsertedElement = companyFieldContainer;
+        // Criar o campo company depois do CPF/CNPJ (apenas se configuração for dynamic)
+        const companyFieldBehavior = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.company_field_behavior : 'dynamic';
+        if (companyFieldBehavior === 'dynamic' && (personTypeConfig === 'legal' || personTypeConfig === 'both')) {
+            const companyFieldContainer = createCompanyField(lastInsertedElement, initialCompany, personTypeConfig);
+            if (companyFieldContainer) {
+                lastInsertedElement = companyFieldContainer;
+            }
         }
 
         // Criar input hidden para o tipo de pessoa (gerenciado automaticamente)
@@ -937,6 +948,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function createCompanyField(insertAfter, initialValue, personTypeConfig) {
+        // Verificar configuração do comportamento do campo empresa
+        const companyFieldBehavior = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.company_field_behavior : 'dynamic';
+        
+        // Se não for dynamic, não mexe no campo empresa - deixa como está
+        if (companyFieldBehavior !== 'dynamic') {
+            return;
+        }
+        
         // Só processar se config permitir pessoa jurídica
         if (personTypeConfig === 'physical') {
             return;
@@ -1447,8 +1466,11 @@ document.addEventListener("DOMContentLoaded", function () {
         const cleanValue = documentValue.replace(/\D/g, '');
         const isCnpjComplete = cleanValue.length === 14;
         
-        // Controlar visibilidade do campo company
-        if (companyFieldContainer && companyInput) {
+        // Verificar configuração do comportamento do campo empresa
+        const companyFieldBehavior = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.company_field_behavior : 'dynamic';
+        
+        // Controlar visibilidade do campo company apenas se configuração for dynamic
+        if (companyFieldContainer && companyInput && companyFieldBehavior === 'dynamic') {
             if (isCnpjComplete) {
                 companyFieldContainer.style.display = 'block';
                 // Se o campo tem valor salvo, aplicá-lo

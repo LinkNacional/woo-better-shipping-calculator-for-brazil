@@ -475,7 +475,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'billing_cpf' => $billing_cpf,
                         'billing_cnpj' => $billing_cnpj,
                         'billing_company' => $billing_company,
-                        'billing_document' => $billing_document
+                        'billing_document' => $billing_document,
                     )
                 );
 
@@ -484,7 +484,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'WooBetterPersonTypeConfig',
                     array(
                         'person_type' => $person_type,
-                        'show_select' => ($person_type === 'both') // Só mostrar select quando for 'both'
+                        'show_select' => ($person_type === 'both'), // Só mostrar select quando for 'both'
+                        'company_field_behavior' => get_option('woo_better_calc_company_field_behavior', 'dynamic')
                     )
                 );
             }
@@ -660,7 +661,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'WooBetterPersonTypeConfig',
                     array(
                         'person_type' => $person_type,
-                        'show_select' => ($person_type === 'both') // Só mostrar select quando for 'both'
+                        'show_select' => ($person_type === 'both'), // Só mostrar select quando for 'both'
+                        'company_field_behavior' => get_option('woo_better_calc_company_field_behavior', 'dynamic')
                     )
                 );
             }
@@ -1046,7 +1048,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'WooBetterPersonTypeConfig',
                     array(
                         'person_type' => $person_type,
-                        'show_select' => ($person_type === 'both')
+                        'show_select' => ($person_type === 'both'),
+                        'company_field_behavior' => get_option('woo_better_calc_company_field_behavior', 'dynamic')
                     )
                 );
             }
