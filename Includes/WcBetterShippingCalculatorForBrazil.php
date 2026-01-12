@@ -865,6 +865,9 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_shipping_calculator_enable_state', $this, 'maybe_disable_cart_fields');
         $this->loader->add_filter('woocommerce_shipping_calculator_enable_city', $this, 'maybe_disable_cart_fields');
         
+        // Hook para verificar CEP e enfileirar script se necessário
+        $this->loader->add_action('wp_enqueue_scripts', $this, 'maybe_enqueue_display_form_script');
+        
         // Hook para auto-preencher endereço baseado no CEP na calculadora de frete
         $this->loader->add_action('woocommerce_calculated_shipping', $this, 'auto_fill_address_from_postcode');
         
@@ -904,6 +907,49 @@ class WcBetterShippingCalculatorForBrazil
         return $enabled;
     }
 
+    /**
+     * Verifica se não existe CEP no carrinho e enfileira script para forçar exibição do campo do CEP
+     */
+    public function maybe_enqueue_display_form_script()
+    {
+        // Só executa em páginas de carrinho shortcode
+        if (!$this->is_cart_shortcode_page()) {
+            return;
+        }
+        
+        // Verifica se WooCommerce está ativo e customer disponível
+        if (!$this->is_valid_woocommerce_context() || !WC()->customer) {
+            return;
+        }
+        
+        $has_postcode = false;
+        
+        // Verifica CEP de entrega
+        $shipping_postcode = WC()->customer->get_shipping_postcode();
+        if (!empty($shipping_postcode)) {
+            $has_postcode = true;
+        }
+        
+        // Verifica CEP de cobrança
+        if (!$has_postcode) {
+            $billing_postcode = WC()->customer->get_billing_postcode();
+            if (!empty($billing_postcode)) {
+                $has_postcode = true;
+            }
+        }
+        
+        // Se não tem CEP, enfileira o script
+        if (!$has_postcode) {
+            wp_enqueue_script(
+                'WcBetterShippingCalculatorForBrazilDisplayFormInShortcodeCart',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Public/jsCompiled/WcBetterShippingCalculatorForBrazilDisplayFormInShortcodeCart.COMPILED.js',
+                array('jquery'),
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                true
+            );
+        }
+    }
+    
     /**
      * Verifica se estamos na página do carrinho via shortcode
      *
