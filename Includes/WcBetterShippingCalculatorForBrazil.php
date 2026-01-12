@@ -1500,6 +1500,18 @@ class WcBetterShippingCalculatorForBrazil
             return $replacements;
         }
         
+        // Verifica se estamos em contexto de shortcode do carrinho
+        global $post;
+        $is_cart_shortcode = false;
+        if (isset($post) && is_a($post, 'WP_Post')) {
+            $is_cart_shortcode = has_shortcode($post->post_content, 'woocommerce_cart');
+        }
+        
+        // Se for shortcode de carrinho, não adiciona placeholders de número e bairro
+        if ($is_cart_shortcode) {
+            return $replacements;
+        }
+        
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         
         if ($neighborhood_enabled === 'yes' && isset($address['neighborhood'])) {
@@ -1508,7 +1520,6 @@ class WcBetterShippingCalculatorForBrazil
         
         // Adiciona substituição para número do endereço
         $number_enabled = get_option('woo_better_calc_number_required', 'no');
-        $number_enabled = 'no';
         
         if ($number_enabled === 'yes' && isset($address['number'])) {
             $replacements['{number}'] = ' - ' . $address['number'];
@@ -1532,6 +1543,18 @@ class WcBetterShippingCalculatorForBrazil
         
         // Se o plugin estiver ativo, não aplica as modificações
         if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+            return $formats;
+        }
+        
+        // Verifica se estamos em contexto de shortcode do carrinho
+        global $post;
+        $is_cart_shortcode = false;
+        if (isset($post) && is_a($post, 'WP_Post')) {
+            $is_cart_shortcode = has_shortcode($post->post_content, 'woocommerce_cart');
+        }
+        
+        // Se for shortcode de carrinho, não modifica o formato do endereço
+        if ($is_cart_shortcode) {
             return $formats;
         }
         
