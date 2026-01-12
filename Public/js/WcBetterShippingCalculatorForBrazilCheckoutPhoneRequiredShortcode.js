@@ -120,10 +120,12 @@ jQuery(function ($) {
                         const cleanValue = initialValue.replace(/[^\d+]/g, '');
                         
                         if (cleanValue.startsWith('+') && cleanValue.length > 1) {
+                            
                             // Extrai apenas os números após o +
                             const numbers = cleanValue.substring(1);
                             
                             if (numbers.length > 0) {
+                                
                                 // Tenta diferentes tamanhos de código de país (1-4 dígitos)
                                 let countryDetected = false;
                                 
@@ -151,11 +153,20 @@ jQuery(function ($) {
                                                         intlTelInputUtils.numberFormat.NATIONAL
                                                     );
 
+                                                    // VERIFICAÇÃO CRÍTICA: Impede formatação que remove dígitos
+                                                    const inputDigits = remainingNumber.replace(/\D/g, '');
+                                                    const outputDigits = formatted ? formatted.replace(/\D/g, '') : '';
+
                                                     if (formatted && formatted !== 'Invalid number') {
-                                                        // Formato final: +{country_code} {número formatado}
-                                                        const finalValue = `+${potentialCode} ${formatted}`;
-                                                        
-                                                        phoneField.value = finalValue;
+                                                        // Se a formatação removeu dígitos, NÃO aplica
+                                                        if (inputDigits.length > outputDigits.length) {
+                                                            const finalValue = `+${potentialCode} ${remainingNumber}`;
+                                                            phoneField.value = finalValue;
+                                                        } else {
+                                                            // Formato final: +{country_code} {número formatado}
+                                                            const finalValue = `+${potentialCode} ${formatted}`;
+                                                            phoneField.value = finalValue;
+                                                        }
                                                         
                                                         // Atualiza campo hidden
                                                         let hiddenFieldId = '';
@@ -199,10 +210,19 @@ jQuery(function ($) {
                                             intlTelInputUtils.numberFormat.NATIONAL
                                         );
 
+                                        // VERIFICAÇÃO CRÍTICA: Impede formatação que remove dígitos
+                                        const inputDigits = numbers.replace(/\D/g, '');
+                                        const outputDigits = formatted ? formatted.replace(/\D/g, '') : '';
+
                                         if (formatted && formatted !== 'Invalid number') {
-                                            const finalValue = `${dialCode} ${formatted}`;
-                                            
-                                            phoneField.value = finalValue;
+                                            // Se a formatação removeu dígitos, NÃO aplica
+                                            if (inputDigits.length > outputDigits.length) {
+                                                const finalValue = `${dialCode} ${numbers}`;
+                                                phoneField.value = finalValue;
+                                            } else {
+                                                const finalValue = `${dialCode} ${formatted}`;
+                                                phoneField.value = finalValue;
+                                            }
                                             
                                             // Atualiza campo hidden
                                             let hiddenFieldId = '';
@@ -256,10 +276,21 @@ jQuery(function ($) {
                             return;
                         }
                         
+                        // Se o valor contém apenas caracteres especiais sem números, limpa o campo
+                        const onlyDigits = currentValue.replace(/\D/g, '');
+                        if (onlyDigits === '' && currentValue.trim() !== '') {
+                            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                            nativeSetter.call(phoneField, '');
+                            lastFormattedValue = '';
+                            isFormatting = false;
+                            return;
+                        }
+                        
                         // Detecta código internacional seguido de espaço (ex: "+55 11987654321")
                         const internationalWithSpace = currentValue.match(/^\+(\d{1,4})\s+(.*)$/);
                         
                         if (internationalWithSpace) {
+                            
                             // Deixa a biblioteca detectar automaticamente e usa getSelectedCountryData
                             setTimeout(() => {
                                 const countryData = iti.getSelectedCountryData();
@@ -270,6 +301,7 @@ jQuery(function ($) {
                                     
                                     // Formata o número local e reconecta com código
                                     const cleanLocalNumber = localNumber.replace(/\D/g, '');
+                                    
                                     if (cleanLocalNumber.length > 0) {
                                         try {
                                             const formatted = intlTelInputUtils.formatNumber(
@@ -278,9 +310,24 @@ jQuery(function ($) {
                                                 intlTelInputUtils.numberFormat.NATIONAL
                                             );
 
+                                            // VERIFICAÇÃO CRÍTICA: Impede formatação que remove dígitos
+                                            const inputDigits = cleanLocalNumber.replace(/\D/g, '');
+                                            const outputDigits = formatted.replace(/\D/g, '');
+
                                             if (formatted && formatted !== 'Invalid number') {
+                                                // Se a formatação removeu dígitos, NÃO aplica e limpa caracteres especiais
+                                                if (inputDigits.length > outputDigits.length) {
+                                                    const cleanedValue = currentValue.replace(/\D/g, '');
+                                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                                    nativeSetter.call(phoneField, cleanedValue);
+                                                    lastFormattedValue = cleanedValue;
+                                                    isFormatting = false;
+                                                    return;
+                                                }
+                                                
                                                 // Reconecta: código + espaço + número formatado
                                                 const finalValue = `+${dialCode} ${formatted}`;
+                                                
                                                 setTimeout(() => {
                                                     const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                                                     nativeSetter.call(phoneField, finalValue);
@@ -414,6 +461,7 @@ jQuery(function ($) {
                                                 if (countryData && countryData.dialCode === testCode) {
                                                     // Formata apenas o número local (sem incluir o código do país)
                                                     const cleanLocalNumber = remainingNumber.replace(/\D/g, '');
+                                                    
                                                     if (cleanLocalNumber.length > 0) {
                                                         try {
                                                             const formatted = intlTelInputUtils.formatNumber(
@@ -422,9 +470,24 @@ jQuery(function ($) {
                                                                 intlTelInputUtils.numberFormat.NATIONAL
                                                             );
 
+                                                            // VERIFICAÇÃO CRÍTICA: Impede formatação que remove dígitos
+                                                            const inputDigits = cleanLocalNumber.replace(/\D/g, '');
+                                                            const outputDigits = formatted.replace(/\D/g, '');
+
                                                             if (formatted && formatted !== 'Invalid number') {
+                                                                // Se a formatação removeu dígitos, NÃO aplica e limpa caracteres especiais
+                                                                if (inputDigits.length > outputDigits.length) {
+                                                                    const cleanedValue = currentValue.replace(/\D/g, '');
+                                                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                                                    nativeSetter.call(phoneField, cleanedValue);
+                                                                    lastFormattedValue = cleanedValue;
+                                                                    isFormatting = false;
+                                                                    return;
+                                                                }
+                                                                
                                                                 // Reconecta: código + espaço + número formatado
                                                                 const finalValue = `+${testCode} ${formatted}`;
+                                                                
                                                                 const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                                                                 nativeSetter.call(phoneField, finalValue);
                                                                 lastFormattedValue = finalValue;
@@ -474,6 +537,7 @@ jQuery(function ($) {
                                     // Se não há mais possibilidades de códigos maiores E tem um país válido com o código atual
                                     if (!hasLongerCodePossibilities(currentInput) && findCountryByDialCode(currentInput) && restOfNumber.length >= 1) {
                                         const finalValue = `+${currentInput} ${restOfNumber}`;
+                                        
                                         const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                                         nativeSetter.call(phoneField, finalValue);
                                         lastFormattedValue = finalValue;
@@ -507,7 +571,21 @@ jQuery(function ($) {
                                     intlTelInputUtils.numberFormat.NATIONAL
                                 );
 
+                                // VERIFICAÇÃO CRÍTICA: Impede formatação que remove dígitos
+                                const inputDigits = cleanValue.replace(/\D/g, '');
+                                const outputDigits = formatted.replace(/\D/g, '');
+
                                 if (formatted && formatted !== 'Invalid number' && formatted !== currentValue) {
+                                    // Se a formatação removeu dígitos, NÃO aplica e limpa caracteres especiais
+                                    if (inputDigits.length > outputDigits.length) {
+                                        const cleanedValue = currentValue.replace(/\D/g, '');
+                                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                        nativeSetter.call(phoneField, cleanedValue);
+                                        lastFormattedValue = cleanedValue;
+                                        isFormatting = false;
+                                        return;
+                                    }
+                                    
                                     const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                                     nativeSetter.call(phoneField, formatted);
                                     lastFormattedValue = formatted;
@@ -533,7 +611,6 @@ jQuery(function ($) {
                         lastFormattedValue = currentValue;
                         isFormatting = false;
                     } catch (error) {
-                        console.warn('Erro na aplicação da máscara:', error);
                         isFormatting = false;
                     }
                 }

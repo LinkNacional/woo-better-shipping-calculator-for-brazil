@@ -187,6 +187,15 @@ document.addEventListener('DOMContentLoaded', function() {
                             return;
                         }
                         
+                        // Se só tem caracteres especiais (parênteses, traços, espaços), limpa o campo
+                        const onlySpecialChars = /^[\s()\-+]*$/.test(currentValue);
+                        if (onlySpecialChars) {
+                            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                            nativeSetter.call(phoneField, '');
+                            triggerReactChange(phoneField, '');
+                            return;
+                        }
+                        
                         // Detecta código internacional seguido de espaço (ex: "+55 11987654321")
                         const internationalWithSpace = currentValue.match(/^\+(\d{1,4})\s+(.*)$/);
                         if (internationalWithSpace) {
@@ -211,14 +220,29 @@ document.addEventListener('DOMContentLoaded', function() {
                                         );
 
                                         if (formatted && formatted !== 'Invalid number') {
-                                            // Reconecta: código + espaço + número formatado
-                                            const finalValue = `+${dialCode} ${formatted}`;
-                                            setTimeout(() => {
-                                                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                                nativeSetter.call(phoneField, finalValue);
-                                                triggerReactChange(phoneField, finalValue);
-                                            }, 10);
-                                            return;
+                                            // Verifica se a formatação não remove dígitos
+                                            const inputDigits = cleanLocalNumber.replace(/\D/g, '');
+                                            const outputDigits = formatted.replace(/\D/g, '');
+                                            
+                                            if (inputDigits.length > outputDigits.length) {
+                                                // Perda de dígitos detectada, usa só números
+                                                const finalValue = `+${dialCode} ${inputDigits}`;
+                                                setTimeout(() => {
+                                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                                    nativeSetter.call(phoneField, finalValue);
+                                                    triggerReactChange(phoneField, finalValue);
+                                                }, 10);
+                                                return;
+                                            } else {
+                                                // Formatação segura, usa resultado formatado
+                                                const finalValue = `+${dialCode} ${formatted}`;
+                                                setTimeout(() => {
+                                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                                    nativeSetter.call(phoneField, finalValue);
+                                                    triggerReactChange(phoneField, finalValue);
+                                                }, 10);
+                                                return;
+                                            }
                                         }
                                     } catch (formatError) {
                                         // Se erro na formatação, mantém o valor original
@@ -254,12 +278,25 @@ document.addEventListener('DOMContentLoaded', function() {
                                             );
 
                                             if (formatted && formatted !== 'Invalid number') {
-                                                // Reconecta: código + espaço + número formatado
-                                                const finalValue = `+${dialCode} ${formatted}`;
-                                                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                                nativeSetter.call(phoneField, finalValue);
-                                                triggerReactChange(phoneField, finalValue);
-                                                return;
+                                                // Verifica se a formatação não remove dígitos
+                                                const inputDigits = cleanLocalNumber.replace(/\D/g, '');
+                                                const outputDigits = formatted.replace(/\D/g, '');
+                                                
+                                                if (inputDigits.length > outputDigits.length) {
+                                                    // Perda de dígitos detectada, usa só números
+                                                    const finalValue = `+${dialCode} ${inputDigits}`;
+                                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                                    nativeSetter.call(phoneField, finalValue);
+                                                    triggerReactChange(phoneField, finalValue);
+                                                    return;
+                                                } else {
+                                                    // Formatação segura, usa resultado formatado
+                                                    const finalValue = `+${dialCode} ${formatted}`;
+                                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                                    nativeSetter.call(phoneField, finalValue);
+                                                    triggerReactChange(phoneField, finalValue);
+                                                    return;
+                                                }
                                             }
                                         } catch (formatError) {
                                             // Se erro na formatação, mantém o valor original
@@ -289,10 +326,23 @@ document.addEventListener('DOMContentLoaded', function() {
                                 );
 
                                 if (formatted && formatted !== 'Invalid number' && formatted !== currentValue) {
-                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                    nativeSetter.call(phoneField, formatted);
-                                    triggerReactChange(phoneField, formatted);
-                                    return;
+                                    // Verifica se a formatação não remove dígitos
+                                    const inputDigits = cleanValue.replace(/\D/g, '');
+                                    const outputDigits = formatted.replace(/\D/g, '');
+                                    
+                                    if (inputDigits.length > outputDigits.length) {
+                                        // Perda de dígitos detectada, usa só números sem formatação
+                                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                        nativeSetter.call(phoneField, inputDigits);
+                                        triggerReactChange(phoneField, inputDigits);
+                                        return;
+                                    } else {
+                                        // Formatação segura, usa resultado formatado
+                                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                        nativeSetter.call(phoneField, formatted);
+                                        triggerReactChange(phoneField, formatted);
+                                        return;
+                                    }
                                 }
                             } catch (formatError) {
                                 // Se houve erro na formatação, notifica o React com valor atual
