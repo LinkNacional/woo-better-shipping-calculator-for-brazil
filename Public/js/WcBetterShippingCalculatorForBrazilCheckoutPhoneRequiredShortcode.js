@@ -218,10 +218,12 @@ jQuery(function ($) {
                                             // Se a formatação removeu dígitos, NÃO aplica
                                             if (inputDigits.length > outputDigits.length) {
                                                 const finalValue = `${dialCode} ${numbers}`;
-                                                phoneField.value = finalValue;
+                                                const cursorPos = phoneField.selectionStart || 0;
+                                                setValueAndCursor(phoneField, finalValue, initialValue, cursorPos);
                                             } else {
                                                 const finalValue = `${dialCode} ${formatted}`;
-                                                phoneField.value = finalValue;
+                                                const cursorPos = phoneField.selectionStart || 0;
+                                                setValueAndCursor(phoneField, finalValue, initialValue, cursorPos);
                                             }
                                             
                                             // Atualiza campo hidden
@@ -277,10 +279,11 @@ jQuery(function ($) {
                         }
                         
                         // Se o valor contém apenas caracteres especiais sem números, limpa o campo
+                        // EXCETO se é apenas '+' no início (permite começar número internacional)
                         const onlyDigits = currentValue.replace(/\D/g, '');
-                        if (onlyDigits === '' && currentValue.trim() !== '') {
-                            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                            nativeSetter.call(phoneField, '');
+                        if (onlyDigits === '' && currentValue.trim() !== '' && currentValue.trim() !== '+') {
+                            const cursorPos = phoneField.selectionStart || 0;
+                            setValueAndCursor(phoneField, '', currentValue, cursorPos);
                             lastFormattedValue = '';
                             isFormatting = false;
                             return;
@@ -290,14 +293,23 @@ jQuery(function ($) {
                         const internationalWithSpace = currentValue.match(/^\+(\d{1,4})\s+(.*)$/);
                         
                         if (internationalWithSpace) {
+                            const userDialCode = internationalWithSpace[1]; // Código que o usuário digitou
                             
                             // Deixa a biblioteca detectar automaticamente e usa getSelectedCountryData
                             setTimeout(() => {
                                 const countryData = iti.getSelectedCountryData();
                                 
                                 if (countryData && countryData.dialCode) {
-                                    const dialCode = countryData.dialCode;
+                                    const detectedDialCode = countryData.dialCode;
                                     const localNumber = internationalWithSpace[2];
+                                    
+                                    // Se o usuário está digitando um código diferente do detectado, não formata ainda
+                                    // Permite continuar digitando (sem limitação de dígitos)
+                                    if (userDialCode !== detectedDialCode) {
+                                        lastFormattedValue = currentValue;
+                                        isFormatting = false;
+                                        return;
+                                    }
                                     
                                     // Formata o número local e reconecta com código
                                     const cleanLocalNumber = localNumber.replace(/\D/g, '');
@@ -318,19 +330,19 @@ jQuery(function ($) {
                                                 // Se a formatação removeu dígitos, NÃO aplica e limpa caracteres especiais
                                                 if (inputDigits.length > outputDigits.length) {
                                                     const cleanedValue = currentValue.replace(/\D/g, '');
-                                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                                    nativeSetter.call(phoneField, cleanedValue);
+                                                    const cursorPos = phoneField.selectionStart || 0;
+                                                    setValueAndCursor(phoneField, cleanedValue, currentValue, cursorPos);
                                                     lastFormattedValue = cleanedValue;
                                                     isFormatting = false;
                                                     return;
                                                 }
                                                 
-                                                // Reconecta: código + espaço + número formatado
-                                                const finalValue = `+${dialCode} ${formatted}`;
+                                                // Usa o código que o usuário digitou, não o detectado pela biblioteca
+                                                const finalValue = `+${userDialCode} ${formatted}`;
                                                 
                                                 setTimeout(() => {
-                                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                                    nativeSetter.call(phoneField, finalValue);
+                                                    const cursorPos = phoneField.selectionStart || 0;
+                                                    setValueAndCursor(phoneField, finalValue, currentValue, cursorPos);
                                                     lastFormattedValue = finalValue;
                                                     isFormatting = false;
                                                     
@@ -478,8 +490,8 @@ jQuery(function ($) {
                                                                 // Se a formatação removeu dígitos, NÃO aplica e limpa caracteres especiais
                                                                 if (inputDigits.length > outputDigits.length) {
                                                                     const cleanedValue = currentValue.replace(/\D/g, '');
-                                                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                                                    nativeSetter.call(phoneField, cleanedValue);
+                                                                    const cursorPos = phoneField.selectionStart || 0;
+                                                                    setValueAndCursor(phoneField, cleanedValue, currentValue, cursorPos);
                                                                     lastFormattedValue = cleanedValue;
                                                                     isFormatting = false;
                                                                     return;
@@ -488,8 +500,8 @@ jQuery(function ($) {
                                                                 // Reconecta: código + espaço + número formatado
                                                                 const finalValue = `+${testCode} ${formatted}`;
                                                                 
-                                                                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                                                nativeSetter.call(phoneField, finalValue);
+                                                                const cursorPos = phoneField.selectionStart || 0;
+                                                                setValueAndCursor(phoneField, finalValue, currentValue, cursorPos);
                                                                 lastFormattedValue = finalValue;
                                                                 isFormatting = false;
                                                                 
@@ -538,8 +550,8 @@ jQuery(function ($) {
                                     if (!hasLongerCodePossibilities(currentInput) && findCountryByDialCode(currentInput) && restOfNumber.length >= 1) {
                                         const finalValue = `+${currentInput} ${restOfNumber}`;
                                         
-                                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                        nativeSetter.call(phoneField, finalValue);
+                                        const cursorPos = phoneField.selectionStart || 0;
+                                        setValueAndCursor(phoneField, finalValue, currentValue, cursorPos);
                                         lastFormattedValue = finalValue;
                                         isFormatting = false;
                                         return;
@@ -579,15 +591,15 @@ jQuery(function ($) {
                                     // Se a formatação removeu dígitos, NÃO aplica e limpa caracteres especiais
                                     if (inputDigits.length > outputDigits.length) {
                                         const cleanedValue = currentValue.replace(/\D/g, '');
-                                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                        nativeSetter.call(phoneField, cleanedValue);
+                                        const cursorPos = phoneField.selectionStart || 0;
+                                        setValueAndCursor(phoneField, cleanedValue, currentValue, cursorPos);
                                         lastFormattedValue = cleanedValue;
                                         isFormatting = false;
                                         return;
                                     }
                                     
-                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                    nativeSetter.call(phoneField, formatted);
+                                    const cursorPos = phoneField.selectionStart || 0;
+                                    setValueAndCursor(phoneField, formatted, currentValue, cursorPos);
                                     lastFormattedValue = formatted;
                                     isFormatting = false;
                                     
@@ -612,6 +624,62 @@ jQuery(function ($) {
                         isFormatting = false;
                     } catch (error) {
                         isFormatting = false;
+                    }
+                }
+
+                // Funções auxiliares para gerenciamento inteligente de cursor
+                function calculateSmartCursorPosition(oldValue, newValue, oldCursorPos) {
+                    // Remove caracteres especiais que serão filtrados
+                    const cleanOld = oldValue.replace(/^[\s()\-]*$/, '');
+                    const cleanNew = newValue.replace(/^[\s()\-]*$/, '');
+                    
+                    if (cleanOld === '' || cleanNew === '') {
+                        return newValue.length;
+                    }
+                    
+                    // Conta dígitos até a posição do cursor no valor antigo
+                    let digitCount = 0;
+                    for (let i = 0; i < Math.min(oldCursorPos, oldValue.length); i++) {
+                        if (/\d/.test(oldValue[i])) {
+                            digitCount++;
+                        }
+                    }
+                    
+                    // Encontra a posição equivalente no novo valor
+                    let currentDigits = 0;
+                    for (let i = 0; i < newValue.length; i++) {
+                        if (/\d/.test(newValue[i])) {
+                            currentDigits++;
+                            if (currentDigits >= digitCount) {
+                                return Math.min(i + 1, newValue.length);
+                            }
+                        }
+                    }
+                    
+                    return newValue.length;
+                }
+
+                function setValueAndCursor(field, newValue, oldValue, cursorPos) {
+                    try {
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(field, newValue);
+                        
+                        // Calcula nova posição do cursor
+                        const newCursorPos = calculateSmartCursorPosition(oldValue, newValue, cursorPos);
+                        
+                        // Define a posição do cursor com pequeno delay para garantir que o valor foi definido
+                        setTimeout(() => {
+                            if (field.setSelectionRange && typeof field.setSelectionRange === 'function') {
+                                try {
+                                    field.setSelectionRange(newCursorPos, newCursorPos);
+                                } catch (e) {
+                                    // Fallback silencioso se não conseguir definir a posição
+                                }
+                            }
+                        }, 10);
+                    } catch (error) {
+                        // Fallback para método padrão se houver erro
+                        field.value = newValue;
                     }
                 }
 

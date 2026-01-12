@@ -1923,7 +1923,7 @@ class WcBetterShippingCalculatorForBrazil
      * 
      * @param string $phone Número de telefone
      * @param string $country_code Código do país
-     * @return string Telefone formatado como +5599999999999
+     * @return string Telefone formatado
      */
     private function format_complete_phone($phone, $country_code = '')
     {
@@ -1939,7 +1939,7 @@ class WcBetterShippingCalculatorForBrazil
             return $clean_phone;
         }
         
-        // Tenta usar o código do país se fornecido
+        // Se não começa com + e tem código do país, adiciona no início
         if (!empty($country_code)) {
             $clean_country_code = preg_replace('/[^0-9+]/', '', $country_code);
             
@@ -1948,22 +1948,11 @@ class WcBetterShippingCalculatorForBrazil
                 $clean_country_code = '+' . $clean_country_code;
             }
             
-            // Remove o código do país do telefone se já estiver lá
-            $country_digits = substr($clean_country_code, 1); // Remove o +
-            if (strpos($clean_phone, $country_digits) === 0) {
-                $clean_phone = substr($clean_phone, strlen($country_digits));
-            }
-            
             return $clean_country_code . $clean_phone;
         }
         
-        // Se não tem código do país, assume Brasil (+55) se não começar com código internacional
-        if (strlen($clean_phone) <= 11) {
-            return '+55' . $clean_phone;
-        }
-        
-        // Se tem mais de 11 dígitos, adiciona + no início
-        return '+' . $clean_phone;
+        // Se não tem código do país, deixa como está
+        return $clean_phone;
     }
     
     /**

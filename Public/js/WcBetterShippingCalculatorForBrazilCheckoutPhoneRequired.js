@@ -121,16 +121,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                                         foundCountry.iso2, 
                                                         intlTelInputUtils.numberFormat.NATIONAL
                                                     );
-
-                                                    if (formatted && formatted !== 'Invalid number') {
-                                                        // Formato final: +{country_code} {número formatado}
-                                                        const finalValue = `+${potentialCode} ${formatted}`;
-                                                        
-                                                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                                        nativeSetter.call(phoneField, finalValue);
-                                                        
-                                                        // Atualiza campos hidden
-                                                        updateHiddenCountryCodeField(fieldSelector, `+${potentialCode}`);
+                                        
+                                        if (formatted && formatted !== 'Invalid number') {
+                                            // Formato final: +{country_code} {número formatado}
+                                            const finalValue = `+${potentialCode} ${formatted}`;
+                                            
+                                            updateHiddenCountryCodeField(fieldSelector, `+${potentialCode}`);
                                                         
                                                         triggerReactChange(phoneField, finalValue);
                                                         countryDetected = true;
@@ -181,14 +177,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     try {
                         const currentValue = phoneField.value;
                         
+                        // Captura a posição atual do cursor ANTES de qualquer modificação
+                        const cursorPosition = phoneField.selectionStart;
+                        const cursorEnd = phoneField.selectionEnd;
+                        
+                        // Detecta se foi uma operação de deleção (backspace/delete)
+                        const isDeletion = event && (
+                            event.inputType === 'deleteContentBackward' ||
+                            event.inputType === 'deleteContentForward' ||
+                            event.inputType === 'deleteByCut' ||
+                            (context === 'Input' && event.data === null)
+                        );
+                        
                         // Se o campo está vazio, só notifica o React e retorna
                         if (!currentValue || currentValue.trim() === '') {
                             triggerReactChange(phoneField, currentValue);
                             return;
                         }
                         
-                        // Se só tem caracteres especiais (parênteses, traços, espaços), limpa o campo
-                        const onlySpecialChars = /^[\s()\-+]*$/.test(currentValue);
+                        // Se só tem caracteres especiais (parênteses, traços, espaços) MAS NÃO é um + inicial, limpa o campo
+                        const onlySpecialChars = /^[\s()\-]*$/.test(currentValue);
                         if (onlySpecialChars) {
                             const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                             nativeSetter.call(phoneField, '');
@@ -218,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                             countryData.iso2, 
                                             intlTelInputUtils.numberFormat.NATIONAL
                                         );
-
+                                        
                                         if (formatted && formatted !== 'Invalid number') {
                                             // Verifica se a formatação não remove dígitos
                                             const inputDigits = cleanLocalNumber.replace(/\D/g, '');
@@ -228,18 +236,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 // Perda de dígitos detectada, usa só números
                                                 const finalValue = `+${dialCode} ${inputDigits}`;
                                                 setTimeout(() => {
-                                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                                    nativeSetter.call(phoneField, finalValue);
-                                                    triggerReactChange(phoneField, finalValue);
+                                                    setValueAndCursor(finalValue, cursorPosition, currentValue, isDeletion);
                                                 }, 10);
                                                 return;
                                             } else {
                                                 // Formatação segura, usa resultado formatado
                                                 const finalValue = `+${dialCode} ${formatted}`;
                                                 setTimeout(() => {
-                                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                                    nativeSetter.call(phoneField, finalValue);
-                                                    triggerReactChange(phoneField, finalValue);
+                                                    setValueAndCursor(finalValue, cursorPosition, currentValue, isDeletion);
                                                 }, 10);
                                                 return;
                                             }
@@ -276,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 countryData.iso2, 
                                                 intlTelInputUtils.numberFormat.NATIONAL
                                             );
-
+                                            
                                             if (formatted && formatted !== 'Invalid number') {
                                                 // Verifica se a formatação não remove dígitos
                                                 const inputDigits = cleanLocalNumber.replace(/\D/g, '');
@@ -285,16 +289,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 if (inputDigits.length > outputDigits.length) {
                                                     // Perda de dígitos detectada, usa só números
                                                     const finalValue = `+${dialCode} ${inputDigits}`;
-                                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                                    nativeSetter.call(phoneField, finalValue);
-                                                    triggerReactChange(phoneField, finalValue);
+                                                    setValueAndCursor(finalValue, cursorPosition, currentValue, isDeletion);
                                                     return;
                                                 } else {
                                                     // Formatação segura, usa resultado formatado
                                                     const finalValue = `+${dialCode} ${formatted}`;
-                                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                                    nativeSetter.call(phoneField, finalValue);
-                                                    triggerReactChange(phoneField, finalValue);
+                                                    setValueAndCursor(finalValue, cursorPosition, currentValue, isDeletion);
                                                     return;
                                                 }
                                             }
@@ -324,23 +324,38 @@ document.addEventListener('DOMContentLoaded', function() {
                                     countryData.iso2, 
                                     intlTelInputUtils.numberFormat.NATIONAL
                                 );
-
+                                
+                                // Só aplica formatação se realmente mudou E se não é apenas uma questão de formatação vs não-formatação do mesmo conteúdo
                                 if (formatted && formatted !== 'Invalid number' && formatted !== currentValue) {
                                     // Verifica se a formatação não remove dígitos
                                     const inputDigits = cleanValue.replace(/\D/g, '');
                                     const outputDigits = formatted.replace(/\D/g, '');
                                     
-                                    if (inputDigits.length > outputDigits.length) {
+                                    // Se os dígitos são os mesmos, só aplica formatação se realmente melhorar a apresentação
+                                    if (inputDigits === outputDigits) {
+                                        // Se o valor atual já está formatado de forma diferente, aplica a nova formatação
+                                        const currentDigits = currentValue.replace(/\D/g, '');
+                                        if (currentDigits === inputDigits) {
+                                            // Só formata se a nova formatação é realmente diferente e melhor
+                                            const hasParentheses = formatted.includes('(') && formatted.includes(')');
+                                            const currentHasParentheses = currentValue.includes('(') && currentValue.includes(')');
+                                            
+                                            // Se ambos têm ou não têm parênteses, não muda
+                                            if (hasParentheses === currentHasParentheses) {
+                                                triggerReactChange(phoneField, currentValue);
+                                                return;
+                                            }
+                                        }
+                                        
+                                        setValueAndCursor(formatted, cursorPosition, currentValue, isDeletion);
+                                        return;
+                                    } else if (inputDigits.length > outputDigits.length) {
                                         // Perda de dígitos detectada, usa só números sem formatação
-                                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                        nativeSetter.call(phoneField, inputDigits);
-                                        triggerReactChange(phoneField, inputDigits);
+                                        setValueAndCursor(inputDigits, cursorPosition, currentValue, isDeletion);
                                         return;
                                     } else {
                                         // Formatação segura, usa resultado formatado
-                                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                        nativeSetter.call(phoneField, formatted);
-                                        triggerReactChange(phoneField, formatted);
+                                        setValueAndCursor(formatted, cursorPosition, currentValue, isDeletion);
                                         return;
                                     }
                                 }
@@ -356,6 +371,104 @@ document.addEventListener('DOMContentLoaded', function() {
                     } catch (error) {
                         console.warn('Erro na aplicação da máscara:', error);
                     }
+                }
+                
+                // Função para preservar posição do cursor durante formatação
+                function setValueAndCursor(newValue, originalCursorPos, originalValue, isDeletion = false) {
+                    try {
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(phoneField, newValue);
+                        
+                        // Calcula nova posição do cursor de forma mais inteligente
+                        let newCursorPos = calculateSmartCursorPosition(originalValue, newValue, originalCursorPos, isDeletion);
+                        
+                        // Garante que a posição está dentro dos limites
+                        newCursorPos = Math.max(0, Math.min(newCursorPos, newValue.length));
+                        
+                        // Restaura a posição do cursor
+                        setTimeout(() => {
+                            if (phoneField.setSelectionRange) {
+                                phoneField.setSelectionRange(newCursorPos, newCursorPos);
+                            }
+                        }, 0);
+                        
+                        triggerReactChange(phoneField, newValue);
+                    } catch (error) {
+                        console.warn('Erro ao definir valor e cursor:', error);
+                        // Fallback sem preservação de cursor
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(phoneField, newValue);
+                        triggerReactChange(phoneField, newValue);
+                    }
+                }
+                
+                // Função para calcular posição inteligente do cursor
+                function calculateSmartCursorPosition(originalValue, newValue, originalCursorPos, isDeletion = false) {
+                    // Se os valores são iguais, mantém a posição
+                    if (originalValue === newValue) {
+                        return originalCursorPos;
+                    }
+                    
+                    // Proteção contra cursor fora dos limites
+                    if (originalCursorPos > originalValue.length) {
+                        return newValue.length;
+                    }
+                    
+                    // Se cursor está no início, mantém no início
+                    if (originalCursorPos === 0) {
+                        return 0;
+                    }
+                    
+                    // Se cursor está no final, mantém no final
+                    if (originalCursorPos >= originalValue.length) {
+                        return newValue.length;
+                    }
+                    
+                    // Extrai apenas dígitos de ambos os valores para mapear posições
+                    const originalDigits = originalValue.replace(/\D/g, '');
+                    const newValueDigits = newValue.replace(/\D/g, '');
+                    
+                    // Conta quantos dígitos há antes da posição original do cursor
+                    const textBeforeCursor = originalValue.substring(0, originalCursorPos);
+                    const digitsBeforeCursor = textBeforeCursor.replace(/\D/g, '').length;
+                    
+                    // Se não há dígitos antes do cursor, coloca no início
+                    if (digitsBeforeCursor === 0) {
+                        return 0;
+                    }
+                    
+                    // Encontra a posição no novo valor onde temos o mesmo número de dígitos
+                    let digitCount = 0;
+                    let newPosition = 0;
+                    
+                    for (let i = 0; i < newValue.length; i++) {
+                        const char = newValue[i];
+                        
+                        if (/\d/.test(char)) {
+                            digitCount++;
+                            
+                            // Se chegamos ao número de dígitos que havia antes do cursor original
+                            if (digitCount === digitsBeforeCursor) {
+                                newPosition = i + 1; // Posição após este dígito
+                                break;
+                            }
+                        }
+                        
+                        // Se ainda não chegamos no número de dígitos, continua
+                        if (digitCount < digitsBeforeCursor) {
+                            newPosition = i + 1;
+                        }
+                    }
+                    
+                    // Se não conseguimos encontrar dígitos suficientes, vai para o final
+                    if (digitCount < digitsBeforeCursor) {
+                        return newValue.length;
+                    }
+                    
+                    // Garante que a posição não seja maior que o comprimento
+                    newPosition = Math.min(newPosition, newValue.length);
+                    
+                    return newPosition;
                 }
 
                 // Função para encontrar país pelo código de discagem
@@ -774,10 +887,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 if (!phoneField.dataset.inputListenerAdded) {
+                    let inputTimeout;
+                    
                     phoneField.addEventListener('input', function(event) {
-                        Promise.resolve().then(() => {
-                            applyPhoneFormatting(event, 'Input');
-                        });
+                        // Cancela timeout anterior se existir (debounce para operações rápidas)
+                        if (inputTimeout) {
+                            clearTimeout(inputTimeout);
+                        }
+                        
+                        // Só aplica formatação se não for uma mudança de seleção/cursor
+                        if (event.inputType !== 'insertCompositionText' && 
+                            event.inputType !== 'selectAll' &&
+                            !event.isComposing) {
+                            
+                            // Para operações de deleção, usa delay menor para melhor responsividade
+                            const isDelete = event.inputType === 'deleteContentBackward' || 
+                                           event.inputType === 'deleteContentForward' ||
+                                           event.data === null;
+                            const delay = isDelete ? 5 : 10;
+                            
+                            inputTimeout = setTimeout(() => {
+                                applyPhoneFormatting(event, 'Input');
+                            }, delay);
+                        }
                     }, { passive: true });
                     phoneField.dataset.inputListenerAdded = 'true';
                 }
