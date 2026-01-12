@@ -1677,13 +1677,13 @@ class WcBetterShippingCalculatorForBrazil
         }
         
         // Get plugin settings
-        $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
         
         // Get order meta data
         $shipping_phone_country_code = $order->get_meta('_shipping_phone_country_code');
         
         // Prepare display data
-        $display_data = $this->prepare_shipping_display_data($order, $phone_required, $shipping_phone_country_code);
+        $display_data = $this->prepare_shipping_display_data($order, $phone_mask_enabled, $shipping_phone_country_code);
         
         // Only show section if there's data to display
         if (!empty($display_data)) {
@@ -1696,16 +1696,16 @@ class WcBetterShippingCalculatorForBrazil
      * Prepare shipping display data
      * 
      * @param WC_Order $order
-     * @param string $phone_required
+     * @param string $phone_mask_enabled
      * @param string $shipping_phone_country_code
      * @return array
      */
-    private function prepare_shipping_display_data($order, $phone_required, $shipping_phone_country_code)
+    private function prepare_shipping_display_data($order, $phone_mask_enabled, $shipping_phone_country_code)
     {
         $display_data = [];
         
         // Phone data
-        if ($phone_required === 'yes') {
+        if ($phone_mask_enabled === 'yes') {
             $phone = $order->get_shipping_phone();
             if (!empty($phone)) {
                 // Formatar telefone completo
@@ -1769,7 +1769,7 @@ class WcBetterShippingCalculatorForBrazil
         
         // Get plugin settings
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
-        $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
         
         // Get order meta data
         $billing_persontype = $order->get_meta('_billing_persontype');
@@ -1778,7 +1778,7 @@ class WcBetterShippingCalculatorForBrazil
         $billing_phone_country_code = $order->get_meta('_billing_phone_country_code');
         
         // Prepare display data
-        $display_data = $this->prepare_billing_display_data($order, $person_type, $phone_required, $billing_persontype, $billing_cpf, $billing_cnpj, $billing_phone_country_code);
+        $display_data = $this->prepare_billing_display_data($order, $person_type, $phone_mask_enabled, $billing_persontype, $billing_cpf, $billing_cnpj, $billing_phone_country_code);
         
         // Only show section if there's data to display
         if (!empty($display_data)) {
@@ -1792,14 +1792,14 @@ class WcBetterShippingCalculatorForBrazil
      * 
      * @param WC_Order $order
      * @param string $person_type
-     * @param string $phone_required
+     * @param string $phone_mask_enabled
      * @param string $billing_persontype
      * @param string $billing_cpf
      * @param string $billing_cnpj
      * @param string $billing_phone_country_code
      * @return array
      */
-    private function prepare_billing_display_data($order, $person_type, $phone_required, $billing_persontype, $billing_cpf, $billing_cnpj, $billing_phone_country_code)
+    private function prepare_billing_display_data($order, $person_type, $phone_mask_enabled, $billing_persontype, $billing_cpf, $billing_cnpj, $billing_phone_country_code)
     {
         $display_data = [];
         
@@ -1865,7 +1865,7 @@ class WcBetterShippingCalculatorForBrazil
         }
         
         // Phone data
-        if ($phone_required === 'yes') {
+        if ($phone_mask_enabled === 'yes') {
             $phone = $order->get_billing_phone();
             if (!empty($phone)) {
                 // Formatar telefone completo
@@ -1987,9 +1987,9 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function format_order_billing_phone($phone, $order)
     {
-        $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
         
-        if ($phone_required === 'yes' && !empty($phone)) {
+        if ($phone_mask_enabled === 'yes' && !empty($phone)) {
             $country_code = $order->get_meta('_billing_phone_country_code');
             return $this->format_complete_phone($phone, $country_code);
         }
@@ -2006,9 +2006,9 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function format_order_shipping_phone($phone, $order)
     {
-        $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
         
-        if ($phone_required === 'yes' && !empty($phone)) {
+        if ($phone_mask_enabled === 'yes' && !empty($phone)) {
             $country_code = $order->get_meta('_shipping_phone_country_code');
             return $this->format_complete_phone($phone, $country_code);
         }
