@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', function() {
         phoneFields.forEach(function(fieldSelector) {
             const phoneField = document.querySelector(fieldSelector);
             let countryChanged = false;
+            let isFormatting = false;
+            let lastFormattedValue = '';
             
             if (phoneField && !phoneField.dataset.intlTelInputInitialized) {
                 let iti = intlTelInput(phoneField, {
@@ -175,201 +177,218 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 function applyPhoneFormatting(event, context = 'input') {
                     try {
-                        const currentValue = phoneField.value;
-                        
-                        // Captura a posição atual do cursor ANTES de qualquer modificação
-                        const cursorPosition = phoneField.selectionStart;
-                        const cursorEnd = phoneField.selectionEnd;
-                        
-                        // Detecta se foi uma operação de deleção (backspace/delete)
-                        const isDeletion = event && (
-                            event.inputType === 'deleteContentBackward' ||
-                            event.inputType === 'deleteContentForward' ||
-                            event.inputType === 'deleteByCut' ||
-                            (context === 'Input' && event.data === null)
-                        );
-                        
-                        // Se o campo está vazio, só notifica o React e retorna
-                        if (!currentValue || currentValue.trim() === '') {
-                            triggerReactChange(phoneField, currentValue);
+                        // Evita formatação se já estamos formatando
+                        if (isFormatting) {
                             return;
                         }
                         
-                        // Se só tem caracteres especiais (parênteses, traços, espaços) MAS NÃO é um + inicial, limpa o campo
-                        const onlySpecialChars = /^[\s()\-]*$/.test(currentValue);
-                        if (onlySpecialChars) {
-                            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                            nativeSetter.call(phoneField, '');
-                            triggerReactChange(phoneField, '');
+                        const currentValue = phoneField.value;
+                        
+                        // Se o valor não mudou desde a última formatação, não faz nada
+                        if (currentValue === lastFormattedValue) {
+                            return;
+                        }
+                        
+                        isFormatting = true;
+                        
+                        // Se o campo está vazio, só atualiza o valor e retorna
+                        if (!currentValue || currentValue.trim() === '') {
+                            triggerReactChange(phoneField, currentValue);
+                            lastFormattedValue = currentValue;
+                            isFormatting = false;
+                            return;
+                        }
+                        
+                        // Se o valor contém apenas caracteres especiais sem números, limpa o campo
+                        // EXCETO se é apenas '+' no início (permite começar número internacional)
+                        const onlyDigits = currentValue.replace(/\D/g, '');
+                        if (onlyDigits === '' && currentValue.trim() !== '' && currentValue.trim() !== '+') {
+                            const cursorPos = phoneField.selectionStart || 0;
+                            setValueAndCursor('', cursorPos, currentValue, false);
+                            lastFormattedValue = '';
+                            isFormatting = false;
                             return;
                         }
                         
                         // Detecta código internacional seguido de espaço (ex: "+55 11987654321")
                         const internationalWithSpace = currentValue.match(/^\+(\d{1,4})\s+(.*)$/);
+                        
                         if (internationalWithSpace) {
-                            const dialCode = internationalWithSpace[1];
-                            const localNumber = internationalWithSpace[2];
+                            const userDialCode = internationalWithSpace[1]; // Código que o usuário digitou
                             
-                            // Tenta encontrar o país pelo código
-                            const countryByDialCode = findCountryByDialCode(dialCode);
-                            if (countryByDialCode) {
-                                // Seleciona o país automaticamente
-                                iti.setCountry(countryByDialCode);
+                            // Deixa a biblioteca detectar automaticamente e usa getSelectedCountryData
+                            setTimeout(() => {
+                                const countryData = iti.getSelectedCountryData();
                                 
-                                // Formata o número local e reconecta com código
-                                const cleanLocalNumber = localNumber.replace(/\D/g, '');
-                                if (cleanLocalNumber.length > 0) {
-                                    try {
-                                        const countryData = iti.getSelectedCountryData();
-                                        const formatted = intlTelInputUtils.formatNumber(
-                                            cleanLocalNumber, 
-                                            countryData.iso2, 
-                                            intlTelInputUtils.numberFormat.NATIONAL
-                                        );
-                                        
-                                        if (formatted && formatted !== 'Invalid number') {
-                                            // Verifica se a formatação não remove dígitos
-                                            const inputDigits = cleanLocalNumber.replace(/\D/g, '');
-                                            const outputDigits = formatted.replace(/\D/g, '');
-                                            
-                                            if (inputDigits.length > outputDigits.length) {
-                                                // Perda de dígitos detectada, usa só números
-                                                const finalValue = `+${dialCode} ${inputDigits}`;
-                                                setTimeout(() => {
-                                                    setValueAndCursor(finalValue, cursorPosition, currentValue, isDeletion);
-                                                }, 10);
-                                                return;
-                                            } else {
-                                                // Formatação segura, usa resultado formatado
-                                                const finalValue = `+${dialCode} ${formatted}`;
-                                                setTimeout(() => {
-                                                    setValueAndCursor(finalValue, cursorPosition, currentValue, isDeletion);
-                                                }, 10);
-                                                return;
-                                            }
-                                        }
-                                    } catch (formatError) {
-                                        // Se erro na formatação, mantém o valor original
-                                        triggerReactChange(phoneField, currentValue);
+                                if (countryData && countryData.dialCode) {
+                                    const detectedDialCode = countryData.dialCode;
+                                    const localNumber = internationalWithSpace[2];
+                                    
+                                    // Se o usuário está digitando um código diferente do detectado, não formata ainda
+                                    if (userDialCode !== detectedDialCode) {
+                                        lastFormattedValue = currentValue;
+                                        isFormatting = false;
                                         return;
                                     }
-                                }
-                            }
-                        }
-                        
-                        // Detecta código internacional sem espaço mas com números após (ex: "+5511987654321")
-                        const internationalWithoutSpace = currentValue.match(/^\+(\d{1,4})(.+)$/);
-                        if (internationalWithoutSpace) {
-                            const dialCode = internationalWithoutSpace[1];
-                            const restOfNumber = internationalWithoutSpace[2];
-                            
-                            // Se tem números após o código, tenta encontrar o país
-                            if (restOfNumber.length > 0 && /\d/.test(restOfNumber)) {
-                                const countryByDialCode = findCountryByDialCode(dialCode);
-                                if (countryByDialCode) {
-                                    // Seleciona o país automaticamente
-                                    iti.setCountry(countryByDialCode);
                                     
-                                    // Separa em: código internacional + número local formatado
-                                    const cleanLocalNumber = restOfNumber.replace(/\D/g, '');
+                                    // Formata o número local e reconecta com código
+                                    const cleanLocalNumber = localNumber.replace(/\D/g, '');
+                                    
                                     if (cleanLocalNumber.length > 0) {
                                         try {
-                                            const countryData = iti.getSelectedCountryData();
                                             const formatted = intlTelInputUtils.formatNumber(
                                                 cleanLocalNumber, 
                                                 countryData.iso2, 
                                                 intlTelInputUtils.numberFormat.NATIONAL
                                             );
-                                            
+
+                                            // VERIFICAÇÃO CRÍTICA: Impede formatação que remove dígitos
+                                            const inputDigits = cleanLocalNumber.replace(/\D/g, '');
+                                            const outputDigits = formatted.replace(/\D/g, '');
+
                                             if (formatted && formatted !== 'Invalid number') {
-                                                // Verifica se a formatação não remove dígitos
-                                                const inputDigits = cleanLocalNumber.replace(/\D/g, '');
-                                                const outputDigits = formatted.replace(/\D/g, '');
-                                                
+                                                // Se a formatação removeu dígitos, NÃO aplica
                                                 if (inputDigits.length > outputDigits.length) {
-                                                    // Perda de dígitos detectada, usa só números
-                                                    const finalValue = `+${dialCode} ${inputDigits}`;
-                                                    setValueAndCursor(finalValue, cursorPosition, currentValue, isDeletion);
-                                                    return;
-                                                } else {
-                                                    // Formatação segura, usa resultado formatado
-                                                    const finalValue = `+${dialCode} ${formatted}`;
-                                                    setValueAndCursor(finalValue, cursorPosition, currentValue, isDeletion);
+                                                    const finalValue = `+${userDialCode} ${cleanLocalNumber}`;
+                                                    const cursorPos = phoneField.selectionStart || 0;
+                                                    setValueAndCursor(finalValue, cursorPos, currentValue, false);
+                                                    lastFormattedValue = finalValue;
+                                                    isFormatting = false;
                                                     return;
                                                 }
+                                                
+                                                // Usa o código que o usuário digitou, não o detectado pela biblioteca
+                                                const finalValue = `+${userDialCode} ${formatted}`;
+                                                
+                                                setTimeout(() => {
+                                                    const cursorPos = phoneField.selectionStart || 0;
+                                                    setValueAndCursor(finalValue, cursorPos, currentValue, false);
+                                                    lastFormattedValue = finalValue;
+                                                    isFormatting = false;
+                                                }, 10);
+                                                return;
                                             }
                                         } catch (formatError) {
                                             // Se erro na formatação, mantém o valor original
-                                            triggerReactChange(phoneField, currentValue);
+                                            lastFormattedValue = currentValue;
+                                            isFormatting = false;
                                             return;
+                                        }
+                                    }
+                                }
+                            }, 50); // Pequeno delay para garantir processamento da biblioteca
+                        }
+                        
+                        // Detecta código internacional sem espaço mas com números após (ex: "+5511987654321")
+                        const internationalWithoutSpace = currentValue.match(/^\+(\d{1,4})(\d+)$/);
+                        
+                        if (internationalWithoutSpace) {
+                            const potentialDialCode = internationalWithoutSpace[1];
+                            const restOfNumber = internationalWithoutSpace[2];
+                            
+                            // Verifica se tem números suficientes após o código
+                            if (restOfNumber.length > 0) {
+                                // Tenta diferentes tamanhos de código de país, do MAIOR para o MENOR (4→3→2→1)
+                                let countryDetected = false;
+                                const fullNumber = potentialDialCode + restOfNumber;
+                                
+                                for (let codeLength = Math.min(4, potentialDialCode.length + restOfNumber.length); codeLength >= 1 && !countryDetected; codeLength--) {
+                                    if (fullNumber.length >= codeLength) {
+                                        const testCode = fullNumber.substring(0, codeLength);
+                                        const remainingNumber = fullNumber.substring(codeLength);
+                                        
+                                        const foundCountryCode = findCountryByDialCode(testCode);
+                                        
+                                        if (foundCountryCode && remainingNumber.length > 0) {
+                                            // Define o país detectado
+                                            iti.setCountry(foundCountryCode);
+                                            
+                                            setTimeout(() => {
+                                                const countryData = iti.getSelectedCountryData();
+                                                
+                                                if (countryData && countryData.dialCode === testCode) {
+                                                    // Formata apenas o número local (sem incluir o código do país)
+                                                    const cleanLocalNumber = remainingNumber.replace(/\D/g, '');
+                                                    
+                                                    if (cleanLocalNumber.length > 0) {
+                                                        try {
+                                                            const formatted = intlTelInputUtils.formatNumber(
+                                                                cleanLocalNumber, 
+                                                                countryData.iso2, 
+                                                                intlTelInputUtils.numberFormat.NATIONAL
+                                                            );
+
+                                                            if (formatted && formatted !== 'Invalid number') {
+                                                                const inputDigits = cleanLocalNumber.replace(/\D/g, '');
+                                                                const outputDigits = formatted.replace(/\D/g, '');
+                                                                
+                                                                if (inputDigits.length > outputDigits.length) {
+                                                                    const finalValue = `+${testCode} ${cleanLocalNumber}`;
+                                                                    const cursorPos = phoneField.selectionStart || 0;
+                                                                    setValueAndCursor(finalValue, cursorPos, currentValue, false);
+                                                                } else {
+                                                                    const finalValue = `+${testCode} ${formatted}`;
+                                                                    const cursorPos = phoneField.selectionStart || 0;
+                                                                    setValueAndCursor(finalValue, cursorPos, currentValue, false);
+                                                                }
+                                                                
+                                                                lastFormattedValue = phoneField.value;
+                                                                isFormatting = false;
+                                                                countryDetected = true;
+                                                                return;
+                                                            }
+                                                        } catch (formatError) {
+                                                            // Continua tentando outros tamanhos
+                                                        }
+                                                    }
+                                                }
+                                            }, 50);
+                                            
+                                            if (countryDetected) break;
                                         }
                                     }
                                 }
                             }
                         }
                         
-                        // Se é um número internacional sem espaço (ainda digitando), preserva
-                        if (currentValue.startsWith('+')) {
-                            triggerReactChange(phoneField, currentValue);
-                            return;
-                        }
-                        
-                        const cleanValue = currentValue.replace(/\D/g, '');
-                        const countryData = iti.getSelectedCountryData();
-                        
-                        if (cleanValue.length > 0) {
-                            try {
-                                const formatted = intlTelInputUtils.formatNumber(
-                                    cleanValue, 
-                                    countryData.iso2, 
-                                    intlTelInputUtils.numberFormat.NATIONAL
-                                );
-                                
-                                // Só aplica formatação se realmente mudou E se não é apenas uma questão de formatação vs não-formatação do mesmo conteúdo
-                                if (formatted && formatted !== 'Invalid number' && formatted !== currentValue) {
-                                    // Verifica se a formatação não remove dígitos
-                                    const inputDigits = cleanValue.replace(/\D/g, '');
-                                    const outputDigits = formatted.replace(/\D/g, '');
+                        // Se é um número nacional, aplica formatação nacional
+                        if (!currentValue.startsWith('+')) {
+                            const cleanValue = currentValue.replace(/\D/g, '');
+                            const countryData = iti.getSelectedCountryData();
+                            
+                            if (countryData && countryData.dialCode && countryData.iso2 && countryData.dialCode !== 'undefined' && cleanValue.length > 0) {
+                                try {
+                                    const formatted = intlTelInputUtils.formatNumber(
+                                        cleanValue, 
+                                        countryData.iso2, 
+                                        intlTelInputUtils.numberFormat.NATIONAL
+                                    );
                                     
-                                    // Se os dígitos são os mesmos, só aplica formatação se realmente melhorar a apresentação
-                                    if (inputDigits === outputDigits) {
-                                        // Se o valor atual já está formatado de forma diferente, aplica a nova formatação
-                                        const currentDigits = currentValue.replace(/\D/g, '');
-                                        if (currentDigits === inputDigits) {
-                                            // Só formata se a nova formatação é realmente diferente e melhor
-                                            const hasParentheses = formatted.includes('(') && formatted.includes(')');
-                                            const currentHasParentheses = currentValue.includes('(') && currentValue.includes(')');
-                                            
-                                            // Se ambos têm ou não têm parênteses, não muda
-                                            if (hasParentheses === currentHasParentheses) {
-                                                triggerReactChange(phoneField, currentValue);
-                                                return;
-                                            }
-                                        }
+                                    if (formatted && formatted !== 'Invalid number' && formatted !== currentValue) {
+                                        const inputDigits = cleanValue.replace(/\D/g, '');
+                                        const outputDigits = formatted.replace(/\D/g, '');
                                         
-                                        setValueAndCursor(formatted, cursorPosition, currentValue, isDeletion);
-                                        return;
-                                    } else if (inputDigits.length > outputDigits.length) {
-                                        // Perda de dígitos detectada, usa só números sem formatação
-                                        setValueAndCursor(inputDigits, cursorPosition, currentValue, isDeletion);
-                                        return;
-                                    } else {
-                                        // Formatação segura, usa resultado formatado
-                                        setValueAndCursor(formatted, cursorPosition, currentValue, isDeletion);
-                                        return;
+                                        if (inputDigits === outputDigits) {
+                                            const cursorPos = phoneField.selectionStart || 0;
+                                            setValueAndCursor(formatted, cursorPos, currentValue, false);
+                                            lastFormattedValue = formatted;
+                                            isFormatting = false;
+                                            return;
+                                        }
                                     }
+                                } catch (formatError) {
+                                    // Erro na formatação nacional
                                 }
-                            } catch (formatError) {
-                                // Se houve erro na formatação, notifica o React com valor atual
-                                triggerReactChange(phoneField, currentValue);
-                                return;
                             }
                         }
                         
                         // Para qualquer outro caso, notifica o React
                         triggerReactChange(phoneField, currentValue);
+                        lastFormattedValue = currentValue;
+                        isFormatting = false;
                     } catch (error) {
                         console.warn('Erro na aplicação da máscara:', error);
+                        isFormatting = false;
                     }
                 }
                 
@@ -386,11 +405,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         newCursorPos = Math.max(0, Math.min(newCursorPos, newValue.length));
                         
                         // Restaura a posição do cursor
-                        setTimeout(() => {
-                            if (phoneField.setSelectionRange) {
-                                phoneField.setSelectionRange(newCursorPos, newCursorPos);
-                            }
-                        }, 0);
+                        if (phoneField.setSelectionRange) {
+                            phoneField.setSelectionRange(newCursorPos, newCursorPos);
+                        }
                         
                         triggerReactChange(phoneField, newValue);
                     } catch (error) {
@@ -422,6 +439,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Se cursor está no final, mantém no final
                     if (originalCursorPos >= originalValue.length) {
                         return newValue.length;
+                    }
+                    
+                    // Para números internacionais, trata de forma especial
+                    if (originalValue.startsWith('+') && newValue.startsWith('+')) {
+                        // Se o cursor está na parte do código do país (+XX), preserva posição relativa
+                        const firstSpacePos = newValue.indexOf(' ');
+                        if (firstSpacePos > 0 && originalCursorPos <= firstSpacePos) {
+                            // Cursor está no código do país, mantém posição similar
+                            return Math.min(originalCursorPos, firstSpacePos);
+                        }
                     }
                     
                     // Extrai apenas dígitos de ambos os valores para mapear posições
@@ -710,7 +737,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     reactInstance.memoizedProps.onChange(fakeEvent);
                                     return;
                                 } catch (reactError) {
-                                    console.debug('React onChange error:', reactError);
+                                    // Silent error handling
                                 }
                             }
                         }
@@ -742,7 +769,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     value: input
                                 });
                             } catch (defineError) {
-                                console.debug('Event property definition error:', defineError);
+                                // Silent error handling
                             }
                         });
 
@@ -756,11 +783,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                     }, index * 5);
                                 });
                             } catch (eventError) {
-                                console.debug('Event dispatch error:', eventError);
+                                // Silent error handling
                             }
                         }, 0);
                     } catch (mainError) {
-                        console.debug('triggerReactChange error:', mainError);
+                        // Silent error handling
                     }
                 }
                 
@@ -915,11 +942,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 if (!phoneField.dataset.countryChangeListenerAdded) {
+                    let countryChangeTimeout;
                     phoneField.addEventListener('countrychange', function(event) {
-                        countryChanged = true;
+                        
+                        // Debounce para evitar múltiplos eventos
+                        if (countryChangeTimeout) {
+                            clearTimeout(countryChangeTimeout);
+                        }
+                        
+                        countryChangeTimeout = setTimeout(() => {
                         
                         // Captura o código do país selecionado
                         const countryData = iti.getSelectedCountryData();
+                        
+                        // Verifica se o countryData é válido
+                        if (!countryData || !countryData.dialCode || countryData.dialCode === 'undefined') {
+                            return;
+                        }
+                        
+                        countryChanged = true;
                         const dialCode = '+' + countryData.dialCode;
                         
                         // Atualiza campos hidden dinâmicos
@@ -953,8 +994,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         
                         Promise.resolve().then(() => {
+                            // Só aplica formatação se o campo não está bem formatado
+                            const currentVal = phoneField.value;
+                            // Se já tem formatação de telefone brasileiro OU se está digitando código internacional
+                            if (currentVal.match(/^\(\d{2}\)\s\d{4,5}-\d{4}$/) || 
+                                currentVal.match(/^\+\d{1,4}\s/) ||
+                                (currentVal.startsWith('+') && currentVal.replace(/\D/g, '').length <= 4)) {
+                                return;
+                            }
                             applyPhoneFormatting(event, 'Country Change');
                         });
+                        
+                        }, 100); // 100ms debounce
                     }, { passive: true });
                     phoneField.dataset.countryChangeListenerAdded = 'true';
                 }
@@ -1048,12 +1099,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 } catch (mutationError) {
                     // Silently ignore mutation processing errors
-                    console.debug('Mutation processing error:', mutationError);
                 }
             });
         } catch (observerError) {
             // Silently ignore observer errors
-            console.debug('Observer error:', observerError);
         }
     });
 
