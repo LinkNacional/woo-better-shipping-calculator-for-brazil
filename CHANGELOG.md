@@ -1,3 +1,8 @@
+# 4.7.3 - 13/01/26
+* Ajuste: campo de número de telefone com relação aos dígitos.
+* Ajuste: campo de número de telefone mais opções de configurações.
+* Ajuste: configuração da exibição do campo de CEP no shortcode.
+
 # 4.7.2 - 07/01/26
 * Ajuste: na verificação do campo número + plugin do brazilian.
 
