@@ -84,7 +84,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.7.2';
+            $this->version = '4.7.3';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -2425,7 +2425,6 @@ class WcBetterShippingCalculatorForBrazil
      * @param WP_Post $post Objeto do post
      * @param bool $update Se é uma atualização (true) ou novo post (false)
      * @param WP_Post|null $post_before Objeto do post antes da atualização (null para novos posts)
-     * @since 4.7.2
      */
 
     /**
