@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let lastFormattedValue = '';
             
             if (phoneField && !phoneField.dataset.intlTelInputInitialized) {
+                
                 let iti = intlTelInput(phoneField, {
                     initialCountry: 'br',
                     preferredCountries: ['br'],
@@ -38,6 +39,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 phoneField.dataset.intlTelInputInitialized = 'true';
                 adjustPhoneLabel(phoneField);
+                
+                // Adicionar watcher para detectar mudanças externas no campo
+                let lastKnownValue = phoneField.value;
+                const valueWatcher = setInterval(() => {
+                    if (phoneField.value !== lastKnownValue) {
+                        // Se a mudança externa removeu a formatação, reaplicamos
+                        const currentValue = phoneField.value;
+                        const wasFormatted = lastKnownValue.includes('(') || lastKnownValue.includes('-') || lastKnownValue.includes(' ');
+                        const isUnformatted = !currentValue.includes('(') && !currentValue.includes('-') && currentValue.replace(/\D/g, '').length > 0;
+                        
+                        if (wasFormatted && isUnformatted && currentValue.startsWith('+')) {
+                            // Aguarda um pouco para garantir que a mudança externa terminou
+                            setTimeout(() => {
+                                // Só formata se o valor ainda está sem formatação
+                                if (!phoneField.value.includes('(') && !phoneField.value.includes('-') && phoneField.value.startsWith('+')) {
+                                    // Simula um evento de input para reativar a formatação
+                                    const syntheticEvent = {
+                                        target: phoneField,
+                                        type: 'input',
+                                        inputType: 'insertText'
+                                    };
+                                    applyPhoneFormatting(syntheticEvent, 'External Change Recovery');
+                                }
+                            }, 150);
+                        }
+                        
+                        lastKnownValue = phoneField.value;
+                    }
+                }, 100);
                 
                 // Formata valor inicial se já existir um número com +
                 const initialValue = phoneField.value;
@@ -208,6 +238,47 @@ document.addEventListener('DOMContentLoaded', function() {
                             lastFormattedValue = '';
                             isFormatting = false;
                             return;
+                        }
+                        
+                        // NOVA DETECÇÃO: Números internacionais "despidos" de formatação
+                        // Ex: "+5584987011784" deve virar "+55 (84) 98701-1784"
+                        const strippedInternational = currentValue.match(/^\+(\d{1,4})(\d{6,15})$/);
+                        if (strippedInternational) {
+                            const countryCode = strippedInternational[1];
+                            const phoneNumber = strippedInternational[2];
+                            
+                            // Tenta encontrar o país pelo código
+                            const foundCountryCode = findCountryByDialCode(countryCode);
+                            if (foundCountryCode) {
+                                iti.setCountry(foundCountryCode);
+                                
+                                setTimeout(() => {
+                                    try {
+                                        const formatted = intlTelInputUtils.formatNumber(
+                                            phoneNumber, 
+                                            foundCountryCode, 
+                                            intlTelInputUtils.numberFormat.NATIONAL
+                                        );
+                                        
+                                        if (formatted && formatted !== 'Invalid number') {
+                                            // Verifica se a formatação não remove dígitos
+                                            const inputDigits = phoneNumber.replace(/\D/g, '');
+                                            const outputDigits = formatted.replace(/\D/g, '');
+                                            
+                                            if (inputDigits === outputDigits) {
+                                                const finalValue = `+${countryCode} ${formatted}`;
+                                                const cursorPos = phoneField.selectionStart || 0;
+                                                setValueAndCursor(finalValue, cursorPos, currentValue, false);
+                                                lastFormattedValue = finalValue;
+                                                isFormatting = false;
+                                                return;
+                                            }
+                                        }
+                                    } catch (formatError) {
+                                        // Se erro na formatação, continua para próxima lógica
+                                    }
+                                }, 50);
+                            }
                         }
                         
                         // Detecta código internacional seguido de espaço (ex: "+55 11987654321")
@@ -944,7 +1015,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!phoneField.dataset.countryChangeListenerAdded) {
                     let countryChangeTimeout;
                     phoneField.addEventListener('countrychange', function(event) {
-                        
                         // Debounce para evitar múltiplos eventos
                         if (countryChangeTimeout) {
                             clearTimeout(countryChangeTimeout);

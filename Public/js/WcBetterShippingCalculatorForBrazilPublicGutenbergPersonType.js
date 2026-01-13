@@ -19,22 +19,31 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     /**
-     * Observer para esconder campo shipping-company imediatamente
+     * Observer para esconder campo shipping-company apenas quando company_field_behavior for dynamic
      */
     const shippingCompanyObserver = new MutationObserver((mutations) => {
-        const shippingCompanyInput = document.querySelector('#shipping-company');
-        if (shippingCompanyInput) {
-            const companyContainer = shippingCompanyInput.closest('.wc-block-components-text-input');
-            if (companyContainer) {
-                companyContainer.style.padding = '0';
-                companyContainer.style.margin = '0';
-                companyContainer.style.display = 'none';
+        // Verificar configuração antes de esconder
+        const companyFieldBehavior = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.company_field_behavior : 'dynamic';
+        
+        // Só esconder se for dynamic
+        if (companyFieldBehavior === 'dynamic') {
+            const shippingCompanyInput = document.querySelector('#shipping-company');
+            if (shippingCompanyInput) {
+                const companyContainer = shippingCompanyInput.closest('.wc-block-components-text-input');
+                if (companyContainer) {
+                    companyContainer.style.padding = '0';
+                    companyContainer.style.margin = '0';
+                    companyContainer.style.display = 'none';
+                }
             }
         }
     });
 
-    // Inicia observer para shipping-company imediatamente
-    shippingCompanyObserver.observe(document.body, { childList: true, subtree: true });
+    // Inicia observer para shipping-company apenas se company_field_behavior for dynamic
+    const companyFieldBehavior = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.company_field_behavior : 'dynamic';
+    if (companyFieldBehavior === 'dynamic') {
+        shippingCompanyObserver.observe(document.body, { childList: true, subtree: true });
+    }
 
     /**
      * Observer específico para monitorar o container (billing ou shipping) e recriar campos quando necessário
@@ -571,66 +580,70 @@ document.addEventListener("DOMContentLoaded", function () {
                         }
                     }
 
-                    // Validação do campo de empresa para CNPJ
-                    const companyInput = document.getElementById('billing-company');
-                    let companyContainer = document.querySelector('.wc-better-billing-company');
+                    // Validação do campo de empresa para CNPJ (apenas se company_field_behavior for dynamic)
+                    const companyFieldBehavior = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.company_field_behavior : 'dynamic';
                     
-                    // Se não encontrou nosso container, procurar o nativo
-                    if (!companyContainer && companyInput) {
-                        companyContainer = companyInput.closest('.wc-block-components-text-input') || 
-                                          companyInput.closest('.wc-better-company-controlled') || 
-                                          companyInput.parentElement;
-                    }
-                    
-                    // Verificar se o documento é realmente CNPJ antes de validar company
-                    const shouldValidate = shouldValidateCompanyField();
-                    
-                    if (companyInput && companyContainer && shouldValidate && companyContainer.style.display === 'block') {
-                        // Campo company está visível e documento é CNPJ válido, validar se está preenchido
-                        const companyValue = companyInput.value.trim();
+                    if (companyFieldBehavior === 'dynamic') {
+                        const companyInput = document.getElementById('billing-company');
+                        let companyContainer = document.querySelector('.wc-better-billing-company');
                         
-                        if (!companyValue) {
-                            event.stopPropagation();
-                            event.preventDefault();
-                            
-                            // Destacar o campo como obrigatório
-                            companyContainer.classList.add('has-error');
-                            if (companyInput.style) {
-                                companyInput.style.borderColor = '#d63638';
-                            }
-                            companyInput.setAttribute('aria-invalid', 'true');
-                            
-                            // Mostrar mensagem de erro
-                            showCompanyValidationError('Este campo é obrigatório para CNPJ.');
-                            
-                            // Scroll para o campo
-                            companyInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            
-                            // Focar no campo após o scroll
-                            setTimeout(() => {
-                                companyInput.focus();
-                            }, 300);
-                            return;
-                        } else {
-                            // Se está preenchido, remover erro
-                            companyContainer.classList.remove('has-error');
-                            if (companyInput.style) {
-                                companyInput.style.borderColor = '';
-                            }
-                            companyInput.setAttribute('aria-invalid', 'false');
-                            hideCompanyValidationError();
+                        // Se não encontrou nosso container, procurar o nativo
+                        if (!companyContainer && companyInput) {
+                            companyContainer = companyInput.closest('.wc-block-components-text-input') || 
+                                              companyInput.closest('.wc-better-company-controlled') || 
+                                              companyInput.parentElement;
                         }
-                    } else {
-                        // Se não devemos validar company (CPF ou documento inválido), remover qualquer erro
-                        if (companyContainer) {
-                            companyContainer.classList.remove('has-error');
-                            if (companyInput && companyInput.style) {
-                                companyInput.style.borderColor = '';
-                            }
-                            if (companyInput) {
+                        
+                        // Verificar se o documento é realmente CNPJ antes de validar company
+                        const shouldValidate = shouldValidateCompanyField();
+                        
+                        if (companyInput && companyContainer && shouldValidate && companyContainer.style.display === 'block') {
+                            // Campo company está visível e documento é CNPJ válido, validar se está preenchido
+                            const companyValue = companyInput.value.trim();
+                            
+                            if (!companyValue) {
+                                event.stopPropagation();
+                                event.preventDefault();
+                                
+                                // Destacar o campo como obrigatório
+                                companyContainer.classList.add('has-error');
+                                if (companyInput.style) {
+                                    companyInput.style.borderColor = '#d63638';
+                                }
+                                companyInput.setAttribute('aria-invalid', 'true');
+                                
+                                // Mostrar mensagem de erro
+                                showCompanyValidationError('Este campo é obrigatório para CNPJ.');
+                                
+                                // Scroll para o campo
+                                companyInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                
+                                // Focar no campo após o scroll
+                                setTimeout(() => {
+                                    companyInput.focus();
+                                }, 300);
+                                return;
+                            } else {
+                                // Se está preenchido, remover erro
+                                companyContainer.classList.remove('has-error');
+                                if (companyInput.style) {
+                                    companyInput.style.borderColor = '';
+                                }
                                 companyInput.setAttribute('aria-invalid', 'false');
+                                hideCompanyValidationError();
                             }
-                            hideCompanyValidationError();
+                        } else {
+                            // Se não devemos validar company (CPF ou documento inválido), remover qualquer erro
+                            if (companyContainer) {
+                                companyContainer.classList.remove('has-error');
+                                if (companyInput && companyInput.style) {
+                                    companyInput.style.borderColor = '';
+                                }
+                                if (companyInput) {
+                                    companyInput.setAttribute('aria-invalid', 'false');
+                                }
+                                hideCompanyValidationError();
+                            }
                         }
                     }
                 }
@@ -1139,6 +1152,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function setupExistingCompanyField(input, container, initialValue) {
+        // Verificar configuração do comportamento do campo empresa
+        const companyFieldBehavior = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.company_field_behavior : 'dynamic';
+        
+        // Se não for dynamic, não mexe no campo empresa - deixa como está
+        if (companyFieldBehavior !== 'dynamic') {
+            return;
+        }
         // Aplicar valor inicial se fornecido e campo estiver vazio
         if (initialValue && !input.value) {
             setNativeValue(input, initialValue);
