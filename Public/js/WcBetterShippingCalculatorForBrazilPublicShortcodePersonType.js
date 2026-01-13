@@ -295,7 +295,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // Exibir campo de empresa para CNPJ completo
             const cleanValue = documentValue.replace(/\D/g, '');
             if (cleanValue.length === 14) {
-                showCompanyField();
+                showCompanyFieldIfDynamic();
             } else {
                 hideCompanyField();
             }
@@ -307,7 +307,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (personTypeInput) personTypeInput.value = '1';
                 if (cpfInput) cpfInput.value = documentValue;
                 if (cnpjInput) cnpjInput.value = '';
-                hideCompanyField();
+                hideCompanyFieldIfDynamic();
             } else if (personTypeConfig === 'legal') {
                 if (personTypeInput) personTypeInput.value = '2';
                 if (cpfInput) cpfInput.value = '';
@@ -316,7 +316,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Para legal, verificar se CNPJ está completo
                 const cleanValue = documentValue.replace(/\D/g, '');
                 if (cleanValue.length === 14) {
-                    showCompanyField();
+                    showCompanyFieldIfDynamic();
                 } else {
                     hideCompanyField();
                 }
@@ -326,14 +326,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (cleanValue.length <= 11) {
                     if (cpfInput) cpfInput.value = documentValue;
                     if (cnpjInput) cnpjInput.value = '';
-                    hideCompanyField();
+                    hideCompanyFieldIfDynamic();
                 } else {
                     if (cpfInput) cpfInput.value = '';
                     if (cnpjInput) cnpjInput.value = documentValue;
                     
                     // Para CNPJ, só exibir campo quando completo (14 dígitos)
                     if (cleanValue.length === 14) {
-                        showCompanyField();
+                        showCompanyFieldIfDynamic();
                     } else {
                         hideCompanyField();
                     }
@@ -342,7 +342,65 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    function showCompanyFieldIfDynamic() {
+        // Verificar se a configuração do campo empresa permite mudanças dinâmicas
+        const companyBehavior = typeof WooBetterPersonTypeConfig !== 'undefined' ? 
+            WooBetterPersonTypeConfig.company_field_behavior : 'dynamic';
+        
+        // Só controlar o campo se estiver em modo dinâmico
+        if (companyBehavior === 'dynamic') {
+            showCompanyField();
+        }
+        // Se não for dinâmico, não mexe no campo (deixa como está configurado no WooCommerce)
+    }
+
+    function hideCompanyFieldIfDynamic() {
+        // Verificar se a configuração do campo empresa permite mudanças dinâmicas
+        const companyBehavior = typeof WooBetterPersonTypeConfig !== 'undefined' ? 
+            WooBetterPersonTypeConfig.company_field_behavior : 'dynamic';
+        
+        // Só controlar o campo se estiver em modo dinâmico
+        if (companyBehavior === 'dynamic') {
+            hideCompanyFieldOld();
+        }
+        // Se não for dinâmico, não mexe no campo (deixa como está configurado no WooCommerce)
+    }
+
     function hideCompanyField() {
+        // Verificar se a configuração do campo empresa permite mudanças dinâmicas
+        const companyBehavior = typeof WooBetterPersonTypeConfig !== 'undefined' ? 
+            WooBetterPersonTypeConfig.company_field_behavior : 'dynamic';
+        
+        // Só controlar o campo se estiver em modo dinâmico
+        if (companyBehavior === 'dynamic') {
+            const companyField = document.getElementById('billing_company_field');
+            
+            if (companyField) {
+                companyField.style.display = 'none';
+                companyField.style.padding = '0px';
+                companyField.style.margin = '0px';
+                companyField.style.height = '0px';
+                companyField.style.overflow = 'hidden';
+                
+                // Definir valor específico apenas se campo estiver vazio
+                const companyInput = document.getElementById('billing_company');
+                if (companyInput) {
+                    const currentValue = companyInput.value.trim();
+                    if (!currentValue) {
+                        companyInput.value = 'woonomedaempresa';
+                    }
+                    // Se já tem valor, não mexe nele
+                }
+                
+                // Remover classes de erro se existirem
+                companyField.classList.remove('woocommerce-invalid');
+                companyField.classList.remove('woocommerce-invalid-required-field');
+            }
+        }
+        // Se não for dinâmico, não mexe no campo (deixa como está configurado no WooCommerce)
+    }
+
+    function hideCompanyFieldOld() {
         const companyField = document.getElementById('billing_company_field');
         
         if (companyField) {
@@ -369,22 +427,30 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function showCompanyField() {
-        const companyField = document.getElementById('billing_company_field');
+        // Verificar se a configuração do campo empresa permite mudanças dinâmicas
+        const companyBehavior = typeof WooBetterPersonTypeConfig !== 'undefined' ? 
+            WooBetterPersonTypeConfig.company_field_behavior : 'dynamic';
         
-        if (companyField) {
-            companyField.style.display = '';
-            companyField.style.padding = '';
-            companyField.style.margin = '';
-            companyField.style.height = '';
-            companyField.style.overflow = '';
+        // Só controlar o campo se estiver em modo dinâmico
+        if (companyBehavior === 'dynamic') {
+            const companyField = document.getElementById('billing_company_field');
             
-            // Limpar apenas se tiver o valor específico (campo que estava vazio)
-            const companyInput = document.getElementById('billing_company');
-            if (companyInput && companyInput.value === 'woonomedaempresa') {
-                companyInput.value = '';
+            if (companyField) {
+                companyField.style.display = '';
+                companyField.style.padding = '';
+                companyField.style.margin = '';
+                companyField.style.height = '';
+                companyField.style.overflow = '';
+                
+                // Limpar apenas se tiver o valor específico (campo que estava vazio)
+                const companyInput = document.getElementById('billing_company');
+                if (companyInput && companyInput.value === 'woonomedaempresa') {
+                    companyInput.value = '';
+                }
+                // Se tiver qualquer outro valor, mantém como está
             }
-            // Se tiver qualquer outro valor, mantém como está
         }
+        // Se não for dinâmico, não mexe no campo (deixa como está configurado no WooCommerce)
     }
 
     function setupCompanyField() {
@@ -406,7 +472,7 @@ document.addEventListener("DOMContentLoaded", function () {
             
             // Mostrar ou esconder campo baseado na presença de CNPJ completo
             if (shouldShowCompany) {
-                showCompanyField();
+                showCompanyFieldIfDynamic();
             } else {
                 hideCompanyField();
             }

@@ -185,6 +185,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
             wp_enqueue_style($this->plugin_name . '-phone-require', plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPhoneRequire.COMPILED.css', array(), $this->version, 'all');
+
         }
 
         // CSS para página de edição de endereços da conta
@@ -213,6 +214,19 @@ class WcBetterShippingCalculatorForBrazilPublic
                 $this->version,
                 'all'
             );
+
+            // CSS para máscara de telefone na página de edição de endereços
+            $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
+            
+            if ($phone_mask_enabled === 'yes') {
+                wp_enqueue_style(
+                    $this->plugin_name . '-edit-address-phone-mask',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
 
             $person_type = get_option('woo_better_calc_person_type_select', 'none');
             if ($person_type !== 'none') {
@@ -300,10 +314,29 @@ class WcBetterShippingCalculatorForBrazilPublic
         $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
         $font_source = get_option('woo_better_calc_font_source', 'yes');
         $font_class = 'woo-better-poppins-family';
-        $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
 
         if($font_source === 'no'){
             $font_class = 'woo-better-inherit-family';
+        } 
+
+        // Scripts para máscara de telefone (DDI + formatação)
+        if ($phone_mask_enabled === 'yes') {
+            wp_enqueue_script(
+                $this->plugin_name . '-checkout-phone-mask',
+                plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.js',
+                array(),
+                $this->version,
+                false
+            );
+            
+            wp_enqueue_style(
+                $this->plugin_name . '-checkout-phone-mask-style',
+                plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.css',
+                array(),
+                $this->version,
+                'all'
+            );
         } 
 
         $cart_cep = '';
@@ -475,7 +508,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'billing_cpf' => $billing_cpf,
                         'billing_cnpj' => $billing_cnpj,
                         'billing_company' => $billing_company,
-                        'billing_document' => $billing_document
+                        'billing_document' => $billing_document,
                     )
                 );
 
@@ -484,7 +517,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'WooBetterPersonTypeConfig',
                     array(
                         'person_type' => $person_type,
-                        'show_select' => ($person_type === 'both') // Só mostrar select quando for 'both'
+                        'show_select' => ($person_type === 'both'), // Só mostrar select quando for 'both'
+                        'company_field_behavior' => get_option('woo_better_calc_company_field_behavior', 'dynamic')
                     )
                 );
             }
@@ -660,7 +694,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'WooBetterPersonTypeConfig',
                     array(
                         'person_type' => $person_type,
-                        'show_select' => ($person_type === 'both') // Só mostrar select quando for 'both'
+                        'show_select' => ($person_type === 'both'), // Só mostrar select quando for 'both'
+                        'company_field_behavior' => get_option('woo_better_calc_company_field_behavior', 'dynamic')
                     )
                 );
             }
@@ -929,36 +964,37 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
-            if($phone_required === 'yes' && !$has_checkout_shortcode) {
+            // Scripts para máscara de telefone (DDI + formatação)
+            if($phone_mask_enabled === 'yes' && !$has_checkout_shortcode) {
                 wp_enqueue_style(
-                    $this->plugin_name . '-checkout-phone-required',
-                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneRequired.COMPILED.css',
+                    $this->plugin_name . '-checkout-phone-mask',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.css',
                     array(),
                     $this->version,
                     'all'
                 );
 
                 wp_enqueue_script(
-                    $this->plugin_name . '-checkout-phone-required',
-                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneRequired.COMPILED.js',
+                    $this->plugin_name . '-checkout-phone-mask',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.js',
                     array('jquery'),
                     $this->version,
                     false
                 );
             }
 
-            if($phone_required === 'yes' && $has_checkout_shortcode) {
+            if($phone_mask_enabled === 'yes' && $has_checkout_shortcode) {
                 wp_enqueue_style(
-                    $this->plugin_name . '-checkout-phone-required-shortcode',
-                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneRequired.COMPILED.css',
+                    $this->plugin_name . '-checkout-phone-mask-shortcode',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.css',
                     array(),
                     $this->version,
                     'all'
                 );
 
                 wp_enqueue_script(
-                    $this->plugin_name . '-checkout-phone-required-shortcode',
-                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneRequiredShortcode.COMPILED.js',
+                    $this->plugin_name . '-checkout-phone-mask-shortcode',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.js',
                     array('jquery'),
                     $this->version,
                     false
@@ -1046,7 +1082,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'WooBetterPersonTypeConfig',
                     array(
                         'person_type' => $person_type,
-                        'show_select' => ($person_type === 'both')
+                        'show_select' => ($person_type === 'both'),
+                        'company_field_behavior' => get_option('woo_better_calc_company_field_behavior', 'dynamic')
                     )
                 );
             }
@@ -1083,16 +1120,24 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
-            // Scripts para campo de telefone obrigatório
-            $phone_required = get_option('woo_better_calc_contact_required', 'no');
+            // Scripts para máscara de telefone (DDI + formatação)
+            $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
             
-            if ($phone_required === 'yes') {
+            if ($phone_mask_enabled === 'yes') {
                 wp_enqueue_script(
-                    $this->plugin_name . '-edit-address-phone-required',
-                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneRequiredShortcode.COMPILED.js',
+                    $this->plugin_name . '-edit-address-phone-mask',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.js',
                     array('jquery'),
                     $this->version,
                     false
+                );
+                
+                wp_enqueue_style(
+                    $this->plugin_name . '-edit-address-phone-mask-style',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
                 );
             }
 

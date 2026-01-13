@@ -793,6 +793,22 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Escolha se o campo de CEP deve ser destacado no checkout.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'enable_auto_address_fill' => array(
+                'title'    => __('Preenchimento automatico por CEP', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_enable_auto_address_fill',
+                'desc_tip' => false,
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Permitir que o usuário preencha o endereço automaticamente ao digitar o CEP no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Com esta opção ativada, uma sugestão de endereço aparecerá, e o utilizador poderá optar por usá-la para preencher os campos do checkout automaticamente.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Habilite o preenchimento automático do endereço via CEP no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'person_type_select' => array(
                 'title'    => __('Tipo de Cliente', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_person_type_select',
@@ -809,6 +825,23 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-desc-tip' => __('Configure a validação de tipo de cliente no checkout. A opção "Nenhum" desativa a validação.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Selecione "Nenhum" para desativar a validação, ou escolha entre Pessoa Física (CPF), Pessoa Jurídica (CNPJ) ou ambos. Os campos CPF/CNPJ aparecem exclusivamente no endereço de cobrança.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Configure a validação de documentos no checkout. Importante: se o formulário não estiver priorizando o endereço de cobrança, ative "Forçar entrega para o endereço de cobrança" nas Configurações de Entrega do WooCommerce.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'company_field_behavior' => array(
+                'title'    => __('Comportamento do Campo Empresa', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_company_field_behavior',
+                'desc_tip' => false,
+                'default'  => $this->get_default_company_field_behavior(),
+                'type'     => 'select',
+                'options'  => array(
+                    'dynamic'   => __('Dinâmico (Recomendado)', 'woo-better-shipping-calculator-for-brazil'),
+                    'optional'  => __('Opcional', 'woo-better-shipping-calculator-for-brazil'),
+                    'required'  => __('Obrigatório', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Define como o campo Empresa será tratado no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Dinâmico: O campo Empresa será exibido apenas quando o usuário digitar um CNPJ válido e o "Tipo de Cliente" estiver configurado como "Pessoa Física e Pessoa Jurídica" ou "Pessoa Jurídica apenas".', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Controla a exibição e obrigatoriedade do campo Empresa no checkout.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'apply_cpf_mask' => array(
@@ -859,23 +892,6 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Adiciona o campo de Bairro, posicionado após o endereço principal.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
-            'enable_auto_address_fill' => array(
-                'title'    => __('Preenchimento automatico por CEP', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_calc_enable_auto_address_fill',
-                'desc_tip' => false,
-                'default'  => 'no',
-                'type'     => 'radio',
-                'options'  => array(
-                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
-                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
-                ),
-                'custom_attributes' => array(
-                    'data-desc-tip' => __('Permitir que o usuário preencha o endereço automaticamente ao digitar o CEP no checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Com esta opção ativada, uma sugestão de endereço aparecerá, e o utilizador poderá optar por usá-la para preencher os campos do checkout automaticamente.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Habilite o preenchimento automático do endereço via CEP no checkout.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-
             'number_required' => array(
                 'title'    => __('Campo de Número do Endereço', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_number_required',
@@ -893,8 +909,25 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Adiciona o campo de Número, posicionado logo após o campo principal do endereço (Rua).', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'apply_phone_mask' => array(
+                'title'    => __('Telefone com Máscara e DDI', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_apply_phone_mask',
+                'desc_tip' => false,
+                'default'  => get_option('woo_better_calc_contact_required', 'no'),
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-subtitle' => __('Aplicar Máscara + Captura de DDI', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Ativa a formatação do telefone e adiciona o recurso de captura do Código de País (DDI).', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para aplicar máscara de formatação no campo de telefone e incluir o código de país (DDI) ou desabilite para manter o comportamento padrão.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('No checkout, o campo de telefone receberá formatação e passará a incluir o código de país (DDI).', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'contact_required' => array(
-                'title'    => __('Telefone (Contato) Obrigatório com DDI', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Telefone (Contato) Obrigatório', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_calc_contact_required',
                 'desc_tip' => false,
                 'default'  => 'no',
@@ -904,10 +937,9 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-subtitle' => __('Tornar Telefone Obrigatório + Captura de DDI', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-desc-tip' => __('Define a obrigatoriedade do campo de Telefone, adicionando também o recurso de captura do Código de País (DDI).', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Define a obrigatoriedade do campo de Telefone no checkout.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Se habilitado, o campo de telefone será de preenchimento obrigatório para que o cliente possa finalizar o pedido.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('No checkout, o campo de telefone torna-se obrigatório e passa a incluir o código de país (DDI).', 'woo-better-shipping-calculator-for-brazil')
+                    'data-title-description' => __('No checkout, o campo de telefone torna-se obrigatório.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'checkout_section_end' => array(
@@ -990,6 +1022,25 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
         return apply_filters('woocommerce_get_settings_' . $this->id, $settings);
     }
 
+    /**
+     * Determina o valor padrão do comportamento do campo empresa baseado na configuração atual do WooCommerce
+     */
+    private function get_default_company_field_behavior()
+    {
+        $wc_company_setting = get_option('woocommerce_checkout_company_field', 'hidden');
+        
+        switch ($wc_company_setting) {
+            case 'required':
+                return 'required';
+            case 'optional':
+                return 'optional';
+            case 'hidden':
+                return 'dynamic';
+            default:
+                return 'dynamic';
+        }
+    }
+
 
     public function output()
     {
@@ -1011,5 +1062,28 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
         }
 
         \WC_Admin_Settings::save_fields($settings);
+        
+        // Atualiza a opção do WooCommerce baseada no comportamento do campo empresa
+        $this->update_woocommerce_company_field_setting();
+    }
+    
+    /**
+     * Atualiza a configuração do WooCommerce para o campo empresa baseado na escolha do usuário
+     */
+    private function update_woocommerce_company_field_setting()
+    {
+        $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
+        
+        switch ($company_behavior) {
+            case 'dynamic':
+                update_option('woocommerce_checkout_company_field', 'hidden');
+                break;
+            case 'optional':
+                update_option('woocommerce_checkout_company_field', 'optional');
+                break;
+            case 'required':
+                update_option('woocommerce_checkout_company_field', 'required');
+                break;
+        }
     }
 }

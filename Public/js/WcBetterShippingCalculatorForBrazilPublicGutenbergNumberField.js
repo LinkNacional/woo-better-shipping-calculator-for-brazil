@@ -7,6 +7,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let placeOrderButton = null
     let intervalCount = 0
     let checkboxCount = 0
+    let shippingExtensionTimeout = null
+    let billingExtensionTimeout = null
 
     const observer = new MutationObserver((mutationsList) => {
         const shippingBlock = document.querySelector('#shipping')
@@ -127,17 +129,25 @@ document.addEventListener("DOMContentLoaded", function () {
                         input.addEventListener('input', function () {
                             let val = input.value.trim();
                             if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-                                let data = { shipping_number: val, billing_number: '' };
-                                const billingNumberInput = document.getElementById('billing-number');
-                                if (!billingNumberInput) {
-                                    data.billing_number = val;
-                                } else {
-                                    data.billing_number = billingNumberInput.value;
+                                // Cancela timeout anterior se existir
+                                if (shippingExtensionTimeout) {
+                                    clearTimeout(shippingExtensionTimeout);
                                 }
-                                window.wc.blocksCheckout.extensionCartUpdate({
-                                    namespace: 'woo_better_number_validation',
-                                    data: data
-                                });
+                                
+                                // Define novo timeout de 1 segundo
+                                shippingExtensionTimeout = setTimeout(() => {
+                                    let data = { shipping_number: val, billing_number: '' };
+                                    const billingNumberInput = document.getElementById('billing-number');
+                                    if (!billingNumberInput) {
+                                        data.billing_number = val;
+                                    } else {
+                                        data.billing_number = billingNumberInput.value;
+                                    }
+                                    window.wc.blocksCheckout.extensionCartUpdate({
+                                        namespace: 'woo_better_number_validation',
+                                        data: data
+                                    });
+                                }, 1000);
                             }
                         });
 
@@ -205,17 +215,25 @@ document.addEventListener("DOMContentLoaded", function () {
                         checkboxInput.addEventListener('change', function () {
                             let val = this.checked ? 'S/N' : '';
                             if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-                                let data = { shipping_number: val, billing_number: '' };
-                                const billingNumberInput = document.getElementById('billing-number');
-                                if (!billingNumberInput) {
-                                    data.billing_number = val;
-                                } else {
-                                    data.billing_number = billingNumberInput.value;
+                                // Cancela timeout anterior se existir
+                                if (shippingExtensionTimeout) {
+                                    clearTimeout(shippingExtensionTimeout);
                                 }
-                                window.wc.blocksCheckout.extensionCartUpdate({
-                                    namespace: 'woo_better_number_validation',
-                                    data: data
-                                });
+                                
+                                // Define novo timeout de 1 segundo
+                                shippingExtensionTimeout = setTimeout(() => {
+                                    let data = { shipping_number: val, billing_number: '' };
+                                    const billingNumberInput = document.getElementById('billing-number');
+                                    if (!billingNumberInput) {
+                                        data.billing_number = val;
+                                    } else {
+                                        data.billing_number = billingNumberInput.value;
+                                    }
+                                    window.wc.blocksCheckout.extensionCartUpdate({
+                                        namespace: 'woo_better_number_validation',
+                                        data: data
+                                    });
+                                }, 1000);
                             }
                         });
 
@@ -471,18 +489,26 @@ document.addEventListener("DOMContentLoaded", function () {
                 input.addEventListener('input', function () {
                     let val = input.value.trim();
                     if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-                        let data = { shipping_number: '', billing_number: val };
-                        const shippingNumberInput = document.getElementById('shipping-number');
-                        if (!shippingNumberInput) {
-                            data.shipping_number = val;
-                        } else {
-                            data.shipping_number = shippingNumberInput.value;
+                        // Cancela timeout anterior se existir
+                        if (billingExtensionTimeout) {
+                            clearTimeout(billingExtensionTimeout);
                         }
+                        
+                        // Define novo timeout de 1 segundo
+                        billingExtensionTimeout = setTimeout(() => {
+                            let data = { shipping_number: '', billing_number: val };
+                            const shippingNumberInput = document.getElementById('shipping-number');
+                            if (!shippingNumberInput) {
+                                data.shipping_number = val;
+                            } else {
+                                data.shipping_number = shippingNumberInput.value;
+                            }
 
-                        window.wc.blocksCheckout.extensionCartUpdate({
-                            namespace: 'woo_better_number_validation',
-                            data: data
-                        });
+                            window.wc.blocksCheckout.extensionCartUpdate({
+                                namespace: 'woo_better_number_validation',
+                                data: data
+                            });
+                        }, 1000);
                     }
                 });
 
@@ -550,17 +576,25 @@ document.addEventListener("DOMContentLoaded", function () {
                 checkboxInput.addEventListener('change', function () {
                     let val = this.checked ? 'S/N' : '';
                     if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-                        let data = { shipping_number: '', billing_number: val };
-                        const shippingNumberInput = document.getElementById('shipping-number');
-                        if (!shippingNumberInput) {
-                            data.shipping_number = val;
-                        } else {
-                            data.shipping_number = shippingNumberInput.value;
+                        // Cancela timeout anterior se existir
+                        if (billingExtensionTimeout) {
+                            clearTimeout(billingExtensionTimeout);
                         }
-                        window.wc.blocksCheckout.extensionCartUpdate({
-                            namespace: 'woo_better_number_validation',
-                            data: data
-                        });
+                        
+                        // Define novo timeout de 1 segundo
+                        billingExtensionTimeout = setTimeout(() => {
+                            let data = { shipping_number: '', billing_number: val };
+                            const shippingNumberInput = document.getElementById('shipping-number');
+                            if (!shippingNumberInput) {
+                                data.shipping_number = val;
+                            } else {
+                                data.shipping_number = shippingNumberInput.value;
+                            }
+                            window.wc.blocksCheckout.extensionCartUpdate({
+                                namespace: 'woo_better_number_validation',
+                                data: data
+                            });
+                        }, 1000);
                     }
                 });
 
