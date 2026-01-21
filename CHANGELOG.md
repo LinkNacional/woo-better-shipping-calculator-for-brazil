@@ -1,3 +1,6 @@
+# 4.7.4 - 21/01/26
+* Ajuste: consulta dos produtos variáveis na página de produto.
+
 # 4.7.3 - 13/01/26
 * Ajuste: campo de número de telefone com relação aos dígitos.
 * Ajuste: campo de número de telefone mais opções de configurações.

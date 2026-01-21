@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', function () {
         sendCEP(cartCep, true);
     }
 
+    // Configura listener para mudanças em produtos variáveis
+    setupVariationChangeListener();
+
     let font_class = WooBetterData.inputStyles.fontClass || '';
     let containerFound = false;
     let blockPosition = 'h1[class*="title"]'
@@ -33,6 +36,229 @@ document.addEventListener('DOMContentLoaded', function () {
             localStorage.removeItem('woo_better_calc_custom_cache');
         } catch (e) {
             // Ignora erro de localStorage
+        }
+    }
+
+    function getCurrentVariationId() {
+        const variationForm = document.querySelector('.variations_form');
+        if (variationForm) {
+            const variationInput = variationForm.querySelector('input[name="variation_id"]');
+            if (variationInput) {
+                if (variationInput.value) {
+                    return variationInput.value;
+                }
+            }
+        }
+        return 0;
+    }
+
+    function isVariableProduct() {
+        const isVariable = document.querySelector('.variations_form') !== null;
+        return isVariable;
+    }
+
+    function hasVariationSelected() {
+        const variationId = getCurrentVariationId();
+        const hasSelected = variationId > 0;
+        return hasSelected;
+    }
+
+    function setFormDisabled(disabled = true) {
+        const button = document.querySelector('.woo-better-button-current-style');
+        const input = document.querySelector('.woo-better-input-current-style');
+        
+        if (!button || !input) {
+            return;
+        }
+
+        button.disabled = disabled;
+        input.disabled = disabled;
+        
+        if (disabled) {
+            // Aplica estilos de desabilitado
+            input.style.backgroundColor = '#f5f5f5';
+            input.style.color = '#999';
+            input.style.cursor = 'not-allowed';
+            input.placeholder = 'Selecione uma variação primeiro';
+            
+            button.style.backgroundColor = '#ccc';
+            button.style.color = '#666';
+            button.style.cursor = 'not-allowed';
+        } else {
+            // Restaura estilos normais
+            input.style.backgroundColor = WooBetterData.inputStyles.backgroundColor || '#fff';
+            input.style.color = WooBetterData.inputStyles.color || '#333';
+            input.style.cursor = '';
+            input.placeholder = WooBetterData.placeholder || 'Digite o CEP';
+            
+            button.style.backgroundColor = WooBetterData.buttonStyles.backgroundColor || '#0073aa';
+            button.style.color = WooBetterData.buttonStyles.color || '#fff';
+            button.style.cursor = '';
+        }
+    }
+
+    function setupVariationChangeListener() {
+        const variationForm = document.querySelector('.variations_form');
+        if (variationForm) {
+            // Escuta mudanças na seleção de variação
+            variationForm.addEventListener('found_variation', function(event) {
+                // Habilita o formulário agora que uma variação foi selecionada
+                setFormDisabled(false);
+                
+                // Limpa o cache quando uma nova variação é selecionada
+                invalidateCache();
+                
+                // Se já existe um resultado de frete exibido, remove para forçar nova consulta
+                const infoBlock = document.querySelector('.woo-better-info-block');
+                if (infoBlock) {
+                    infoBlock.style.display = 'none';
+                }
+                
+                // Reexibe o formulário de CEP se estava oculto
+                const form = document.querySelector('#custom-postcode-form');
+                if (form && form.style.display === 'none') {
+                    form.style.display = 'block';
+                }
+                
+                // Se tem consulta automática habilitada e já tem CEP salvo, faz nova consulta
+                const lastPostcode = getLastUsedPostcode();
+                if (WooBetterData.enable_search === 'yes' && lastPostcode && hasUserMadeQuery) {
+                    setTimeout(() => {
+                        sendCEP(lastPostcode, true);
+                    }, 300);
+                }
+            });
+            
+            // Também escuta quando a variação é resetada
+            variationForm.addEventListener('reset_data', function(event) {
+                // Desabilita o formulário quando variação é resetada
+                setFormDisabled(true);
+                
+                invalidateCache();
+                
+                const infoBlock = document.querySelector('.woo-better-info-block');
+                if (infoBlock) {
+                    infoBlock.style.display = 'none';
+                }
+                
+                const form = document.querySelector('#custom-postcode-form');
+                if (form && form.style.display === 'none') {
+                    form.style.display = 'block';
+                }
+            });
+            
+            // Adiciona um observer para mudanças diretas no input variation_id
+            const variationInput = variationForm.querySelector('input[name="variation_id"]');
+            if (variationInput) {
+                // Usando MutationObserver para detectar mudanças de atributo value
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+                            checkAndUpdateFormState();
+                        }
+                    });
+                });
+                
+                observer.observe(variationInput, {
+                    attributes: true,
+                    attributeFilter: ['value']
+                });
+                
+                // Também escuta evento de input
+                variationInput.addEventListener('input', function() {
+                    checkAndUpdateFormState();
+                });
+                
+                // E evento change
+                variationInput.addEventListener('change', function() {
+                    checkAndUpdateFormState();
+                });
+                
+                // Verifica periodicamente se o valor mudou (fallback)
+                setInterval(function() {
+                    const currentValue = variationInput.value;
+                    if (currentValue !== variationInput.dataset.lastValue) {
+                        variationInput.dataset.lastValue = currentValue;
+                        checkAndUpdateFormState();
+                    }
+                }, 1000);
+                
+                // Inicializa o valor de referência
+                variationInput.dataset.lastValue = variationInput.value;
+            }
+        }
+    }
+    
+    function checkAndUpdateFormState() {
+        if (isVariableProduct()) {
+            const currentVariationId = getCurrentVariationId();
+            
+            // Verifica se a variação mudou (incluindo mudanças entre variações válidas)
+            const lastVariationId = window.lastVariationId || null;
+            const hasVariationChanged = lastVariationId !== null && lastVariationId !== currentVariationId;
+            
+            // Atualiza a variação atual para próxima comparação
+            window.lastVariationId = currentVariationId;
+            
+            if (hasVariationSelected()) {
+                setFormDisabled(false);
+                
+                // Se a variação mudou de uma para outra, limpa os resultados antigos
+                if (hasVariationChanged && currentVariationId > 0) {
+                    
+                    // Esconde o bloco de resultados
+                    const infoBlock = document.querySelector('.woo-better-info-block');
+                    if (infoBlock) {
+                        infoBlock.style.display = 'none';
+                    }
+                    
+                    // Mostra o formulário de CEP novamente
+                    const form = document.querySelector('#custom-postcode-form');
+                    if (form) {
+                        form.style.display = 'block';
+                    }
+                    
+                    // Limpa o cache para forçar nova consulta
+                    invalidateCache();
+                }
+                
+                // Verifica se deve fazer consulta automática quando variação é selecionada
+                if (WooBetterData.enable_search === 'yes' && lastVariationId !== currentVariationId) {
+                    const inputPostcode = document.querySelector('.woo-better-input-current-style');
+                    if (inputPostcode && inputPostcode.value && inputPostcode.value.trim().length >= 9) {
+                        const postcode = inputPostcode.value.trim();
+                        
+                        // Primeiro verifica se há cache para esta variação específica
+                        const cachedData = getCachedShippingData(postcode, WooBetterData.product_id);
+                        if (cachedData) {
+                            const infoBlock = document.querySelector('.woo-better-info-block');
+                            const form = document.querySelector('#custom-postcode-form');
+                            processShippingRatesFromCache(cachedData, form, infoBlock, postcode);
+                        } else {
+                            // Pequeno delay para garantir que a UI está atualizada e chama sendCEP diretamente
+                            setTimeout(() => {
+                                sendCEP(postcode, true);
+                            }, 300);
+                        }
+                    }
+                }
+            } else {
+                setFormDisabled(true);
+                
+                // Esconde o bloco de resultados quando não há variação selecionada
+                const infoBlock = document.querySelector('.woo-better-info-block');
+                if (infoBlock) {
+                    infoBlock.style.display = 'none';
+                }
+                
+                // Mostra o formulário de CEP novamente
+                const form = document.querySelector('#custom-postcode-form');
+                if (form && form.style.display === 'none') {
+                    form.style.display = 'block';
+                }
+            }
+        } else {
+            setFormDisabled(false);
         }
     }
 
@@ -686,10 +912,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Adiciona os elementos ao formulário
         form.appendChild(containerDiv);
+        
+        // Se é produto variável, verifica se deve desabilitar inicialmente
+        if (isVariableProduct() && !hasVariationSelected()) {
+            // Usa setTimeout para garantir que o formulário esteja completamente renderizado
+            setTimeout(() => {
+                setFormDisabled(true);
+            }, 100);
+        }
 
         // Adiciona o evento de envio ao formulário
         form.addEventListener('submit', function (e) {
             e.preventDefault(); // Impede o envio padrão do formulário
+
+            // Se é produto variável e não tem variação selecionada, não permite envio
+            if (isVariableProduct() && !hasVariationSelected()) {
+                return; // Simplesmente não faz nada, sem alert
+            }
 
             const postcode = input.value.trim();
 
@@ -834,8 +1073,34 @@ document.addEventListener('DOMContentLoaded', function () {
                             const inputPostcode = document.querySelector('.woo-better-input-current-style');
                             if (inputPostcode) {
                                 inputPostcode.value = lastPostcode;
+                                
+                                // Para produtos variáveis, sempre exibe o formulário inicialmente
+                                if (isVariableProduct()) {
+                                    form.style.display = 'block';
+                                    
+                                    // Se não tem variação selecionada, desabilita o formulário
+                                    if (!hasVariationSelected()) {
+                                        setFormDisabled(true);
+                                    } else {
+                                        setFormDisabled(false);
+                                        
+                                        // Se tem variação selecionada E há cache, pode fazer consulta automática
+                                        if (WooBetterData.enable_search === 'yes') {
+                                            const cachedData = getCachedShippingData(lastPostcode, WooBetterData.product_id);
+                                            if (cachedData) {
+                                                const infoBlock = document.querySelector('.woo-better-info-block');
+                                                processShippingRatesFromCache(cachedData, form, infoBlock, lastPostcode);
+                                            } else {
+                                                setTimeout(() => {
+                                                    sendCEP(lastPostcode, true);
+                                                }, 100);
+                                            }
+                                        }
+                                    }
+                                    return; // Para aqui para produtos variáveis
+                                }
 
-                                // Verifica se existe cache para exibir o componente
+                                // Lógica original para produtos simples/digitais
                                 if (WooBetterData.enable_search && WooBetterData.enable_search === 'yes') {
                                     // Verifica se existe cache para este CEP e produto específico
                                     const cachedData = getCachedShippingData(lastPostcode, WooBetterData.product_id);
@@ -940,9 +1205,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     const addressAPIUrl = WooBetterData.ajaxurl;
 
+                    // Detecta variation_id se o produto for variável
+                    let variationId = 0;
+                    const variationForm = document.querySelector('.variations_form');
+                    if (variationForm) {
+                        const variationInput = variationForm.querySelector('input[name="variation_id"]');
+                        if (variationInput && variationInput.value) {
+                            variationId = variationInput.value;
+                        }
+                    }
+
                     const formData = new FormData();
                     formData.append('action', 'register_product_address');
                     formData.append('product_id', WooBetterData.product_id);
+                    if (variationId > 0) {
+                        formData.append('variation_id', variationId);
+                    }
                     formData.append('shipping[address_1]', addressData);
                     formData.append('shipping[city]', cityData);
                     formData.append('shipping[state]', stateData);
@@ -1416,8 +1694,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Em caso de erro, remove o cache corrompido e força nova consulta
             const cache = getProductCache();
-            if (cache[postcode] && cache[postcode][WooBetterData.product_id]) {
-                delete cache[postcode][WooBetterData.product_id];
+            const variationId = getCurrentVariationId();
+            const cacheKey = variationId > 0 ? `${WooBetterData.product_id}_${variationId}` : WooBetterData.product_id;
+            
+            if (cache[postcode] && cache[postcode][cacheKey]) {
+                delete cache[postcode][cacheKey];
                 localStorage.setItem('woo_better_product_cache', JSON.stringify(cache));
             }
         }
@@ -1478,9 +1759,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function getCachedShippingData(postcode, productId) {
         const cache = getProductCache();
+        const variationId = getCurrentVariationId();
+        const cacheKey = variationId > 0 ? `${productId}_${variationId}` : productId;
 
-        if (cache[postcode] && cache[postcode][productId]) {
-            return cache[postcode][productId];
+        if (cache[postcode] && cache[postcode][cacheKey]) {
+            return cache[postcode][cacheKey];
         }
 
         return null;
@@ -1489,6 +1772,8 @@ document.addEventListener('DOMContentLoaded', function () {
     function setCachedShippingData(postcode, productId, shippingData) {
         const cacheKey = 'woo_better_product_cache';
         const cache = getProductCache();
+        const variationId = getCurrentVariationId();
+        const productCacheKey = variationId > 0 ? `${productId}_${variationId}` : productId;
 
         // Inicializa a estrutura se necessário
         if (!cache[postcode]) {
@@ -1503,6 +1788,11 @@ document.addEventListener('DOMContentLoaded', function () {
         };
         
         // Preserva a flag digital se existir
+        if (shippingData.digital !== undefined) {
+            cleanData.digital = shippingData.digital;
+        }
+
+        cache[postcode][productCacheKey] = cleanData;
         if (shippingData.digital === true) {
             cleanData.digital = true;
         }
