@@ -3752,6 +3752,7 @@ class WcBetterShippingCalculatorForBrazil
 
         // Obtém o ID do produto da página atual
         $product_id = isset($_POST['product_id']) ? absint($_POST['product_id']) : 0;
+        $variation_id = isset($_POST['variation_id']) ? absint($_POST['variation_id']) : 0;
 
         if (!$product_id || !get_post($product_id)) {
             wp_send_json_error(array(
@@ -3760,8 +3761,18 @@ class WcBetterShippingCalculatorForBrazil
             ), 400);
         }
 
-        // Obtém o produto
-        $product = wc_get_product($product_id);
+        // Obtém o produto (variação se fornecida, senão produto principal)
+        if ($variation_id > 0) {
+            $product = wc_get_product($variation_id);
+            if (!$product || $product->get_parent_id() !== $product_id) {
+                wp_send_json_error(array(
+                    'status' => false,
+                    'message' => 'Variação de produto inválida.',
+                ), 400);
+            }
+        } else {
+            $product = wc_get_product($product_id);
+        }
 
         if (!$product) {
             wp_send_json_error(array(
@@ -3790,7 +3801,7 @@ class WcBetterShippingCalculatorForBrazil
             'contents' => array(
                 $product_id => array(
                     'product_id' => $product_id,
-                    'variation_id' => 0,
+                    'variation_id' => $variation_id,
                     'quantity'   => $quantity,
                     'data'       => $product,
                     'line_total' => $line_total,
@@ -3837,7 +3848,14 @@ class WcBetterShippingCalculatorForBrazil
         
         // Limpa o carrinho temporariamente e adiciona apenas o produto para consulta
         WC()->cart->empty_cart(false); // false = não triggerar hooks
-        WC()->cart->add_to_cart($product_id, $quantity);
+        
+        // Prepara dados da variação se for um produto variável
+        $variation_data = array();
+        if ($variation_id > 0 && $product->is_type('variation')) {
+            $variation_data = $product->get_variation_attributes();
+        }
+        
+        WC()->cart->add_to_cart($product_id, $quantity, $variation_id, $variation_data);
         
         // Calcula o frete usando o sistema padrão do WooCommerce
         WC()->shipping()->reset_shipping();
