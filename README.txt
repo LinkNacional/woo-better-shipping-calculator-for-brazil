@@ -147,6 +147,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+= 4.7.4 - 21/01/2026
+* Fix: variable products shipping calculation on product page.
+
 = 4.7.3 - 13/01/2026
 * Fix: phone number field regarding digits.
 * Fix: phone number field with more configuration options.
