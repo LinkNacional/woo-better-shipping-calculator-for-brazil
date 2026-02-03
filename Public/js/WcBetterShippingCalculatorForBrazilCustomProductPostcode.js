@@ -267,7 +267,13 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.append('action', 'wc_better_calc_get_nonce');
         formData.append('action_nonce', 'woo_better_register_product_address');
 
-        fetch(WooBetterData.ajaxurl, {
+        // ADICIONADO: Timestamp para evitar cache
+        formData.append('_t', Date.now()); 
+    
+        // Adiciona timestamp também na URL
+        const ajaxUrlWithBuster = WooBetterData.ajaxurl + '?t=' + Date.now();
+        
+        fetch(ajaxUrlWithBuster.ajaxurl, {
             method: 'POST',
             body: formData
         })
@@ -1176,13 +1182,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const timeoutId = setTimeout(() => controller.abort(), 15000);
 
         let apiUrl;
+        const timestamp = Date.now(); // Cache Buster
         if (typeof wpApiSettings !== 'undefined' && wpApiSettings.root) {
-            apiUrl = wpApiSettings.root + `lknwcbettershipping/v1/cep/?postcode=${postcode}`;
+            apiUrl = wpApiSettings.root + `lknwcbettershipping/v1/cep/?postcode=${postcode}&t=${timestamp}`;
         } else {
             if (typeof WooBetterData !== 'undefined' && WooBetterData.wooUrl !== '') {
-                apiUrl = WooBetterData.wooUrl + `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcode}`;
+                apiUrl = WooBetterData.wooUrl + `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcode}&t=${timestamp}`;
             } else {
-                apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcode}`;
+                apiUrl = `/wp-json/lknwcbettershipping/v1/cep/?postcode=${postcode}&t=${timestamp}`;
             }
         }
 
