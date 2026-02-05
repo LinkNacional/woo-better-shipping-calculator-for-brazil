@@ -267,13 +267,10 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.append('action', 'wc_better_calc_get_nonce');
         formData.append('action_nonce', 'woo_better_register_product_address');
 
-        // ADICIONADO: Timestamp para evitar cache
-        formData.append('_t', Date.now()); 
-    
         // Adiciona timestamp também na URL
         const ajaxUrlWithBuster = WooBetterData.ajaxurl + '?t=' + Date.now();
         
-        fetch(ajaxUrlWithBuster.ajaxurl, {
+        fetch(ajaxUrlWithBuster, {
             method: 'POST',
             body: formData
         })

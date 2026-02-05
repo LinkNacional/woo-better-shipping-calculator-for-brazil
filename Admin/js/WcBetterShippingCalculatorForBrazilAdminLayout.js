@@ -599,7 +599,7 @@
             pDescriptionField.style.color = '#8F8F8F';
 
             if (inputField.getAttribute('data-description')) {
-              pDescriptionField.textContent = inputField.getAttribute('data-description');
+              pDescriptionField.innerHTML = inputField.getAttribute('data-description');
             }
 
             // Move o input para o body
@@ -872,6 +872,7 @@
 
             // Define relação entre mais de um componente em um bloco
             const targetComponentCartNames = {
+              'woo_better_only_free_shipping': 'woo_better_enable_min_free_shipping',
               'woo_better_min_free_shipping_value': 'woo_better_enable_min_free_shipping',
               'woo_better_min_free_shipping_success_message': 'woo_better_min_free_shipping_message',
               'woo_better_enable_progress_bar_value': 'woo_better_min_free_shipping_message',

@@ -153,7 +153,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_cart_needs_shipping', $this, 'lkn_custom_disable_shipping', 10, 1);
         $this->loader->add_filter('woocommerce_cart_needs_shipping_address', $this, 'lkn_custom_disable_shipping', 10, 1);
 
-        $this->loader->add_filter('woocommerce_package_rates', $this, 'lkn_simular_frete_playground', 10, 2);
+        $this->loader->add_filter('woocommerce_package_rates', $this, 'lkn_woo_better_control_rates', 10, 2);
 
         $this->loader->add_action('admin_notices', $this, 'lkn_show_admin_notice');
         $this->loader->add_action('wp_ajax_woo_better_calc_dismiss_notice', $this, 'lkn_dismiss_admin_notice');
@@ -286,15 +286,14 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
-    public function lkn_simular_frete_playground($rates, $package)
+    public function lkn_woo_better_control_rates($rates, $package)
     {
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
         $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
-
+        $only_free_shipping = get_option('woo_better_only_free_shipping', 'yes');
 
         if ($this->is_playground_environment()) {
             $rates = [];
-
             $rate = new \WC_Shipping_Rate(
                 'simulado_playground',
                 'Frete Simulado (Playground)',
@@ -302,25 +301,33 @@ class WcBetterShippingCalculatorForBrazil
                 [],
                 'simulado_playground'
             );
-
             $rates['simulado_playground'] = $rate;
         }
 
         // Só aplica se estiver habilitado e valor for maior que zero
         if ($enable_min === 'yes') {
             $cart_total = WC()->cart->get_displayed_subtotal();
-            
             if ($cart_total >= $min_value) {
-                // Remove todas as opções de frete e adiciona frete grátis
-                $rates = array();
-
-                $rates['free_shipping_min'] = new \WC_Shipping_Rate(
+                $free_shipping_rate = new \WC_Shipping_Rate(
                     'free_shipping_min',
                     __('Frete Gratuito', 'woo-better-shipping-calculator-for-brazil'),
                     0,
                     array(),
                     'free_shipping'
                 );
+                if ($only_free_shipping === 'yes') {
+                    // Remove todas as opções de frete e exibe apenas o frete grátis
+                    $rates = array('free_shipping_min' => $free_shipping_rate);
+                } else {
+                    // Insere o frete grátis na primeira posição do array de métodos
+                    $new_rates = array('free_shipping_min' => $free_shipping_rate);
+                    foreach ($rates as $key => $rate) {
+                        if ($key !== 'free_shipping_min') {
+                            $new_rates[$key] = $rate;
+                        }
+                    }
+                    $rates = $new_rates;
+                }
             }
         }
 
