@@ -897,6 +897,9 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_billing_fields', $this, 'add_edit_address_billing_fields');
         $this->loader->add_filter('woocommerce_shipping_fields', $this, 'add_edit_address_shipping_fields');
         $this->loader->add_action('woocommerce_customer_save_address', $this, 'save_edit_address_custom_fields', 10, 2);
+        
+        // Hook para formatação de endereço na página Minha Conta
+        $this->loader->add_filter('woocommerce_my_account_my_address_formatted_address', $this, 'my_account_formatted_address', 10, 3);
     }
 
     /**
@@ -1519,17 +1522,25 @@ class WcBetterShippingCalculatorForBrazil
             return $replacements;
         }
         
+        $address = wp_parse_args(
+            $address,
+            array(
+                'number'       => '',
+                'neighborhood' => '',
+            )
+        );
+        
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         
-        if ($neighborhood_enabled === 'yes' && isset($address['neighborhood'])) {
+        if ($neighborhood_enabled === 'yes') {
             $replacements['{neighborhood}'] = $address['neighborhood'];
         }
         
         // Adiciona substituição para número do endereço
         $number_enabled = get_option('woo_better_calc_number_required', 'no');
         
-        if ($number_enabled === 'yes' && isset($address['number'])) {
-            $replacements['{number}'] = ' - ' . $address['number'];
+        if ($number_enabled === 'yes') {
+            $replacements['{number}'] = !empty($address['number']) ? ' - ' . $address['number'] : '';
         }
         
         return $replacements;
@@ -5231,5 +5242,47 @@ class WcBetterShippingCalculatorForBrazil
                 update_user_meta($user_id, 'shipping_phone', $phone);
             }
         }
+    }
+    
+    /**
+     * Adiciona campos de número e bairro ao endereço formatado na página Minha Conta
+     *
+     * @param array $address Array com dados do endereço
+     * @param int $customer_id ID do cliente
+     * @param string $name Tipo de endereço (billing ou shipping)
+     * @return array Array com dados do endereço incluindo número e bairro
+     */
+    public function my_account_formatted_address($address, $customer_id, $name)
+    {
+        // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        // Se o plugin estiver ativo, não aplica as modificações
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+            return $address;
+        }
+        
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        $number_enabled = get_option('woo_better_calc_number_required', 'no');
+        
+        // Adiciona bairro se habilitado
+        if ($neighborhood_enabled === 'yes') {
+            $neighborhood = get_user_meta($customer_id, $name . '_neighborhood', true);
+            if (!empty($neighborhood)) {
+                $address['neighborhood'] = $neighborhood;
+            }
+        }
+        
+        // Adiciona número se habilitado
+        if ($number_enabled === 'yes') {
+            $number = get_user_meta($customer_id, $name . '_number', true);
+            if (!empty($number)) {
+                $address['number'] = $number;
+            }
+        }
+        
+        return $address;
     }
 }
