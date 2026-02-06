@@ -212,7 +212,8 @@ document.addEventListener("DOMContentLoaded", function () {
                             input.style.color = '#808080';
                         }
                         // Evento de change para registrar valor
-                        checkboxInput.addEventListener('change', function () {
+                        checkboxInput.addEventListener('change', function (event) {
+                            event.stopPropagation();
                             let val = this.checked ? 'S/N' : '';
                             if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
                                 // Cancela timeout anterior se existir
@@ -321,7 +322,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 if (shippingCheckboxInput) {
                     clearInterval(checkboxInterval)
-                    shippingCheckboxInput.addEventListener('change', function () {
+                    shippingCheckboxInput.addEventListener('change', function (event) {
+                        event.stopPropagation();
                         if (this.checked) {
                             shippingNumberInput.disabled = true;
                             shippingNumberInput.setAttribute('value', 'S/N');
@@ -573,7 +575,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     input.style.color = '#808080';
                 }
                 // Evento de change para registrar valor
-                checkboxInput.addEventListener('change', function () {
+                checkboxInput.addEventListener('change', function (event) {
+                    event.stopPropagation();
                     let val = this.checked ? 'S/N' : '';
                     if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
                         // Cancela timeout anterior se existir
@@ -635,7 +638,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 let billingCheckboxInputEl = document.getElementById('wc-billing-better-checkbox');
                 let billingNumberInputEl = document.getElementById('billing-number');
 
-                billingCheckboxInputEl.addEventListener('change', function () {
+                billingCheckboxInputEl.addEventListener('change', function (event) {
+                    event.stopPropagation();
                     const divInputNumber = document.querySelector('.wc-better-billing-number');
                     const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
 
