@@ -59,6 +59,23 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Configure aqui as regras para o frete grátis.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'only_free_shipping' => array(
+                'title'    => __('Ocultar outros fretes quando Grátis', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_only_free_shipping',
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-subtitle' => __('Ocultar as opções de entrega', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Define quais opções aparecem quando o frete é gratuito.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Se habilitado, oculta métodos de envio pagos (como PAC, SEDEX e outros) sempre que o cliente atingir os requisitos para Frete Grátis.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Define se os demais métodos de envio devem ser ocultados quando o Frete Grátis estiver disponível.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'min_free_shipping_value' => array(
                 'title'    => __('Valor Mínimo', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_min_free_shipping_value',
@@ -967,7 +984,11 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 ),
                 'custom_attributes' => array(
                     'data-desc-tip' => __('Calcula fretes automaticamente sem necessidade de clicar em "Calcular", melhorando a experiência do usuário.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Habilite para realizar consultas de frete automaticamente nas páginas de produto e carrinho, assim que um CEP válido for detectado ou informado.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para realizar consultas de frete automaticamente nas páginas de produto e carrinho, assim que um CEP válido for detectado ou informado.<br><br><strong>Dicas em caso de problema com cache:</strong><ul style="margin:0 0 0 18px;padding:0;list-style:disc;">
+                        <li><strong>Arquivos JavaScript Excluídos:</strong> Adicione o nome do arquivo do seu script JS (ex: <code>WcBetterShippingCalculatorForBrazilCustomCartPostcode.js</code> ou o handle do script) na seção de exclusão/adiamento de execução de JavaScript do seu plugin de cache.</li>
+                        <li><strong>Delay JavaScript Execution:</strong> Adicione <code>WooBetterData</code> na lista de exclusões para garantir o funcionamento correto.</li>
+                        <li><strong>Cache de URLs:</strong> O plugin usa parâmetros na URL (como <code>?postcode=</code>). Certifique-se de que o WP Rocket ou outro plugin de cache <b>não está forçando o cache dessas URLs</b> na API REST.</li>
+                        </ul>', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Disponível apenas no WooCommerce 10.0 ou superior. Essa funcionalidade requer uma versão compatível do WooCommerce para funcionar corretamente.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),

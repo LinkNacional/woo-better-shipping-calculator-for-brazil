@@ -1084,21 +1084,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function adjustPhoneLabel(phoneField) {
+        // Aplica !important no input e calcula padding para label
+        let inputPadding = 52;
+        if (phoneField && phoneField.tagName === 'INPUT') {
+            // Tenta pegar o padding-left inline, senão computado
+            let pl = phoneField.style.paddingLeft || window.getComputedStyle(phoneField).paddingLeft;
+            if (pl && pl.endsWith('px')) {
+                inputPadding = parseInt(pl.replace('px', ''), 10);
+            }
+            phoneField.style.setProperty('padding-left', inputPadding + 'px', 'important');
+        }
+
+        // Define padding da label dinamicamente (+4px do input)
         const label = phoneField.closest('.form-row, .wc-block-components-text-input')?.querySelector('label');
         if (label) {
-            label.style.paddingLeft = '52px';
+            let labelPad = (inputPadding + 4) + 'px';
+            label.style.setProperty('padding-left', labelPad, 'important');
             label.style.transition = 'all 0.3s ease';
-            
-            if (label.classList.contains('screen-reader-text') || 
-                getComputedStyle(label).position === 'absolute') {
-                label.style.left = '52px';
-                label.style.paddingLeft = '0px';
+            if (label.classList.contains('screen-reader-text') || getComputedStyle(label).position === 'absolute') {
+                label.style.setProperty('left', labelPad, 'important');
+                label.style.setProperty('padding-left', '0px', 'important');
             }
         }
-        
+
         const blockLabel = phoneField.closest('.wc-block-components-text-input')?.querySelector('.wc-block-components-text-input__label');
         if (blockLabel) {
-            blockLabel.style.paddingLeft = '52px';
+            let labelPad = (inputPadding + 4) + 'px';
+            blockLabel.style.setProperty('padding-left', labelPad, 'important');
             blockLabel.style.transition = 'all 0.3s ease';
         }
     }

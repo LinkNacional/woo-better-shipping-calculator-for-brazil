@@ -84,7 +84,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.7.4';
+            $this->version = '4.8.0';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -153,7 +153,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_cart_needs_shipping', $this, 'lkn_custom_disable_shipping', 10, 1);
         $this->loader->add_filter('woocommerce_cart_needs_shipping_address', $this, 'lkn_custom_disable_shipping', 10, 1);
 
-        $this->loader->add_filter('woocommerce_package_rates', $this, 'lkn_simular_frete_playground', 10, 2);
+        $this->loader->add_filter('woocommerce_package_rates', $this, 'lkn_woo_better_control_rates', 10, 2);
 
         $this->loader->add_action('admin_notices', $this, 'lkn_show_admin_notice');
         $this->loader->add_action('wp_ajax_woo_better_calc_dismiss_notice', $this, 'lkn_dismiss_admin_notice');
@@ -286,15 +286,14 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
-    public function lkn_simular_frete_playground($rates, $package)
+    public function lkn_woo_better_control_rates($rates, $package)
     {
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
         $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
-
+        $only_free_shipping = get_option('woo_better_only_free_shipping', 'yes');
 
         if ($this->is_playground_environment()) {
             $rates = [];
-
             $rate = new \WC_Shipping_Rate(
                 'simulado_playground',
                 'Frete Simulado (Playground)',
@@ -302,25 +301,33 @@ class WcBetterShippingCalculatorForBrazil
                 [],
                 'simulado_playground'
             );
-
             $rates['simulado_playground'] = $rate;
         }
 
         // Só aplica se estiver habilitado e valor for maior que zero
         if ($enable_min === 'yes') {
             $cart_total = WC()->cart->get_displayed_subtotal();
-            
             if ($cart_total >= $min_value) {
-                // Remove todas as opções de frete e adiciona frete grátis
-                $rates = array();
-
-                $rates['free_shipping_min'] = new \WC_Shipping_Rate(
+                $free_shipping_rate = new \WC_Shipping_Rate(
                     'free_shipping_min',
                     __('Frete Gratuito', 'woo-better-shipping-calculator-for-brazil'),
                     0,
                     array(),
                     'free_shipping'
                 );
+                if ($only_free_shipping === 'yes') {
+                    // Remove todas as opções de frete e exibe apenas o frete grátis
+                    $rates = array('free_shipping_min' => $free_shipping_rate);
+                } else {
+                    // Insere o frete grátis na primeira posição do array de métodos
+                    $new_rates = array('free_shipping_min' => $free_shipping_rate);
+                    foreach ($rates as $key => $rate) {
+                        if ($key !== 'free_shipping_min') {
+                            $new_rates[$key] = $rate;
+                        }
+                    }
+                    $rates = $new_rates;
+                }
             }
         }
 
@@ -890,6 +897,9 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_billing_fields', $this, 'add_edit_address_billing_fields');
         $this->loader->add_filter('woocommerce_shipping_fields', $this, 'add_edit_address_shipping_fields');
         $this->loader->add_action('woocommerce_customer_save_address', $this, 'save_edit_address_custom_fields', 10, 2);
+        
+        // Hook para formatação de endereço na página Minha Conta
+        $this->loader->add_filter('woocommerce_my_account_my_address_formatted_address', $this, 'my_account_formatted_address', 10, 3);
     }
 
     /**
@@ -1512,17 +1522,25 @@ class WcBetterShippingCalculatorForBrazil
             return $replacements;
         }
         
+        $address = wp_parse_args(
+            $address,
+            array(
+                'number'       => '',
+                'neighborhood' => '',
+            )
+        );
+        
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         
-        if ($neighborhood_enabled === 'yes' && isset($address['neighborhood'])) {
+        if ($neighborhood_enabled === 'yes') {
             $replacements['{neighborhood}'] = $address['neighborhood'];
         }
         
         // Adiciona substituição para número do endereço
         $number_enabled = get_option('woo_better_calc_number_required', 'no');
         
-        if ($number_enabled === 'yes' && isset($address['number'])) {
-            $replacements['{number}'] = ' - ' . $address['number'];
+        if ($number_enabled === 'yes') {
+            $replacements['{number}'] = !empty($address['number']) ? ' - ' . $address['number'] : '';
         }
         
         return $replacements;
@@ -5224,5 +5242,47 @@ class WcBetterShippingCalculatorForBrazil
                 update_user_meta($user_id, 'shipping_phone', $phone);
             }
         }
+    }
+    
+    /**
+     * Adiciona campos de número e bairro ao endereço formatado na página Minha Conta
+     *
+     * @param array $address Array com dados do endereço
+     * @param int $customer_id ID do cliente
+     * @param string $name Tipo de endereço (billing ou shipping)
+     * @return array Array com dados do endereço incluindo número e bairro
+     */
+    public function my_account_formatted_address($address, $customer_id, $name)
+    {
+        // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
+        if (!function_exists('is_plugin_active')) {
+            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        }
+        
+        // Se o plugin estiver ativo, não aplica as modificações
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+            return $address;
+        }
+        
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        $number_enabled = get_option('woo_better_calc_number_required', 'no');
+        
+        // Adiciona bairro se habilitado
+        if ($neighborhood_enabled === 'yes') {
+            $neighborhood = get_user_meta($customer_id, $name . '_neighborhood', true);
+            if (!empty($neighborhood)) {
+                $address['neighborhood'] = $neighborhood;
+            }
+        }
+        
+        // Adiciona número se habilitado
+        if ($number_enabled === 'yes') {
+            $number = get_user_meta($customer_id, $name . '_number', true);
+            if (!empty($number)) {
+                $address['number'] = $number;
+            }
+        }
+        
+        return $address;
     }
 }

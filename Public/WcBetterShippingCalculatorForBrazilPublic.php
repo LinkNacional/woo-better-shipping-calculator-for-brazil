@@ -320,25 +320,6 @@ class WcBetterShippingCalculatorForBrazilPublic
             $font_class = 'woo-better-inherit-family';
         } 
 
-        // Scripts para máscara de telefone (DDI + formatação)
-        if ($phone_mask_enabled === 'yes') {
-            wp_enqueue_script(
-                $this->plugin_name . '-checkout-phone-mask',
-                plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.js',
-                array(),
-                $this->version,
-                false
-            );
-            
-            wp_enqueue_style(
-                $this->plugin_name . '-checkout-phone-mask-style',
-                plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.css',
-                array(),
-                $this->version,
-                'all'
-            );
-        } 
-
         $cart_cep = '';
         if (function_exists('WC') && WC()->customer) {
             $cart_cep = WC()->customer->get_shipping_postcode();
@@ -986,7 +967,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             if($phone_mask_enabled === 'yes' && $has_checkout_shortcode) {
                 wp_enqueue_style(
                     $this->plugin_name . '-checkout-phone-mask-shortcode',
-                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.css',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.css',
                     array(),
                     $this->version,
                     'all'
@@ -994,7 +975,7 @@ class WcBetterShippingCalculatorForBrazilPublic
 
                 wp_enqueue_script(
                     $this->plugin_name . '-checkout-phone-mask-shortcode',
-                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.js',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.js',
                     array('jquery'),
                     $this->version,
                     false
@@ -1126,7 +1107,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             if ($phone_mask_enabled === 'yes') {
                 wp_enqueue_script(
                     $this->plugin_name . '-edit-address-phone-mask',
-                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.js',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.js',
                     array('jquery'),
                     $this->version,
                     false
@@ -1134,7 +1115,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                 
                 wp_enqueue_style(
                     $this->plugin_name . '-edit-address-phone-mask-style',
-                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.css',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.css',
                     array(),
                     $this->version,
                     'all'
