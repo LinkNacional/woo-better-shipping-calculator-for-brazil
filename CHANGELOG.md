@@ -1,3 +1,8 @@
+# 4.8.0 - 09/02/26
+* Adição: Opção de ocultação de fretes ao adquirir frete grátis.
+* Ajuste: stopPropagation no botão de checkbox, para evitar que o formulário seja atualizado indevidamente.
+* Ajuste: Melhoria na mensagem de descrição do cache, informando dicas sobre possíveis problemas com plugins de cache.
+
 # 4.7.4 - 21/01/26
 * Ajuste: consulta dos produtos variáveis na página de produto.
 

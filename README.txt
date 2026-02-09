@@ -147,6 +147,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+= 4.8.0 - 09/02/2026
+* Addition: Option to hide shipping methods when free shipping is acquired.
+* Adjustment: stopPropagation on the checkbox button to prevent the form from being updated improperly.
+* Adjustment: Improved cache description message, providing tips about possible issues with cache plugins.
+
 = 4.7.4 - 21/01/2026
 * Fix: variable products shipping calculation on product page.
 
