@@ -152,6 +152,7 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * Adjustment: stopPropagation on the checkbox button to prevent the form from being updated improperly.
 * Adjustment: Improved cache description message, providing tips about possible issues with cache plugins.
 * Addition: Hook for displaying custom address variables.
+* Adjustments to ajax and rest_api routes to prevent caching.
 
 = 4.7.4 - 21/01/2026
 * Fix: variable products shipping calculation on product page.
