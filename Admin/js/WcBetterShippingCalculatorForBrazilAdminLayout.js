@@ -910,6 +910,7 @@
               //Checkout
               'woo_better_calc_enable_auto_address_fill': 'woo_better_calc_cep_field_position',
               'woo_better_calc_contact_required': 'woo_better_calc_apply_phone_mask',
+              'woo_better_calc_contact_field_position': 'woo_better_calc_apply_phone_mask',
               
               //Cache
               'woo_better_calc_cache_expiration_time': 'woo_better_calc_enable_auto_postcode_search',

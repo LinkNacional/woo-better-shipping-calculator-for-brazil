@@ -666,6 +666,7 @@ class WcBetterShippingCalculatorForBrazil
         register_rest_route('lknwcbettershipping/v1', '/cep/', array(
             'methods' => 'GET',
             'callback' => array($this, 'lkn_get_cep_info'),
+            'permission_callback' => '__return_true',
             'args' => array(
                 'postcode' => array(
                     'required' => true,
@@ -2988,7 +2989,8 @@ class WcBetterShippingCalculatorForBrazil
             $updated = false;
             $valid_fields = ['first_name', 'last_name', 'address_1', 'city', 'state', 'postcode', 'country', 'phone'];
             
-            foreach ($valid_fields as $field) {
+                  errro_loorg_log(function_exists('woocommerce_store_api_register_field_priority') ? 'existe' : 'n~o existe');
+  foreach ($valid_fields as $field) {
                 if (isset($address_data[$field]) && !empty($address_data[$field])) {
                     $sanitized_value = sanitize_text_field($address_data[$field]);
                     
@@ -3375,6 +3377,8 @@ class WcBetterShippingCalculatorForBrazil
         $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
         $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        $email_highlight_shortcode = get_option('woo_better_calc_email_field_position_shortcode', 'no');
+        $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
 
         // Forçar limpeza do cache se necessário  
@@ -3383,8 +3387,34 @@ class WcBetterShippingCalculatorForBrazil
             $person_type = get_option('woo_better_calc_person_type_select', 'none');
         }
 
+        if($email_highlight_shortcode === 'yes') {
+            if (isset($fields['billing']['billing_email'])) {
+                $fields['billing']['billing_email']['priority'] = 1;
+            }
+            if (isset($fields['shipping']['shipping_email'])) {
+                $fields['shipping']['shipping_email']['priority'] = 1;
+            }
+        }
+
+        if ($phone_highlight === 'yes') {
+            if (isset($fields['billing']['billing_phone'])) {
+                $fields['billing']['billing_phone']['priority'] = 2;
+            }
+            if (isset($fields['shipping']['shipping_phone'])) {
+                $fields['shipping']['shipping_phone']['priority'] = 2;
+            }
+        } 
+
         // Campos de pessoa física e jurídica - PRIMEIRO para evitar conflitos
         if ($person_type !== 'none') {
+            // Dar prioridade máxima ao campo de país quando person_type está habilitado
+            if (isset($fields['billing']['billing_country'])) {
+                $fields['billing']['billing_country']['priority'] = 3;
+            }
+            if (isset($fields['shipping']['shipping_country'])) {
+                $fields['shipping']['shipping_country']['priority'] = 3;
+            }
+            
             // Campo unificado CPF/CNPJ (billing)
             $label_text = __('CPF/CNPJ', 'woo-better-shipping-calculator-for-brazil');
             $placeholder_text = __('Digite seu CPF ou CNPJ', 'woo-better-shipping-calculator-for-brazil');

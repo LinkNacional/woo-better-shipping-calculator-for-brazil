@@ -1113,6 +1113,262 @@ document.addEventListener('DOMContentLoaded', function() {
             blockLabel.style.setProperty('padding-left', labelPad, 'important');
             blockLabel.style.transition = 'all 0.3s ease';
         }
+
+        // Inicia funcionalidades de destaque e sincronização se configurado após um delay
+        setTimeout(() => {
+            setupPhoneFieldHighlight();
+            setupPhoneSync();
+        }, 300);
+    }
+
+    // Função para mover campo de telefone para após email e implementar sincronização
+    function setupPhoneFieldHighlight() {
+        // Verifica se a funcionalidade está habilitada
+        if (typeof wc_better_checkout_phone_mask_vars === 'undefined' || 
+            wc_better_checkout_phone_mask_vars.highlightPhone !== 'true') {
+            return;
+        }
+
+        // Aguarda biblioteca estar carregada
+        if (typeof intlTelInput === 'undefined') {
+            setTimeout(setupPhoneFieldHighlight, 500);
+            return;
+        }
+
+        // Encontra o campo de email
+        const emailField = document.querySelector('#email, input[name="contact_email"]');
+        if (!emailField) {
+            return;
+        }
+
+        const emailContainer = emailField.closest('.wc-block-components-text-input, .form-row');
+        if (!emailContainer) {
+            return;
+        }
+
+        // Encontra o primeiro campo de telefone disponível
+        const selectors = [
+            'input[id*="phone"]',
+            'input[type="tel"]',
+            'input[name*="phone"]'
+        ];
+
+        let phoneField = null;
+        let phoneContainer = null;
+
+        for (const selector of selectors) {
+            phoneField = document.querySelector(selector);
+            if (phoneField) {
+                phoneContainer = phoneField.closest('.wc-block-components-text-input, .form-row');
+                if (phoneContainer) {
+                    break;
+                }
+            }
+        }
+
+        if (!phoneField || !phoneContainer) {
+            return;
+        }
+
+        // Evita mover se já foi movido
+        if (phoneContainer.dataset && phoneContainer.dataset.phoneHighlighted === 'true') {
+            return;
+        }
+
+        // Move o campo de telefone para após o email
+        emailContainer.parentNode.insertBefore(phoneContainer, emailContainer.nextSibling);
+        phoneContainer.dataset.phoneHighlighted = 'true';
+
+        // Oculta outros campos de telefone duplicados
+        const allPhoneFields = document.querySelectorAll([
+            '#billing_phone',
+            '#shipping_phone',
+            '#billing-phone', 
+            '#shipping-phone',
+            'input[id*="phone"]',
+            'input[type="tel"]',
+            'input[name*="phone"]'
+        ].join(','));
+
+        Array.from(allPhoneFields).forEach(field => {
+            if (field !== phoneField) {
+                const container = field.closest('.wc-block-components-text-input, .form-row');
+                if (container && !container.dataset.phoneHidden) {
+                    container.style.display = 'none';
+                    container.dataset.phoneHidden = 'true';
+                }
+            }
+        });
+    }
+
+    // Função para sincronização bidirecional de campos de telefone
+    function setupPhoneSync() {
+        // Verifica se a funcionalidade está habilitada
+        if (typeof wc_better_checkout_phone_mask_vars === 'undefined' || 
+            wc_better_checkout_phone_mask_vars.highlightPhone !== 'true') {
+            return;
+        }
+
+        // Aguarda biblioteca estar carregada
+        if (typeof intlTelInput === 'undefined') {
+            setTimeout(setupPhoneSync, 500);
+            return;
+        }
+
+        // Busca o campo principal de telefone (visível)
+        const selectors = [
+            'input[id*="phone"]',
+            'input[type="tel"]',
+            'input[name*="phone"]'
+        ];
+
+        let primaryPhoneField = null;
+        for (const selector of selectors) {
+            primaryPhoneField = document.querySelector(selector);
+            if (primaryPhoneField) {
+                const container = primaryPhoneField.closest('.wc-block-components-text-input, .form-row');
+                if (container && window.getComputedStyle(container).display !== 'none') {
+                    break;
+                }
+            }
+        }
+
+        if (!primaryPhoneField) {
+            return;
+        }
+        // Encontra todos os campos de telefone
+        const allPhoneFields = document.querySelectorAll([
+            '#billing_phone',
+            '#shipping_phone', 
+            '#billing-phone',
+            '#shipping-phone',
+            'input[id*="phone"]',
+            'input[type="tel"]',
+            'input[name*="phone"]'
+        ].join(','));
+
+        // Filtra para campos únicos e remove o primário
+        const otherPhoneFields = Array.from(allPhoneFields).filter(field => 
+            field !== primaryPhoneField && field.type === 'tel'
+        );
+
+        if (otherPhoneFields.length === 0) {
+            return;
+        }
+
+        let syncing = false; // Flag para evitar loop infinito
+
+        // Função para simular evento React
+        function triggerReactEvent(input, value) {
+            if (!input) return;
+            
+            // Define valor usando setter nativo
+            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+            nativeSetter.call(input, value);
+
+            // Cria e dispara eventos para React detectar
+            const inputEvent = new Event('input', { 
+                bubbles: true, 
+                cancelable: true 
+            });
+            
+            const changeEvent = new Event('change', { 
+                bubbles: true, 
+                cancelable: true 
+            });
+
+            // Simula evento React (para componentes React)
+            if (input._valueTracker) {
+                input._valueTracker.setValue('');
+            }
+
+            // Dispara eventos
+            input.dispatchEvent(inputEvent);
+            input.dispatchEvent(changeEvent);
+
+            // Para WooCommerce Blocks (React)
+            setTimeout(() => {
+                input.dispatchEvent(new Event('blur', { bubbles: true }));
+                input.dispatchEvent(new Event('focus', { bubbles: true }));
+            }, 10);
+        }
+
+        // Adiciona listener ao campo primário
+        if (!primaryPhoneField.dataset || !primaryPhoneField.dataset.syncPrimaryListener) {
+            primaryPhoneField.addEventListener('input', function(e) {
+                if (syncing) return;
+                
+                syncing = true;
+                
+                // Pequeno delay para capturar o valor após qualquer formatação
+                setTimeout(() => {
+                    const value = e.target.value;
+                    // Sincroniza com outros campos
+                    otherPhoneFields.forEach((field, index) => {
+                        // Define valor usando setter nativo para React
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(field, value);
+                        
+                        // Dispara eventos React
+                        triggerReactEvent(field, value);
+                    });
+
+                    syncing = false;
+                }, 50); // 50ms delay
+            });
+            if (primaryPhoneField.dataset) {
+                primaryPhoneField.dataset.syncPrimaryListener = 'true';
+            }
+        }
+
+        // Adiciona listeners aos outros campos
+        otherPhoneFields.forEach(field => {
+            if (!field || !field.dataset || !field.dataset.syncSecondaryListener) {
+                field.addEventListener('input', function(e) {
+                    if (syncing) return;
+                    
+                    syncing = true;
+                    
+                    // Pequeno delay para capturar o valor após qualquer formatação
+                    setTimeout(() => {
+                        const value = e.target.value;
+                        // Sincroniza de volta com o campo primário
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(primaryPhoneField, value);
+                        triggerReactEvent(primaryPhoneField, value);
+
+                        // Sincroniza com outros campos secundários
+                        otherPhoneFields.forEach((otherField, index) => {
+                            if (otherField !== field) {
+                                nativeSetter.call(otherField, value);
+                                triggerReactEvent(otherField, value);
+                            }
+                        });
+
+                        syncing = false;
+                    }, 50); // 50ms delay
+                });
+                if (field.dataset) {
+                    field.dataset.syncSecondaryListener = 'true';
+                }
+            }
+        });
+
+        // Observer para detectar mudanças de visibilidade
+        const visibilityObserver = new MutationObserver(() => {
+            // Re-configura se necessário (com delay para evitar loops)
+            setTimeout(setupPhoneSync, 100);
+        });
+
+        otherPhoneFields.forEach(field => {
+            const container = field.closest('.wc-block-components-text-input, .form-row');
+            if (container) {
+                visibilityObserver.observe(container, {
+                    attributes: true,
+                    attributeFilter: ['style', 'class']
+                });
+            }
+        });
     }
 
     // Função para inicializar campos no Store API

@@ -959,6 +959,38 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('No checkout, o campo de telefone torna-se obrigatório.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'contact_field_position' => array(
+                'title'    => __('Destaque do Campo Telefone', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_contact_field_position',
+                'desc_tip' => false,
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Defina as configurações de exibição e funcionalidade para o campo de Telefone (Checkout).', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Ao habilitar, o campo Telefone será exibido no topo do formulário de checkout, posicionado imediatamente após o campo de País.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Escolha se o campo de Telefone deve ser destacado no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'email_field_position_shortcode' => array(
+                'title'    => __('Destaque do Campo E-mail (Shortcode)', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_calc_email_field_position_shortcode',
+                'desc_tip' => false,
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Defina se o campo de E-mail deve ser destacado na versão de shortcode.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Ao habilitar, o campo E-mail será exibido em destaque no formulário gerado pelo shortcode, posicionado imediatamente após o campo de País.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Escolha se o campo de E-mail deve ser destacado na versão de shortcode.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'checkout_section_end' => array(
                 'type' => 'sectionend',
                 'id'   => 'woo_better_calc_checkout'
