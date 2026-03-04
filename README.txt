@@ -147,6 +147,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+= 4.9.0 - 04/04/2026
+* Added: New options to highlight the contact and email fields.
+* Added: New option to prevent duplicate free shipping.
+
 = 4.8.0 - 09/02/2026
 * Addition: Option to hide shipping methods when free shipping is acquired.
 * Adjustment: stopPropagation on the checkbox button to prevent the form from being updated improperly.
