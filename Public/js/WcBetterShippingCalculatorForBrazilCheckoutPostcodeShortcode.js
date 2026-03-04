@@ -35,17 +35,6 @@ jQuery(function ($) {
         enableCheckbox = false;
     }
 
-
-    function movePostcodeFieldBelowCountry(type) {
-        var $countryField = $('#' + type + '_country_field');
-        var $postcodeField = $('#' + type + '_postcode_field');
-        if ($countryField.length && $postcodeField.length) {
-            if (!$countryField.next().is($postcodeField)) {
-                $postcodeField.insertAfter($countryField);
-            }
-        }
-    }
-
     function toggleCheckboxVisibility(type) {
         var $checkboxDiv = $('#wc_better_calc_checkbox_' + type + '_field');
         var $countrySelect = $('#' + type + '_country');
@@ -426,7 +415,6 @@ jQuery(function ($) {
     // MutationObserver para monitorar mudanças no DOM
     var observer = new MutationObserver(function () {
         ['billing', 'shipping'].forEach(function (type) {
-            movePostcodeFieldBelowCountry(type);
             moveCheckboxBelowPostcodeField(type);
             toggleCheckboxVisibility(type);
             // Lógica para remover número do endereço apenas uma vez
@@ -450,7 +438,6 @@ jQuery(function ($) {
 
     // Chama uma vez para garantir que já está no DOM
     ['billing', 'shipping'].forEach(function (type) {
-        movePostcodeFieldBelowCountry(type);
         moveCheckboxBelowPostcodeField(type);
         toggleCheckboxVisibility(type);
         // Monitora mudanças no campo de país

@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.9
 Requires PHP: 7.3
-Stable tag: 4.8.0
+Stable tag: 4.9.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -146,6 +146,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+= 4.9.0 - 04/03/2026
+* Added: New options to highlight the contact and email fields.
+* Added: New option to prevent duplicate free shipping.
 
 = 4.8.0 - 09/02/2026
 * Addition: Option to hide shipping methods when free shipping is acquired.

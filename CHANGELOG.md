@@ -1,3 +1,7 @@
+# 4.9.0 - 04/03/26
+* Adição: Novas opções para destaque do campo de contato e e-mail.
+* Adição: Nova opção para evitar a duplicidade de frete gratuito.
+
 # 4.8.0 - 09/02/26
 * Adição: Opção de ocultação de fretes ao adquirir frete grátis.
 * Ajuste: stopPropagation no botão de checkbox, para evitar que o formulário seja atualizado indevidamente.
