@@ -131,6 +131,22 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Mostra o valor restante para obter frete grátis.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'avoid_free_shipping_duplication' => array(
+                'title'    => __('Evitar Duplicidade de Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_avoid_free_shipping_duplication',
+                'desc_tip' => false,
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Evita que múltiplas opções de frete grátis sejam exibidas ao mesmo tempo.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Se habilitado, o sistema mostrará apenas uma opção de frete grátis quando já houver uma disponível, evitando confusão para o cliente.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Exibe apenas uma opção de frete grátis por vez, caso já exista uma disponível.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'font_source' => array(
                 'title'    => __('Fonte para Busca de CEP', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,

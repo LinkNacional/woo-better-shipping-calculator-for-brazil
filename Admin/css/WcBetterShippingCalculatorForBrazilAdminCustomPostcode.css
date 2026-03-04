@@ -139,9 +139,9 @@
 }
 
 .woo-better-shipping-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 .woo-better-shipping-list li {

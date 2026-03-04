@@ -291,6 +291,8 @@ class WcBetterShippingCalculatorForBrazil
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
         $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
         $only_free_shipping = get_option('woo_better_only_free_shipping', 'yes');
+        $avoid_free_shipping_duplication = get_option('woo_better_avoid_free_shipping_duplication', 'no');
+
 
         if ($this->is_playground_environment()) {
             $rates = [];
@@ -308,25 +310,37 @@ class WcBetterShippingCalculatorForBrazil
         if ($enable_min === 'yes') {
             $cart_total = WC()->cart->get_displayed_subtotal();
             if ($cart_total >= $min_value) {
-                $free_shipping_rate = new \WC_Shipping_Rate(
-                    'free_shipping_min',
-                    __('Frete Gratuito', 'woo-better-shipping-calculator-for-brazil'),
-                    0,
-                    array(),
-                    'free_shipping'
-                );
-                if ($only_free_shipping === 'yes') {
-                    // Remove todas as opções de frete e exibe apenas o frete grátis
-                    $rates = array('free_shipping_min' => $free_shipping_rate);
-                } else {
-                    // Insere o frete grátis na primeira posição do array de métodos
-                    $new_rates = array('free_shipping_min' => $free_shipping_rate);
-                    foreach ($rates as $key => $rate) {
-                        if ($key !== 'free_shipping_min') {
-                            $new_rates[$key] = $rate;
+                $has_free_shipping = false;
+                if ($avoid_free_shipping_duplication === 'yes') {
+                    foreach ($rates as $rate) {
+                        if (isset($rate) && method_exists($rate, 'get_cost') && floatval($rate->get_cost()) == 0) {
+                            $has_free_shipping = true;
+                            break;
                         }
                     }
-                    $rates = $new_rates;
+                }
+                // Só adiciona se não houver frete grátis existente
+                if (! $has_free_shipping) {
+                    $free_shipping_rate = new \WC_Shipping_Rate(
+                        'free_shipping_min',
+                        __('Frete Gratuito', 'woo-better-shipping-calculator-for-brazil'),
+                        0,
+                        array(),
+                        'free_shipping'
+                    );
+                    if ($only_free_shipping === 'yes') {
+                        // Remove todas as opções de frete e exibe apenas o frete grátis
+                        $rates = array('free_shipping_min' => $free_shipping_rate);
+                    } else {
+                        // Insere o frete grátis na primeira posição do array de métodos
+                        $new_rates = array('free_shipping_min' => $free_shipping_rate);
+                        foreach ($rates as $key => $rate) {
+                            if ($key !== 'free_shipping_min') {
+                                $new_rates[$key] = $rate;
+                            }
+                        }
+                        $rates = $new_rates;
+                    }
                 }
             }
         }
