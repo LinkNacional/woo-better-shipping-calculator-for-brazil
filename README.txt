@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.9
 Requires PHP: 7.3
-Stable tag: 4.9.1
+Stable tag: 4.9.2
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -147,9 +147,12 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+= 4.9.2 - 06/03/2026
+* Adjustment: Changed the phone field position on the edit address page.
+
 = 4.9.1 - 06/03/2026
-* Ajuste: Destaque no campo de CEP via shortcode.
-* Ajuste: Campos de configuração do frete.
+* Adjustment: Highlight on the ZIP code field via shortcode.
+* Adjustment: Shipping configuration fields.
 
 = 4.9.0 - 04/03/2026
 * Added: New options to highlight the contact and email fields.
