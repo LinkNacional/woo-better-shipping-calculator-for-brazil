@@ -4983,7 +4983,6 @@ class WcBetterShippingCalculatorForBrazil
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
         $email_highlight_shortcode = get_option('woo_better_calc_email_field_position_shortcode', 'no');
         $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
-        error_log($phone_highlight);
         
         // Aplicar prioridades de campos conforme configurações
         if($email_highlight_shortcode === 'yes') {
@@ -4994,7 +4993,6 @@ class WcBetterShippingCalculatorForBrazil
 
         if ($phone_highlight === 'yes') {
             if (isset($fields['billing_phone'])) {
-                error_log('entreiiiiiii');
                 $fields['billing_phone']['priority'] = 2;
             }
         } 
