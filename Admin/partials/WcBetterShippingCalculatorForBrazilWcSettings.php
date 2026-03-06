@@ -59,6 +59,20 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Configure aqui as regras para o frete grátis.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'min_free_shipping_value' => array(
+                'title'    => __('Valor Mínimo', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_min_free_shipping_value',
+                'desc_tip' => false,
+                'default'  => '',
+                'type'     => 'number',
+                'custom_attributes' => array(
+                    'min' => 0,
+                    'step' => '0.01',
+                    'data-desc-tip' => __('Defina o valor mínimo necessário para ativar o frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Insira o valor mínimo do carrinho para que o frete grátis seja ativado.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ex: 200,00', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'only_free_shipping' => array(
                 'title'    => __('Ocultar outros fretes quando Grátis', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,
@@ -76,18 +90,20 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Define se os demais métodos de envio devem ser ocultados quando o Frete Grátis estiver disponível.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
-            'min_free_shipping_value' => array(
-                'title'    => __('Valor Mínimo', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_min_free_shipping_value',
+            'avoid_free_shipping_duplication' => array(
+                'title'    => __('Evitar Duplicidade de Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_avoid_free_shipping_duplication',
                 'desc_tip' => false,
-                'default'  => '',
-                'type'     => 'number',
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
                 'custom_attributes' => array(
-                    'min' => 0,
-                    'step' => '0.01',
-                    'data-desc-tip' => __('Defina o valor mínimo necessário para ativar o frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Insira o valor mínimo do carrinho para que o frete grátis seja ativado.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Ex: 200,00', 'woo-better-shipping-calculator-for-brazil')
+                    'data-desc-tip' => __('Evita que múltiplas opções de frete grátis sejam exibidas ao mesmo tempo.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Se habilitado, o sistema mostrará apenas uma opção de frete grátis quando já houver uma disponível, evitando confusão para o cliente.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Exibe apenas uma opção de frete grátis por vez, caso já exista uma disponível.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'min_free_shipping_message' => array(
@@ -129,22 +145,6 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-desc-tip' => __('Mostra o valor restante para obter frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Ao habilitar esta opção, será exibido as informações de valor restante dentro da barra de progresso.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Mostra o valor restante para obter frete grátis.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-            'avoid_free_shipping_duplication' => array(
-                'title'    => __('Evitar Duplicidade de Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_avoid_free_shipping_duplication',
-                'desc_tip' => false,
-                'default'  => 'no',
-                'type'     => 'radio',
-                'options'  => array(
-                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
-                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
-                ),
-                'custom_attributes' => array(
-                    'data-desc-tip' => __('Evita que múltiplas opções de frete grátis sejam exibidas ao mesmo tempo.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Se habilitado, o sistema mostrará apenas uma opção de frete grátis quando já houver uma disponível, evitando confusão para o cliente.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Exibe apenas uma opção de frete grátis por vez, caso já exista uma disponível.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'font_source' => array(
