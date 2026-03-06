@@ -1,3 +1,7 @@
+# 4.9.1 - 06/03/26
+* Ajuste: Destaque no campo de CEP via shortcode.
+* Ajuste: Campos de configuração do frete.
+
 # 4.9.0 - 04/03/26
 * Adição: Novas opções para destaque do campo de contato e e-mail.
 * Adição: Nova opção para evitar a duplicidade de frete gratuito.

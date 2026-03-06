@@ -134,6 +134,7 @@ function deactivateWcBetterShippingCalculatorForBrazilOnDeleteSite($site) {
  *
  * @since    1.0.0
  */
+
 function runWcBetterShippingCalculatorForBrazil()
 {
 

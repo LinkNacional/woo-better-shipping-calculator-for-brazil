@@ -147,6 +147,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+= 4.9.1 - 06/03/2026
+* Ajuste: Destaque no campo de CEP via shortcode.
+* Ajuste: Campos de configuração do frete.
+
 = 4.9.0 - 04/03/2026
 * Added: New options to highlight the contact and email fields.
 * Added: New option to prevent duplicate free shipping.
