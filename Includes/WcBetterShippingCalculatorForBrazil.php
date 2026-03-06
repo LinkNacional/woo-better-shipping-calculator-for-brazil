@@ -671,7 +671,7 @@ class WcBetterShippingCalculatorForBrazil
             unset($fields['shipping']['shipping_address_2']);
             unset($fields['shipping']['shipping_city']);
         }
-
+        
         return $fields;
     }
 
@@ -844,6 +844,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_nopriv_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
 
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'wc_better_calc_checkout_fields', 999);
+        $this->loader->add_filter( 'wc_address_i18n_params', $this, 'postcode_param_priority', 999);
         
         $this->loader->add_action('wp_ajax_wc_better_insert_address', $this, 'wc_better_insert_address');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_insert_address', $this, 'wc_better_insert_address');
@@ -915,6 +916,24 @@ class WcBetterShippingCalculatorForBrazil
         
         // Hook para formatação de endereço na página Minha Conta
         $this->loader->add_filter('woocommerce_my_account_my_address_formatted_address', $this, 'my_account_formatted_address', 10, 3);
+    }
+
+    public function postcode_param_priority( $params ) {
+        // Verifica se o reposicionamento do CEP está ativo
+        $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
+        
+        // Só aplica a prioridade se a opção estiver ativa
+        if ($cep_position === 'yes') {
+            $locales = json_decode( $params['locale'], true );
+            foreach ( $locales as &$locale ) {
+                if ( isset( $locale['postcode'] ) ) {
+                    $locale['postcode']['priority'] = 32;
+                }
+            }
+            $params['locale'] = wp_json_encode( $locales );
+        }
+        
+        return $params;
     }
 
     /**
@@ -3584,6 +3603,18 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
+        // Reposicionamento do CEP quando cep_position estiver ativo
+        if ($cep_position === 'yes') {
+            // Move o campo CEP (postcode) para prioridade 32
+            if (isset($fields['billing']['billing_postcode'])) {
+                $fields['billing']['billing_postcode']['priority'] = 32;
+            }
+            if (isset($fields['shipping']['shipping_postcode'])) {
+                $fields['shipping']['shipping_postcode']['priority'] = 32;
+            }
+        }
+
+        // Adiciona o checkbox apenas se ambas as condições permitirem
         if ($fill_checkout_address === 'no' || $cep_position === 'no') {
             return $fields;
         }
@@ -3597,7 +3628,7 @@ class WcBetterShippingCalculatorForBrazil
             'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
             'required'    => false,
             'class'       => array('form-row-wide'),
-            'priority'    => 90,
+            'priority'    => 33,
             'id'          => 'wc_better_calc_checkbox_billing',
         );
         $shipping_checkbox_field = array(
@@ -3605,7 +3636,7 @@ class WcBetterShippingCalculatorForBrazil
             'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
             'required'    => false,
             'class'       => array('form-row-wide'),
-            'priority'    => 90,
+            'priority'    => 33,
             'id'          => 'wc_better_calc_checkbox_shipping',
         );
 
@@ -4950,6 +4981,29 @@ class WcBetterShippingCalculatorForBrazil
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         $number_enabled = get_option('woo_better_calc_number_required', 'no');
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        $email_highlight_shortcode = get_option('woo_better_calc_email_field_position_shortcode', 'no');
+        $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
+        
+        // Aplicar prioridades de campos conforme configurações
+        if($email_highlight_shortcode === 'yes') {
+            if (isset($fields['billing_email'])) {
+                $fields['billing_email']['priority'] = 1;
+            }
+        }
+
+        if ($phone_highlight === 'yes') {
+            if (isset($fields['billing_phone'])) {
+                $fields['billing_phone']['priority'] = 2;
+            }
+        } 
+
+        // Campos de pessoa física e jurídica - PRIMEIRO para evitar conflitos
+        if ($person_type !== 'none') {
+            // Dar prioridade máxima ao campo de país quando person_type está habilitado
+            if (isset($fields['billing_country'])) {
+                $fields['billing_country']['priority'] = 3;
+            }
+        }
         
         // Adicionar campo de telefone
         if ($phone_required === 'yes') {
@@ -5055,6 +5109,11 @@ class WcBetterShippingCalculatorForBrazil
         $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
         $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
 
+        // Reposicionamento do CEP quando cep_position estiver ativo
+        if ($cep_position === 'yes' && isset($fields['billing_postcode'])) {
+            $fields['billing_postcode']['priority'] = 32;
+        }
+
         if ($cep_position === 'yes' && $fill_checkout_address === 'yes') {
             // Adicionar checkbox para auto-preenchimento de CEP
             $fields['wc_better_calc_checkbox_billing'] = array(
@@ -5062,7 +5121,7 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => false,
                 'class'       => array('form-row-wide'),
-                'priority'    => 90,
+                'priority'    => 33,
                 'id'          => 'wc_better_calc_checkbox_billing'
             );
         }
@@ -5100,6 +5159,29 @@ class WcBetterShippingCalculatorForBrazil
         $number_enabled = get_option('woo_better_calc_number_required', 'no');
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
+        $email_highlight_shortcode = get_option('woo_better_calc_email_field_position_shortcode', 'no');
+        $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
+        
+        // Aplicar prioridades de campos conforme configurações
+        if($email_highlight_shortcode === 'yes') {
+            if (isset($fields['shipping_email'])) {
+                $fields['shipping_email']['priority'] = 1;
+            }
+        }
+
+        if ($phone_highlight === 'yes') {
+            if (isset($fields['shipping_phone'])) {
+                $fields['shipping_phone']['priority'] = 2;
+            }
+        } 
+
+        // Campos de pessoa física e jurídica - PRIMEIRO para evitar conflitos
+        if ($person_type !== 'none') {
+            // Dar prioridade máxima ao campo de país quando person_type está habilitado
+            if (isset($fields['shipping_country'])) {
+                $fields['shipping_country']['priority'] = 3;
+            }
+        }
         
         // Campo empresa para pessoa jurídica (se configuração permitir)
         if ($person_type === 'legal' || $person_type === 'both') {
@@ -5161,6 +5243,11 @@ class WcBetterShippingCalculatorForBrazil
         $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
         $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
         
+        // Reposicionamento do CEP quando cep_position estiver ativo
+        if ($cep_position === 'yes' && isset($fields['shipping_postcode'])) {
+            $fields['shipping_postcode']['priority'] = 32;
+        }
+
         if ($cep_position === 'yes' && $fill_checkout_address === 'yes') {
             // Adicionar checkbox para auto-preenchimento de CEP
             $fields['wc_better_calc_checkbox_shipping'] = array(
@@ -5168,7 +5255,7 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => false,
                 'class'       => array('form-row-wide'),
-                'priority'    => 90,
+                'priority'    => 33,
                 'id'          => 'wc_better_calc_checkbox_shipping'
             );
         }

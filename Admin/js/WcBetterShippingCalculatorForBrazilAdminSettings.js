@@ -14,39 +14,95 @@ document.addEventListener('DOMContentLoaded', function () {
                 function updateMinimumFreeShippingValue() {
                     const selectedOption = Array.from(minimumFreeShippingRadios).find(radio => radio.checked)?.value;
 
+                    // Campos adicionais que dependem do woo_better_enable_min_free_shipping
+                    const onlyFreeShippingRadios = document.querySelectorAll('input[name="woo_better_only_free_shipping"]');
+                    const avoidDuplicationRadios = document.querySelectorAll('input[name="woo_better_avoid_free_shipping_duplication"]');
+                    const progressBarRadios = document.querySelectorAll('input[name="woo_better_enable_progress_bar_value"]');
+
                     if (selectedOption === 'yes') {
-                        minimumFreeShippingValue.disabled = false;
+                        minimumFreeShippingValue.readOnly = false;
                         minimumFreeShippingValue.style.backgroundColor = '';
                         minimumFreeShippingValue.style.cursor = '';
                         
                         // Habilita os campos de mensagem
                         if (minimumFreeShippingMessage) {
-                            minimumFreeShippingMessage.disabled = false;
+                            minimumFreeShippingMessage.readOnly = false;
                             minimumFreeShippingMessage.style.backgroundColor = '';
                             minimumFreeShippingMessage.style.cursor = '';
                         }
                         if (minimumFreeShippingSuccessMessage) {
-                            minimumFreeShippingSuccessMessage.disabled = false;
+                            minimumFreeShippingSuccessMessage.readOnly = false;
                             minimumFreeShippingSuccessMessage.style.backgroundColor = '';
                             minimumFreeShippingSuccessMessage.style.cursor = '';
                         }
+
+                        // Habilita os campos de rádio dependentes
+                        onlyFreeShippingRadios.forEach(radio => {
+                            radio.disabled = false;
+                            radio.style.cursor = '';
+                        });
+
+                        avoidDuplicationRadios.forEach(radio => {
+                            radio.disabled = false;
+                            radio.style.cursor = '';
+                        });
+
+                        progressBarRadios.forEach(radio => {
+                            radio.disabled = false;
+                            radio.style.cursor = '';
+                        });
+
                     } else if (selectedOption === 'no') {
                         minimumFreeShippingValue.value = 0;
-                        minimumFreeShippingValue.disabled = true;
+                        minimumFreeShippingValue.readOnly = true;
                         minimumFreeShippingValue.style.backgroundColor = '#f1f1f1';
                         minimumFreeShippingValue.style.cursor = 'not-allowed';
                         
                         // Desabilita os campos de mensagem
                         if (minimumFreeShippingMessage) {
-                            minimumFreeShippingMessage.disabled = true;
+                            minimumFreeShippingMessage.readOnly = true;
                             minimumFreeShippingMessage.style.backgroundColor = '#f1f1f1';
                             minimumFreeShippingMessage.style.cursor = 'not-allowed';
                         }
                         if (minimumFreeShippingSuccessMessage) {
-                            minimumFreeShippingSuccessMessage.disabled = true;
+                            minimumFreeShippingSuccessMessage.readOnly = true;
                             minimumFreeShippingSuccessMessage.style.backgroundColor = '#f1f1f1';
                             minimumFreeShippingSuccessMessage.style.cursor = 'not-allowed';
                         }
+
+                        // Desabilita os campos de rádio dependentes e marca 'no'
+                        onlyFreeShippingRadios.forEach(radio => {
+                            if (radio.value === 'no') {
+                                radio.click();
+                                radio.checked = true;
+                            } else if (radio.value === 'yes') {
+                                radio.checked = false;
+                            }
+                            radio.disabled = true;
+                            radio.style.cursor = 'not-allowed';
+                        });
+
+                        avoidDuplicationRadios.forEach(radio => {
+                            if (radio.value === 'no') {
+                                radio.click();
+                                radio.checked = true;
+                            } else if (radio.value === 'yes') {
+                                radio.checked = false;
+                            }
+                            radio.disabled = true;
+                            radio.style.cursor = 'not-allowed';
+                        });
+
+                        progressBarRadios.forEach(radio => {
+                            if (radio.value === 'no') {
+                                radio.click();
+                                radio.checked = true;
+                            } else if (radio.value === 'yes') {
+                                radio.checked = false;
+                            }
+                            radio.disabled = true;
+                            radio.style.cursor = 'not-allowed';
+                        });
                     }
                 }
 
@@ -67,7 +123,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         radio.disabled = true;
                         radio.style.cursor = 'not-allowed';
 
-                        // Marca 'no' e desmarca 'yes' ao desabilitar
                         if (radio.value === 'no') {
                             radio.checked = true;
                         } else if (radio.value === 'yes') {
