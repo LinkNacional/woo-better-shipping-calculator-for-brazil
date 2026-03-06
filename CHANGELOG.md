@@ -1,5 +1,5 @@
 # 4.9.2 - 06/03/26
-* Ajuste na posição do campo telefone na página de editar endereço.
+* Ajuste Posição do campo telefone na página de editar endereço.
 
 # 4.9.1 - 06/03/26
 * Ajuste: Destaque no campo de CEP via shortcode.
