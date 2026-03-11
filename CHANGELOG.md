@@ -1,3 +1,8 @@
+# 4.10.0 - 11/03/26
+* Correção no carregamento de script entre a versão Clássica e de Blocos.
+* Correção no error_log da função de cache.
+* Nova opção para esconder o componente de frete personalizado ao detectar produtos digitais.
+
 # 4.9.2 - 06/03/26
 * Ajuste Posição do campo telefone na página de editar endereço.
 

@@ -147,6 +147,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+= 4.10.0 - 11/03/2026
+* Fixed script loading between Classic and Block versions.
+* Fixed error_log in cache function.
+* New option to hide the custom shipping calculator component when only digital products are detected.
+
 = 4.9.2 - 06/03/2026
 * Adjustment: Changed the phone field position on the edit address page.
 
