@@ -490,28 +490,28 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             .woo-better-update-icon-container {
-                flex-shrink: 0;
-                width: 44px;
-                height: 44px;
+                flex-shrink: 0 !important;
+                width: 44px !important;
+                height: 44px !important;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-                border-radius: 50%;
-                border: none;
-                background: transparent;
-                padding: 0;
-                transition: background-color 0.3s ease;
-                outline: none;
+                border-radius: 50% !important;
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                transition: background-color 0.3s ease !important;
+                outline: none !important;
             }
 
             .woo-better-update-icon-container:focus {
-                outline: none;
-                box-shadow: none;
+                outline: none !important;
+                box-shadow: none !important;
             }
 
             .woo-better-update-icon-container:hover {
-                background-color: ${themeColor}1a;
+                background-color: ${themeColor}1a !important;
             }
 
             .woo-better-update-icon-container:hover .woo-better-update-icon {
@@ -559,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 padding: 3px;
                 font-size: 13px;
                 font-weight: 600;
-                margin: 0 0 4px 0;
+                margin: 0 0 4px 0 !important;
                 color: ${WooBetterData.inputStyles.color || '#333'};
                 opacity: 0.8;
                 transition: all 0.3s ease;

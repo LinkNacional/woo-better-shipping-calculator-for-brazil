@@ -126,7 +126,7 @@
 .woo-better-product-quantity,
 .woo-better-cart-name,
 .woo-better-cart-quantity {
-    margin: 5px 0;
+    margin: 5px 0 !important;
     font-size: 14px;
 }
 

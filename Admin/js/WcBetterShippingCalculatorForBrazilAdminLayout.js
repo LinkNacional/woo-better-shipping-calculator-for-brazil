@@ -147,12 +147,12 @@
     }
 
     const featureMessage1 = createFeatureMessage('✔️', [
-      '<strong>ATUALIZADO:</strong> Novas opções para destaque dos campos de Número de contato e E-mail, juntamente com uma nova opção para evitar duplicidade de frete gratuito.'
+      '<strong>ATUALIZADO:</strong> Novas opções para destaque dos campos de Número de contato e E-mail, juntamente com uma nova opção para evitar duplicidade de frete.'
     ]);
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Campos de CPF/CNPJ e Bairro para válidação dos dados do cliente.'
+      '<strong>NOVO:</strong> Campos de CPF/CNPJ e Bairro para válidação dos dados do cliente e também um novo campo para esconder o frete personalizado para produtos digitais.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento

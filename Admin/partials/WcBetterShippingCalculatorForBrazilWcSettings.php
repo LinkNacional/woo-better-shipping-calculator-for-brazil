@@ -42,6 +42,22 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Gerencie as opções de endereço e cálculo de frete.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'hide_calculator_digital' => array(
+                'title'    => __('Esconder Frete personalizado para Produtos Digitais', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_calc_hide_calculator_digital',
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Exibir calculador normalmente para todos os tipos de produtos.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Define se o simulador de frete personalizado (página de produto e carrinho) deve ser escondido quando há apenas produtos digitais/virtuais.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Controle a exibição do simulador de frete personalizado para produtos digitais.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'enable_min_free_shipping' => array(
                 'title'    => __('Opções de Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,

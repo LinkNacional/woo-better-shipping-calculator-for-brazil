@@ -84,7 +84,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.9.2';
+            $this->version = '4.10.0';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -1003,14 +1003,22 @@ class WcBetterShippingCalculatorForBrazil
     {
         global $post;
         
-        // Verifica se é uma página de carrinho via shortcode
+        // Verifica se é uma página de carrinho
         $is_cart_page = function_exists('is_cart') && is_cart();
-        $is_cart_shortcode = isset($post) && is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'woocommerce_cart');
         
-        // Verifica se NÃO é carrinho em blocos
-        $is_blocks_cart = function_exists('has_block') && has_block('woocommerce/cart') && !$is_cart_shortcode;
+        // Verifica se é carrinho em blocos
+        $is_blocks_cart = false;
+        if (function_exists('has_block') && isset($post) && is_a($post, 'WP_Post')) {
+            $is_blocks_cart = has_block('woocommerce/cart', $post);
+        }
         
-        return ($is_cart_page || $is_cart_shortcode) && !$is_blocks_cart;
+        // Se há blocos de carrinho, não é shortcode/clássico
+        if ($is_blocks_cart) {
+            return false;
+        }
+        
+        // Se estamos na página de carrinho mas não é bloco, trata como shortcode/clássico
+        return $is_cart_page;
     }
 
     /**
@@ -1544,15 +1552,18 @@ class WcBetterShippingCalculatorForBrazil
             return $replacements;
         }
         
-        // Verifica se estamos em contexto de shortcode do carrinho
+        // Verifica se estamos em contexto de carrinho clássico/shortcode (não blocos)
         global $post;
-        $is_cart_shortcode = false;
+        $is_cart_classic = false;
         if (isset($post) && is_a($post, 'WP_Post')) {
-            $is_cart_shortcode = has_shortcode($post->post_content, 'woocommerce_cart');
+            // Se não tem blocos de carrinho, trata como clássico/shortcode
+            $has_cart_blocks = function_exists('has_block') && has_block('woocommerce/cart', $post);
+            $is_cart_page = function_exists('is_cart') && is_cart();
+            $is_cart_classic = $is_cart_page && !$has_cart_blocks;
         }
         
-        // Se for shortcode de carrinho, não adiciona placeholders de número e bairro
-        if ($is_cart_shortcode) {
+        // Se for carrinho clássico/shortcode, não adiciona placeholders de número e bairro
+        if ($is_cart_classic) {
             return $replacements;
         }
         
@@ -1598,15 +1609,18 @@ class WcBetterShippingCalculatorForBrazil
             return $formats;
         }
         
-        // Verifica se estamos em contexto de shortcode do carrinho
+        // Verifica se estamos em contexto de carrinho clássico/shortcode (não blocos)
         global $post;
-        $is_cart_shortcode = false;
+        $is_cart_classic = false;
         if (isset($post) && is_a($post, 'WP_Post')) {
-            $is_cart_shortcode = has_shortcode($post->post_content, 'woocommerce_cart');
+            // Se não tem blocos de carrinho, trata como clássico/shortcode
+            $has_cart_blocks = function_exists('has_block') && has_block('woocommerce/cart', $post);
+            $is_cart_page = function_exists('is_cart') && is_cart();
+            $is_cart_classic = $is_cart_page && !$has_cart_blocks;
         }
         
-        // Se for shortcode de carrinho, não modifica o formato do endereço
-        if ($is_cart_shortcode) {
+        // Se for carrinho clássico/shortcode, não modifica o formato do endereço
+        if ($is_cart_classic) {
             return $formats;
         }
         
@@ -3022,8 +3036,7 @@ class WcBetterShippingCalculatorForBrazil
             $updated = false;
             $valid_fields = ['first_name', 'last_name', 'address_1', 'city', 'state', 'postcode', 'country', 'phone'];
             
-                  errro_loorg_log(function_exists('woocommerce_store_api_register_field_priority') ? 'existe' : 'n~o existe');
-  foreach ($valid_fields as $field) {
+            foreach ($valid_fields as $field) {
                 if (isset($address_data[$field]) && !empty($address_data[$field])) {
                     $sanitized_value = sanitize_text_field($address_data[$field]);
                     
@@ -3642,6 +3655,14 @@ class WcBetterShippingCalculatorForBrazil
 
         $fields['billing'][$billing_checkbox_key] = $billing_checkbox_field;
         $fields['shipping'][$shipping_checkbox_key] = $shipping_checkbox_field;
+        
+        // Corrige a exibição da label do address_2 (remove screen-reader-text)
+        if (isset($fields['billing']['billing_address_2'])) {
+            $fields['billing']['billing_address_2']['label_class'] = '';
+        }
+        if (isset($fields['shipping']['shipping_address_2'])) {
+            $fields['shipping']['shipping_address_2']['label_class'] = '';
+        }
 
         return $fields;
     }
