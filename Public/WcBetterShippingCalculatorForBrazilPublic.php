@@ -132,20 +132,22 @@ class WcBetterShippingCalculatorForBrazilPublic
         // Detecta se estamos na página de checkout (compatível com novas versões do WooCommerce)
         global $post;
         $is_checkout_page = false;
-        $has_checkout_shortcode = false;
         $has_checkout_block = false;
+        $is_checkout_classic = false;
+        
+        // Verifica se existe função is_checkout() do WooCommerce
+        if (function_exists('is_checkout')) {
+            $is_checkout_page = is_checkout();
+        }
         
         if (isset($post) && is_a($post, 'WP_Post')) {
-            $has_checkout_shortcode = has_shortcode($post->post_content, 'woocommerce_checkout');
-            $has_checkout_block = has_block('woocommerce/checkout', $post);
+            $has_checkout_block = function_exists('has_block') && has_block('woocommerce/checkout', $post);
+            // Se estamos na página de checkout mas não é blocos, trata como clássico/shortcode
+            $is_checkout_classic = $is_checkout_page && !$has_checkout_block;
         }
         
-        // Fallback para função is_checkout() se disponível
-        if (function_exists('is_checkout')) {
-            $is_checkout_page = is_checkout() || $has_checkout_shortcode || $has_checkout_block;
-        } else {
-            $is_checkout_page = $has_checkout_shortcode || $has_checkout_block;
-        }
+        // Página de checkout (blocos ou clássico/shortcode)
+        $is_checkout_page = $is_checkout_page || $has_checkout_block;
         
         if ($is_checkout_page) {
 
@@ -285,20 +287,22 @@ class WcBetterShippingCalculatorForBrazilPublic
         // Detecta se estamos na página de checkout (compatível com novas versões do WooCommerce)
         global $post;
         $is_checkout_page = false;
-        $has_checkout_shortcode = false;
         $has_checkout_block = false;
+        $is_checkout_classic = false;
+        
+        // Verifica se existe função is_checkout() do WooCommerce
+        if (function_exists('is_checkout')) {
+            $is_checkout_page = is_checkout();
+        }
         
         if (isset($post) && is_a($post, 'WP_Post')) {
-            $has_checkout_shortcode = has_shortcode($post->post_content, 'woocommerce_checkout');
-            $has_checkout_block = has_block('woocommerce/checkout', $post);
+            $has_checkout_block = function_exists('has_block') && has_block('woocommerce/checkout', $post);
+            // Se estamos na página de checkout mas não é blocos, trata como clássico/shortcode
+            $is_checkout_classic = $is_checkout_page && !$has_checkout_block;
         }
         
-        // Fallback para função is_checkout() se disponível
-        if (function_exists('is_checkout')) {
-            $is_checkout_page = is_checkout() || $has_checkout_shortcode || $has_checkout_block;
-        } else {
-            $is_checkout_page = $has_checkout_shortcode || $has_checkout_block;
-        }
+        // Página de checkout (blocos ou clássico/shortcode)
+        $is_checkout_page = $is_checkout_page || $has_checkout_block;
         
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
@@ -599,7 +603,7 @@ class WcBetterShippingCalculatorForBrazilPublic
         }
 
         // Registrar scripts para checkout shortcode (tradicional)
-        if ($has_checkout_shortcode) {
+        if ($is_checkout_classic) {
             $person_type = get_option('woo_better_calc_person_type_select', 'none');
             
             if ($person_type !== 'none') {
@@ -726,10 +730,31 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
         }
 
+        // Verifica se deve esconder calculador para produtos digitais
+        $hide_calculator_digital = get_option('woo_better_calc_hide_calculator_digital', 'no');
+        $should_hide_for_digital = false;
+        
+        if ($hide_calculator_digital === 'yes' && function_exists('WC') && WC()->cart) {
+            $only_virtual = true;
+            foreach (WC()->cart->get_cart() as $cart_item) {
+                $product = $cart_item['data'];
+                if (!$product->is_virtual() && !$product->is_downloadable()) {
+                    $only_virtual = false;
+                    break;
+                }
+            }
+            
+            // Se há apenas produtos digitais/virtuais, deve esconder
+            if ($only_virtual && !WC()->cart->is_empty()) {
+                $should_hide_for_digital = true;
+            }
+        }
+
         if (
             (has_block('woocommerce/cart') || (function_exists('is_cart') && is_cart())) &&
             $cart_custom_postcode === 'yes' &&
-             defined('WC_VERSION') && version_compare(WC_VERSION, '10.0.0', '>=')
+            defined('WC_VERSION') && version_compare(WC_VERSION, '10.0.0', '>=') &&
+            !$should_hide_for_digital
         ) {
             wp_enqueue_script(
                 'woo-better-cart-custom-postcode',
@@ -739,10 +764,19 @@ class WcBetterShippingCalculatorForBrazilPublic
                 true 
             );
 
-            // Detecta se é editor de blocos ou shortcode
+            // Detecta se é editor de blocos ou clássico/shortcode
             global $post;
-            $has_cart_shortcode = isset($post) && is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'woocommerce_cart');
-            $is_blocks_cart = has_block('woocommerce/cart') && !$has_cart_shortcode;
+            $has_cart_blocks = false;
+            $is_cart_classic = false;
+            
+            if (isset($post) && is_a($post, 'WP_Post')) {
+                $has_cart_blocks = function_exists('has_block') && has_block('woocommerce/cart', $post);
+                // Se estamos na página de carrinho mas não é blocos, trata como clássico/shortcode
+                $is_cart_page = function_exists('is_cart') && is_cart();
+                $is_cart_classic = $is_cart_page && !$has_cart_blocks;
+            }
+            
+            $is_blocks_cart = $has_cart_blocks;
 
             wp_localize_script('woo-better-cart-custom-postcode', 'WooBetterData', array(
                 'placeholder' => get_option('woo_better_calc_cart_input_placeholder', 'Insira seu CEP'),
@@ -798,9 +832,26 @@ class WcBetterShippingCalculatorForBrazilPublic
             );
         }
 
+        // Verifica se deve esconder calculador na página de produto para produtos digitais
+        $product_is_digital = false;
+        if ($hide_calculator_digital === 'yes' && function_exists('is_product') && is_product()) {
+            $product_id = get_the_ID();
+            
+            if ($product_id && function_exists('wc_get_product')) {
+                $wc_product = wc_get_product($product_id);
+                
+                if ($wc_product && is_object($wc_product)) {
+                    if ($wc_product->is_virtual() || $wc_product->is_downloadable()) {
+                        $product_is_digital = true;
+                    }
+                }
+            }
+        }
+
         if (
             (has_block('woocommerce/product') || (function_exists('is_product') && is_product())) &&
-            $product_custom_postcode === 'yes' 
+            $product_custom_postcode === 'yes' &&
+            !$product_is_digital
         ) {
             wp_enqueue_script(
                 'woo-better-product-custom-postcode',
@@ -900,7 +951,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
 
             // Usando variável já definida no topo da função
-            if($cep_position === 'yes' && !$has_checkout_shortcode)
+            if($cep_position === 'yes' && !$is_checkout_classic)
             {
                 wp_enqueue_script(
                     $this->plugin_name . '-checkout-postcode',
@@ -923,7 +974,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
-            if($cep_position === 'yes' && $has_checkout_shortcode)
+            if($cep_position === 'yes' && $is_checkout_classic)
             {
                 wp_enqueue_script(
                     $this->plugin_name . '-checkout-postcode-shortcode',
@@ -947,7 +998,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
 
             // Scripts para máscara de telefone (DDI + formatação)
-            if($phone_mask_enabled === 'yes' && !$has_checkout_shortcode) {
+            if($phone_mask_enabled === 'yes' && !$is_checkout_classic) {
                 wp_enqueue_style(
                     $this->plugin_name . '-checkout-phone-mask',
                     plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.css',
@@ -973,7 +1024,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
-            if($phone_mask_enabled === 'yes' && $has_checkout_shortcode) {
+            if($phone_mask_enabled === 'yes' && $is_checkout_classic) {
                 wp_enqueue_style(
                     $this->plugin_name . '-checkout-phone-mask-shortcode',
                     plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.css',
@@ -999,7 +1050,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
-            if ($number_field === 'yes' && $has_checkout_shortcode && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
+            if ($number_field === 'yes' && $is_checkout_classic && ($disabled_shipping === 'default' || (!$only_virtual && $disabled_shipping === 'digital'))) {
                 wp_enqueue_script(
                     $this->plugin_name . '-short-number-field',
                     plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortNumberField.COMPILED.js',

@@ -76,6 +76,7 @@ class WcBetterShippingCalculatorForBrazilActivator {
 		// Definir opções padrão se não existirem
 		$default_options = array(
 			'woo_better_calc_disabled_shipping' => 'default',
+			'woo_better_calc_hide_calculator_digital' => 'no',
 			'woo_better_calc_person_type_select' => 'none',
 			'woo_better_calc_number_required' => 'no',
 			'woo_better_calc_contact_required' => 'no',
