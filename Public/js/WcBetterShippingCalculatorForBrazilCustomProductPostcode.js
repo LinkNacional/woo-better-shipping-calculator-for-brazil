@@ -290,9 +290,16 @@ document.addEventListener('DOMContentLoaded', function () {
         const button = document.querySelector('.woo-better-button-current-style');
         const input = document.querySelector('.woo-better-input-current-style');
 
-        button.disabled = false;
-        input.disabled = false;
-        button.textContent = originalButtonText;
+        if (button) {
+            button.disabled = false;
+            // Garante que o texto original seja sempre restaurado
+            button.innerHTML = ''; // Limpa qualquer elemento filho (loading icon)
+            button.textContent = originalButtonText || 'CONSULTAR';
+        }
+        
+        if (input) {
+            input.disabled = false;
+        }
 
         const cepBlock = document.querySelector('.woo-better-current-postcode-block');
         if (cepBlock) {
@@ -886,6 +893,9 @@ document.addEventListener('DOMContentLoaded', function () {
         button.type = 'submit';
         button.textContent = 'CONSULTAR';
         button.classList.add('woo-better-button-current-style');
+        
+        // Inicializa o texto original do botão
+        originalButtonText = button.textContent;
         if (font_class) {
             button.classList.add(font_class);
         }
@@ -960,11 +970,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 infoBlock.style.display = 'none';
             }
 
-            // Salva o texto original do botão
-            originalButtonText = button.textContent;
+            // Salva o texto original do botão (se ainda não foi salvo)
+            if (!originalButtonText) {
+                originalButtonText = button.textContent || 'CONSULTAR';
+            }
 
             // Substitui o texto do botão por um ícone de carregamento
-            button.textContent = '';
+            button.innerHTML = ''; // Limpa completamente o conteúdo
             const loadingIcon = document.createElement('span');
             loadingIcon.classList.add('loading-icon'); // Usa a classe definida no CSS
             button.appendChild(loadingIcon);

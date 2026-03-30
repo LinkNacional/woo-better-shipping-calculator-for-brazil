@@ -90,7 +90,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (button) {
             button.disabled = false;
-            button.textContent = originalButtonText;
+            // Garante que o texto original seja sempre restaurado
+            button.innerHTML = ''; // Limpa qualquer elemento filho (loading icon)
+            button.textContent = originalButtonText || 'CONSULTAR';
             button.style.backgroundColor = WooBetterData.buttonStyles.backgroundColor || '#0073aa';
             button.style.cursor = '';
         }
@@ -649,6 +651,9 @@ document.addEventListener('DOMContentLoaded', function () {
         button.type = 'submit';
         button.textContent = 'CONSULTAR';
         button.classList.add('woo-better-button-current-style');
+        
+        // Inicializa o texto original do botão
+        originalButtonText = button.textContent;
         if (font_class) {
             button.classList.add(font_class);
         }
@@ -693,8 +698,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 infoBlock.style.display = 'none';
             }
 
-            originalButtonText = button.textContent;
-            button.textContent = '';
+            // Salva o texto original do botão (se ainda não foi salvo)
+            if (!originalButtonText) {
+                originalButtonText = button.textContent || 'CONSULTAR';
+            }
+
+            // Substitui o texto do botão por um ícone de carregamento
+            button.innerHTML = ''; // Limpa completamente o conteúdo
             const loadingIcon = document.createElement('span');
             loadingIcon.classList.add('loading-icon');
             button.appendChild(loadingIcon);
@@ -766,7 +776,27 @@ document.addEventListener('DOMContentLoaded', function () {
         window.fetch = function (...args) {
             const [resource, config] = args;
 
-            // Verifica se é a requisição específica do WooCommerce Blocks batch
+            // Nova camada: Verifica se é URL direta do WooCommerce para cart/update-item ou cart/delete-item
+            if (typeof resource === 'string' && (
+                resource.includes('cart/update-item') || 
+                resource.includes('cart/delete-item') ||
+                resource.includes('cart/remove-item')
+            )) {
+                // Executa a requisição original e aguarda conclusão
+                return originalFetch.apply(this, args)
+                    .then(response => {
+                        // Aguarda um pouco para o carrinho ser atualizado
+                        setTimeout(() => {
+                            updateCepComponentAfterCartChange();
+                        }, 500);
+                        return response;
+                    })
+                    .catch(error => {
+                        return Promise.reject(error);
+                    });
+            }
+
+            // Verifica se é a requisição específica do WooCommerce Blocks batch (solução original)
             if (typeof resource === 'string' && resource.includes('/wp-json/wc/store/v1/batch')) {
                 
                 // Verifica se há operações de update-item ou remove-item
