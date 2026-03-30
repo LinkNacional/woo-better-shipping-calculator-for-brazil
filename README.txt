@@ -4,8 +4,8 @@ Donate link:
 Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.9
-Requires PHP: 7.3
-Stable tag: 4.10.0
+Requires PHP: 8.0
+Stable tag: 4.10.1
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -146,6 +146,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+= 4.10.1 - 30/03/2026
+* Fixed cart change detection (adding/removing products).
+* Fixed component expansion when the block was minimized.
 
 = 4.10.0 - 11/03/2026
 * Fixed script loading between Classic and Block versions.
