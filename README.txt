@@ -147,6 +147,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+= 4.10.1 - 30/03/2026
+* Fixed cart change detection (adding/removing products).
+* Fixed component expansion when the block was minimized.
+
 = 4.10.0 - 11/03/2026
 * Fixed script loading between Classic and Block versions.
 * Fixed error_log in cache function.

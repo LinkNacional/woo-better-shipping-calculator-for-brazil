@@ -1,3 +1,7 @@
+# 4.10.1 - 30/03/26
+* Correção na detecção de mudanças no carrinho (adição/remoção de produtos).
+* Correção na expansão do componente quando o bloco estava minimizado.
+
 # 4.10.0 - 11/03/26
 * Correção no carregamento de script entre a versão Clássica e de Blocos.
 * Correção no error_log da função de cache.

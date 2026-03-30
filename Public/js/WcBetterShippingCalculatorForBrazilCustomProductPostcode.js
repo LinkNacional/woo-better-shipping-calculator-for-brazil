@@ -387,6 +387,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const infoBlock = document.querySelector('.woo-better-info-block');
             if (infoBlock) {
                 infoBlock.style.display = 'none';
+                
+                // Reseta o estado do contentBlock para garantir expansão correta na próxima consulta
+                const contentBlock = infoBlock.querySelector('.woo-better-content-block');
+                if (contentBlock) {
+                    contentBlock.classList.remove('expanded');
+                    contentBlock.style.height = '';
+                    contentBlock.style.display = 'none';
+                }
+                
+                // Reseta o toggle button para o estado padrão (expandido)
+                const toggleButton = infoBlock.querySelector('.woo-better-toggle-button');
+                if (toggleButton) {
+                    toggleButton.innerHTML = '';
+                    displayButton(toggleButton, 'up', 'Esconder detalhes de entrega');
+                }
             }
             form.style.display = 'block';
         });
@@ -1568,8 +1583,17 @@ document.addEventListener('DOMContentLoaded', function () {
                         displayButton(toggleButton, 'up', 'Esconder detalhes de entrega');
                     }
                     
+                    // Força expansão mesmo se já tinha a classe expanded
                     contentBlock.classList.add('expanded');
                     contentBlock.style.display = 'block';
+                    contentBlock.style.height = `${contentBlock.scrollHeight}px`;
+                    
+                    // Garante altura automática
+                    setTimeout(() => {
+                        if (contentBlock.classList.contains('expanded')) {
+                            contentBlock.style.height = 'auto';
+                        }
+                    }, 300);
                 }
 
                 // Resolve a Promise após a conclusão
@@ -1700,10 +1724,18 @@ document.addEventListener('DOMContentLoaded', function () {
                         contentInfoBlock.style.height = 'auto';
                     }
                 }, { once: true });
-            } else if (contentInfoBlock && contentInfoBlock.classList.contains('expanded')) {
-                // Se já está expandido, apenas atualiza a altura
-                contentInfoBlock.style.height = 'auto';
+            } else if (contentInfoBlock) {
+                // Força reexpansão mesmo se já tinha a classe expanded
+                contentInfoBlock.classList.add('expanded');
                 contentInfoBlock.style.display = 'block';
+                contentInfoBlock.style.height = `${contentInfoBlock.scrollHeight}px`;
+                
+                // Garante altura automática
+                setTimeout(() => {
+                    if (contentInfoBlock.classList.contains('expanded')) {
+                        contentInfoBlock.style.height = 'auto';
+                    }
+                }, 300);
             }
 
         } catch (error) {
