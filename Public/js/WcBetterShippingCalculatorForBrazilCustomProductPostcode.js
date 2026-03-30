@@ -57,6 +57,22 @@ document.addEventListener('DOMContentLoaded', function () {
         return isVariable;
     }
 
+    function getCurrentProductQuantity() {
+        // Procura pelo campo de quantidade (pode ser number ou hidden)
+        const quantityInput = document.querySelector('input[name="quantity"].qty, input[name="quantity"].input-text, input[name="quantity"][class*="qty"]');
+        
+        if (quantityInput && quantityInput.value) {
+            const quantity = parseInt(quantityInput.value, 10);
+            // Verifica se é um número válido e maior que 0
+            if (!isNaN(quantity) && quantity > 0) {
+                return quantity;
+            }
+        }
+        
+        // Retorna 1 como padrão se não encontrar ou valor inválido
+        return 1;
+    }
+
     function hasVariationSelected() {
         const variationId = getCurrentVariationId();
         const hasSelected = variationId > 0;
@@ -1253,9 +1269,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     }
 
+                    // Captura a quantidade atual do produto
+                    const currentQuantity = getCurrentProductQuantity();
+                    
                     const formData = new FormData();
                     formData.append('action', 'register_product_address');
                     formData.append('product_id', WooBetterData.product_id);
+                    formData.append('quantity', currentQuantity);
                     if (variationId > 0) {
                         formData.append('variation_id', variationId);
                     }
@@ -1750,7 +1770,12 @@ document.addEventListener('DOMContentLoaded', function () {
             // Em caso de erro, remove o cache corrompido e força nova consulta
             const cache = getProductCache();
             const variationId = getCurrentVariationId();
-            const cacheKey = variationId > 0 ? `${WooBetterData.product_id}_${variationId}` : WooBetterData.product_id;
+            const currentQuantity = getCurrentProductQuantity();
+            
+            // Inclui a quantidade na chave para remoção do cache
+            const cacheKey = variationId > 0 
+                ? `${WooBetterData.product_id}_${variationId}_qty${currentQuantity}`
+                : `${WooBetterData.product_id}_qty${currentQuantity}`;
             
             if (cache[postcode] && cache[postcode][cacheKey]) {
                 delete cache[postcode][cacheKey];
@@ -1815,7 +1840,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function getCachedShippingData(postcode, productId) {
         const cache = getProductCache();
         const variationId = getCurrentVariationId();
-        const cacheKey = variationId > 0 ? `${productId}_${variationId}` : productId;
+        const currentQuantity = getCurrentProductQuantity();
+        
+        // Inclui a quantidade na chave do cache
+        const cacheKey = variationId > 0 
+            ? `${productId}_${variationId}_qty${currentQuantity}`
+            : `${productId}_qty${currentQuantity}`;
 
         if (cache[postcode] && cache[postcode][cacheKey]) {
             return cache[postcode][cacheKey];
@@ -1828,7 +1858,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const cacheKey = 'woo_better_product_cache';
         const cache = getProductCache();
         const variationId = getCurrentVariationId();
-        const productCacheKey = variationId > 0 ? `${productId}_${variationId}` : productId;
+        const currentQuantity = getCurrentProductQuantity();
+        
+        // Inclui a quantidade na chave do cache
+        const productCacheKey = variationId > 0 
+            ? `${productId}_${variationId}_qty${currentQuantity}`
+            : `${productId}_qty${currentQuantity}`;
 
         // Inicializa a estrutura se necessário
         if (!cache[postcode]) {
@@ -1839,6 +1874,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const cleanData = {
             product: shippingData.product,
             shipping_rates: shippingData.shipping_rates,
+            quantity: currentQuantity, // Salva a quantidade no cache
             timestamp: Date.now()
         };
         
@@ -1847,13 +1883,8 @@ document.addEventListener('DOMContentLoaded', function () {
             cleanData.digital = shippingData.digital;
         }
 
+        // Salva os dados com a nova chave que inclui quantidade
         cache[postcode][productCacheKey] = cleanData;
-        if (shippingData.digital === true) {
-            cleanData.digital = true;
-        }
-
-        // Salva os dados limpos
-        cache[postcode][productId] = cleanData;
 
         localStorage.setItem(cacheKey, JSON.stringify(cache));
     }

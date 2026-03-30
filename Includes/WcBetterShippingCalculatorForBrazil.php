@@ -3907,7 +3907,13 @@ class WcBetterShippingCalculatorForBrazil
 
         // Converte o preço para float para garantir que seja numérico
         $product_price = floatval($product->get_price());
-        $quantity = WC_BETTER_SHIPPING_PRODUCT_QUANTITY;
+        
+        // Captura a quantidade enviada via POST ou usa 1 como padrão
+        $quantity = isset($_POST['quantity']) ? absint(wp_unslash($_POST['quantity'])) : 1;
+        if ($quantity <= 0) {
+            $quantity = 1; // Garante que a quantidade seja pelo menos 1
+        }
+        
         $line_total = $product_price * $quantity;
 
         // Cria um pacote de envio personalizado
