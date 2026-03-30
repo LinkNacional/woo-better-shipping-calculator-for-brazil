@@ -79,7 +79,6 @@ document.addEventListener('DOMContentLoaded', function () {
             input.style.backgroundColor = '#f5f5f5';
             input.style.color = '#999';
             input.style.cursor = 'not-allowed';
-            input.placeholder = 'Selecione uma variação primeiro';
             
             button.style.backgroundColor = '#ccc';
             button.style.color = '#666';
@@ -89,7 +88,6 @@ document.addEventListener('DOMContentLoaded', function () {
             input.style.backgroundColor = WooBetterData.inputStyles.backgroundColor || '#fff';
             input.style.color = WooBetterData.inputStyles.color || '#333';
             input.style.cursor = '';
-            input.placeholder = WooBetterData.placeholder || 'Digite o CEP';
             
             button.style.backgroundColor = WooBetterData.buttonStyles.backgroundColor || '#0073aa';
             button.style.color = WooBetterData.buttonStyles.color || '#fff';
@@ -122,9 +120,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 // Se tem consulta automática habilitada e já tem CEP salvo, faz nova consulta
                 const lastPostcode = getLastUsedPostcode();
-                if (WooBetterData.enable_search === 'yes' && lastPostcode && hasUserMadeQuery) {
+                if (WooBetterData.enable_search === 'yes' && lastPostcode) {
                     setTimeout(() => {
-                        sendCEP(lastPostcode, true);
+                        const submitButton = document.querySelector('.woo-better-button-current-style');
+                        if (submitButton && !submitButton.disabled) {
+                            submitButton.click();
+                        }
                     }, 300);
                 }
             });
@@ -235,9 +236,12 @@ document.addEventListener('DOMContentLoaded', function () {
                             const form = document.querySelector('#custom-postcode-form');
                             processShippingRatesFromCache(cachedData, form, infoBlock, postcode);
                         } else {
-                            // Pequeno delay para garantir que a UI está atualizada e chama sendCEP diretamente
+                            // Pequeno delay para garantir que a UI está atualizada e simula clique no botão
                             setTimeout(() => {
-                                sendCEP(postcode, true);
+                                const submitButton = document.querySelector('.woo-better-button-current-style');
+                                if (submitButton && !submitButton.disabled) {
+                                    submitButton.click();
+                                }
                             }, 300);
                         }
                     }
@@ -1122,7 +1126,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                                 processShippingRatesFromCache(cachedData, form, infoBlock, lastPostcode);
                                             } else {
                                                 setTimeout(() => {
-                                                    sendCEP(lastPostcode, true);
+                                                    const submitButton = document.querySelector('.woo-better-button-current-style');
+                                                    if (submitButton && !submitButton.disabled) {
+                                                        submitButton.click();
+                                                    }
                                                 }, 100);
                                             }
                                         }
