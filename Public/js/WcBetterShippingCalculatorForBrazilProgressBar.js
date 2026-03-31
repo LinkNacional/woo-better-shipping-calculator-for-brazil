@@ -8,103 +8,47 @@
 	let lastValidPercent = 0;
 	let lastValidMessage = '';
 	let cartUpdateTimeout = null; // Para debounce das atualizações do carrinho
+	let currentFreeShippingStatus = false; // Status atual do frete gratuito
+	let observerInitialized = false; // Evita múltiplas inicializações
+	let hasApiError = false; // Flag para indicar erro na API
 
-	// Inicializa com o valor do PHP se disponível
+	// NÃO inicializa com valor do PHP - vai fazer requisição para obter dados atuais
 	const progressConfig = typeof wc_better_shipping_progress !== 'undefined' ? wc_better_shipping_progress : {};
-	if (progressConfig.initial_cart_total) {
-		currentCartTotal = parseFloat(progressConfig.initial_cart_total);
-	}
+	// Comentado: não define currentCartTotal inicialmente
+	// if (progressConfig.initial_cart_total) {
+	//	currentCartTotal = parseFloat(progressConfig.initial_cart_total);
+	// }
 
 	let minValue = typeof wc_better_shipping_progress !== 'undefined'
 		? parseFloat(wc_better_shipping_progress.min_free_shipping_value)
 		: 0;
 
-	// Inicializa os valores válidos na primeira execução
-	function initializeValidValues() {
-		if (lastValidPercent === 0 && lastValidMessage === '') {
-			const cartTotal = currentCartTotal;
-			const currencySymbol = progressConfig.currency_symbol || 'R$';
-			const successMessage = progressConfig.min_free_shipping_success_message || 'Parabéns! Você tem frete grátis!';
-			let progressMessage = progressConfig.min_free_shipping_message || 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS';
+// Função removida - não vamos mais calcular valores iniciais com data do PHP
+	// Os valores serão obtidos via requisição AJAX na inicialização
 
-			// Calcula valores iniciais
-			if (minValue <= 0) {
-				lastValidPercent = 100;
-				lastValidMessage = successMessage;
-			} else {
-				lastValidPercent = Math.min((cartTotal / minValue) * 100, 100);
-				if (cartTotal >= minValue) {
-					lastValidMessage = successMessage;
-				} else {
-					const remainingValue = (minValue - cartTotal).toFixed(2);
-					const formattedValue = currencySymbol + remainingValue;
-				lastValidMessage = progressMessage.includes('{value}') ? progressMessage.replace('{value}', formattedValue) : progressMessage;
-				}
-			}
-		}
-	}
-
-	// Intercepta requisições para a API do WooCommerce Store ou shortcode
+	// Intercepta requisições para a API do WooCommerce Blocks apenas
 	function interceptCartRequests() {
-		const progressConfig = typeof wc_better_shipping_progress !== 'undefined' ? wc_better_shipping_progress : {};
-		const isShortcode = !progressConfig.has_cart_block;
-		const currentUrl = progressConfig.current_url || window.location.href;
-
-		if (isShortcode) {
-			// Para shortcode, usa observers do DOM ao invés de interceptar globalmente
-			observeShortcodeChanges(currentUrl);
-		} else {
-			// Para blocks, intercepta apenas URLs específicas da Store API
-			interceptStoreAPISpecific();
+		// Evita múltiplas inicializações
+		if (observerInitialized) {
+			return;
 		}
+		
+		const progressConfig = typeof wc_better_shipping_progress !== 'undefined' ? wc_better_shipping_progress : {};
+		
+		// Só funciona para blocks - remove completamente o suporte a shortcode
+		if (!progressConfig.has_cart_block) {
+			return;
+		}
+		
+		// Intercepta apenas URLs específicas da Store API
+		interceptStoreAPISpecific();
+		
+		// Marca como inicializado
+		observerInitialized = true;
 	}
 
-	// Abordagem alternativa para shortcode usando MutationObserver
-	function observeShortcodeChanges(baseUrl) {
-		// Observer para mudanças no DOM do carrinho/checkout
-		const observer = new MutationObserver(function(mutations) {
-			mutations.forEach(function(mutation) {
-				if (mutation.type === 'childList' || mutation.type === 'characterData') {
-					// Verifica se houve mudança nos valores de total/subtotal (incluindo taxas)
-					const cartTotalElements = document.querySelectorAll([
-						'.order-total .woocommerce-Price-amount.amount bdi',
-						'.cart-subtotal .woocommerce-Price-amount.amount bdi',
-						'.wc-block-formatted-money-amount.wc-block-components-totals-item__value'
-					].join(','));
-					
-					if (cartTotalElements.length > 0) {
-						// Debounce para evitar atualizações excessivas
-						clearTimeout(window.wcProgressBarTimeout);
-						window.wcProgressBarTimeout = setTimeout(() => {
-							currentCartTotal = getCartTotalFromDOM();
-							insertOrUpdateProgressBar();
-						}, 500);
-					}
-				}
-			});
-		});
-
-		// Observa mudanças no carrinho e checkout
-		const targets = document.querySelectorAll('.cart, .checkout, .woocommerce-cart, .woocommerce-checkout');
-		targets.forEach(target => {
-			observer.observe(target, {
-				childList: true,
-				subtree: true,
-				characterData: true
-			});
-		});
-
-		// Fallback: escuta eventos do WooCommerce
-		$(document).on('updated_cart_totals updated_checkout', function() {
-			setTimeout(() => {
-				currentCartTotal = getCartTotalFromDOM();
-				insertOrUpdateProgressBar();
-			}, 300);
-		});
-	}
-
-	// Função para obter dados do carrinho via WooCommerce REST API (para shortcode)
-	function getCartDataViaAjax() {
+	// Nova função para obter dados do carrinho via AJAX e verificar frete selecionado
+	function getCartShippingData() {
 		// Debounce para evitar múltiplas requisições simultâneas
 		if (cartUpdateTimeout) {
 			clearTimeout(cartUpdateTimeout);
@@ -114,48 +58,64 @@
 			cartUpdateTimeout = null;
 			
 			const progressConfig = typeof wc_better_shipping_progress !== 'undefined' ? wc_better_shipping_progress : {};
-			const cartApiUrl = progressConfig.cart_api_url || '/wp-json/wc/store/v1/cart';
+			const ajaxUrl = progressConfig.ajax_url || '/wp-admin/admin-ajax.php';
 			
-			fetch(cartApiUrl, {
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json',
-				}
+			// ✅ NOVA IMPLEMENTAÇÃO: Usa a rota AJAX personalizada
+			const formData = new FormData();
+			formData.append('action', 'wc_better_get_cart_shipping_status');
+			
+			fetch(ajaxUrl, {
+				method: 'POST',
+				body: formData
 			})
 			.then(response => response.json())
 			.then(data => {
-				if (data && data.totals && data.totals.total_items) {
-					// O valor vem em centavos, divide por 100 para obter o valor real
-					const totalItems = parseInt(data.totals.total_items) / 100;
-					currentCartTotal = totalItems;
+				if (data && data.success && data.data) {
+					const responseData = data.data;
+					
+					// Atualiza o total do carrinho  
+					currentCartTotal = parseFloat(responseData.cartTotal) || 0;
+					
+					// ✅ ATUALIZA STATUS DO FRETE GRATUITO baseado na resposta
+					currentFreeShippingStatus = responseData.freeShipping || false;
+					
+					// Remove flag de erro se sucesso
+					hasApiError = false;
+					
+					// Para o loading e atualiza a barra
+					stopLoadingState();
 				} else {
-					// Fallback para DOM se API falhar
-					currentCartTotal = getCartTotalFromDOM();
+					// Erro na API - ativa flag de erro
+					hasApiError = true;
+					currentFreeShippingStatus = false;
+					stopLoadingState();
 				}
-				stopLoadingState();
 			})
 			.catch(error => {
-				// Fallback para DOM se API falhar
-				currentCartTotal = getCartTotalFromDOM();
+				// Erro na API - ativa flag de erro
+				hasApiError = true;
+				currentFreeShippingStatus = false;
 				stopLoadingState();
 			});
 		}, 300); // Debounce de 300ms
 	}
 
-	// Interceptor específico e conservador para Store API
+	// Interceptor específico para Store API - similar ao arquivo de carrinho
 	function interceptStoreAPISpecific() {
 		const originalFetch = window.fetch;
 		
 		window.fetch = function(...args) {
 			const [url, config] = args;
 			
-			// Verificação MUITO específica - só intercepta se for EXATAMENTE Store API
-			const isExactStoreAPI = url && (
+			// ✅ NOVA LÓGICA: Intercepta URLs de carrinho similar ao outro arquivo
+			const isCartUpdateRequest = url && (
 				url.includes('/wp-json/wc/store/v1/batch') ||
-				url.includes('/wp-json/wc/store/v1/cart')
+				url.includes('cart/update-item') ||
+				url.includes('cart/delete-item') ||
+				url.includes('cart/remove-item')
 			) && !url.includes('braspag') && !url.includes('cardinalcommerce');
 			
-			if (!isExactStoreAPI) {
+			if (!isCartUpdateRequest) {
 				return originalFetch.apply(this, args);
 			}
 			
@@ -178,59 +138,20 @@
 				return originalFetch.apply(this, args);
 			}
 
-			// Inicia loading apenas para batch
-			if (url.includes('/wp-json/wc/store/v1/batch')) {
-				startLoadingState();
-			}
+			// ✅ MELHORIA: Inicia loading mantendo o width atual
+			startLoadingState();
 			
 			return originalFetch.apply(this, args)
 				.then(response => {
-					const clonedResponse = response.clone();
-					
-					if (url.includes('/wp-json/wc/store/v1/batch')) {
-						clonedResponse.json()
-							.then(data => {
-								if (data && data.responses && data.responses[0] && data.responses[0].body) {
-									const cartData = data.responses[0].body;
-									
-									if (cartData.totals && cartData.totals.total_items) {
-										const totalItems = parseInt(cartData.totals.total_items) / 100;
-										currentCartTotal = totalItems;
-										
-										// Se carrinho já qualifica para frete grátis, para imediatamente
-										if (totalItems >= minValue && minValue > 0) {
-											stopLoadingState();
-										} else {
-											setTimeout(() => {
-												stopLoadingState();
-											}, 300);
-										}
-									}
-								}
-							})
-							.catch(error => {
-								stopLoadingState();
-							});
-					} else if (url.includes('/wp-json/wc/store/v1/cart')) {
-						clonedResponse.json()
-							.then(data => {
-								if (data && data.totals && data.totals.total_items) {
-									const totalItems = parseInt(data.totals.total_items) / 100;
-									currentCartTotal = totalItems;
-									insertOrUpdateProgressBar();
-								}
-							})
-							.catch(error => {
-								// Silencioso
-							});
-					}
+					// ✅ Aguarda a requisição concluir antes de consultar o carrinho
+					setTimeout(() => {
+						getCartShippingData();
+					}, 100); // Pequeno delay para garantir que o carrinho foi atualizado
 					
 					return response;
 				})
 				.catch(error => {
-					if (url.includes('/wp-json/wc/store/v1/batch')) {
-						stopLoadingState();
-					}
+					stopLoadingState();
 					throw error;
 				});
 		};
@@ -303,6 +224,7 @@
 	}
 
 	function insertOrUpdateProgressBar() {
+		// Se não tem dados do carrinho, tenta obter do DOM
 		let cartTotal = currentCartTotal || getCartTotalFromDOM();
 		
 		let percent = 0;
@@ -320,30 +242,48 @@
 		// Verifica se carrinho tem apenas produtos digitais
 		const onlyDigitalProducts = progressConfig.only_digital_products || false;
 
-		// Se está carregando, mantém os valores anteriores
+		// Se está carregando, mantém os valores anteriores ou exibe loading
 		let barText = '';
 		if (isLoading) {
-			percent = lastValidPercent;
+			percent = lastValidPercent || 30; // Usa lastValidPercent se disponível, senão 30%
 			message = 'Carregando...';
 			barText = enableProgressBarValue ? 'Carregando...' : '';
+		} else if (hasApiError) {
+			// Caso de erro na API
+			percent = 0;
+			barColor = '#f44336'; // Vermelho para erro
+			message = 'Um erro desconhecido ocorreu';
+			barText = enableProgressBarValue ? 'Erro' : '';
 		} else if (onlyDigitalProducts) {
 			// Caso especial: apenas produtos digitais
 			percent = 100;
 			barColor = '#9e9e9e'; // Cinza para produtos digitais
 			message = 'Carrinho contém apenas produto(s) digital(s).';
 			barText = enableProgressBarValue ? 'Digital' : '';
+		} else if (currentFreeShippingStatus && cartTotal >= minValue && minValue > 0) {
+			// ✅ FRETE GRÁTIS DO PLUGIN: Valor mínimo atingido + freeShipping detectado
+			percent = 100;
+			barColor = '#4caf50';
+			message = successMessage; // Sem fallback - respeita se usuário deixou vazio
+			barText = enableProgressBarValue ? (successMessage ? 'Frete Grátis!' : '') : '';
+		} else if (currentFreeShippingStatus && (minValue <= 0 || cartTotal < minValue)) {
+			// ✅ FRETE GRÁTIS DO WOOCOMMERCE: Detectado via configurações nativas (não do plugin)
+			percent = 100;
+			barColor = '#2196f3'; // Azul para diferenciar do frete grátis do plugin
+			message = 'Frete grátis disponível através da região de entrega.'; // Mensagem para frete grátis do WooCommerce
+			barText = enableProgressBarValue ? 'Frete Grátis (WC)' : '';
 		} else {
-			// Calcula novos valores para produtos físicos
+			// Calcula valores normais baseados no valor mínimo
 			if (minValue <= 0) {
 				percent = 100;
-				message = successMessage;
-				barText = enableProgressBarValue ? 'Completo!' : '';
+				message = successMessage; // Sem fallback
+				barText = enableProgressBarValue ? (successMessage ? 'Completo!' : '') : '';
 			} else {
 				percent = Math.min((cartTotal / minValue) * 100, 100);
 				
 				if (cartTotal >= minValue) {
-					message = successMessage;
-					barText = enableProgressBarValue ? 'Completo!' : '';
+					message = successMessage; // Sem fallback
+					barText = enableProgressBarValue ? (successMessage ? 'Completo!' : '') : '';
 				} else {
 					const remainingValue = (minValue - cartTotal).toFixed(2);
 					const formattedValue = currencySymbol + remainingValue;
@@ -481,8 +421,8 @@
 				if (bar) {
 					if (isLoading) {
 						bar.classList.add('loading');
-						// Mantém a largura atual, não altera para 30%
-						bar.style.background = 'linear-gradient(90deg, #ddd 0%, #aaa 50%, #ddd 100%)';
+					// ✅ MANTÉM A LARGURA ATUAL - não altera para 30%
+					bar.style.background = 'linear-gradient(90deg, #e0e0e0 0%, #bdbdbd 50%, #e0e0e0 100%)';
 						bar.style.backgroundSize = '200% 100%';
 						bar.style.animation = 'loading-shimmer 1.5s ease-in-out infinite';
 					} else {
@@ -558,10 +498,8 @@
 		// Força a atualização visual resetando previousPorcent para garantir que a barra seja atualizada
 		previousPorcent = null;
 		
-		// Verifica se o carrinho já qualifica para frete grátis - se sim, atualiza imediatamente
-		const cartTotal = currentCartTotal || getCartTotalFromDOM();
-		
-		if (cartTotal >= minValue && minValue > 0) {
+		// ✅ Se já qualifica para frete grátis (detectado via API ou valor), atualiza imediatamente
+		if (currentFreeShippingStatus || (currentCartTotal >= minValue && minValue > 0)) {
 			// Se já qualifica, atualiza imediatamente sem delay
 			insertOrUpdateProgressBar();
 		} else {
@@ -574,27 +512,23 @@
 
 	// Inicialização simples
 	function init() {
-		// Inicializa os valores válidos com base no subtotal do PHP
-		initializeValidValues();
+		// ✅ NOVA LÓGICA: Inicia no estado de loading e faz requisição inicial
+		startLoadingState();
 		
-		// Intercept Cart requests (Store API ou Shortcode)
+		// Faz requisição inicial para obter dados atuais do carrinho
+		getCartShippingData();
+		
+		// ✅ Intercept Cart requests apenas para Blocks
 		interceptCartRequests();
-		
-		// Inicializa a barra de progresso
-		insertOrUpdateProgressBar();
-		
-		// Evento simples para mudanças de quantidade (fallback)
-		$(document).on('change', 'input.qty', function () {
-			setTimeout(() => {
-				insertOrUpdateProgressBar();
-			}, 500);
-		});
 		
 		// Eventos WooCommerce tradicionais (fallback)
 		$(document).on('updated_cart_totals updated_checkout', function () {
+			// ✅ SHORTCODE: Inicia loading e faz requisição AJAX para dados atualizados
+			startLoadingState();
+			
 			setTimeout(() => {
-				insertOrUpdateProgressBar();
-			}, 300);
+				getCartShippingData(); // Faz requisição para obter dados atualizados
+			}, 100); // Pequeno delay para garantir que eventos anteriores terminaram
 		});
 	}
 

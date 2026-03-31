@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let hasUserMadeQuery = false;
     let updateTimeout = null; // Para debounce do updateCepComponentAfterCartChange
     let observerInitialized = false; // Flag para evitar múltiplas inicializações
+    let isSendingCEP = false; // Flag para evitar execuções simultâneas de sendCEP
 
     function createParentContainer() {
         const parentContainer = document.createElement('div');
@@ -1094,27 +1095,36 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     async function sendCEP(postcode, forceRequest = false) {
-        if (forceRequest) {
-            hasUserMadeQuery = true;
+        // Evita execuções simultâneas
+        if (isSendingCEP) {
+            return;
         }
-
-        // Obtém dados atuais do carrinho ANTES da verificação/requisição
-        const currentCartData = getCurrentCartData();
-
-        // Se não for uma requisição forçada, verifica cache
-        if (!forceRequest) {
-            const cachedData = getCachedCartShippingData(postcode);
-
-            if (cachedData) {
-                setTimeout(() => {
-                    const infoBlock = document.querySelector('.woo-better-info-block');
-                    const form = document.querySelector('#custom-postcode-form');
-                    processShippingRatesFromCache(cachedData, form, infoBlock, postcode);
-                    enablePostcodeForm();
-                }, 300);
-                return;
+        
+        isSendingCEP = true;
+        
+        try {
+            if (forceRequest) {
+                hasUserMadeQuery = true;
             }
-        }
+
+            // Obtém dados atuais do carrinho ANTES da verificação/requisição
+            const currentCartData = getCurrentCartData();
+
+            // Se não for uma requisição forçada, verifica cache
+            if (!forceRequest) {
+                const cachedData = getCachedCartShippingData(postcode);
+
+                if (cachedData) {
+                    setTimeout(() => {
+                        const infoBlock = document.querySelector('.woo-better-info-block');
+                        const form = document.querySelector('#custom-postcode-form');
+                        processShippingRatesFromCache(cachedData, form, infoBlock, postcode);
+                        enablePostcodeForm();
+                        isSendingCEP = false; // Libera flag após usar cache
+                    }, 300);
+                    return;
+                }
+            }
 
         const infoBlock = document.querySelector('.woo-better-info-block');
         const isComponentCurrentlyVisible = infoBlock && infoBlock.style.display === 'block';
@@ -1288,7 +1298,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (error.message && !error.message.toLowerCase().includes('fetch')) {
                     alert('Erro na consulta do CEP. Tente novamente.');
                 }
+            })
+            .finally(() => {
+                // Libera a flag para permitir próximas execuções
+                isSendingCEP = false;
             });
+        } catch (error) {
+            enablePostcodeForm();
+            isSendingCEP = false;
+        }
     }
 
     function processShippingRates(response, form, infoBlock, postcode, cartDataAtRequestTime = null) {
@@ -1693,10 +1711,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 const now = Date.now();
                 const canAutoClick = !lastAutoClick || (now - parseInt(lastAutoClick)) > 5000; // 5 segundos de intervalo
                 
-                if (canAutoClick) {
+                // ⚠️ NÃO faz auto clique se sendCEP já está executando (evita dupla execução)
+                if (canAutoClick && !isSendingCEP) {
                     setTimeout(() => {
                         const button = document.querySelector('.woo-better-button-current-style');
-                        if (button && !button.disabled) {
+                        if (button && !button.disabled && !isSendingCEP) {
                             sessionStorage.setItem('woo_better_last_auto_click', now.toString());
                             button.click();
                         }

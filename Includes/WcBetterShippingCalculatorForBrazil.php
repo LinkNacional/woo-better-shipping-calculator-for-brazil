@@ -854,6 +854,9 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
 
+        $this->loader->add_action('wp_ajax_wc_better_get_cart_shipping_status', $this, 'wc_better_get_cart_shipping_status');
+        $this->loader->add_action('wp_ajax_nopriv_wc_better_get_cart_shipping_status', $this, 'wc_better_get_cart_shipping_status');
+
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'wc_better_calc_checkout_fields', 999);
         $this->loader->add_filter( 'wc_address_i18n_params', $this, 'postcode_param_priority', 999);
         
@@ -3775,6 +3778,59 @@ class WcBetterShippingCalculatorForBrazil
         $action = sanitize_text_field(wp_unslash($_REQUEST['action_nonce']));
         $nonce = wp_create_nonce($action);
         wp_send_json_success(['nonce' => $nonce]);
+    }
+
+    /**
+     * AJAX endpoint para obter dados do carrinho e status do frete
+     *
+     * @since 4.10.1
+     * @access public
+     * @return void JSON com status do frete gratuito e total do carrinho
+     */
+    public function wc_better_get_cart_shipping_status() {
+        // Verifica se WooCommerce está disponível
+        if (!$this->is_valid_woocommerce_context() || !WC()->cart) {
+            wp_send_json_error([
+                'error' => true,
+                'message' => 'WooCommerce não está disponível.'
+            ], 400);
+        }
+
+        $cart = WC()->cart;
+        $customer = WC()->customer;
+        
+        // Dados básicos do carrinho
+        $cart_total = $cart->get_displayed_subtotal();
+        $has_free_shipping = false;
+        
+        // Verifica se há métodos de envio disponíveis e se algum é gratuito
+        if ($customer && method_exists($customer, 'get_shipping_postcode') && !empty($customer->get_shipping_postcode())) {
+            // Força o cálculo das taxas de envio
+            $cart->calculate_shipping();
+            
+            // Obtém pacotes de envio
+            $packages = $cart->get_shipping_packages();
+            
+            foreach ($packages as $package_key => $package) {
+                $session_key = 'shipping_for_package_' . $package_key;
+                $stored_rates = WC()->session->get($session_key);
+                
+                if (!empty($stored_rates['rates'])) {
+                    foreach ($stored_rates['rates'] as $rate_id => $rate) {
+                        // ✅ NOVA LÓGICA: Verifica se existe frete grátis DISPONÍVEL (não precisa estar selecionado)
+                        if (floatval($rate->cost) === 0.0) {
+                            $has_free_shipping = true;
+                            break 2; // Sai dos dois loops - encontrou frete grátis disponível
+                        }
+                    }
+                }
+            }
+        }
+        
+        wp_send_json_success([
+            'freeShipping' => $has_free_shipping,
+            'cartTotal' => $cart_total
+        ]);
     }
 
     /**
