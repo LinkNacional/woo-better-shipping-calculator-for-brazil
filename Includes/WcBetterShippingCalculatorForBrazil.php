@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilWcSettings;
+use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilCheckoutSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdmin;
 use Lkn\WcBetterShippingCalculatorForBrazil\PublicView\WcBetterShippingCalculatorForBrazilPublic;
 use Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema;
@@ -135,6 +136,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('rest_api_init', $this, 'lkn_register_custom_cep_route');
 
         $this->loader->add_filter('woocommerce_get_settings_pages', $this, 'lkn_add_woo_better_settings_page');
+        $this->loader->add_filter('woocommerce_get_settings_pages', $this, 'lkn_add_woo_better_checkout_settings_page');
 
         $this->loader->add_action('admin_footer', $this, 'lkn_woo_better_footer_page');
 
@@ -193,7 +195,9 @@ class WcBetterShippingCalculatorForBrazil
         $notice_key = 'woo_better_calc_notice_dismissed_' . $version;
         $notice_dismissed = get_user_meta(get_current_user_id(), $notice_key, true);
 
-        if ($notice_dismissed || (isset($_GET['tab']) && 'wc-better-calc' === sanitize_text_field(wp_unslash($_GET['tab'])))) {
+        if ($notice_dismissed || (isset($_GET['tab']) && 
+            ('wc-better-calc' === sanitize_text_field(wp_unslash($_GET['tab'])) || 
+             'wc-better-calc-checkout' === sanitize_text_field(wp_unslash($_GET['tab']))))) {
             return;
         }
 
@@ -448,11 +452,12 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_woo_better_footer_page()
     {
-        // Verifica se estamos na página e na aba correta
+        // Verifica se estamos na página e na aba correta (incluindo a nova aba de checkout)
         if (
             isset($_GET['page'], $_GET['tab']) &&
             sanitize_text_field(wp_unslash($_GET['page'])) === 'wc-settings' &&
-            sanitize_text_field(wp_unslash($_GET['tab'])) === 'wc-better-calc'
+            (sanitize_text_field(wp_unslash($_GET['tab'])) === 'wc-better-calc' || 
+             sanitize_text_field(wp_unslash($_GET['tab'])) === 'wc-better-calc-checkout')
         ) {
             wp_enqueue_script(
                 'wc-better-calc-settings-layout',
@@ -579,6 +584,12 @@ class WcBetterShippingCalculatorForBrazil
     public function lkn_add_woo_better_settings_page($settings)
     {
         $settings[] = new WcBetterShippingCalculatorForBrazilWcSettings();
+        return $settings;
+    }
+
+    public function lkn_add_woo_better_checkout_settings_page($settings)
+    {
+        $settings[] = new WcBetterShippingCalculatorForBrazilCheckoutSettings();
         return $settings;
     }
 
