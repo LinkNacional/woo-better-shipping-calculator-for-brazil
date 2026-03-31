@@ -12,7 +12,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
     public function __construct()
     {
         $this->id    = 'wc-better-calc-checkout';
-        $this->label = __('Checkout', 'woo-better-shipping-calculator-for-brazil');
+        $this->label = __('Campos Brasileiros', 'woo-better-shipping-calculator-for-brazil');
         parent::__construct();
     }
 

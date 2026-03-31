@@ -654,9 +654,10 @@ document.addEventListener('DOMContentLoaded', function () {
         // Verifica se os dados passados são dados reais (não placeholder)
         const hasRealData = productInfo && productInfo.name && productInfo.name !== '*******';
 
-        // Sempre inicializa o componente escondido
-        // O componente só será exibido após uma consulta (automática ou manual)
-        infoBlock.style.display = 'none';
+        // ✅ CORREÇÃO: Para produtos variáveis sem variação selecionada, sempre esconde o infoBlock
+        if (isVariableProduct() && !hasVariationSelected()) {
+            infoBlock.style.display = 'none';
+        }
 
         // Conteúdo do bloco
         const contentBlock = document.createElement('div');
@@ -995,15 +996,30 @@ document.addEventListener('DOMContentLoaded', function () {
             const cachedData = getCachedShippingData(postcode, WooBetterData.product_id);
             const infoBlock = document.querySelector('.woo-better-info-block');
 
+            // ✅ NOVA LÓGICA: Verifica se o componente está expandido e se deve usar o botão update
+            const isComponentExpanded = infoBlock && infoBlock.style.display === 'block';
+            const contentBlock = infoBlock ? infoBlock.querySelector('.woo-better-content-block') : null;
+            const isContentExpanded = contentBlock && contentBlock.classList.contains('expanded');
+            
+            if (isComponentExpanded && isContentExpanded) {
+                // Componente já está expandido - usa o botão update em vez do fluxo normal
+                const updateIconContainer = infoBlock.querySelector('.woo-better-update-icon-container');
+                if (updateIconContainer) {
+                    // Dispara o evento de click do botão update
+                    updateIconContainer.click();
+                    
+                    // Habilita novamente o form para permitir novas consultas
+                    setTimeout(() => {
+                        enablePostcodeForm();
+                    }, 100);
+                    
+                    return; // Sai da função sem executar o fluxo normal
+                }
+            }
+
             // Verifica se existe algum cache para este CEP (qualquer produto)
             const cache = getProductCache();
             const hasAnyCacheForCep = cache[postcode] && Object.keys(cache[postcode]).length > 0;
-
-            // Só esconde o bloco se não há nenhum cache para este CEP E o bloco não está visível
-            const isBlockVisible = infoBlock && (infoBlock.style.display === 'block' || getComputedStyle(infoBlock).display === 'block');
-            if (infoBlock && !hasAnyCacheForCep && !isBlockVisible) {
-                infoBlock.style.display = 'none';
-            }
 
             // Salva o texto original do botão (se ainda não foi salvo)
             if (!originalButtonText) {
@@ -1128,9 +1144,15 @@ document.addEventListener('DOMContentLoaded', function () {
                                 if (isVariableProduct()) {
                                     form.style.display = 'block';
                                     
-                                    // Se não tem variação selecionada, desabilita o formulário
+                                    // Se não tem variação selecionada, desabilita o formulário E esconde o infoBlock
                                     if (!hasVariationSelected()) {
                                         setFormDisabled(true);
+                                        
+                                        // ✅ CORREÇÃO: Esconde o infoBlock para produtos variáveis sem variação selecionada
+                                        const infoBlock = document.querySelector('.woo-better-info-block');
+                                        if (infoBlock) {
+                                            infoBlock.style.display = 'none';
+                                        }
                                     } else {
                                         setFormDisabled(false);
                                         

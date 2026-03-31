@@ -708,10 +708,6 @@ document.addEventListener('DOMContentLoaded', function () {
             button.disabled = true;
             input.disabled = true;
 
-            const infoBlock = document.querySelector('.woo-better-info-block');
-            if (infoBlock) {
-                infoBlock.style.display = 'none';
-            }
 
             // Salva o texto original do botão (se ainda não foi salvo)
             if (!originalButtonText) {
@@ -964,10 +960,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const form = document.querySelector('#custom-postcode-form');
 
             if (lastPostcode && infoBlock && form) {
-                infoBlock.style.display = 'none';
-                    
-                // Mostra o formulário com o CEP preenchido
-                form.style.display = 'block';
+                // IMPORTANTE: Verifica se estava expandido ANTES de modificar o display
+                const wasComponentExpanded = infoBlock && infoBlock.style.display === 'block';
+                
+                // Só esconde infoBlock e mostra form se NÃO estava expandido
+                if (!wasComponentExpanded) {
+                    infoBlock.style.display = 'none';
+                    form.style.display = 'block';
+                }
                 
                 const input = form.querySelector('.woo-better-input-current-style');
                 if (input) {
@@ -988,24 +988,52 @@ document.addEventListener('DOMContentLoaded', function () {
                                 processShippingRatesFromCache(cachedData, form, infoBlock, lastPostcode);
                             }
                         } else {
-                            // Se não tem cache, simula clique no botão para consulta natural
-                            const button = form.querySelector('.woo-better-button-current-style');
-                            
-                            if (button && !button.disabled) {
-                                // Garante que o botão não está desabilitado
-                                button.disabled = false;
+                            // Se não tem cache, usa o estado salvo para decidir qual botão usar
+                            if (wasComponentExpanded) {
+                                // Se componente estava visível/expandido, usa o botão de update para manter layout
+                                const updateButton = infoBlock.querySelector('.woo-better-update-icon-container');
+                                
+                                if (updateButton) {
+                                    // Simula clique no botão de update
+                                    try {
+                                        updateButton.click();
+                                    } catch (e) {
+                                        // Fallback se o click() falhar
+                                        const clickEvent = new MouseEvent('click', {
+                                            view: window,
+                                            bubbles: true,
+                                            cancelable: true
+                                        });
+                                        updateButton.dispatchEvent(clickEvent);
+                                    }
+                                } else {
+                                    // Fallback para o botão consultar se não encontrar o botão de update
+                                    const button = form.querySelector('.woo-better-button-current-style');
+                                    if (button && !button.disabled) {
+                                        button.disabled = false;
+                                        button.click();
+                                    }
+                                }
+                            } else {
+                                // Se componente não estava expandido, usa fluxo normal com botão consultar
+                                const button = form.querySelector('.woo-better-button-current-style');
+                                
+                                if (button && !button.disabled) {
+                                    // Garante que o botão não está desabilitado
+                                    button.disabled = false;
 
-                                // Simula clique do usuário no botão
-                                try {
-                                    button.click();
-                                } catch (e) {
-                                    // Fallback apenas se o click() falhar
-                                    const clickEvent = new MouseEvent('click', {
-                                        view: window,
-                                        bubbles: true,
-                                        cancelable: true
-                                    });
-                                    button.dispatchEvent(clickEvent);
+                                    // Simula clique do usuário no botão
+                                    try {
+                                        button.click();
+                                    } catch (e) {
+                                        // Fallback apenas se o click() falhar
+                                        const clickEvent = new MouseEvent('click', {
+                                            view: window,
+                                            bubbles: true,
+                                            cancelable: true
+                                        });
+                                        button.dispatchEvent(clickEvent);
+                                    }
                                 }
                             }
                         }
@@ -1091,9 +1119,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const infoBlock = document.querySelector('.woo-better-info-block');
         const isComponentCurrentlyVisible = infoBlock && infoBlock.style.display === 'block';
 
-        if (infoBlock && !isComponentCurrentlyVisible) {
-            infoBlock.style.display = 'none';
-        } else if (infoBlock && isComponentCurrentlyVisible) {
+        // ❌ REMOVIDO: Não esconde mais o infoBlock automaticamente na função sendCEP
+        // ✅ Deixa o componente no estado atual para permitir uso do botão update
+        
+        if (infoBlock && isComponentCurrentlyVisible) {
             const shippingList = infoBlock.querySelector('.woo-better-shipping-list');
             if (shippingList) {
                 shippingList.innerHTML = '<li>Recalculando taxas de envio...</li>';
