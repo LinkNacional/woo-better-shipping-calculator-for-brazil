@@ -9,10 +9,15 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Lógica para sincronizar CEP do carrinho com cache personalizado ---
     const cartCep = WooBetterData.cart_cep || '';
     const lastPostcode = getLastUsedPostcode();
-    if (cartCep && cartCep !== lastPostcode) {
+    
+    // Normaliza ambos os CEPs para comparação
+    const normalizedCartCep = formatCEP(cartCep);
+    const normalizedLastPostcode = formatCEP(lastPostcode);
+    
+    if (normalizedCartCep && normalizedCartCep !== normalizedLastPostcode) {
         // Reseta cache e aguarda DOM estar pronto para simular clique
         invalidateCache();
-        setLastUsedPostcode(cartCep);
+        setLastUsedPostcode(normalizedCartCep);
         
         // Aguarda DOM estar pronto para simular clique no botão
         setTimeout(() => {
@@ -22,13 +27,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 const button = form.querySelector('.woo-better-button-current-style');
                 
                 if (input && button) {
-                    input.value = cartCep;
+                    applyFormatToInput(input, normalizedCartCep);
                     button.click();
                 } else {
-                    sendCEP(cartCep, true);
+                    sendCEP(normalizedCartCep, true);
                 }
             } else {
-                sendCEP(cartCep, true);
+                sendCEP(normalizedCartCep, true);
             }
         }, 500); // Aguarda 500ms para DOM estar pronto
     }
@@ -43,6 +48,44 @@ document.addEventListener('DOMContentLoaded', function () {
     let updateTimeout = null; // Para debounce do updateCepComponentAfterCartChange
     let observerInitialized = false; // Flag para evitar múltiplas inicializações
     let isSendingCEP = false; // Flag para evitar execuções simultâneas de sendCEP
+    let isInternalCartUpdate = false; // Flag para pular monitoramento quando é evento interno
+
+    // Função para formatar CEP (XXXXX-XXX)
+    function formatCEP(cep) {
+        if (!cep) return '';
+        
+        // Remove tudo que não for dígito
+        let cleanCep = cep.replace(/\D/g, '');
+        
+        // Limita a 8 dígitos
+        if (cleanCep.length > 8) {
+            cleanCep = cleanCep.slice(0, 8);
+        }
+        
+        // Aplica a formatação se tiver 8 dígitos ou mais de 5
+        if (cleanCep.length === 8) {
+            return cleanCep.slice(0, 5) + '-' + cleanCep.slice(5);
+        } else if (cleanCep.length > 5) {
+            return cleanCep.slice(0, 5) + '-' + cleanCep.slice(5);
+        }
+        
+        return cleanCep;
+    }
+
+    // Função para aplicar formatação em um input de CEP
+    function applyFormatToInput(input, value) {
+        if (!input) return;
+        
+        const formattedValue = formatCEP(value);
+        input.value = formattedValue;
+        
+        // Dispara o evento input para garantir consistência
+        const inputEvent = new Event('input', {
+            bubbles: true,
+            cancelable: true
+        });
+        input.dispatchEvent(inputEvent);
+    }
 
     function createParentContainer() {
         const parentContainer = document.createElement('div');
@@ -552,7 +595,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 updateIcon.classList.add('spinning');
                 iconContainer.classList.add('spinning-container');
                 invalidateCache();
-                sendCEP(currentPostcode, true);
+                sendCEP(formatCEP(currentPostcode), true);
             }
         });
 
@@ -621,7 +664,7 @@ document.addEventListener('DOMContentLoaded', function () {
         input.autocomplete = 'postal-code';
 
         if (lastPostcode) {
-            input.value = lastPostcode;
+            applyFormatToInput(input, lastPostcode);
         }
 
         const inputStyles = WooBetterData.inputStyles || {};
@@ -630,28 +673,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         input.addEventListener('input', function (e) {
-            let value = e.target.value;
-            value = value.replace(/[^\d-]/g, '');
-
-            if (value.includes('-')) {
-                const parts = value.split('-');
-
-                if (parts.length > 2 || parts[0].length > 5) {
-                    value = parts[0].slice(0, 5) + '-' + parts[1]?.slice(0, 3);
-                } else if (parts[0].length < 5) {
-                    value = parts[0];
-                }
+            const formattedValue = formatCEP(e.target.value);
+            
+            // Só atualiza se o valor mudou para evitar loop infinito
+            if (e.target.value !== formattedValue) {
+                e.target.value = formattedValue;
             }
-
-            if (value.length > 5 && !value.includes('-')) {
-                value = value.slice(0, 5) + '-' + value.slice(5);
-            }
-
-            if (value.length > 9) {
-                value = value.slice(0, 9);
-            }
-
-            e.target.value = value;
         });
 
         const icon = document.createElement('img');
@@ -699,7 +726,12 @@ document.addEventListener('DOMContentLoaded', function () {
         form.addEventListener('submit', function (e) {
             e.preventDefault();
 
-            const postcode = input.value.trim();
+            let postcode = input.value.trim();
+            
+            // Aplica formatação antes da validação
+            postcode = formatCEP(postcode);
+            applyFormatToInput(input, postcode);
+            
             const cepRegex = /^\d{5}-\d{3}$/;
             if (!cepRegex.test(postcode)) {
                 alert('Por favor, insira um CEP válido no formato XXXXX-XXX.');
@@ -794,6 +826,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 resource.includes('cart/delete-item') ||
                 resource.includes('cart/remove-item')
             )) {
+                // ✅ Pula se for evento interno disparado pelo plugin
+                if (isInternalCartUpdate) {
+                    return originalFetch.apply(this, args);
+                }
+                
                 // Executa a requisição original e aguarda conclusão
                 return originalFetch.apply(this, args)
                     .then(response => {
@@ -815,6 +852,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 const hasCartOperation = checkForCartOperations(config?.body);
                 
                 if (hasCartOperation) {
+                    // ✅ Pula se for evento interno disparado pelo plugin
+                    if (isInternalCartUpdate) {
+                        return originalFetch.apply(this, args);
+                    }
+                    
                     // Executa a requisição original e aguarda conclusão
                     return originalFetch.apply(this, args)
                         .then(response => {
@@ -920,14 +962,17 @@ document.addEventListener('DOMContentLoaded', function () {
             const isCartUpdateRequest = checkForShortcodeCartOperations(this._method, this._url, args[0]);
             
             if (isCartUpdateRequest) {
-                this.addEventListener('loadend', () => {
-                    if (this.status >= 200 && this.status < 400) {
-                        // Aguarda um pouco para o carrinho ser atualizado
-                        setTimeout(() => {
-                            updateCepComponentAfterCartChange();
-                        }, 500);
-                    }
-                });
+                // ✅ Pula se for evento interno disparado pelo plugin
+                if (!isInternalCartUpdate) {
+                    this.addEventListener('loadend', () => {
+                        if (this.status >= 200 && this.status < 400) {
+                            // Aguarda um pouco para o carrinho ser atualizado
+                            setTimeout(() => {
+                                updateCepComponentAfterCartChange();
+                            }, 500);
+                        }
+                    });
+                }
             }
 
             return originalXHRSend.apply(this, args);
@@ -972,7 +1017,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 const input = form.querySelector('.woo-better-input-current-style');
                 if (input) {
-                    input.value = lastPostcode;
+                    applyFormatToInput(input, lastPostcode);
                 }
                 
                 // Aguarda um pouco e verifica se precisa consultar automaticamente
@@ -1044,7 +1089,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 300); // Debounce de 300ms
     }
 
-    // Função helper para atualizar timestamp consistentemente
+    // Helper function para atualizar timestamp consistentemente
     function updateTimestamp(infoBlock, addFlashAnimation = false) {
         const updateDate = infoBlock.querySelector('.woo-better-update-date');
         if (updateDate) {
@@ -1064,6 +1109,46 @@ document.addEventListener('DOMContentLoaded', function () {
                 }, 2000);
             }
         }
+    }
+
+    // ✅ NOVA FUNÇÃO: Dispara eventos nativos do carrinho após register_cart_address
+    function triggerCartUpdateEvents() {
+        const isBlocksCart = WooBetterData.is_blocks_cart || false;
+        
+        // Ativa flag para pular monitoramento interno
+        isInternalCartUpdate = true;
+        
+        setTimeout(() => {
+            if (isBlocksCart) {
+                // Para WooCommerce Blocks: dispara evento personalizado
+                const updateEvent = new CustomEvent('wc-blocks-cart-update', {
+                    detail: { source: 'woo-better-cep-plugin' },
+                    bubbles: true
+                });
+                document.dispatchEvent(updateEvent);
+                
+                // Também tenta forçar atualização via Store API se disponível
+                if (window.wp && window.wp.data && window.wp.data.dispatch) {
+                    try {
+                        const { dispatch } = window.wp.data;
+                        if (dispatch('wc/store/cart')) {
+                            dispatch('wc/store/cart').invalidateResolutionForStore();
+                        }
+                    } catch (e) {
+                        // Fallback silencioso se Store API não estiver disponível
+                    }
+                }
+            } else {
+                // Para Shortcode: dispara eventos jQuery nativos do WooCommerce
+                jQuery(document.body).trigger('updated_cart_totals');
+                jQuery(document.body).trigger('wc_update_cart');
+            }
+            
+            // Desativa flag após um delay para permitir que eventos sejam processados
+            setTimeout(() => {
+                isInternalCartUpdate = false;
+            }, 1000);
+        }, 100);
     }
 
     createDynamicStyles();
@@ -1095,6 +1180,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     async function sendCEP(postcode, forceRequest = false) {
+        // Garante que o postcode sempre esteja formatado
+        postcode = formatCEP(postcode);
+        
         // Evita execuções simultâneas
         if (isSendingCEP) {
             return;
@@ -1247,6 +1335,9 @@ document.addEventListener('DOMContentLoaded', function () {
                                 }
 
                                 enablePostcodeForm();
+                                
+                                // ✅ Dispara eventos nativos do carrinho após sucesso
+                                triggerCartUpdateEvents();
                             } else if (response.success && response.data) {
                                 // Sucesso - produtos físicos ou digitais
                                 const infoBlock = document.querySelector('.woo-better-info-block');
@@ -1258,6 +1349,9 @@ document.addEventListener('DOMContentLoaded', function () {
                                 processShippingRates(response.data, form, infoBlock, postcode, currentCartData)
                                     .then(() => {
                                         enablePostcodeForm();
+                                        
+                                        // ✅ Dispara eventos nativos do carrinho após sucesso
+                                        triggerCartUpdateEvents();
                                     })
                                     .catch(error => {
                                         enablePostcodeForm();
@@ -2144,8 +2238,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function setLastUsedPostcode(postcode) {
+        // Garante que o CEP seja salvo sempre formatado
+        const formattedPostcode = formatCEP(postcode);
         // Salva o CEP como compartilhado entre produto e carrinho
-        setSharedPostcode(postcode);
+        setSharedPostcode(formattedPostcode);
         updateTokenCache();
     }
 

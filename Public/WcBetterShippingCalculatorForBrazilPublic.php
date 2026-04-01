@@ -150,7 +150,6 @@ class WcBetterShippingCalculatorForBrazilPublic
         $is_checkout_page = $is_checkout_page || $has_checkout_block;
         
         if ($is_checkout_page) {
-
             $person_type = get_option('woo_better_calc_person_type_select', 'none');
                 
             if ($person_type !== 'none') {
