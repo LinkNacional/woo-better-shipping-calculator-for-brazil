@@ -818,18 +818,18 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             )
         );
 
-        $checkoutSetting = array(
-            // TAB 5: Checkout
-            'checkout_section' => array(
-                'title' => __('Checkout', 'woo-better-shipping-calculator-for-brazil'),
+        $cacheSettings = array(
+            // TAB 6: Cache
+            'cache_section' => array(
+                'title' => __('Cache', 'woo-better-shipping-calculator-for-brazil'),
                 'type'  => 'title',
-                'id'    => 'woo_better_calc_title_checkout'
+                'id'    => 'woo_better_calc_title_cache'
             ),
-            'cep_field_position' => array(
-                'title'    => __('Configurações do Campo CEP', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_calc_cep_field_position',
+            'enable_auto_postcode_search' => array(
+                'title'    => __('Consulta automática de CEP', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,
-                'default'  => 'no',
+                'id'       => 'woo_better_calc_enable_auto_postcode_search',
+                'default'  => 'yes',
                 'type'     => 'radio',
                 'options'  => array(
                     'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
@@ -1102,7 +1102,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
 
 
 
-        $settings = array_merge($settings, $generalSettings, $shortcodeSettings, $productSettings, $cartSettings, $checkoutSetting, $cacheSettings);
+        $settings = array_merge($settings, $generalSettings, $shortcodeSettings, $productSettings, $cartSettings, $cacheSettings);
 
         return apply_filters('woocommerce_get_settings_' . $this->id, $settings);
     }

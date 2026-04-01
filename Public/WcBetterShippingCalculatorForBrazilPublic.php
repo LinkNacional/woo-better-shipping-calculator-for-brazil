@@ -150,7 +150,6 @@ class WcBetterShippingCalculatorForBrazilPublic
         $is_checkout_page = $is_checkout_page || $has_checkout_block;
         
         if ($is_checkout_page) {
-
             $person_type = get_option('woo_better_calc_person_type_select', 'none');
                 
             if ($person_type !== 'none') {
@@ -362,13 +361,9 @@ class WcBetterShippingCalculatorForBrazilPublic
                 false
             );
 
-            // Obtém o total dos itens do carrinho
-            $cart_total = 0;
+            // Verifica se todos os produtos são digitais (virtuais ou downloadables)
             $only_digital_products = false;
             if (function_exists('WC') && WC()->cart) {
-                $cart_total = floatval(WC()->cart->get_subtotal());
-                
-                // Verifica se todos os produtos são digitais (virtuais ou downloadables)
                 $has_digital_only = true;
                 $has_products = false;
                 foreach (WC()->cart->get_cart() as $cart_item) {
@@ -388,16 +383,12 @@ class WcBetterShippingCalculatorForBrazilPublic
                 array(
                     'min_free_shipping_value' => get_option('woo_better_min_free_shipping_value', 0),
                     'currency_symbol' => get_woocommerce_currency_symbol(),
-                    'min_free_shipping_message' => get_option('woo_better_min_free_shipping_message', 'Falta(m) apenas mais {value} para obter FRETE GRÁTIS'),
-                    'min_free_shipping_success_message' => get_option('woo_better_min_free_shipping_success_message', 'Parabéns! Você tem frete grátis!'),
+                    'min_free_shipping_message' => get_option('woo_better_min_free_shipping_message', ''),
+                    'min_free_shipping_success_message' => get_option('woo_better_min_free_shipping_success_message', ''),
                     'enable_progress_bar_value' => get_option('woo_better_enable_progress_bar_value', 'no'),
                     'has_cart_block' => has_block('woocommerce/cart'),
                     'only_digital_products' => $only_digital_products,
-                    'current_url' => (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . 
-                        (isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '') . 
-                        (isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : ''),
-                    'initial_cart_total' => $cart_total,
-                    'cart_api_url' => rest_url('wc/store/v1/cart')
+                    'ajax_url' => admin_url('admin-ajax.php')
                 )
             );
         }

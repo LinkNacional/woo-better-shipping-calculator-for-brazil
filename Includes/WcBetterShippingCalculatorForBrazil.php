@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilWcSettings;
+use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilCheckoutSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdmin;
 use Lkn\WcBetterShippingCalculatorForBrazil\PublicView\WcBetterShippingCalculatorForBrazilPublic;
 use Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema;
@@ -84,7 +85,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.10.1';
+            $this->version = '4.11.0';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -135,6 +136,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('rest_api_init', $this, 'lkn_register_custom_cep_route');
 
         $this->loader->add_filter('woocommerce_get_settings_pages', $this, 'lkn_add_woo_better_settings_page');
+        $this->loader->add_filter('woocommerce_get_settings_pages', $this, 'lkn_add_woo_better_checkout_settings_page');
 
         $this->loader->add_action('admin_footer', $this, 'lkn_woo_better_footer_page');
 
@@ -193,7 +195,9 @@ class WcBetterShippingCalculatorForBrazil
         $notice_key = 'woo_better_calc_notice_dismissed_' . $version;
         $notice_dismissed = get_user_meta(get_current_user_id(), $notice_key, true);
 
-        if ($notice_dismissed || (isset($_GET['tab']) && 'wc-better-calc' === sanitize_text_field(wp_unslash($_GET['tab'])))) {
+        if ($notice_dismissed || (isset($_GET['tab']) && 
+            ('wc-better-calc' === sanitize_text_field(wp_unslash($_GET['tab'])) || 
+             'wc-better-calc-checkout' === sanitize_text_field(wp_unslash($_GET['tab']))))) {
             return;
         }
 
@@ -448,11 +452,12 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_woo_better_footer_page()
     {
-        // Verifica se estamos na página e na aba correta
+        // Verifica se estamos na página e na aba correta (incluindo a nova aba de checkout)
         if (
             isset($_GET['page'], $_GET['tab']) &&
             sanitize_text_field(wp_unslash($_GET['page'])) === 'wc-settings' &&
-            sanitize_text_field(wp_unslash($_GET['tab'])) === 'wc-better-calc'
+            (sanitize_text_field(wp_unslash($_GET['tab'])) === 'wc-better-calc' || 
+             sanitize_text_field(wp_unslash($_GET['tab'])) === 'wc-better-calc-checkout')
         ) {
             wp_enqueue_script(
                 'wc-better-calc-settings-layout',
@@ -579,6 +584,12 @@ class WcBetterShippingCalculatorForBrazil
     public function lkn_add_woo_better_settings_page($settings)
     {
         $settings[] = new WcBetterShippingCalculatorForBrazilWcSettings();
+        return $settings;
+    }
+
+    public function lkn_add_woo_better_checkout_settings_page($settings)
+    {
+        $settings[] = new WcBetterShippingCalculatorForBrazilCheckoutSettings();
         return $settings;
     }
 
@@ -843,6 +854,9 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_calc_get_nonce', $this, 'wc_better_calc_get_nonce');
 
+        $this->loader->add_action('wp_ajax_wc_better_get_cart_shipping_status', $this, 'wc_better_get_cart_shipping_status');
+        $this->loader->add_action('wp_ajax_nopriv_wc_better_get_cart_shipping_status', $this, 'wc_better_get_cart_shipping_status');
+
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'wc_better_calc_checkout_fields', 999);
         $this->loader->add_filter( 'wc_address_i18n_params', $this, 'postcode_param_priority', 999);
         
@@ -871,10 +885,6 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_localisation_address_formats', $this, 'add_neighborhood_to_address_format', 10, 1);
         $this->loader->add_filter('woocommerce_order_formatted_billing_address', $this, 'add_neighborhood_to_billing_address', 10, 2);
         $this->loader->add_filter('woocommerce_order_formatted_shipping_address', $this, 'add_neighborhood_to_shipping_address', 10, 2);
-        
-        // NOVO: Hook para restaurar endereço quando carrinho for modificado
-        $this->loader->add_action('woocommerce_cart_updated', $this, 'restore_address_after_cart_change');
-        $this->loader->add_action('woocommerce_add_to_cart', $this, 'restore_address_after_cart_change');
         
         // Hooks para formatação de telefone no pedido final
         $this->loader->add_filter('woocommerce_order_get_billing_phone', $this, 'format_order_billing_phone', 10, 2);
@@ -1079,6 +1089,10 @@ class WcBetterShippingCalculatorForBrazil
             WC()->customer->set_shipping_postcode($normalized_postcode);
             WC()->customer->set_billing_postcode($normalized_postcode);
             
+            // Força o país como Brasil
+            WC()->customer->set_shipping_country('BR');
+            WC()->customer->set_billing_country('BR');
+
             if (!empty($cep_data['city'])) {
                 WC()->customer->set_shipping_city($cep_data['city']);
                 WC()->customer->set_billing_city($cep_data['city']);
@@ -1799,15 +1813,6 @@ class WcBetterShippingCalculatorForBrazil
         }
         
         return $display_data;
-    }
-
-    /**
-     * Restaura endereço após mudanças no carrinho
-     *
-     * @return void
-     */
-    public function restore_address_after_cart_change() {
-        $this->restore_address_from_cookies();
     }
 
     /**
@@ -2960,105 +2965,6 @@ class WcBetterShippingCalculatorForBrazil
         return $this->detect_same_address_usage($order, []);
     }
 
-    /**
-     * Salva dados de endereço em cookies para persistir durante operações do carrinho
-     *
-     * @param array $shipping_data Dados de endereço para salvar
-     * @return void
-     */
-    private function save_address_to_cookies($shipping_data) {
-        $cookie_expire = time() + (60 * 60 * 2); // 2 horas
-        
-        // Remove valores vazios e adiciona timestamp para validação
-        $clean_data = array_filter($shipping_data, function($value) {
-            return !empty($value);
-        });
-        
-        if (empty($clean_data)) {
-            return;
-        }
-        
-        // Adiciona timestamp para validação de expiração
-        $clean_data['timestamp'] = time();
-        
-        // Serializa e codifica em base64 para segurança
-        $encoded_data = base64_encode(wp_json_encode($clean_data));
-        
-        // Salva um único cookie com todos os dados
-        setcookie('woo_better_address_data', $encoded_data, $cookie_expire, '/');
-    }
-
-    /**
-     * Restaura dados dos cookies se a sessão foi resetada
-     *
-     * @return void
-     */
-    private function restore_address_from_cookies() {
-        if (!WC()->customer) return;
-        
-        // Verifica se o cookie existe
-        if (empty($_COOKIE['woo_better_address_data'])) {
-            return;
-        }
-        
-        // Verifica se precisa restaurar (se postcode está vazio)
-        if (!empty(WC()->customer->get_shipping_postcode())) {
-            return;
-        }
-        
-        try {
-            // Decodifica e desserializa os dados
-            $encoded_data = sanitize_text_field(wp_unslash($_COOKIE['woo_better_address_data']));
-            $decoded_json = base64_decode($encoded_data, true);
-            
-            if ($decoded_json === false) {
-                return; // Falha na decodificação base64
-            }
-            
-            $address_data = json_decode($decoded_json, true);
-            
-            if (!is_array($address_data)) {
-                return; // Dados inválidos
-            }
-            
-            // Valida timestamp (verifica se não expirou)
-            $timestamp = $address_data['timestamp'] ?? 0;
-            if ((time() - $timestamp) > (60 * 60 * 2)) { // 2 horas
-                // Remove cookie expirado
-                setcookie('woo_better_address_data', '', time() - 3600, '/');
-                return;
-            }
-            
-            // Remove timestamp dos dados antes de aplicar
-            unset($address_data['timestamp']);
-            
-            // Aplica os dados ao customer
-            $updated = false;
-            $valid_fields = ['first_name', 'last_name', 'address_1', 'city', 'state', 'postcode', 'country', 'phone'];
-            
-            foreach ($valid_fields as $field) {
-                if (isset($address_data[$field]) && !empty($address_data[$field])) {
-                    $sanitized_value = sanitize_text_field($address_data[$field]);
-                    
-                    // Aplica para shipping e billing
-                    WC()->customer->{"set_shipping_{$field}"}($sanitized_value);
-                    WC()->customer->{"set_billing_{$field}"}($sanitized_value);
-                    $updated = true;
-                }
-            }
-            
-            if ($updated) {
-                WC()->customer->save();
-            }
-            
-        } catch (Exception $e) {
-            // Em caso de erro, remove o cookie
-            setcookie('woo_better_address_data', '', time() - 3600, '/');
-        }
-    }
-
-
-
     public function init_woocommerce()
     {
         if ( function_exists( 'woocommerce_store_api_register_endpoint_data' ) ) {
@@ -3767,6 +3673,59 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * AJAX endpoint para obter dados do carrinho e status do frete
+     *
+     * @since 4.11.0
+     * @access public
+     * @return void JSON com status do frete gratuito e total do carrinho
+     */
+    public function wc_better_get_cart_shipping_status() {
+        // Verifica se WooCommerce está disponível
+        if (!$this->is_valid_woocommerce_context() || !WC()->cart) {
+            wp_send_json_error([
+                'error' => true,
+                'message' => 'WooCommerce não está disponível.'
+            ], 400);
+        }
+
+        $cart = WC()->cart;
+        $customer = WC()->customer;
+        
+        // Dados básicos do carrinho
+        $cart_total = $cart->get_displayed_subtotal();
+        $has_free_shipping = false;
+        
+        // Verifica se há métodos de envio disponíveis e se algum é gratuito
+        if ($customer && method_exists($customer, 'get_shipping_postcode') && !empty($customer->get_shipping_postcode())) {
+            // Força o cálculo das taxas de envio
+            $cart->calculate_shipping();
+            
+            // Obtém pacotes de envio
+            $packages = $cart->get_shipping_packages();
+            
+            foreach ($packages as $package_key => $package) {
+                $session_key = 'shipping_for_package_' . $package_key;
+                $stored_rates = WC()->session->get($session_key);
+                
+                if (!empty($stored_rates['rates'])) {
+                    foreach ($stored_rates['rates'] as $rate_id => $rate) {
+                        // ✅ NOVA LÓGICA: Verifica se existe frete grátis DISPONÍVEL (não precisa estar selecionado)
+                        if (floatval($rate->cost) === 0.0) {
+                            $has_free_shipping = true;
+                            break 2; // Sai dos dois loops - encontrou frete grátis disponível
+                        }
+                    }
+                }
+            }
+        }
+        
+        wp_send_json_success([
+            'freeShipping' => $has_free_shipping,
+            'cartTotal' => $cart_total
+        ]);
+    }
+
+    /**
      * Registers the shipping address and calculates shipping rates for a product.
      *
      * @since 1.0.0
@@ -3861,9 +3820,6 @@ class WcBetterShippingCalculatorForBrazil
         // Salva os dados do cliente
         WC()->customer->save();
         
-        // NOVO: Salva também em cookies para persistir durante mudanças no carrinho
-        $this->save_address_to_cookies($shipping_data);
-
         // Obtém o ID do produto da página atual
         $product_id = isset($_POST['product_id']) ? absint($_POST['product_id']) : 0;
         $variation_id = isset($_POST['variation_id']) ? absint($_POST['variation_id']) : 0;
@@ -3907,7 +3863,13 @@ class WcBetterShippingCalculatorForBrazil
 
         // Converte o preço para float para garantir que seja numérico
         $product_price = floatval($product->get_price());
-        $quantity = WC_BETTER_SHIPPING_PRODUCT_QUANTITY;
+        
+        // Captura a quantidade enviada via POST ou usa 1 como padrão
+        $quantity = isset($_POST['quantity']) ? absint(wp_unslash($_POST['quantity'])) : 1;
+        if ($quantity <= 0) {
+            $quantity = 1; // Garante que a quantidade seja pelo menos 1
+        }
+        
         $line_total = $product_price * $quantity;
 
         // Cria um pacote de envio personalizado
@@ -4122,6 +4084,83 @@ class WcBetterShippingCalculatorForBrazil
 
         // Salva os dados do cliente
         WC()->customer->save();
+        
+        // para que os dados apareçam corretos na página de profile do WordPress
+        if (is_user_logged_in()) {
+            $user_id = get_current_user_id();
+            
+            // Atualiza os campos de endereço de entrega nos user meta
+            if (!is_null($shipping_data['first_name'])) {
+                update_user_meta($user_id, 'shipping_first_name', $shipping_data['first_name']);
+            }
+            if (!is_null($shipping_data['last_name'])) {
+                update_user_meta($user_id, 'shipping_last_name', $shipping_data['last_name']);
+            }
+            if (!is_null($shipping_data['company'])) {
+                update_user_meta($user_id, 'shipping_company', $shipping_data['company']);
+            }
+            if (!is_null($shipping_data['address_1'])) {
+                update_user_meta($user_id, 'shipping_address_1', $shipping_data['address_1']);
+            }
+            // shipping_address_2 sempre vazio
+            update_user_meta($user_id, 'shipping_address_2', '');
+
+            if (!is_null($shipping_data['city'])) {
+                update_user_meta($user_id, 'shipping_city', $shipping_data['city']);
+            }
+            if (!is_null($shipping_data['state'])) {
+                update_user_meta($user_id, 'shipping_state', $shipping_data['state']);
+            }
+            if (!is_null($shipping_data['postcode'])) {
+                update_user_meta($user_id, 'shipping_postcode', $shipping_data['postcode']);
+            }
+            if (!is_null($shipping_data['country'])) {
+                update_user_meta($user_id, 'shipping_country', $shipping_data['country']);
+            }
+            if (!is_null($shipping_data['phone'])) {
+                update_user_meta($user_id, 'shipping_phone', $shipping_data['phone']);
+            }
+            // shipping_neighborhood sempre vazio
+            update_user_meta($user_id, 'shipping_neighborhood', '');
+            // shipping_number sempre vazio
+            update_user_meta($user_id, 'shipping_number', '');
+            
+            // Atualiza os campos de endereço de cobrança nos user meta
+            if (!is_null($shipping_data['first_name'])) {
+                update_user_meta($user_id, 'billing_first_name', $shipping_data['first_name']);
+            }
+            if (!is_null($shipping_data['last_name'])) {
+                update_user_meta($user_id, 'billing_last_name', $shipping_data['last_name']);
+            }
+            if (!is_null($shipping_data['company'])) {
+                update_user_meta($user_id, 'billing_company', $shipping_data['company']);
+            }
+            if (!is_null($shipping_data['address_1'])) {
+                update_user_meta($user_id, 'billing_address_1', $shipping_data['address_1']);
+            }
+            // billing_address_2 sempre vazio
+            update_user_meta($user_id, 'billing_address_2', '');
+
+            if (!is_null($shipping_data['city'])) {
+                update_user_meta($user_id, 'billing_city', $shipping_data['city']);
+            }
+            if (!is_null($shipping_data['state'])) {
+                update_user_meta($user_id, 'billing_state', $shipping_data['state']);
+            }
+            if (!is_null($shipping_data['postcode'])) {
+                update_user_meta($user_id, 'billing_postcode', $shipping_data['postcode']);
+            }
+            if (!is_null($shipping_data['country'])) {
+                update_user_meta($user_id, 'billing_country', $shipping_data['country']);
+            }
+            if (!is_null($shipping_data['phone'])) {
+                update_user_meta($user_id, 'billing_phone', $shipping_data['phone']);
+            }
+            // billing_neighborhood sempre vazio  
+            update_user_meta($user_id, 'billing_neighborhood', '');
+            // billing_number sempre vazio
+            update_user_meta($user_id, 'billing_number', '');
+        }
 
         // Obtém os itens do carrinho
         $cart_items = WC()->cart->get_cart();
@@ -4182,10 +4221,10 @@ class WcBetterShippingCalculatorForBrazil
             ),
         );
 
-        // Calcula o frete usando a sessão do WooCommerce
+         // Calcula o frete usando a sessão do WooCommerce
         // Isto garantirá que todos os hooks sejam executados
         WC()->shipping()->reset_shipping();
-        
+
         // Define o endereço de entrega na sessão
         WC()->customer->set_shipping_location(
             $shipping_data['country'],
@@ -4193,7 +4232,7 @@ class WcBetterShippingCalculatorForBrazil
             $shipping_data['postcode'],
             $shipping_data['city']
         );
-        
+
         // Força recalcular totais para aplicar hooks de frete
         WC()->cart->calculate_totals();
         
@@ -4203,16 +4242,16 @@ class WcBetterShippingCalculatorForBrazil
         $shipping_rates = array();
         $currency_symbol = get_woocommerce_currency_symbol();
         $currency_minor_unit = wc_get_price_decimals();
-
-        // Itera pelos pacotes e extrai as taxas de envio
-        foreach ($packages as $package) {
-            if (isset($package['rates']) && is_array($package['rates'])) {
-                foreach ($package['rates'] as $rate) {
-                    $shipping_rates[] = array(
-                        'id'    => $rate->get_id(),
-                        'label' => $rate->get_label(),
-                        'cost'  => $rate->get_cost(),
-                    );
+            
+            // Itera pelos pacotes e extrai as taxas de envio
+            foreach ($packages as $package) {
+                if (isset($package['rates']) && is_array($package['rates'])) {
+                    foreach ($package['rates'] as $rate) {
+                        $shipping_rates[] = array(
+                            'id'    => $rate->get_id(),
+                            'label' => $rate->get_label(),
+                            'cost'  => $rate->get_cost(),
+                        );
                 }
             }
         }
@@ -4605,7 +4644,7 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function customers_response($response, $user)
     {
-        $customer = new WC_Customer($user->ID);
+        $customer = new \WC_Customer($user->ID);
 
         // Billing fields
         $response->data['billing']['persontype']   = $this->get_person_type_letter($customer->get_meta('billing_persontype'));

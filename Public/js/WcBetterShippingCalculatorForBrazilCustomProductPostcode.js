@@ -5,11 +5,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Lógica para sincronizar CEP do carrinho com cache personalizado ---
     const cartCep = WooBetterData.cart_cep || '';
     const lastPostcode = getLastUsedPostcode();
-    if (cartCep && cartCep !== lastPostcode) {
+    
+    // Normaliza ambos os CEPs para comparação
+    const normalizedCartCep = formatCEP(cartCep);
+    const normalizedLastPostcode = formatCEP(lastPostcode);
+    
+    if (normalizedCartCep && normalizedCartCep !== normalizedLastPostcode) {
         // Reseta cache e faz nova consulta usando o CEP do carrinho
         invalidateCache();
-        setLastUsedPostcode(cartCep);
-        sendCEP(cartCep, true);
+        setLastUsedPostcode(normalizedCartCep);
+        sendCEP(normalizedCartCep, true);
     }
 
     // Configura listener para mudanças em produtos variáveis
@@ -23,6 +28,43 @@ document.addEventListener('DOMContentLoaded', function () {
     let originalButtonText = '';
     let productNonce = '';
     let hasUserMadeQuery = false;
+
+    // Função para formatar CEP (XXXXX-XXX)
+    function formatCEP(cep) {
+        if (!cep) return '';
+        
+        // Remove tudo que não for dígito
+        let cleanCep = cep.replace(/\D/g, '');
+        
+        // Limita a 8 dígitos
+        if (cleanCep.length > 8) {
+            cleanCep = cleanCep.slice(0, 8);
+        }
+        
+        // Aplica a formatação se tiver 8 dígitos ou mais de 5
+        if (cleanCep.length === 8) {
+            return cleanCep.slice(0, 5) + '-' + cleanCep.slice(5);
+        } else if (cleanCep.length > 5) {
+            return cleanCep.slice(0, 5) + '-' + cleanCep.slice(5);
+        }
+        
+        return cleanCep;
+    }
+
+    // Função para aplicar formatação em um input de CEP
+    function applyFormatToInput(input, value) {
+        if (!input) return;
+        
+        const formattedValue = formatCEP(value);
+        input.value = formattedValue;
+        
+        // Dispara o evento input para garantir consistência
+        const inputEvent = new Event('input', {
+            bubbles: true,
+            cancelable: true
+        });
+        input.dispatchEvent(inputEvent);
+    }
 
     function createParentContainer() {
         const parentContainer = document.createElement('div');
@@ -55,6 +97,22 @@ document.addEventListener('DOMContentLoaded', function () {
     function isVariableProduct() {
         const isVariable = document.querySelector('.variations_form') !== null;
         return isVariable;
+    }
+
+    function getCurrentProductQuantity() {
+        // Procura pelo campo de quantidade (pode ser number ou hidden)
+        const quantityInput = document.querySelector('input[name="quantity"].qty, input[name="quantity"].input-text, input[name="quantity"][class*="qty"]');
+        
+        if (quantityInput && quantityInput.value) {
+            const quantity = parseInt(quantityInput.value, 10);
+            // Verifica se é um número válido e maior que 0
+            if (!isNaN(quantity) && quantity > 0) {
+                return quantity;
+            }
+        }
+        
+        // Retorna 1 como padrão se não encontrar ou valor inválido
+        return 1;
     }
 
     function hasVariationSelected() {
@@ -776,7 +834,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 iconContainer.classList.add('spinning-container');
 
                 // Chama sendCEP com forceRequest = true
-                sendCEP(currentPostcode, true);
+                sendCEP(formatCEP(currentPostcode), true);
             }
         });
 
@@ -856,7 +914,7 @@ document.addEventListener('DOMContentLoaded', function () {
         input.autocomplete = 'postal-code';
 
         if (lastPostcode) {
-            input.value = lastPostcode;
+            applyFormatToInput(input, lastPostcode);
         }
 
         // Aplica os estilos do input
@@ -866,35 +924,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         input.addEventListener('input', function (e) {
-            let value = e.target.value;
-
-            // Remove todos os caracteres não numéricos, exceto o '-'
-            value = value.replace(/[^\d-]/g, '');
-
-            // Garante que o '-' só pode estar na posição 5
-            if (value.includes('-')) {
-                const parts = value.split('-');
-
-                // Remove o hífen se ele estiver antes da posição 5 ou se houver mais de um hífen
-                if (parts.length > 2 || parts[0].length > 5) {
-                    value = parts[0].slice(0, 5) + '-' + parts[1]?.slice(0, 3);
-                } else if (parts[0].length < 5) {
-                    value = parts[0]; // Remove o hífen se ele for digitado antes da posição 5
-                }
+            const formattedValue = formatCEP(e.target.value);
+            
+            // Só atualiza se o valor mudou para evitar loop infinito
+            if (e.target.value !== formattedValue) {
+                e.target.value = formattedValue;
             }
-
-            // Adiciona o hífen automaticamente se o comprimento for maior que 5 e o hífen não estiver presente
-            if (value.length > 5 && !value.includes('-')) {
-                value = value.slice(0, 5) + '-' + value.slice(5);
-            }
-
-            // Limita o tamanho do CEP a 9 caracteres (XXXXX-XXX)
-            if (value.length > 9) {
-                value = value.slice(0, 9);
-            }
-
-            // Atualiza o valor do campo de texto
-            e.target.value = value;
         });
 
         // Cria o ícone
@@ -962,7 +997,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 return; // Simplesmente não faz nada, sem alert
             }
 
-            const postcode = input.value.trim();
+            let postcode = input.value.trim();
+            
+            // Aplica formatação antes da validação
+            postcode = formatCEP(postcode);
+            applyFormatToInput(input, postcode);
 
             // Verifica se o CEP está no formato válido (XXXXX-XXX)
             const cepRegex = /^\d{5}-\d{3}$/;
@@ -1182,6 +1221,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function sendCEP(postcode, forceRequest = false) {
+        // Garante que o postcode sempre esteja formatado
+        postcode = formatCEP(postcode);
+        
         // Se forceRequest for true, marca que o usuário fez uma ação manual
         if (forceRequest) {
             hasUserMadeQuery = true;
@@ -1253,9 +1295,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     }
 
+                    // Captura a quantidade atual do produto
+                    const currentQuantity = getCurrentProductQuantity();
+                    
                     const formData = new FormData();
                     formData.append('action', 'register_product_address');
                     formData.append('product_id', WooBetterData.product_id);
+                    formData.append('quantity', currentQuantity);
                     if (variationId > 0) {
                         formData.append('variation_id', variationId);
                     }
@@ -1750,7 +1796,12 @@ document.addEventListener('DOMContentLoaded', function () {
             // Em caso de erro, remove o cache corrompido e força nova consulta
             const cache = getProductCache();
             const variationId = getCurrentVariationId();
-            const cacheKey = variationId > 0 ? `${WooBetterData.product_id}_${variationId}` : WooBetterData.product_id;
+            const currentQuantity = getCurrentProductQuantity();
+            
+            // Inclui a quantidade na chave para remoção do cache
+            const cacheKey = variationId > 0 
+                ? `${WooBetterData.product_id}_${variationId}_qty${currentQuantity}`
+                : `${WooBetterData.product_id}_qty${currentQuantity}`;
             
             if (cache[postcode] && cache[postcode][cacheKey]) {
                 delete cache[postcode][cacheKey];
@@ -1815,7 +1866,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function getCachedShippingData(postcode, productId) {
         const cache = getProductCache();
         const variationId = getCurrentVariationId();
-        const cacheKey = variationId > 0 ? `${productId}_${variationId}` : productId;
+        const currentQuantity = getCurrentProductQuantity();
+        
+        // Inclui a quantidade na chave do cache
+        const cacheKey = variationId > 0 
+            ? `${productId}_${variationId}_qty${currentQuantity}`
+            : `${productId}_qty${currentQuantity}`;
 
         if (cache[postcode] && cache[postcode][cacheKey]) {
             return cache[postcode][cacheKey];
@@ -1828,7 +1884,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const cacheKey = 'woo_better_product_cache';
         const cache = getProductCache();
         const variationId = getCurrentVariationId();
-        const productCacheKey = variationId > 0 ? `${productId}_${variationId}` : productId;
+        const currentQuantity = getCurrentProductQuantity();
+        
+        // Inclui a quantidade na chave do cache
+        const productCacheKey = variationId > 0 
+            ? `${productId}_${variationId}_qty${currentQuantity}`
+            : `${productId}_qty${currentQuantity}`;
 
         // Inicializa a estrutura se necessário
         if (!cache[postcode]) {
@@ -1839,6 +1900,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const cleanData = {
             product: shippingData.product,
             shipping_rates: shippingData.shipping_rates,
+            quantity: currentQuantity, // Salva a quantidade no cache
             timestamp: Date.now()
         };
         
@@ -1847,13 +1909,8 @@ document.addEventListener('DOMContentLoaded', function () {
             cleanData.digital = shippingData.digital;
         }
 
+        // Salva os dados com a nova chave que inclui quantidade
         cache[postcode][productCacheKey] = cleanData;
-        if (shippingData.digital === true) {
-            cleanData.digital = true;
-        }
-
-        // Salva os dados limpos
-        cache[postcode][productId] = cleanData;
 
         localStorage.setItem(cacheKey, JSON.stringify(cache));
     }
@@ -1914,8 +1971,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function setLastUsedPostcode(postcode) {
+        // Garante que o CEP seja salvo sempre formatado
+        const formattedPostcode = formatCEP(postcode);
         // Salva o CEP como compartilhado entre produto e carrinho
-        setSharedPostcode(postcode);
+        setSharedPostcode(formattedPostcode);
         updateTokenCache();
     }
 
