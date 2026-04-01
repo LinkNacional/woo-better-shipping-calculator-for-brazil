@@ -85,7 +85,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.10.1';
+            $this->version = '4.11.0';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -3675,7 +3675,7 @@ class WcBetterShippingCalculatorForBrazil
     /**
      * AJAX endpoint para obter dados do carrinho e status do frete
      *
-     * @since 4.10.1
+     * @since 4.11.0
      * @access public
      * @return void JSON com status do frete gratuito e total do carrinho
      */
