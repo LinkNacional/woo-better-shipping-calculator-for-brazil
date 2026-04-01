@@ -147,6 +147,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+# 4.11.0 - 01/04/26
+* Enhancement: New free shipping detection system through shipping zones.
+* Enhancement: New option for checkout block (Campos Brasileiros)
+* Enhancement: New quantity detection system on product page.
+
 = 4.10.1 - 30/03/2026
 * Fixed cart change detection (adding/removing products).
 * Fixed component expansion when the block was minimized.

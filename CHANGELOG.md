@@ -1,3 +1,8 @@
+# 4.11.0 - 01/04/26
+* Ajuste: Novo sistema de detecção de frete grátis através da área de entrega.
+* Ajuste: Nova opção para o bloco de checkout (Campos Brasileiros)
+* Ajuste: Novo sistema de detecção da quantidade na página de produto.
+
 # 4.10.1 - 30/03/26
 * Correção na detecção de mudanças no carrinho (adição/remoção de produtos).
 * Correção na expansão do componente quando o bloco estava minimizado.
