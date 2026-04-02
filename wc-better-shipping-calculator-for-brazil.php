@@ -19,7 +19,7 @@
  * Version:           4.12.0
  * Author:            Link Nacional
  * Author URI:        https://linknacional.com.br/
- * Requires PHP:      7.3
+ * Requires PHP:      8.0
  * Requires at least: 4.6
  * License:           GPLv2 or later
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
