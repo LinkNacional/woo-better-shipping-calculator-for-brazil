@@ -3664,7 +3664,6 @@ class WcBetterShippingCalculatorForBrazil
             if (is_user_logged_in()) {
                 update_user_meta( get_current_user_id(), 'billing_phone', $billing_phone_formatted );
             }
-            error_log('[PHONE FORMATTER UPDATE] Billing phone salvo: ' . $billing_phone_formatted);
         }
 
         if (!empty($shipping_phone_formatted)) {
@@ -3672,7 +3671,6 @@ class WcBetterShippingCalculatorForBrazil
             if (is_user_logged_in()) {
                 update_user_meta( get_current_user_id(), 'shipping_phone', $shipping_phone_formatted );
             }
-            error_log('[PHONE FORMATTER UPDATE] Shipping phone salvo: ' . $shipping_phone_formatted);
         }
     }
 
@@ -4912,7 +4910,6 @@ class WcBetterShippingCalculatorForBrazil
                 $billing_phone_formatted = sanitize_text_field($phone_data['billing_phone_formatted']);
                 if (!empty($billing_phone_formatted)) {
                     $order->update_meta_data('_billing_phone', $billing_phone_formatted);
-                    error_log('[PHONE FORMATTER] Billing phone salvo como: ' . $billing_phone_formatted);
                 }
             }
 
@@ -4921,7 +4918,6 @@ class WcBetterShippingCalculatorForBrazil
                 $shipping_phone_formatted = sanitize_text_field($phone_data['shipping_phone_formatted']);
                 if (!empty($shipping_phone_formatted)) {
                     $order->update_meta_data('_shipping_phone', $shipping_phone_formatted);
-                    error_log('[PHONE FORMATTER] Shipping phone salvo como: ' . $shipping_phone_formatted);
                 }
             }
         }
