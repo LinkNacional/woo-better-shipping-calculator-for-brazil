@@ -386,6 +386,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'min_free_shipping_message' => get_option('woo_better_min_free_shipping_message', ''),
                     'min_free_shipping_success_message' => get_option('woo_better_min_free_shipping_success_message', ''),
                     'enable_progress_bar_value' => get_option('woo_better_enable_progress_bar_value', 'no'),
+                    'enable_free_shipping_detection' => get_option('woo_better_enable_free_shipping_detection', 'yes'),
                     'has_cart_block' => has_block('woocommerce/cart'),
                     'only_digital_products' => $only_digital_products,
                     'ajax_url' => admin_url('admin-ajax.php')

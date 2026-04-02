@@ -875,6 +875,7 @@
               'woo_better_min_free_shipping_value': 'woo_better_enable_min_free_shipping',
               'woo_better_only_free_shipping': 'woo_better_enable_min_free_shipping',
               'woo_better_avoid_free_shipping_duplication': 'woo_better_enable_min_free_shipping',
+              'woo_better_enable_free_shipping_detection': 'woo_better_enable_min_free_shipping',
               'woo_better_min_free_shipping_success_message': 'woo_better_min_free_shipping_message',
               'woo_better_enable_progress_bar_value': 'woo_better_min_free_shipping_message',
 

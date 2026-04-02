@@ -237,6 +237,7 @@
 		// Remove fallbacks automáticos - se usuário deixar vazio, fica vazio
 		const successMessage = progressConfig.min_free_shipping_success_message || '';
 		const enableProgressBarValue = progressConfig.enable_progress_bar_value !== 'no'; // padrão é true
+		const enableFreeShippingDetection = progressConfig.enable_free_shipping_detection !== 'no'; // padrão é true
 		let progressMessage = progressConfig.min_free_shipping_message || '';
 		
 		// Verifica se carrinho tem apenas produtos digitais
@@ -260,14 +261,14 @@
 			barColor = '#9e9e9e'; // Cinza para produtos digitais
 			message = 'Carrinho contém apenas produto(s) digital(s).';
 			barText = enableProgressBarValue ? 'Digital' : '';
-		} else if (currentFreeShippingStatus && cartTotal >= minValue && minValue > 0) {
-			// ✅ FRETE GRÁTIS DO PLUGIN: Valor mínimo atingido + freeShipping detectado
+		} else if (enableFreeShippingDetection && currentFreeShippingStatus && cartTotal >= minValue && minValue > 0) {
+			// ✅ FRETE GRÁTIS DO PLUGIN: Valor mínimo atingido + freeShipping detectado (só se detecção estiver habilitada)
 			percent = 100;
 			barColor = '#4caf50';
 			message = successMessage; // Sem fallback - respeita se usuário deixou vazio
 			barText = enableProgressBarValue ? (successMessage ? 'Frete Grátis!' : '') : '';
-		} else if (currentFreeShippingStatus && (minValue <= 0 || cartTotal < minValue)) {
-			// ✅ FRETE GRÁTIS DO WOOCOMMERCE: Detectado via configurações nativas (não do plugin)
+		} else if (enableFreeShippingDetection && currentFreeShippingStatus && (minValue <= 0 || cartTotal < minValue)) {
+			// ✅ FRETE GRÁTIS DO WOOCOMMERCE: Detectado via configurações nativas (não do plugin) - só se detecção estiver habilitada
 			percent = 100;
 			barColor = '#2196f3'; // Azul para diferenciar do frete grátis do plugin
 			message = 'Frete grátis disponível através da região de entrega.'; // Mensagem para frete grátis do WooCommerce

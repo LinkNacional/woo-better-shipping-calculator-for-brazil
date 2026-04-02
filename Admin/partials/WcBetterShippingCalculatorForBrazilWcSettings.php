@@ -122,6 +122,22 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Exibe apenas uma opção de frete grátis por vez, caso já exista uma disponível.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'enable_free_shipping_detection' => array(
+                'title'    => __('Detecção de Frete Gratuito', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_enable_free_shipping_detection',
+                'desc_tip' => false,
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Detecção automática de frete gratuito nas configurações.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Se habilitado, o sistema detectará automaticamente quando o frete gratuito está disponível.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Controla se a detecção de frete gratuito deve ser exibida na barra de frete gratuito.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'min_free_shipping_message' => array(
                 'title'    => __('Mensagens para o Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_min_free_shipping_message',
