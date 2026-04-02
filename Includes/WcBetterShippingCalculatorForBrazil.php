@@ -2748,6 +2748,9 @@ class WcBetterShippingCalculatorForBrazil
         // Processa dados de gênero
         $this->process_gender_from_request($order, $request);
         
+        // Processa dados de telefone formatado
+        $this->process_phone_formatter_from_request($order, $request);
+        
         $billing_country_code = '';
         $shipping_country_code = '';
         
@@ -3315,6 +3318,30 @@ class WcBetterShippingCalculatorForBrazil
                     ];
                 },
             ]);
+
+            // Registra campos para telefone formatado
+            woocommerce_store_api_register_endpoint_data( [
+                'endpoint'        => 'checkout',
+                'namespace'       => 'woo_better_phone_formatter',
+                'schema_callback' => function() {
+                    return [
+                        'billing_phone_formatted' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                        'shipping_phone_formatted' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                    ];
+                },
+                'data_callback' => function() {
+                    return [
+                        'billing_phone_formatted'  => '', 
+                        'shipping_phone_formatted' => '', 
+                    ];
+                },
+            ]);
         }
 
         if ( function_exists( 'woocommerce_store_api_register_update_callback' ) ) {
@@ -3352,6 +3379,12 @@ class WcBetterShippingCalculatorForBrazil
             woocommerce_store_api_register_update_callback([
                 'namespace' => 'woo_better_gender',
                 'callback'  => [ $this, 'handle_gender_update' ],
+            ]);
+
+            // Callback para telefone formatado
+            woocommerce_store_api_register_update_callback([
+                'namespace' => 'woo_better_phone_formatter',
+                'callback'  => [ $this, 'handle_phone_formatter_update' ],
             ]);
         }
     }
@@ -3605,6 +3638,41 @@ class WcBetterShippingCalculatorForBrazil
         WC()->session->set( 'billing_gender', $billing_gender );
         if (is_user_logged_in()) {
             update_user_meta( get_current_user_id(), 'billing_gender', $billing_gender );
+        }
+    }
+
+    public function handle_phone_formatter_update( $data ) {
+        if (! function_exists('WC') || ! WC()->session ) {
+            return;
+        }
+
+        // Captura os dados de telefone formatado
+        $billing_phone_formatted = '';
+        $shipping_phone_formatted = '';
+
+        if ( isset( $data['billing_phone_formatted'] ) ) {
+            $billing_phone_formatted = sanitize_text_field( (string) $data['billing_phone_formatted'] );
+        }
+
+        if ( isset( $data['shipping_phone_formatted'] ) ) {
+            $shipping_phone_formatted = sanitize_text_field( (string) $data['shipping_phone_formatted'] );
+        }
+
+        // Guarda os dados de telefone formatado na sessão para manter durante o checkout
+        if (!empty($billing_phone_formatted)) {
+            WC()->session->set( 'billing_phone', $billing_phone_formatted );
+            if (is_user_logged_in()) {
+                update_user_meta( get_current_user_id(), 'billing_phone', $billing_phone_formatted );
+            }
+            error_log('[PHONE FORMATTER UPDATE] Billing phone salvo: ' . $billing_phone_formatted);
+        }
+
+        if (!empty($shipping_phone_formatted)) {
+            WC()->session->set( 'shipping_phone', $shipping_phone_formatted );
+            if (is_user_logged_in()) {
+                update_user_meta( get_current_user_id(), 'shipping_phone', $shipping_phone_formatted );
+            }
+            error_log('[PHONE FORMATTER UPDATE] Shipping phone salvo: ' . $shipping_phone_formatted);
         }
     }
 
@@ -4820,6 +4888,42 @@ class WcBetterShippingCalculatorForBrazil
 
             // CORREÇÃO: Sempre salva gênero quando habilitado para evitar dados antigos "Masculino"
             $order->update_meta_data('_billing_gender', $billing_gender);
+        }
+    }
+
+    /**
+     * Processa os dados de telefone formatado no checkout de blocos
+     *
+     * @param WC_Order $order
+     * @param WP_REST_Request $request
+     * @return void
+     */
+    private function process_phone_formatter_from_request($order, $request)
+    {
+        // Captura dos dados do request do Block Checkout
+        $extensions = $request->get_param('extensions') ?? [];
+
+        // Verifica o namespace dos dados de telefone formatado
+        if (isset($extensions['woo_better_phone_formatter'])) {
+            $phone_data = $extensions['woo_better_phone_formatter'];
+
+            // Processa telefone billing formatado
+            if (isset($phone_data['billing_phone_formatted'])) {
+                $billing_phone_formatted = sanitize_text_field($phone_data['billing_phone_formatted']);
+                if (!empty($billing_phone_formatted)) {
+                    $order->update_meta_data('_billing_phone', $billing_phone_formatted);
+                    error_log('[PHONE FORMATTER] Billing phone salvo como: ' . $billing_phone_formatted);
+                }
+            }
+
+            // Processa telefone shipping formatado  
+            if (isset($phone_data['shipping_phone_formatted'])) {
+                $shipping_phone_formatted = sanitize_text_field($phone_data['shipping_phone_formatted']);
+                if (!empty($shipping_phone_formatted)) {
+                    $order->update_meta_data('_shipping_phone', $shipping_phone_formatted);
+                    error_log('[PHONE FORMATTER] Shipping phone salvo como: ' . $shipping_phone_formatted);
+                }
+            }
         }
     }
 

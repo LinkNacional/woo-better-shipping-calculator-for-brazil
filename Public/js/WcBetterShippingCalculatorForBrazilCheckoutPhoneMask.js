@@ -780,10 +780,46 @@ document.addEventListener('DOMContentLoaded', function() {
                     return dialCodeMap[dialCode] || null;
                 }
 
+                // SISTEMA DE DEBOUNCE PARA PHONE UPDATES (evita múltiplas requisições)
+                let phoneUpdateTimeout;
+                let pendingPhoneData = {};
+                
                 function triggerReactChange(input, newValue) {
                     try {
                         if (!input || typeof input !== 'object') {
                             return;
+                        }
+
+                        // SISTEMA DE DEBOUNCE PARA PHONE UPDATES
+                        const isPhoneField = (input.id && input.id.includes('phone')) || (input.name && input.name.includes('phone'));
+                        
+                        if (isPhoneField) {
+                            // Cancela timeout anterior se existir
+                            if (phoneUpdateTimeout) {
+                                clearTimeout(phoneUpdateTimeout);
+                            }
+                            
+                            // Atualiza dados pendentes
+                            if (input.id.includes('billing')) {
+                                pendingPhoneData.billing_phone_formatted = newValue;
+                            } else if (input.id.includes('shipping')) {
+                                pendingPhoneData.shipping_phone_formatted = newValue;
+                            }
+                            
+                            // Agenda execução em 1s (agrupa mudanças rápidas)
+                            phoneUpdateTimeout = setTimeout(() => {
+                                if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                                    // Cria cópia dos dados para envio
+                                    const dataToSend = { ...pendingPhoneData };
+                                    
+                                    window.wc.blocksCheckout.extensionCartUpdate({
+                                        namespace: 'woo_better_phone_formatter',
+                                        data: dataToSend
+                                    });
+                                }
+                                
+                                phoneUpdateTimeout = null;
+                            }, 1000);
                         }
 
                         const reactKey = Object.keys(input).find(key => 
@@ -854,6 +890,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 // Silent error handling
                             }
                         }, 0);
+                        
                     } catch (mainError) {
                         // Silent error handling
                     }
