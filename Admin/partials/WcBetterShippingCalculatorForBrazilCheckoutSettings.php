@@ -206,6 +206,38 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Escolha se o campo de Telefone deve ser destacado no checkout.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+                'enable_birthdate_field' => array(
+                    'title'    => __('Campo de Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_enable_birthdate_field',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Adiciona um campo de Data de Nascimento no formulário de checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Habilite para adicionar o campo "Data de Nascimento" no endereço de cobrança do checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Adiciona o campo de Data de Nascimento para coleta de informações adicionais do cliente.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
+                'enable_gender_field' => array(
+                    'title'    => __('Campo de Gênero', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_enable_gender_field',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Adiciona um campo de Gênero no formulário de checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Habilite para adicionar o campo "Gênero" (opcional) no endereço de cobrança do checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Adiciona o campo de Gênero para coleta de informações demográficas do cliente.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
                 'checkout_settings_end' => array(
                     'type' => 'sectionend',
                     'id'   => 'woo_better_calc_checkout_settings'

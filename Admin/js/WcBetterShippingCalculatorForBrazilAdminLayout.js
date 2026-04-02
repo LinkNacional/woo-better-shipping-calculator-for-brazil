@@ -147,12 +147,12 @@
     }
 
     const featureMessage1 = createFeatureMessage('✔️', [
-      '<strong>ATUALIZADO:</strong> Novas opções para destaque dos campos de Número de contato e E-mail, juntamente com uma nova opção para evitar duplicidade de frete.'
+      '<strong>NOVO:</strong> Campos de Data de Nascimento e Gênero para coleta completa de dados demográficos do cliente no checkout.'
     ]);
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Campos de CPF/CNPJ e Bairro para válidação dos dados do cliente e também um novo campo para esconder o frete personalizado para produtos digitais.'
+      '<strong>NOVO:</strong> Campos brasileiros personalizados do checkout e nova opção para detecção de frete gratuito na Calculadora de frete.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento
@@ -875,6 +875,7 @@
               'woo_better_min_free_shipping_value': 'woo_better_enable_min_free_shipping',
               'woo_better_only_free_shipping': 'woo_better_enable_min_free_shipping',
               'woo_better_avoid_free_shipping_duplication': 'woo_better_enable_min_free_shipping',
+              'woo_better_enable_free_shipping_detection': 'woo_better_enable_min_free_shipping',
               'woo_better_min_free_shipping_success_message': 'woo_better_min_free_shipping_message',
               'woo_better_enable_progress_bar_value': 'woo_better_min_free_shipping_message',
 
