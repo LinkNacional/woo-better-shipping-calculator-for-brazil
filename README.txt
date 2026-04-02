@@ -147,6 +147,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+# 4.12.1 - 02/04/26
+* Fixed: CEP field highlighting configuration.
+
 # 4.12.0 - 02/04/26
 * Added: New birth date and gender fields.
 * Enhancement: New option for free shipping detection.
