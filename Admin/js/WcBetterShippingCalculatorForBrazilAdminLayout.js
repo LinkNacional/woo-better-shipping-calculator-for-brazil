@@ -152,7 +152,7 @@
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>ATUALIZADO:</strong> Nova opção para abilitar campos brasileiros padronizados, facilitando a configuração de formulários do checkout.'
+      '<strong>NOVO:</strong> Campos brasileiros personalizados do checkout e nova opção para detecção de frete gratuito na Calculadora de frete.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento
