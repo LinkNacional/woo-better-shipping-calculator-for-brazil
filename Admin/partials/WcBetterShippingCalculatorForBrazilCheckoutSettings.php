@@ -234,7 +234,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     ),
                     'custom_attributes' => array(
                         'data-desc-tip' => __('Adiciona um campo de Gênero no formulário de checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Habilite para adicionar o campo "Gênero" (Masculino/Feminino) no endereço de cobrança do checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Habilite para adicionar o campo "Gênero" (opcional) no endereço de cobrança do checkout.', 'woo-better-shipping-calculator-for-brazil'),
                         'data-title-description' => __('Adiciona o campo de Gênero para coleta de informações demográficas do cliente.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),

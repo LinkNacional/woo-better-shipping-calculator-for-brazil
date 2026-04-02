@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             
             // Validação simples de gênero
-            const validGenders = ['', 'Masculino', 'Feminino', 'Outro', 'Prefiro não dizer'];
+            const validGenders = ['', 'Masculino', 'Feminino', 'Não-binário', 'Outro', 'Prefiro não dizer'];
             if (genderValue && !validGenders.includes(genderValue)) {
                 if (billingGenderFieldWrapper) {
                     billingGenderFieldWrapper.classList.add("woocommerce-invalid", "woocommerce-invalid-required-field");

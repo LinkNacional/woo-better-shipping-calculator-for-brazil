@@ -154,26 +154,8 @@ document.addEventListener("DOMContentLoaded", function () {
     })
 
     function handleGenderValidationOnSubmit(event) {
-        const genderInput = document.querySelector('select[name="woo_better_gender"]');
-        const genderContainer = genderInput ? genderInput.closest('.wc-block-components-address-form__gender') : null;
-        const genderError = genderContainer ? genderContainer.querySelector('.wc-block-components-validation-error') : null;
-
-        if (genderInput && genderContainer) {
-            const isValid = validateGenderField(genderInput, genderContainer);
-            
-            // Se campo está vazio ou inválido, bloquear submissão
-            if (!genderInput.value.trim() || !isValid) {
-                event.stopPropagation();
-                event.preventDefault();
-                
-                if (genderError) {
-                    genderError.style.display = 'block';
-                }
-                
-                // Scroll para o campo com erro
-                genderInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
+        // Remove validação obrigatória - campo é opcional
+        // O usuário pode deixar vazio sem bloqueio do checkout
     }
 
     checkoutFieldObserver.observe(document.body, { childList: true, subtree: true })
@@ -341,9 +323,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Adicionar opções com os valores corretos (texto traduzido como value)
         const options = [
-            { value: '', text: 'Selecione...', disabled: true, dataAlternateValues: '[Selecione um gênero]' },
+            { value: '', text: 'Selecione...', disabled: false, dataAlternateValues: '[Selecione um gênero]' },
             { value: 'Masculino', text: 'Masculino', dataAlternateValues: '[Masculino]' },
             { value: 'Feminino', text: 'Feminino', dataAlternateValues: '[Feminino]' },
+            { value: 'Não-binário', text: 'Não-binário', dataAlternateValues: '[Não-binário]' },
             { value: 'Outro', text: 'Outro', dataAlternateValues: '[Outro]' },
             { value: 'Prefiro não dizer', text: 'Prefiro não dizer', dataAlternateValues: '[Prefiro não dizer]' }
         ];
@@ -352,19 +335,15 @@ document.addEventListener("DOMContentLoaded", function () {
             const option = document.createElement('option');
             option.value = optionData.value;
             option.textContent = optionData.text;
-            if (optionData.disabled) {
-                option.disabled = true;
-            }
             if (optionData.dataAlternateValues) {
                 option.setAttribute('data-alternate-values', optionData.dataAlternateValues);
             }
             select.appendChild(option);
         });
 
-        // Preencher com valor inicial se existir
-        if (initialValue) {
-            select.value = initialValue;
-        }
+        // Sempre definir o valor explicitamente (garantir "Selecione..." quando vazio)
+        select.value = initialValue || '';
+        console.log(initialValue)
 
         // Criar SVG da seta (seguindo padrão do WooCommerce)
         const expandSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -466,7 +445,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let errorMessage = errorDiv ? errorDiv.querySelector('span') : null;
 
         // Lista de gêneros válidos (usando valores corretos - textos traduzidos)
-        const validGenders = ['', 'Masculino', 'Feminino', 'Outro', 'Prefiro não dizer'];
+        const validGenders = ['', 'Masculino', 'Feminino', 'Não-binário', 'Outro', 'Prefiro não dizer'];
         
         if (genderValue && !validGenders.includes(genderValue)) {
             if (errorMessage) errorMessage.textContent = 'Por favor, selecione uma opção válida.';

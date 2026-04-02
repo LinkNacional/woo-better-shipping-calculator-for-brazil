@@ -676,13 +676,14 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
                 'type'        => 'select',
                 'options'     => array(
-                    ''                                                    => __('Selecione o gênero', 'woo-better-shipping-calculator-for-brazil'),
+                    ''                                                    => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
                     __('Masculino', 'woo-better-shipping-calculator-for-brazil')      => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
                     __('Feminino', 'woo-better-shipping-calculator-for-brazil')       => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Não-binário', 'woo-better-shipping-calculator-for-brazil')    => __('Não-binário', 'woo-better-shipping-calculator-for-brazil'),
                     __('Outro', 'woo-better-shipping-calculator-for-brazil')          => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
                     __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
                 ),
-                'required'    => true,
+                'required'    => false,
                 'class'       => array('form-row-wide'),
                 'priority'    => 26,
             );
@@ -931,8 +932,8 @@ class WcBetterShippingCalculatorForBrazil
         // Hook para validação de CPF/CNPJ no checkout
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_person_type_documents');
         
-        // Hook para validação de birthdate e gender no checkout
-        $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_birthdate_and_gender');
+        // Hook para validação de data de nascimento no checkout
+        $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_birthdate_value');
         
         // Hooks para controlar campos da calculadora de frete no carrinho
         $this->loader->add_filter('woocommerce_shipping_calculator_enable_country', $this, 'maybe_disable_cart_fields');
@@ -1415,9 +1416,10 @@ class WcBetterShippingCalculatorForBrazil
                 'label' => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
                 'type'  => 'select',
                 'options' => array(
-                    '' => __('Selecione', 'woo-better-shipping-calculator-for-brazil'),
+                    '' => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
                     __('Masculino', 'woo-better-shipping-calculator-for-brazil') => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
                     __('Feminino', 'woo-better-shipping-calculator-for-brazil') => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Não-binário', 'woo-better-shipping-calculator-for-brazil') => __('Não-binário', 'woo-better-shipping-calculator-for-brazil'),
                     __('Outro', 'woo-better-shipping-calculator-for-brazil') => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
                     __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
                 ),
@@ -2079,6 +2081,7 @@ class WcBetterShippingCalculatorForBrazil
                 $gender_labels = [
                     __('Masculino', 'woo-better-shipping-calculator-for-brazil') => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
                     __('Feminino', 'woo-better-shipping-calculator-for-brazil') => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Não-binário', 'woo-better-shipping-calculator-for-brazil') => __('Não-binário', 'woo-better-shipping-calculator-for-brazil'),
                     __('Outro', 'woo-better-shipping-calculator-for-brazil') => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
                     __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
                 ];
@@ -2411,9 +2414,9 @@ class WcBetterShippingCalculatorForBrazil
     }
     
     /**
-     * Valida campos de birthdate e gender no checkout
+     * Valida campo de data de nascimento no checkout
      */
-    public function validate_birthdate_and_gender() {
+    public function validate_birthdate_value() {
         // Verifica se é Brasil
         if (!$this->is_brazil_checkout()) {
             return;
@@ -2421,9 +2424,8 @@ class WcBetterShippingCalculatorForBrazil
         
         // Captura dados do formulário
         $billing_birthdate = isset($_POST['billing_birthdate']) ? sanitize_text_field(wp_unslash($_POST['billing_birthdate'])) : '';
-        $billing_gender = isset($_POST['billing_gender']) ? sanitize_text_field(wp_unslash($_POST['billing_gender'])) : '';
         
-        // Validação de data de nascimento (idade mínima 18 anos)
+        // Validação de data de nascimento
         if (!empty($billing_birthdate)) {
             $birthdate_validation = $this->validate_birthdate($billing_birthdate);
             if (!$birthdate_validation['is_valid']) {
@@ -2432,14 +2434,7 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
         
-        // Validação de gênero (opções válidas)
-        if (!empty($billing_gender)) {
-            $gender_validation = $this->validate_gender($billing_gender);
-            if (!$gender_validation['is_valid']) {
-                wc_add_notice($gender_validation['message'], 'error');
-                return;
-            }
-        }
+        // Gênero é opcional - não há validação obrigatória
     }
     
     /**
@@ -2486,26 +2481,7 @@ class WcBetterShippingCalculatorForBrazil
         ];
     }
     
-    /**
-     * Valida gênero (opções válidas)
-     * @param string $gender Valor do gênero
-     * @return array ['is_valid' => bool, 'message' => string]
-     */
-    private function validate_gender($gender) {
-        $valid_genders = ['Masculino', 'Feminino', 'Outro', 'Prefiro não dizer'];
-        
-        if (!in_array($gender, $valid_genders, true)) {
-            return [
-                'is_valid' => false,
-                'message' => sprintf('Gênero inválido: "%s". As opções válidas são: %s.', $gender, implode(', ', $valid_genders))
-            ];
-        }
-        
-        return [
-            'is_valid' => true,
-            'message' => ''
-        ];
-    }
+
     
     /**
      * Formata CPF baseado na configuração de máscara
@@ -3625,11 +3601,10 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // Guarda os dados de gênero na sessão e no perfil do usuário
-        if (!empty($billing_gender)) {
-            WC()->session->set( 'billing_gender', $billing_gender );
-            if (is_user_logged_in()) {
-                update_user_meta( get_current_user_id(), 'billing_gender', $billing_gender );
-            }
+        // CORREÇÃO: Sempre salva quando habilitado para sobrescrever valores antigos "Masculino"
+        WC()->session->set( 'billing_gender', $billing_gender );
+        if (is_user_logged_in()) {
+            update_user_meta( get_current_user_id(), 'billing_gender', $billing_gender );
         }
     }
 
@@ -4823,10 +4798,8 @@ class WcBetterShippingCalculatorForBrazil
                 $billing_gender = sanitize_text_field(wp_unslash($_POST['billing_gender']));
             }
 
-            // Salva o gênero
-            if (!empty($billing_gender)) {
-                $order->update_meta_data('_billing_gender', $billing_gender);
-            }
+            // CORREÇÃO: Sempre salva gênero quando habilitado para evitar dados antigos "Masculino"
+            $order->update_meta_data('_billing_gender', $billing_gender);
         }
     }
 
@@ -4845,10 +4818,8 @@ class WcBetterShippingCalculatorForBrazil
             // Captura dos dados do checkout tradicional
             $billing_gender = isset($_POST['billing_gender']) ? sanitize_text_field(wp_unslash($_POST['billing_gender'])) : '';
 
-            // Salva o gênero
-            if (!empty($billing_gender)) {
-                $order->update_meta_data('_billing_gender', $billing_gender);
-            }
+            // CORREÇÃO: Sempre salva gênero quando habilitado para evitar dados antigos "Masculino"
+            $order->update_meta_data('_billing_gender', $billing_gender);
         }
     }
 
@@ -5356,6 +5327,7 @@ class WcBetterShippingCalculatorForBrazil
                                 ''                                                    => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
                                 __('Masculino', 'woo-better-shipping-calculator-for-brazil')      => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
                                 __('Feminino', 'woo-better-shipping-calculator-for-brazil')       => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
+                                __('Não-binário', 'woo-better-shipping-calculator-for-brazil')    => __('Não-binário', 'woo-better-shipping-calculator-for-brazil'),
                                 __('Outro', 'woo-better-shipping-calculator-for-brazil')          => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
                                 __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
                             ),
@@ -5591,7 +5563,7 @@ class WcBetterShippingCalculatorForBrazil
         if ($gender_enabled === 'yes') {
             $fields['billing_gender'] = array(
                 'label'       => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => true,
+                'required'    => false,
                 'class'       => array('form-row-wide'),
                 'priority'    => 26,
                 'type'        => 'select',
@@ -5599,6 +5571,7 @@ class WcBetterShippingCalculatorForBrazil
                     ''                                                    => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
                     __('Masculino', 'woo-better-shipping-calculator-for-brazil')      => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
                     __('Feminino', 'woo-better-shipping-calculator-for-brazil')       => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Não-binário', 'woo-better-shipping-calculator-for-brazil')    => __('Não-binário', 'woo-better-shipping-calculator-for-brazil'),
                     __('Outro', 'woo-better-shipping-calculator-for-brazil')          => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
                     __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
                 )
@@ -5915,8 +5888,9 @@ class WcBetterShippingCalculatorForBrazil
                 update_user_meta($user_id, 'billing_birthdate', $birthdate);
             }
             
-            if ($gender_enabled === 'yes' && isset($_POST['billing_gender'])) {
-                $gender = sanitize_text_field(wp_unslash($_POST['billing_gender']));
+            // CORREÇÃO: Sempre salva gênero quando habilitado para sobrescrever valores antigos "Masculino"
+            if ($gender_enabled === 'yes') {
+                $gender = isset($_POST['billing_gender']) ? sanitize_text_field(wp_unslash($_POST['billing_gender'])) : '';
                 update_user_meta($user_id, 'billing_gender', $gender);
             }
         }
