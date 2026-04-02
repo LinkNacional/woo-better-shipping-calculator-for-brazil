@@ -390,13 +390,8 @@ document.addEventListener("DOMContentLoaded", function () {
         minDateObj.setFullYear(now.getFullYear() - 120);
         const minDate = minDateObj.toISOString().split('T')[0]; // 120 anos atrás
         
-        // Definir data máxima baseada na idade mínima (18 anos)        
-        const maxAgeObj = new Date();
-        maxAgeObj.setFullYear(now.getFullYear() - 18);
-        const maxAgeDate = maxAgeObj.toISOString().split('T')[0];
-        
         input.setAttribute('min', minDate);
-        input.setAttribute('max', maxAgeDate); // 18 anos máximo
+        input.setAttribute('max', maxDate); // Data máxima é hoje
 
         // Capturar dimensões do campo lastname para manter consistência visual
         const lastNameDimensions = getLastNameFieldDimensions(containerType);
@@ -528,14 +523,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 return false
             }
             
-            // Verifica idade mínima (18 anos)
-            const minAge = new Date()
-            minAge.setFullYear(now.getFullYear() - 18)
-            
-            if (dateObj > minAge) {
-                if (errorMessage) errorMessage.textContent = 'Idade mínima de 18 anos é necessária.';
-                return false
-            }
+
         }
         
         return true

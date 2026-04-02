@@ -16,13 +16,8 @@ document.addEventListener("DOMContentLoaded", function () {
         minDateObj.setFullYear(now.getFullYear() - 120);
         const minDate = minDateObj.toISOString().split('T')[0]; // 120 anos atrás
         
-        // Definir data máxima baseada na idade mínima (18 anos)
-        const maxAgeObj = new Date();
-        maxAgeObj.setFullYear(now.getFullYear() - 18);
-        const maxAgeDate = maxAgeObj.toISOString().split('T')[0];
-        
         billingBirthdateField.setAttribute('min', minDate);
-        billingBirthdateField.setAttribute('max', maxAgeDate); // 18 anos máximo
+        billingBirthdateField.setAttribute('max', maxDate); // Data máxima é hoje
     }
     
     // Preenche o campo de data de nascimento com valores vindos do wp_localize_script, se existirem
@@ -81,15 +76,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
                 
-                // Verifica se a pessoa não é muito nova (mínimo 18 anos)
-                const minAge = new Date();
-                minAge.setFullYear(now.getFullYear() - 18);
-                
-                if (dateObj > minAge) {
-                    if (billingBirthdateFieldWrapper) {
-                        billingBirthdateFieldWrapper.classList.add("woocommerce-invalid", "woocommerce-invalid-required-field");
-                    }
-                }
+
             }
             
             // Trigger update do checkout se jQuery estiver disponível

@@ -2443,7 +2443,7 @@ class WcBetterShippingCalculatorForBrazil
     }
     
     /**
-     * Valida data de nascimento (idade mínima 18 anos)
+     * Valida data de nascimento
      * @param string $birthdate Data no formato YYYY-MM-DD
      * @return array ['is_valid' => bool, 'message' => string]
      */
@@ -2470,13 +2470,7 @@ class WcBetterShippingCalculatorForBrazil
         // Calcula idade
         $age = $now->diff($date_obj)->y;
         
-        // Verifica idade mínima (18 anos)
-        if ($age < 18) {
-            return [
-                'is_valid' => false,
-                'message' => sprintf('Você deve ter 18 anos ou mais para finalizar a compra. Idade atual: %d anos.', $age)
-            ];
-        }
+
         
         // Verifica idade máxima razoável (120 anos)
         if ($age > 120) {
