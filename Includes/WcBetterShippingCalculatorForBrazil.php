@@ -85,7 +85,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.12.0';
+            $this->version = '4.12.1';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -5715,7 +5715,7 @@ class WcBetterShippingCalculatorForBrazil
 
         // Reposicionamento do CEP quando cep_position estiver ativo
         if ($cep_position === 'yes' && isset($fields['billing_postcode'])) {
-            $fields['billing_postcode']['priority'] = 35;
+            $fields['billing_postcode']['priority'] = 32;
         }
 
         if ($cep_position === 'yes' && $fill_checkout_address === 'yes') {

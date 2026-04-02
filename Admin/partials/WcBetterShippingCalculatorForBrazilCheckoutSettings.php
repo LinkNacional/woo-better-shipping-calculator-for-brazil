@@ -25,10 +25,10 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     'type'  => 'title',
                     'id'    => 'woo_better_calc_title_checkout'
                 ),
-                'enable_auto_postcode_search' => array(
+                'cep_field_position' => array(
                     'title'    => __('Destaque do Campo CEP', 'woo-better-shipping-calculator-for-brazil'),
                     'desc_tip' => false,
-                    'id'       => 'woo_better_calc_enable_auto_postcode_search',
+                    'id'       => 'woo_better_calc_cep_field_position',
                     'default'  => 'yes',
                     'type'     => 'radio',
                     'options'  => array(

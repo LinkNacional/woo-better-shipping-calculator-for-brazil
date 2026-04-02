@@ -1,3 +1,6 @@
+# 4.12.1 - 02/04/26
+* Ajuste: Nas configuração de destaque do CEP.
+
 # 4.12.0 - 02/04/26
 * Adição: Novos campos de data de nascimento e gênero.
 * Ajuste: Nova opção para detecção de frete gratuito.
