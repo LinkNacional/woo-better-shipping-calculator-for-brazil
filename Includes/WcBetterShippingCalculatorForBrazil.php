@@ -4198,26 +4198,40 @@ class WcBetterShippingCalculatorForBrazil
         
         $line_total = $product_price * $quantity;
 
-        // Cria um pacote de envio personalizado
+        // 1. Cria uma chave simulada única para não dar conflito
+        $simulated_key = 'simulated_' . wp_rand(1000, 99999);
+
+        // Estrutura EXATA de um item no carrinho do WooCommerce (evita quebra de plugins)
+        $simulated_item = array(
+            'key'               => $simulated_key,
+            'product_id'        => $product_id,
+            'variation_id'      => $variation_id,
+            'variation'         => array(),
+            'quantity'          => $quantity,
+            'data'              => $product,
+            'line_total'        => $line_total,
+            'line_subtotal'     => $line_total,
+            'line_tax'          => 0,
+            'line_subtotal_tax' => 0,
+            'line_tax_data'     => array('total' => array(), 'subtotal' => array()),
+        );
+
+        // 2. Salva o carrinho ORIGINAL do usuário (apenas na memória do servidor)
+        $original_cart_contents = WC()->cart->cart_contents;
+
+        // 3. Substitui TEMPORARIAMENTE o carrinho apenas com o nosso item simulado
+        // Isso resolve o erro do Melhor Envio que tenta ler direto do WC()->cart
+        WC()->cart->cart_contents = array( $simulated_key => $simulated_item );
+
+        // 4. Monta o pacote referenciando o carrinho que acabamos de injetar
         $package = array(
-            'contents' => array(
-                $product_id => array(
-                    'product_id' => $product_id,
-                    'variation_id' => $variation_id,
-                    'quantity'   => $quantity,
-                    'data'       => $product,
-                    'line_total' => $line_total,
-                    'line_subtotal' => $line_total,
-                    'line_tax' => 0,
-                    'line_subtotal_tax' => 0,
-                ),
-            ),
-            'contents_cost' => $line_total,
+            'contents'        => WC()->cart->cart_contents,
+            'contents_cost'   => $line_total,
             'applied_coupons' => array(),
-            'user' => array(
+            'user'            => array(
                 'ID' => get_current_user_id(),
             ),
-            'destination' => array(
+            'destination'     => array(
                 'country'   => $shipping_data['country'],
                 'state'     => $shipping_data['state'],
                 'postcode'  => $shipping_data['postcode'],
@@ -4227,97 +4241,43 @@ class WcBetterShippingCalculatorForBrazil
             ),
         );
 
-        // Calcula o frete sem afetar o carrinho atual
-        // Salva o estado atual do carrinho e customer
-        $saved_cart_contents = WC()->cart->get_cart_contents();
-        $saved_customer_shipping = array(
-            'country'   => WC()->customer->get_shipping_country(),
-            'state'     => WC()->customer->get_shipping_state(),
-            'postcode'  => WC()->customer->get_shipping_postcode(),
-            'city'      => WC()->customer->get_shipping_city(),
-        );
-        
-        // Define temporariamente o endereço de entrega para o cálculo
-        WC()->customer->set_shipping_location(
-            $shipping_data['country'],
-            $shipping_data['state'], 
-            $shipping_data['postcode'],
-            $shipping_data['city']
-        );
-        
-        // Salva o carrinho atual temporariamente
-        $original_cart_contents = WC()->cart->get_cart_contents();
-        
-        // Limpa o carrinho temporariamente e adiciona apenas o produto para consulta
-        WC()->cart->empty_cart(false); // false = não triggerar hooks
-        
-        // Prepara dados da variação se for um produto variável
-        $variation_data = array();
-        if ($variation_id > 0 && $product->is_type('variation')) {
-            $variation_data = $product->get_variation_attributes();
-        }
-        
-        WC()->cart->add_to_cart($product_id, $quantity, $variation_id, $variation_data);
-        
-        // Calcula o frete usando o sistema padrão do WooCommerce
-        WC()->shipping()->reset_shipping();
-        WC()->cart->calculate_totals();
-        
-        // Obtém os pacotes de envio calculados
-        $packages = WC()->shipping()->get_packages();
-        
+        // 5. Calcula o frete para este pacote
+        $shipping = WC()->shipping();
+        $shipping->load_shipping_methods();
+        $calculated_package = $shipping->calculate_shipping_for_package( $package, 0 );
+
+        // 6. RESTAURA O CARRINHO ORIGINAL DO USUÁRIO IMEDIATAMENTE!
+        // Como não usamos o set_session(), o banco de dados do cliente não é tocado.
+        WC()->cart->cart_contents = $original_cart_contents;
+
+        // Extração dos dados de frete para retornar na API
         $shipping_rates = array();
         $currency_symbol = get_woocommerce_currency_symbol();
         $currency_minor_unit = wc_get_price_decimals();
 
         $product_info = array(
-            'name'     => $product->get_name(),
-            'quantity' => $quantity, 
-            'currency_symbol' => $currency_symbol,
+            'name'                => $product->get_name(),
+            'quantity'            => $quantity, 
+            'currency_symbol'     => $currency_symbol,
             'currency_minor_unit' => $currency_minor_unit,
         );
 
-        // Extrai as taxas de envio dos pacotes
-        foreach ($packages as $package) {
-            if (isset($package['rates']) && is_array($package['rates'])) {
-                foreach ($package['rates'] as $rate) {
-                    $shipping_rates[] = array(
-                        'id'    => $rate->get_id(),
-                        'label' => $rate->get_label(),
-                        'cost'  => $rate->get_cost(),
-                    );
-                }
+        // Filtra as opções de envio devolvidas pelo Melhor Envio e demais métodos
+        if ( isset( $calculated_package['rates'] ) && is_array( $calculated_package['rates'] ) ) {
+            foreach ( $calculated_package['rates'] as $rate ) {
+                $shipping_rates[] = array(
+                    'id'    => $rate->get_id(),
+                    'label' => $rate->get_label(),
+                    'cost'  => $rate->get_cost(),
+                );
             }
         }
-        
-        // Restaura o carrinho original
-        WC()->cart->empty_cart(false); // false = não triggerar hooks
-        foreach ($original_cart_contents as $cart_item_key => $cart_item) {
-            WC()->cart->add_to_cart(
-                $cart_item['product_id'],
-                $cart_item['quantity'],
-                $cart_item['variation_id'],
-                $cart_item['variation'],
-                $cart_item
-            );
-        }
-        
-        // Recalcula totais com o carrinho restaurado
-        WC()->cart->calculate_totals();
-        
-        // Restaura o endereço original do customer sem afetar o carrinho
-        WC()->customer->set_shipping_location(
-            $saved_customer_shipping['country'],
-            $saved_customer_shipping['state'],
-            $saved_customer_shipping['postcode'],
-            $saved_customer_shipping['city']
-        );
 
-        // Retorna os valores calculados
+        // Retorna o JSON de sucesso
         wp_send_json_success(array(
-            'message' => 'Endereço de envio registrado com sucesso e frete calculado.',
-            'product' => $product_info, // Informações do produto
-            'shipping_rates' => $shipping_rates, // Taxas de envio
+            'message'        => 'Endereço de envio registrado com sucesso e frete calculado.',
+            'product'        => $product_info,
+            'shipping_rates' => $shipping_rates,
         ));
     }
 
