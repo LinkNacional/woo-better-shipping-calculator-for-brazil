@@ -931,6 +931,9 @@ class WcBetterShippingCalculatorForBrazil
         // Hook para validação de CPF/CNPJ no checkout
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_person_type_documents');
         
+        // Hook para validação de birthdate e gender no checkout
+        $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_birthdate_and_gender');
+        
         // Hooks para controlar campos da calculadora de frete no carrinho
         $this->loader->add_filter('woocommerce_shipping_calculator_enable_country', $this, 'maybe_disable_cart_fields');
         $this->loader->add_filter('woocommerce_shipping_calculator_enable_state', $this, 'maybe_disable_cart_fields');
@@ -2405,6 +2408,109 @@ class WcBetterShippingCalculatorForBrazil
             return $billing_country === 'BR' || $shipping_country === 'BR';
         }
         return true; // Assume Brasil por padrão
+    }
+    
+    /**
+     * Valida campos de birthdate e gender no checkout
+     */
+    public function validate_birthdate_and_gender() {
+        // Verifica se é Brasil
+        if (!$this->is_brazil_checkout()) {
+            return;
+        }
+        
+        // Captura dados do formulário
+        $billing_birthdate = isset($_POST['billing_birthdate']) ? sanitize_text_field(wp_unslash($_POST['billing_birthdate'])) : '';
+        $billing_gender = isset($_POST['billing_gender']) ? sanitize_text_field(wp_unslash($_POST['billing_gender'])) : '';
+        
+        // Validação de data de nascimento (idade mínima 18 anos)
+        if (!empty($billing_birthdate)) {
+            $birthdate_validation = $this->validate_birthdate($billing_birthdate);
+            if (!$birthdate_validation['is_valid']) {
+                wc_add_notice($birthdate_validation['message'], 'error');
+                return;
+            }
+        }
+        
+        // Validação de gênero (opções válidas)
+        if (!empty($billing_gender)) {
+            $gender_validation = $this->validate_gender($billing_gender);
+            if (!$gender_validation['is_valid']) {
+                wc_add_notice($gender_validation['message'], 'error');
+                return;
+            }
+        }
+    }
+    
+    /**
+     * Valida data de nascimento (idade mínima 18 anos)
+     * @param string $birthdate Data no formato YYYY-MM-DD
+     * @return array ['is_valid' => bool, 'message' => string]
+     */
+    private function validate_birthdate($birthdate) {
+        // Verifica se a data é válida
+        $date_obj = \DateTime::createFromFormat('Y-m-d', $birthdate);
+        if (!$date_obj || $date_obj->format('Y-m-d') !== $birthdate) {
+            return [
+                'is_valid' => false,
+                'message' => 'Formato de data de nascimento inválido.'
+            ];
+        }
+        
+        $now = new \DateTime();
+        
+        // Verifica se a data não é futura
+        if ($date_obj > $now) {
+            return [
+                'is_valid' => false,
+                'message' => 'A data de nascimento não pode ser no futuro.'
+            ];
+        }
+        
+        // Calcula idade
+        $age = $now->diff($date_obj)->y;
+        
+        // Verifica idade mínima (18 anos)
+        if ($age < 18) {
+            return [
+                'is_valid' => false,
+                'message' => sprintf('Você deve ter 18 anos ou mais para finalizar a compra. Idade atual: %d anos.', $age)
+            ];
+        }
+        
+        // Verifica idade máxima razoável (120 anos)
+        if ($age > 120) {
+            return [
+                'is_valid' => false,
+                'message' => 'Por favor, verifique a data de nascimento. A idade não pode ser superior a 120 anos.'
+            ];
+        }
+        
+        return [
+            'is_valid' => true,
+            'message' => ''
+        ];
+    }
+    
+    /**
+     * Valida gênero (opções válidas)
+     * @param string $gender Valor do gênero
+     * @return array ['is_valid' => bool, 'message' => string]
+     */
+    private function validate_gender($gender) {
+        $valid_genders = ['Masculino', 'Feminino', 'Outro', 'Prefiro não dizer'];
+        
+        if (!in_array($gender, $valid_genders, true)) {
+            return [
+                'is_valid' => false,
+                'message' => sprintf('Gênero inválido: "%s". As opções válidas são: %s.', $gender, implode(', ', $valid_genders))
+            ];
+        }
+        
+        return [
+            'is_valid' => true,
+            'message' => ''
+        ];
     }
     
     /**
