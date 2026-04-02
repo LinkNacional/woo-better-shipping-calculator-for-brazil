@@ -5715,7 +5715,7 @@ class WcBetterShippingCalculatorForBrazil
 
         // Reposicionamento do CEP quando cep_position estiver ativo
         if ($cep_position === 'yes' && isset($fields['billing_postcode'])) {
-            $fields['billing_postcode']['priority'] = 35;
+            $fields['billing_postcode']['priority'] = 32;
         }
 
         if ($cep_position === 'yes' && $fill_checkout_address === 'yes') {
