@@ -149,6 +149,7 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 # 4.12.0 - 02/04/26
 * Added: New birth date and gender fields.
+* Enhancement: New option for free shipping detection.
 
 # 4.11.0 - 01/04/26
 * Enhancement: New free shipping detection system through shipping zones.

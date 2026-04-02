@@ -1,5 +1,6 @@
 # 4.12.0 - 02/04/26
 * Adição: Novos campos de data de nascimento e gênero.
+* Ajuste: Nova opção para detecção de frete gratuito.
 
 # 4.11.0 - 01/04/26
 * Ajuste: Novo sistema de detecção de frete grátis através da área de entrega.
