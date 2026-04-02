@@ -343,7 +343,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Sempre definir o valor explicitamente (garantir "Selecione..." quando vazio)
         select.value = initialValue || '';
-        console.log(initialValue)
 
         // Criar SVG da seta (seguindo padrão do WooCommerce)
         const expandSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
