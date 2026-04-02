@@ -208,19 +208,25 @@ class WcBetterShippingCalculatorForBrazil
         <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
             <div style="height: 100%; padding: 10px;">
                 <strong style="font-size: 18px;">🚀 Calculadora de Frete e Campos Checkout para o Brasil</strong>
-                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                    <p>Veja as novas funcionalidades de <strong>CHECKOUT</strong>, como preenchimento automático de endereço, campo de CEP em destaque, telefone com código do país e muito mais!</p>
-                    <a href="<?php echo esc_url($settings_url); ?>" class="button button-primary" style="white-space: normal; word-break: break-word; text-align: center; line-height: normal; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 350px;">
-                        Configure o plugin de acordo com sua necessidade
+                
+                <p style="font-size: 14px; margin-top: 10px;">
+                    <strong>Agora é oficial:</strong> somos a melhor alternativa ao "Brazilian Fields"! Nossos campos de checkout agora são compatíveis com shortcodes e temas em blocos, com integração total ao Melhor Envio, Correios, entre outros.
+                </p>
+                
+                <p style="font-size: 14px;">
+                    Aproveite também o novo recurso de frete grátis por valor, agora integrado aos métodos de entrega do WooCommerce. Precisa de Suporte WordPress? Entre no Grupo do <a href="https://chat.whatsapp.com/IjzHhDXwmzGLDnBfOibJKO" target="_blank" rel="noopener noreferrer">WhatsApp</a> ou <a href="https://t.me/wpprobr" target="_blank" rel="noopener noreferrer">Telegram</a>.
+                </p>
+
+                <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
+                    <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout" class="button button-primary" style="display: flex; align-items: center; justify-content: center;">
+                        Configurar campos do Brasil
+                    </a>
+                    <a href="admin.php?page=wc-settings&tab=wc-better-calc" class="button button-secondary" style="display: flex; align-items: center; justify-content: center;">
+                        Configurar Calculadora de Frete
                     </a>
                 </div>
-                
-                <div style="margin-top: 15px;">
-                    <p style="margin: 0; font-weight: 500;">
-                        ✨ <strong>ATUALIZADO:</strong> Todas as funcionalidades disponíveis no editor de blocos agora estão disponíveis no shortcode.
-                    </p>
-                </div>
             </div>
+            <button type="button" class="notice-dismiss"><span class="screen-reader-text">Dispensar este aviso.</span></button>
         </div>
         <?php
     }
@@ -647,6 +653,38 @@ class WcBetterShippingCalculatorForBrazil
                 'required'    => false,
                 'class'       => array('form-row-wide'),
                 'priority'    => 55,
+            );
+        }
+
+        // Adiciona campo de data de nascimento
+        $birthdate_field = get_option('woo_better_calc_enable_birthdate_field', 'no');
+        if ($birthdate_field === 'yes') {
+            $fields['billing']['billing_birthdate'] = array(
+                'label'       => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('dd/mm/aaaa', 'woo-better-shipping-calculator-for-brazil'),
+                'type'        => 'date',
+                'required'    => true,
+                'class'       => array('form-row-wide'),
+                'priority'    => 25,
+            );
+        }
+
+        // Adiciona campo de gênero
+        $gender_field = get_option('woo_better_calc_enable_gender_field', 'no');
+        if ($gender_field === 'yes') {
+            $fields['billing']['billing_gender'] = array(
+                'label'       => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
+                'type'        => 'select',
+                'options'     => array(
+                    ''                                                    => __('Selecione o gênero', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Masculino', 'woo-better-shipping-calculator-for-brazil')      => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Feminino', 'woo-better-shipping-calculator-for-brazil')       => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Outro', 'woo-better-shipping-calculator-for-brazil')          => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
+                ),
+                'required'    => true,
+                'class'       => array('form-row-wide'),
+                'priority'    => 26,
             );
         }
 
@@ -1357,6 +1395,33 @@ class WcBetterShippingCalculatorForBrazil
             'show'  => false
         );
         
+        // Campo de data de nascimento
+        $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
+        if ($birthdate_enabled === 'yes') {
+            $fields['birthdate'] = array(
+                'label' => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'date',
+                'show'  => false
+            );
+        }
+        
+        // Campo de gênero
+        $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
+        if ($gender_enabled === 'yes') {
+            $fields['gender'] = array(
+                'label' => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'select',
+                'options' => array(
+                    '' => __('Selecione', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Masculino', 'woo-better-shipping-calculator-for-brazil') => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Feminino', 'woo-better-shipping-calculator-for-brazil') => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Outro', 'woo-better-shipping-calculator-for-brazil') => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
+                ),
+                'show'  => false
+            );
+        }
+        
         // Adicionar qualquer campo restante não processado
         foreach ($original_fields as $key => $field) {
             if (!isset($fields[$key])) {
@@ -1513,7 +1578,6 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
         
-        
         // Salvar campos de faturação
         if (isset($_POST['_billing_persontype'])) {
             $order->update_meta_data('_billing_persontype', sanitize_text_field(wp_unslash($_POST['_billing_persontype'])));
@@ -1533,6 +1597,14 @@ class WcBetterShippingCalculatorForBrazil
         
         if (isset($_POST['_billing_neighborhood'])) {
             $order->update_meta_data('_billing_neighborhood', sanitize_text_field(wp_unslash($_POST['_billing_neighborhood'])));
+        }
+        
+        if (isset($_POST['_billing_birthdate'])) {
+            $order->update_meta_data('_billing_birthdate', sanitize_text_field(wp_unslash($_POST['_billing_birthdate'])));
+        }
+
+        if (isset($_POST['_billing_gender'])) {
+            $order->update_meta_data('_billing_gender', sanitize_text_field(wp_unslash($_POST['_billing_gender'])));
         }
         
         // Salvar campos de entrega
@@ -1873,7 +1945,7 @@ class WcBetterShippingCalculatorForBrazil
     private function prepare_billing_display_data($order, $person_type, $phone_mask_enabled, $billing_persontype, $billing_cpf, $billing_cnpj, $billing_phone_country_code)
     {
         $display_data = [];
-        
+
         // Convert numeric persontype to string (1 = physical, 2 = legal)
         if (is_numeric($billing_persontype)) {
             $billing_persontype = ($billing_persontype == '1') ? 'physical' : 'legal';
@@ -1971,6 +2043,50 @@ class WcBetterShippingCalculatorForBrazil
                 'value' => $email,
                 'is_clickable' => true
             ];
+        }
+        
+        // Birthdate data (seguindo padrão do CPF)
+        $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
+        if ($birthdate_enabled === 'yes') {
+            $billing_birthdate = $order->get_meta('_billing_birthdate');
+            if (!empty($billing_birthdate)) {
+                // Calculate age from birthdate
+                $birthdate_obj = \DateTime::createFromFormat('Y-m-d', $billing_birthdate);
+                if ($birthdate_obj) {
+                    $today = new \DateTime();
+                    $age = $today->diff($birthdate_obj)->y;
+                    $formatted_birthdate = $birthdate_obj->format('d/m/Y') . ' (' . $age . ' anos)';
+                } else {
+                    $formatted_birthdate = $billing_birthdate;
+                }
+                
+                $display_data['birthdate'] = [
+                    'label' => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
+                    'value' => $formatted_birthdate
+                ];
+            }
+        }
+        
+        // Gender data (seguindo padrão do CPF)
+        $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
+        if ($gender_enabled === 'yes') {
+            $billing_gender = $order->get_meta('_billing_gender');
+            if (!empty($billing_gender)) {
+                // Convert to readable labels (valores são textos traduzidos)
+                $gender_labels = [
+                    __('Masculino', 'woo-better-shipping-calculator-for-brazil') => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Feminino', 'woo-better-shipping-calculator-for-brazil') => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Outro', 'woo-better-shipping-calculator-for-brazil') => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
+                ];
+                
+                $gender_label = isset($gender_labels[$billing_gender]) ? $gender_labels[$billing_gender] : $billing_gender;
+                
+                $display_data['gender'] = [
+                    'label' => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
+                    'value' => $gender_label
+                ];
+            }
         }
         
         return $display_data;
@@ -2405,6 +2521,12 @@ class WcBetterShippingCalculatorForBrazil
         // Processa dados de bairro
         $this->process_neighborhood_from_data($order, $data);
         
+        // Processa dados de data de nascimento
+        $this->process_birthdate_from_data($order, $data);
+        
+        // Processa dados de gênero
+        $this->process_gender_from_data($order, $data);
+        
         $billing_country_code = '';
         $shipping_country_code = '';
         
@@ -2543,6 +2665,12 @@ class WcBetterShippingCalculatorForBrazil
         
         // Processa dados de bairro
         $this->process_neighborhood_from_request($order, $request);
+        
+        // Processa dados de data de nascimento
+        $this->process_birthdate_from_request($order, $request);
+        
+        // Processa dados de gênero
+        $this->process_gender_from_request($order, $request);
         
         $billing_country_code = '';
         $shipping_country_code = '';
@@ -3073,6 +3201,44 @@ class WcBetterShippingCalculatorForBrazil
                     ];
                 },
             ]);
+            
+            // Registra campos para data de nascimento
+            woocommerce_store_api_register_endpoint_data( [
+                'endpoint'        => 'checkout',
+                'namespace'       => 'woo_better_birthdate',
+                'schema_callback' => function() {
+                    return [
+                        'billing_birthdate' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                    ];
+                },
+                'data_callback' => function() {
+                    return [
+                        'billing_birthdate'  => '', 
+                    ];
+                },
+            ]);
+
+            // Registra campos para gênero
+            woocommerce_store_api_register_endpoint_data( [
+                'endpoint'        => 'checkout',
+                'namespace'       => 'woo_better_gender',
+                'schema_callback' => function() {
+                    return [
+                        'billing_gender' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                    ];
+                },
+                'data_callback' => function() {
+                    return [
+                        'billing_gender'  => '', 
+                    ];
+                },
+            ]);
         }
 
         if ( function_exists( 'woocommerce_store_api_register_update_callback' ) ) {
@@ -3098,6 +3264,18 @@ class WcBetterShippingCalculatorForBrazil
             woocommerce_store_api_register_update_callback([
                 'namespace' => 'woo_better_neighborhood',
                 'callback'  => [ $this, 'handle_neighborhood_update' ],
+            ]);
+            
+            // Callback para data de nascimento
+            woocommerce_store_api_register_update_callback([
+                'namespace' => 'woo_better_birthdate',
+                'callback'  => [ $this, 'handle_birthdate_update' ],
+            ]);
+            
+            // Callback para gênero
+            woocommerce_store_api_register_update_callback([
+                'namespace' => 'woo_better_gender',
+                'callback'  => [ $this, 'handle_gender_update' ],
             ]);
         }
     }
@@ -3313,6 +3491,48 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
+    public function handle_birthdate_update( $data ) {
+        if (! function_exists('WC') || ! WC()->session ) {
+            return;
+        }
+
+        $billing_birthdate = '';
+
+        // Captura os dados de data de nascimento
+        if ( isset( $data['billing_birthdate'] ) ) {
+            $billing_birthdate = sanitize_text_field( (string) $data['billing_birthdate'] );
+        }
+
+        // Guarda os dados de data de nascimento na sessão e no perfil do usuário
+        if (!empty($billing_birthdate)) {
+            WC()->session->set( 'billing_birthdate', $billing_birthdate );
+            if (is_user_logged_in()) {
+                update_user_meta( get_current_user_id(), 'billing_birthdate', $billing_birthdate );
+            }
+        }
+    }
+
+    public function handle_gender_update( $data ) {
+        if (! function_exists('WC') || ! WC()->session ) {
+            return;
+        }
+
+        $billing_gender = '';
+
+        // Captura os dados de gênero
+        if ( isset( $data['billing_gender'] ) ) {
+            $billing_gender = sanitize_text_field( (string) $data['billing_gender'] );
+        }
+
+        // Guarda os dados de gênero na sessão e no perfil do usuário
+        if (!empty($billing_gender)) {
+            WC()->session->set( 'billing_gender', $billing_gender );
+            if (is_user_logged_in()) {
+                update_user_meta( get_current_user_id(), 'billing_gender', $billing_gender );
+            }
+        }
+    }
+
     public function wc_better_calc_phone_number($locale)
     {
         // Torna o campo phone do shipping obrigatório no Brasil se a opção estiver ativada
@@ -3384,7 +3604,7 @@ class WcBetterShippingCalculatorForBrazil
                 'placeholder' => $placeholder_text,
                 'required'    => true,
                 'class'       => array('form-row-wide'),
-                'priority'    => 26,
+                'priority'    => 27,
                 'type'        => 'text',
                 'autocomplete' => 'off',
                 'custom_attributes' => array(
@@ -3396,19 +3616,19 @@ class WcBetterShippingCalculatorForBrazil
             $fields['billing']['billing_persontype'] = array(
                 'type'        => 'hidden',
                 'required'    => false,
-                'priority'    => 27
+                'priority'    => 28
             );
 
             $fields['billing']['billing_cpf'] = array(
                 'type'        => 'hidden',
                 'required'    => false,
-                'priority'    => 28
+                'priority'    => 29
             );
 
             $fields['billing']['billing_cnpj'] = array(
                 'type'        => 'hidden',
                 'required'    => false,
-                'priority'    => 29
+                'priority'    => 30
             );
 
             // Campo de empresa para pessoa jurídica
@@ -3424,7 +3644,7 @@ class WcBetterShippingCalculatorForBrazil
                         $fields['billing']['billing_company']['required'] = true;
                         $fields['billing']['billing_company']['label'] = __('Nome da Empresa', 'woo-better-shipping-calculator-for-brazil');
                         $fields['billing']['billing_company']['placeholder'] = __('Digite o nome da empresa', 'woo-better-shipping-calculator-for-brazil');
-                        $fields['billing']['billing_company']['priority'] = 30;
+                        $fields['billing']['billing_company']['priority'] = 31;
                         $fields['billing']['billing_company']['class'] = array('form-row-wide');
                     } else {
                         // Se não existir, criar o campo
@@ -3433,7 +3653,7 @@ class WcBetterShippingCalculatorForBrazil
                             'placeholder' => __('Digite o nome da empresa', 'woo-better-shipping-calculator-for-brazil'),
                             'required'    => true,
                             'class'       => array('form-row-wide'),
-                            'priority'    => 30,
+                            'priority'    => 31,
                             'type'        => 'text'
                         );
                     }
@@ -4451,6 +4671,127 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
     }
+
+    /**
+     * Processa os dados de data de nascimento no checkout tradicional
+     *
+     * @param WC_Order $order
+     * @param array $data
+     * @return void
+     */
+    private function process_birthdate_from_data($order, $data)
+    {
+        $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
+        
+        if ($birthdate_enabled === 'yes') {
+            // Captura dos dados do checkout tradicional
+            $billing_birthdate = isset($_POST['billing_birthdate']) ? sanitize_text_field(wp_unslash($_POST['billing_birthdate'])) : '';
+
+            // Salva a data de nascimento
+            if (!empty($billing_birthdate)) {
+                $order->update_meta_data('_billing_birthdate', $billing_birthdate);
+            }
+        }
+    }
+
+    /**
+     * Processa os dados de data de nascimento no checkout de blocos
+     *
+     * @param WC_Order $order
+     * @param WP_REST_Request $request
+     * @return void
+     */
+    private function process_birthdate_from_request($order, $request)
+    {
+        $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
+        
+        if ($birthdate_enabled === 'yes') {
+            // Captura dos dados do request do Block Checkout
+            $extensions = $request->get_param('extensions') ?? [];
+
+            $billing_birthdate = '';
+            
+            // Verifica o namespace dos dados de data de nascimento
+            if (isset($extensions['woo_better_birthdate'])) {
+                $birthdate_data = $extensions['woo_better_birthdate'];
+                
+                if (isset($birthdate_data['billing_birthdate'])) {
+                    $billing_birthdate = sanitize_text_field($birthdate_data['billing_birthdate']);
+                }
+            }
+            
+            // Fallback para $_POST se não encontrar nos extensions
+            if (empty($billing_birthdate) && isset($_POST['billing_birthdate'])) {
+                $billing_birthdate = sanitize_text_field(wp_unslash($_POST['billing_birthdate']));
+            }
+
+            // Salva a data de nascimento
+            if (!empty($billing_birthdate)) {
+                $order->update_meta_data('_billing_birthdate', $billing_birthdate);
+            }
+        }
+    }
+
+    /**
+     * Processa os dados de gênero no checkout de blocos
+     *
+     * @param WC_Order $order
+     * @param WP_REST_Request $request
+     * @return void
+     */
+    private function process_gender_from_request($order, $request)
+    {
+        $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
+        
+        if ($gender_enabled === 'yes') {
+            // Captura dos dados do request do Block Checkout
+            $extensions = $request->get_param('extensions') ?? [];
+            
+            $billing_gender = '';
+            
+            // Verifica o namespace dos dados de gênero
+            if (isset($extensions['woo_better_gender'])) {
+                $gender_data = $extensions['woo_better_gender'];
+                
+                if (isset($gender_data['billing_gender'])) {
+                    $billing_gender = sanitize_text_field($gender_data['billing_gender']);
+                }
+            }
+
+            // Fallback para $_POST se não encontrar nos extensions
+            if (empty($billing_gender) && isset($_POST['billing_gender'])) {
+                $billing_gender = sanitize_text_field(wp_unslash($_POST['billing_gender']));
+            }
+
+            // Salva o gênero
+            if (!empty($billing_gender)) {
+                $order->update_meta_data('_billing_gender', $billing_gender);
+            }
+        }
+    }
+
+    /**
+     * Processa os dados de gênero no checkout tradicional
+     *
+     * @param WC_Order $order
+     * @param array $data
+     * @return void
+     */
+    private function process_gender_from_data($order, $data)
+    {
+        $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
+        
+        if ($gender_enabled === 'yes') {
+            // Captura dos dados do checkout tradicional
+            $billing_gender = isset($_POST['billing_gender']) ? sanitize_text_field(wp_unslash($_POST['billing_gender'])) : '';
+
+            // Salva o gênero
+            if (!empty($billing_gender)) {
+                $order->update_meta_data('_billing_gender', $billing_gender);
+            }
+        }
+    }
+
     /**
      * Função para tornar campos específicos do checkout opcionais
      * Inclui CPF/CNPJ, bairro e outros campos customizados
@@ -4590,6 +4931,8 @@ class WcBetterShippingCalculatorForBrazil
         $order_data['billing_address']['cnpj']         = $this->format_number($order->get_meta('_billing_cnpj'));
         $order_data['billing_address']['number']       = $order->get_meta('_billing_number');
         $order_data['billing_address']['neighborhood'] = $order->get_meta('_billing_neighborhood');
+        $order_data['billing_address']['birthdate']    = $order->get_meta('_billing_birthdate');
+        $order_data['billing_address']['gender']       = $order->get_meta('_billing_gender');
 
         // Shipping fields
         $order_data['shipping_address']['number']       = $order->get_meta('_shipping_number');
@@ -4602,6 +4945,8 @@ class WcBetterShippingCalculatorForBrazil
             $order_data['customer']['billing_address']['cnpj']         = $this->format_number($order->get_meta('_billing_cnpj'));
             $order_data['customer']['billing_address']['number']       = $order->get_meta('_billing_number');
             $order_data['customer']['billing_address']['neighborhood'] = $order->get_meta('_billing_neighborhood');
+            $order_data['customer']['billing_address']['birthdate']    = $order->get_meta('_billing_birthdate');
+            $order_data['customer']['billing_address']['gender']       = $order->get_meta('_billing_gender');
 
             $order_data['customer']['shipping_address']['number']       = $order->get_meta('_shipping_number');
             $order_data['customer']['shipping_address']['neighborhood'] = $order->get_meta('_shipping_neighborhood');
@@ -4627,6 +4972,8 @@ class WcBetterShippingCalculatorForBrazil
         $customer_data['billing_address']['cnpj']         = $this->format_number($customer->get_meta('billing_cnpj'));
         $customer_data['billing_address']['number']       = $customer->get_meta('billing_number');
         $customer_data['billing_address']['neighborhood'] = $customer->get_meta('billing_neighborhood');
+        $customer_data['billing_address']['birthdate']    = $customer->get_meta('billing_birthdate');
+        $customer_data['billing_address']['gender']       = $customer->get_meta('billing_gender');
 
         // Shipping fields
         $customer_data['shipping_address']['number']       = $customer->get_meta('shipping_number');
@@ -4693,6 +5040,8 @@ class WcBetterShippingCalculatorForBrazil
         $response->data['billing']['cnpj']         = $this->format_number($order->get_meta('_billing_cnpj'));
         $response->data['billing']['number']       = $order->get_meta('_billing_number');
         $response->data['billing']['neighborhood'] = $order->get_meta('_billing_neighborhood');
+        $response->data['billing']['birthdate']    = $order->get_meta('_billing_birthdate');
+        $response->data['billing']['gender']       = $order->get_meta('_billing_gender');
 
         // Recupera o CPF armazenado pelo plugin Pagar.me no meta '_wc_billing/address/document'
         $cpf_pagarme = $order->get_meta('_wc_billing/address/document', true);
@@ -4876,9 +5225,11 @@ class WcBetterShippingCalculatorForBrazil
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
         $number_field = get_option('woo_better_calc_number_required', 'no');
         $neighborhood_field = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        $birthdate_field = get_option('woo_better_calc_enable_birthdate_field', 'no');
+        $gender_field = get_option('woo_better_calc_enable_gender_field', 'no');
         
         // Se nenhum campo está habilitado, não adiciona nada
-        if ($person_type === 'none' && $number_field === 'no' && $neighborhood_field === 'no') {
+        if ($person_type === 'none' && $number_field === 'no' && $neighborhood_field === 'no' && $birthdate_field === 'no' && $gender_field === 'no') {
             return $fields;
         }
         
@@ -4893,7 +5244,7 @@ class WcBetterShippingCalculatorForBrazil
         }
         
         // Adiciona campos na seção de cobrança
-        if ($person_type !== 'none') {
+        if ($person_type !== 'none' || $birthdate_field === 'yes' || $gender_field === 'yes') {
             // Encontra a posição do campo last_name para inserir após ele
             $billing_fields = $fields['billing']['fields'];
             $new_billing_fields = array();
@@ -4901,29 +5252,56 @@ class WcBetterShippingCalculatorForBrazil
             foreach ($billing_fields as $key => $field) {
                 $new_billing_fields[$key] = $field;
                 
-                // Após o campo billing_last_name, adiciona os campos de pessoa
+                // Após o campo billing_last_name, adiciona os campos de pessoa, birthdate e gender
                 if ($key === 'billing_last_name') {
-                    $new_billing_fields['billing_persontype'] = array(
-                        'label'       => __('Tipo de Pessoa', 'woo-better-shipping-calculator-for-brazil'),
-                        'type'        => 'select',
-                        'options'     => array(
-                            ''  => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
-                            '0' => __('Nenhum', 'woo-better-shipping-calculator-for-brazil'),
-                            '1' => __('Pessoa Física', 'woo-better-shipping-calculator-for-brazil'),
-                            '2' => __('Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil'),
-                        ),
-                        'description' => '',
-                    );
+                    if ($person_type !== 'none') {
+                        $new_billing_fields['billing_persontype'] = array(
+                            'label'       => __('Tipo de Pessoa', 'woo-better-shipping-calculator-for-brazil'),
+                            'type'        => 'select',
+                            'options'     => array(
+                                ''  => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
+                                '0' => __('Nenhum', 'woo-better-shipping-calculator-for-brazil'),
+                                '1' => __('Pessoa Física', 'woo-better-shipping-calculator-for-brazil'),
+                                '2' => __('Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil'),
+                            ),
+                            'description' => '',
+                        );
+                        
+                        $new_billing_fields['billing_cpf'] = array(
+                            'label'       => __('CPF', 'woo-better-shipping-calculator-for-brazil'),
+                            'description' => '',
+                        );
+                        
+                        $new_billing_fields['billing_cnpj'] = array(
+                            'label'       => __('CNPJ', 'woo-better-shipping-calculator-for-brazil'),
+                            'description' => '',
+                        );
+                    }
                     
-                    $new_billing_fields['billing_cpf'] = array(
-                        'label'       => __('CPF', 'woo-better-shipping-calculator-for-brazil'),
-                        'description' => '',
-                    );
+                    // Adiciona campo de data de nascimento se habilitado
+                    if ($birthdate_field === 'yes') {
+                        $new_billing_fields['billing_birthdate'] = array(
+                            'label'       => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
+                            'type'        => 'date',
+                            'description' => '',
+                        );
+                    }
                     
-                    $new_billing_fields['billing_cnpj'] = array(
-                        'label'       => __('CNPJ', 'woo-better-shipping-calculator-for-brazil'),
-                        'description' => '',
-                    );
+                    // Adiciona campo de gênero se habilitado
+                    if ($gender_field === 'yes') {
+                        $new_billing_fields['billing_gender'] = array(
+                            'label'       => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
+                            'type'        => 'select',
+                            'options'     => array(
+                                ''                                                    => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
+                                __('Masculino', 'woo-better-shipping-calculator-for-brazil')      => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
+                                __('Feminino', 'woo-better-shipping-calculator-for-brazil')       => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
+                                __('Outro', 'woo-better-shipping-calculator-for-brazil')          => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
+                                __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
+                            ),
+                            'description' => '',
+                        );
+                    }
                 }
             }
             
@@ -5043,6 +5421,8 @@ class WcBetterShippingCalculatorForBrazil
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
         $email_highlight_shortcode = get_option('woo_better_calc_email_field_position_shortcode', 'no');
         $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
+        $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
+        $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
         
         // Aplicar prioridades de campos conforme configurações
         if($email_highlight_shortcode === 'yes') {
@@ -5098,7 +5478,7 @@ class WcBetterShippingCalculatorForBrazil
                 'placeholder' => $placeholder_text,
                 'required'    => true,
                 'class'       => array('form-row-wide'),
-                'priority'    => 26,
+                'priority'    => 27,
                 'type'        => 'text',
                 'autocomplete' => 'off'
             );
@@ -5110,7 +5490,7 @@ class WcBetterShippingCalculatorForBrazil
                     'placeholder' => __('Nome da empresa', 'woo-better-shipping-calculator-for-brazil'),
                     'required'    => false,
                     'class'       => array('form-row-wide'),
-                    'priority'    => 27,
+                    'priority'    => 28,
                     'type'        => 'text'
                 );
             }
@@ -5119,19 +5499,49 @@ class WcBetterShippingCalculatorForBrazil
             $fields['billing_persontype'] = array(
                 'type'        => 'hidden',
                 'required'    => false,
-                'priority'    => 28
+                'priority'    => 29
             );
             
             $fields['billing_cpf'] = array(
                 'type'        => 'hidden',
                 'required'    => false,
-                'priority'    => 29
+                'priority'    => 30
             );
             
             $fields['billing_cnpj'] = array(
                 'type'        => 'hidden',
                 'required'    => false,
-                'priority'    => 30
+                'priority'    => 31
+            );
+        }
+        
+        // Campo de data de nascimento
+        if ($birthdate_enabled === 'yes') {
+            $fields['billing_birthdate'] = array(
+                'label'       => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('DD/MM/AAAA', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => true,
+                'class'       => array('form-row-wide'),
+                'priority'    => 25,
+                'type'        => 'date'
+            );
+        }
+        
+        // Campo de gênero
+        if ($gender_enabled === 'yes') {
+            $fields['billing_gender'] = array(
+                'label'       => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => true,
+                'class'       => array('form-row-wide'),
+                'priority'    => 26,
+                'type'        => 'select',
+                'options'     => array(
+                    ''                                                    => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Masculino', 'woo-better-shipping-calculator-for-brazil')      => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Feminino', 'woo-better-shipping-calculator-for-brazil')       => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Outro', 'woo-better-shipping-calculator-for-brazil')          => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
+                )
             );
         }
         
@@ -5172,7 +5582,7 @@ class WcBetterShippingCalculatorForBrazil
 
         // Reposicionamento do CEP quando cep_position estiver ativo
         if ($cep_position === 'yes' && isset($fields['billing_postcode'])) {
-            $fields['billing_postcode']['priority'] = 32;
+            $fields['billing_postcode']['priority'] = 35;
         }
 
         if ($cep_position === 'yes' && $fill_checkout_address === 'yes') {
@@ -5182,7 +5592,7 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => false,
                 'class'       => array('form-row-wide'),
-                'priority'    => 33,
+                'priority'    => 36,
                 'id'          => 'wc_better_calc_checkbox_billing'
             );
         }
@@ -5349,6 +5759,8 @@ class WcBetterShippingCalculatorForBrazil
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         $number_enabled = get_option('woo_better_calc_number_required', 'no');
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
+        $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
+        $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
         
         // Salvar campos de tipo de pessoa (apenas para billing)
         if ($load_address === 'billing' && $person_type !== 'none') {
@@ -5433,6 +5845,19 @@ class WcBetterShippingCalculatorForBrazil
             if ($load_address === 'shipping' && isset($_POST['shipping_phone'])) {
                 $phone = sanitize_text_field(wp_unslash($_POST['shipping_phone']));
                 update_user_meta($user_id, 'shipping_phone', $phone);
+            }
+        }
+        
+        // Salvar campos de data de nascimento e gênero (apenas para billing)
+        if ($load_address === 'billing') {
+            if ($birthdate_enabled === 'yes' && isset($_POST['billing_birthdate'])) {
+                $birthdate = sanitize_text_field(wp_unslash($_POST['billing_birthdate']));
+                update_user_meta($user_id, 'billing_birthdate', $birthdate);
+            }
+            
+            if ($gender_enabled === 'yes' && isset($_POST['billing_gender'])) {
+                $gender = sanitize_text_field(wp_unslash($_POST['billing_gender']));
+                update_user_meta($user_id, 'billing_gender', $gender);
             }
         }
     }

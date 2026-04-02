@@ -581,6 +581,80 @@ class WcBetterShippingCalculatorForBrazilPublic
                     )
                 );
             }
+            
+            // Registrar script para campo de data de nascimento no checkout de blocos
+            $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
+            
+            if ($birthdate_enabled === 'yes') {
+                // Obter dados de sessão para campo de data de nascimento
+                $billing_birthdate = '';
+                
+                if (function_exists('WC') && WC()->session) {
+                    // Se usuário está logado, pega dados dos meta do usuário
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_birthdate = get_user_meta($user_id, 'billing_birthdate', true);
+                    }
+                    
+                    // Fallback para sessão se não há dados do usuário
+                    if (empty($billing_birthdate)) {
+                        $billing_birthdate = WC()->session->get('billing_birthdate', '');
+                    }
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-birthdate',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergBirthdate.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-birthdate',
+                    'WooBetterBirthdateData',
+                    array(
+                        'billing_birthdate' => $billing_birthdate
+                    )
+                );
+            }
+            
+            // Registrar script para campo de gênero no checkout de blocos
+            $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
+            
+            if ($gender_enabled === 'yes') {
+                // Obter dados de sessão para campo de gênero
+                $billing_gender = '';
+                
+                if (function_exists('WC') && WC()->session) {
+                    // Se usuário está logado, pega dados dos meta do usuário
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_gender = get_user_meta($user_id, 'billing_gender', true);
+                    }
+                    
+                    // Fallback para sessão se não há dados do usuário
+                    if (empty($billing_gender)) {
+                        $billing_gender = WC()->session->get('billing_gender', '');
+                    }
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-gender',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergGender.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-gender',
+                    'WooBetterGenderData',
+                    array(
+                        'billing_gender' => $billing_gender
+                    )
+                );
+            }
 
             if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
                 wp_enqueue_script(
@@ -716,6 +790,80 @@ class WcBetterShippingCalculatorForBrazilPublic
                     array(
                         'billing_neighborhood' => $billing_neighborhood,
                         'shipping_neighborhood' => $shipping_neighborhood
+                    )
+                );
+            }
+            
+            // Registrar script para campo de data de nascimento no checkout shortcode (tradicional)
+            $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
+            
+            if ($birthdate_enabled === 'yes') {
+                // Obter dados de sessão para campo de data de nascimento
+                $billing_birthdate = '';
+                
+                if (function_exists('WC') && WC()->session) {
+                    // Se usuário está logado, pega dados dos meta do usuário
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_birthdate = get_user_meta($user_id, 'billing_birthdate', true);
+                    }
+                    
+                    // Fallback para sessão se não há dados do usuário
+                    if (empty($billing_birthdate)) {
+                        $billing_birthdate = WC()->session->get('billing_birthdate', '');
+                    }
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-shortcode-birthdate',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeBirthdate.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-shortcode-birthdate',
+                    'wc_better_checkout_shortcode_birthdate_vars',
+                    array(
+                        'billing_birthdate' => $billing_birthdate
+                    )
+                );
+            }
+            
+            // Registrar script para campo de gênero no checkout clássico
+            $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
+            
+            if ($gender_enabled === 'yes') {
+                // Obter dados de sessão para campo de gênero
+                $billing_gender = '';
+                
+                if (function_exists('WC') && WC()->session) {
+                    // Se usuário está logado, pega dados dos meta do usuário
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_gender = get_user_meta($user_id, 'billing_gender', true);
+                    }
+                    
+                    // Fallback para sessão se não há dados do usuário
+                    if (empty($billing_gender)) {
+                        $billing_gender = WC()->session->get('billing_gender', '');
+                    }
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-shortcode-gender',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeGender.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-shortcode-gender',
+                    'wc_better_checkout_shortcode_gender_vars',
+                    array(
+                        'billing_gender' => $billing_gender
                     )
                 );
             }
@@ -1209,6 +1357,64 @@ class WcBetterShippingCalculatorForBrazilPublic
                     array(
                         'billing_number' => $billing_number,
                         'shipping_number' => $shipping_number
+                    )
+                );
+            }
+
+            // Scripts para campo de data de nascimento
+            $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
+            
+            if ($birthdate_enabled === 'yes') {
+                // Obter dados do usuário para data de nascimento
+                $billing_birthdate = '';
+                
+                if (is_user_logged_in()) {
+                    $user_id = get_current_user_id();
+                    $billing_birthdate = get_user_meta($user_id, 'billing_birthdate', true);
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-edit-address-birthdate',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeBirthdate.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-birthdate',
+                    'WooBetterBirthdateData',
+                    array(
+                        'billing_birthdate' => $billing_birthdate
+                    )
+                );
+            }
+
+            // Scripts para campo de gênero
+            $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
+            
+            if ($gender_enabled === 'yes') {
+                // Obter dados do usuário para gênero
+                $billing_gender = '';
+                
+                if (is_user_logged_in()) {
+                    $user_id = get_current_user_id();
+                    $billing_gender = get_user_meta($user_id, 'billing_gender', true);
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-edit-address-gender',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeGender.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-gender',
+                    'WooBetterGenderData',
+                    array(
+                        'billing_gender' => $billing_gender
                     )
                 );
             }

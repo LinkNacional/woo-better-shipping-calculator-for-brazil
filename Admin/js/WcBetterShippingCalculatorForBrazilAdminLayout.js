@@ -147,12 +147,12 @@
     }
 
     const featureMessage1 = createFeatureMessage('✔️', [
-      '<strong>ATUALIZADO:</strong> Novas opções para destaque dos campos de Número de contato e E-mail, juntamente com uma nova opção para evitar duplicidade de frete.'
+      '<strong>NOVO:</strong> Campos de Data de Nascimento e Gênero para coleta completa de dados demográficos do cliente no checkout.'
     ]);
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Campos de CPF/CNPJ e Bairro para válidação dos dados do cliente e também um novo campo para esconder o frete personalizado para produtos digitais.'
+      '<strong>ATUALIZADO:</strong> Nova opção para abilitar campos brasileiros padronizados, facilitando a configuração de formulários do checkout.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento

@@ -273,7 +273,6 @@ jQuery(function ($) {
                             return;
                         }
                         
-                        // Detecta código internacional seguido de espaço (ex: "+55 11987654321")
                         const internationalWithSpace = currentValue.match(/^\+(\d{1,4})\s+(.*)$/);
                         
                         if (internationalWithSpace) {
@@ -350,7 +349,6 @@ jQuery(function ($) {
                             }, 50); // Pequeno delay para garantir processamento da biblioteca
                         }
                         
-                        // Detecta código internacional sem espaço mas com números após (ex: "+5511987654321")
                         const internationalWithoutSpace = currentValue.match(/^\+(\d{1,4})(\d+)$/);
                         
                         if (internationalWithoutSpace) {
@@ -715,6 +713,22 @@ jQuery(function ($) {
                         }, 100);
                     }, { passive: true });
                     phoneField.dataset.countryChangeListenerAdded = 'true';
+                }
+
+                // Safari iOS Autofill Detection e Correção
+                let autofillDetected = false;
+                
+                if (!phoneField.dataset.safariAutofillListenerAdded) {
+                    phoneField.addEventListener('animationstart', function(e) {
+                        if (e.animationName === 'onautofillstart') {
+                            autofillDetected = true;
+                            // Chama diretamente a formatação quando detecta autofill
+                            applyPhoneFormatting(e, 'Safari Autofill Correction');
+                            autofillDetected = false;
+                        }
+                    });
+                    
+                    phoneField.dataset.safariAutofillListenerAdded = 'true';
                 }
             }
         });
