@@ -147,6 +147,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+# 4.12.0 - 02/04/26
+* Added: New birth date and gender fields.
+
 # 4.11.0 - 01/04/26
 * Enhancement: New free shipping detection system through shipping zones.
 * Enhancement: New option for checkout block (Campos Brasileiros)
