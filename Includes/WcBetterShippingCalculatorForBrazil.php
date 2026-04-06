@@ -85,7 +85,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.12.1';
+            $this->version = '4.12.2';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -1605,7 +1605,10 @@ class WcBetterShippingCalculatorForBrazil
         }
         
         if (isset($_POST['_billing_birthdate'])) {
-            $order->update_meta_data('_billing_birthdate', sanitize_text_field(wp_unslash($_POST['_billing_birthdate'])));
+            $billing_birthdate = $this->normalize_birthdate_value(sanitize_text_field(wp_unslash($_POST['_billing_birthdate'])));
+            if (!empty($billing_birthdate)) {
+                $order->update_meta_data('_billing_birthdate', $billing_birthdate);
+            }
         }
 
         if (isset($_POST['_billing_gender'])) {
@@ -2424,16 +2427,24 @@ class WcBetterShippingCalculatorForBrazil
         
         // Captura dados do formulário
         $billing_birthdate = isset($_POST['billing_birthdate']) ? sanitize_text_field(wp_unslash($_POST['billing_birthdate'])) : '';
-        
+
         // Validação de data de nascimento
         if (!empty($billing_birthdate)) {
+            $raw_birthdate = $billing_birthdate;
+            $billing_birthdate = $this->normalize_birthdate_value($billing_birthdate);
+
+            if ($billing_birthdate === '') {
+                wc_add_notice('Formato de data de nascimento inválido.', 'error');
+                return;
+            }
+
             $birthdate_validation = $this->validate_birthdate($billing_birthdate);
             if (!$birthdate_validation['is_valid']) {
                 wc_add_notice($birthdate_validation['message'], 'error');
                 return;
             }
         }
-        
+
         // Gênero é opcional - não há validação obrigatória
     }
     
@@ -2480,9 +2491,36 @@ class WcBetterShippingCalculatorForBrazil
             'message' => ''
         ];
     }
-    
 
-    
+    /**
+     * Normaliza data de nascimento para o formato Y-m-d
+     * Aceita Y-m-d (primário) e d/m/Y (fallback para contexto brasileiro)
+     * Rejeita qualquer outro formato retornando string vazia
+     *
+     * @param string $birthdate Data em qualquer formato
+     * @return string Data no formato Y-m-d ou string vazia se formato inválido
+     */
+    private function normalize_birthdate_value($birthdate) {
+        $birthdate = trim((string) $birthdate);
+        if ($birthdate === '') {
+            return '';
+        }
+
+        foreach (['Y-m-d', 'd/m/Y'] as $format) {
+            $date = \DateTime::createFromFormat('!' . $format, $birthdate);
+            $errors = \DateTime::getLastErrors();
+            if ($date instanceof \DateTime &&
+                is_array($errors) &&
+                $errors['warning_count'] === 0 &&
+                $errors['error_count'] === 0 &&
+                $date->format($format) === $birthdate) {
+                return $date->format('Y-m-d');
+            }
+        }
+
+        return '';
+    }
+
     /**
      * Formata CPF baseado na configuração de máscara
      * @param string $cpf - CPF com ou sem formatação
@@ -3611,6 +3649,9 @@ class WcBetterShippingCalculatorForBrazil
         if ( isset( $data['billing_birthdate'] ) ) {
             $billing_birthdate = sanitize_text_field( (string) $data['billing_birthdate'] );
         }
+
+        // Normaliza para Y-m-d antes de armazenar na sessão e user_meta
+        $billing_birthdate = $this->normalize_birthdate_value($billing_birthdate);
 
         // Guarda os dados de data de nascimento na sessão e no perfil do usuário
         if (!empty($billing_birthdate)) {
@@ -4788,6 +4829,9 @@ class WcBetterShippingCalculatorForBrazil
             // Captura dos dados do checkout tradicional
             $billing_birthdate = isset($_POST['billing_birthdate']) ? sanitize_text_field(wp_unslash($_POST['billing_birthdate'])) : '';
 
+            // Normaliza para Y-m-d antes de salvar
+            $billing_birthdate = $this->normalize_birthdate_value($billing_birthdate);
+
             // Salva a data de nascimento
             if (!empty($billing_birthdate)) {
                 $order->update_meta_data('_billing_birthdate', $billing_birthdate);
@@ -4826,8 +4870,19 @@ class WcBetterShippingCalculatorForBrazil
                 $billing_birthdate = sanitize_text_field(wp_unslash($_POST['billing_birthdate']));
             }
 
-            // Salva a data de nascimento
+            // Normaliza para Y-m-d; rejeita formatos inválidos com erro 400
             if (!empty($billing_birthdate)) {
+                $raw_birthdate = $billing_birthdate;
+                $billing_birthdate = $this->normalize_birthdate_value($billing_birthdate);
+
+                if ($billing_birthdate === '') {
+                    throw new \WC_REST_Exception(
+                        'wc_order_birthdate_invalid',
+                        'Formato de data de nascimento inválido.',
+                        400
+                    );
+                }
+
                 $order->update_meta_data('_billing_birthdate', $billing_birthdate);
             }
         }
