@@ -1,3 +1,6 @@
+# 4.12.2 - 06/04/26
+* Ajuste: Campo data de nascimento.
+
 # 4.12.1 - 02/04/26
 * Ajuste: Nas configuração de destaque do CEP.
 

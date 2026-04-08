@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 4.12.1
+Stable tag: 4.12.2
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -59,6 +59,7 @@ This is a major update for store owners who need to issue invoices (Nota Fiscal)
 * ** Required Phone Field with DDI:** The phone field is now mandatory and includes a resource to capture the Country Code (DDI), ensuring complete contact information.
 * **Number Field Addition:** Adds the mandatory "Number" field, often missing in standard WooCommerce forms. Includes a `checkbox` option for addresses that are "Sem Número" (No Number).
 * Dynamic Field Hiding: Option to hide address fields when not needed.
+* Compatible with Correios and all WooCommerce shipping
 
 #### **Additional Features:**
 
@@ -146,6 +147,8 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+# 4.12.2 - 06/04/26
+* Fixed: Fix Birthdate validation
 
 # 4.12.1 - 02/04/26
 * Fixed: CEP field highlighting configuration.
