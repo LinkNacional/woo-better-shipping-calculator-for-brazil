@@ -2510,9 +2510,7 @@ class WcBetterShippingCalculatorForBrazil
             $date = \DateTime::createFromFormat('!' . $format, $birthdate);
             $errors = \DateTime::getLastErrors();
             if ($date instanceof \DateTime &&
-                is_array($errors) &&
-                $errors['warning_count'] === 0 &&
-                $errors['error_count'] === 0 &&
+                ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0)) &&
                 $date->format($format) === $birthdate) {
                 return $date->format('Y-m-d');
             }

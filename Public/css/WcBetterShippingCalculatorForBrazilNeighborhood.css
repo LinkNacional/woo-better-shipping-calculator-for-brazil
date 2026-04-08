@@ -3,3 +3,7 @@
     flex: 0 0 100%;
 }
 
+#woo_better_birthdate{
+    height: auto !important;
+    width: 115px !important;
+}
