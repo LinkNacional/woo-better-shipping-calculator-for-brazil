@@ -28,3 +28,12 @@
 .lkn-wc-shipping-address-summary {
     background-color: rgba(0, 0, 0, 0.205);
 }
+
+/* Estilo para campos readonly que devem parecer disabled */
+.wc-better-readonly-disabled {
+    background-color: #e0e0e0 !important;
+    color: #808080 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    opacity: 0.6 !important;
+}

@@ -121,7 +121,8 @@ document.addEventListener("DOMContentLoaded", function () {
                         // Estado inicial do checkbox/input
                         if (initialValue === 'S/N') {
                             shippingCheckboxInput.checked = true;
-                            input.disabled = true;
+                            input.readOnly = true;
+                            input.classList.add('wc-better-readonly-disabled');
                             input.style.backgroundColor = '#e0e0e0';
                             input.style.color = '#808080';
                         }
@@ -207,7 +208,8 @@ document.addEventListener("DOMContentLoaded", function () {
                         // Estado inicial do checkbox/input
                         if (initialValue === 'S/N') {
                             checkboxInput.checked = true;
-                            input.disabled = true;
+                            input.readOnly = true;
+                            input.classList.add('wc-better-readonly-disabled');
                             input.style.backgroundColor = '#e0e0e0';
                             input.style.color = '#808080';
                         }
@@ -325,7 +327,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     shippingCheckboxInput.addEventListener('change', function (event) {
                         event.stopPropagation();
                         if (this.checked) {
-                            shippingNumberInput.disabled = true;
+                            shippingNumberInput.readOnly = true;
+                            shippingNumberInput.classList.add('wc-better-readonly-disabled');
                             shippingNumberInput.setAttribute('value', 'S/N');
                             shippingNumberInput.value = 'S/N';
                             shippingNumberInput.style.backgroundColor = '#e0e0e0';
@@ -337,7 +340,8 @@ document.addEventListener("DOMContentLoaded", function () {
                                 shippingErrorNumberInput.style.display = 'none'
                             }
                         } else {
-                            shippingNumberInput.disabled = false;
+                            shippingNumberInput.readOnly = false;
+                            shippingNumberInput.classList.remove('wc-better-readonly-disabled');
                             shippingNumberInput.setAttribute('value', '');
                             shippingNumberInput.value = '';
                             shippingNumberInput.style.backgroundColor = '';
@@ -483,7 +487,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Estado inicial do checkbox/input
                 if (initialValue === 'S/N') {
                     billingCheckboxInput.checked = true;
-                    input.disabled = true;
+                    input.readOnly = true;
+                    input.classList.add('wc-better-readonly-disabled');
                     input.style.backgroundColor = '#e0e0e0';
                     input.style.color = '#808080';
                 }
@@ -570,7 +575,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Estado inicial do checkbox/input
                 if (initialValue === 'S/N') {
                     checkboxInput.checked = true;
-                    input.disabled = true;
+                    input.readOnly = true;
+                    input.classList.add('wc-better-readonly-disabled');
                     input.style.backgroundColor = '#e0e0e0';
                     input.style.color = '#808080';
                 }
@@ -644,7 +650,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
 
                     if (this.checked) {
-                        billingNumberInputEl.disabled = true;
+                        billingNumberInputEl.readOnly = true;
+                        billingNumberInputEl.classList.add('wc-better-readonly-disabled');
                         billingNumberInputEl.setAttribute('value', 'S/N');
                         billingNumberInputEl.value = 'S/N';
                         billingNumberInputEl.style.backgroundColor = '#e0e0e0';
@@ -656,7 +663,8 @@ document.addEventListener("DOMContentLoaded", function () {
                             billingErrorNumberInput.style.display = 'none'
                         }
                     } else {
-                        billingNumberInputEl.disabled = false;
+                        billingNumberInputEl.readOnly = false;
+                        billingNumberInputEl.classList.remove('wc-better-readonly-disabled');
                         billingNumberInputEl.setAttribute('value', '');
                         billingNumberInputEl.value = '';
                         billingNumberInputEl.style.backgroundColor = '';

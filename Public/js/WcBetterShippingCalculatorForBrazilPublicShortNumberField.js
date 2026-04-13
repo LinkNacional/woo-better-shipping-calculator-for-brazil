@@ -16,7 +16,8 @@ document.addEventListener("DOMContentLoaded", function () {
             // Se o valor preenchido for 'S/N', marca o checkbox e desabilita o campo
             if (wc_better_checkout_shortcode_number_vars.billing_number === "S/N" && checkbox) {
                 checkbox.checked = true;
-                billingNumberField.setAttribute("disabled", "disabled");
+                billingNumberField.setAttribute("readonly", "readonly");
+                billingNumberField.classList.add("wc-better-readonly-disabled");
                 billingNumberFieldWrapper.style.opacity = "0.5";
             }
         }
@@ -35,7 +36,8 @@ document.addEventListener("DOMContentLoaded", function () {
             var shippingNumberFieldWrapper = document.querySelector("#shipping_number_field");
             if (wc_better_checkout_shortcode_number_vars.shipping_number === "S/N" && shippingCheckbox) {
                 shippingCheckbox.checked = true;
-                shippingNumberField.setAttribute("disabled", "disabled");
+                shippingNumberField.setAttribute("readonly", "readonly");
+                shippingNumberField.classList.add("wc-better-readonly-disabled");
                 if (shippingNumberFieldWrapper) shippingNumberFieldWrapper.style.opacity = "0.5";
             }
         }
@@ -53,7 +55,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     billingNumberField.value = "S/N";
                     billingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
                 }
-                billingNumberField.setAttribute("disabled", "disabled");
+                billingNumberField.setAttribute("readonly", "readonly");
+                billingNumberField.classList.add("wc-better-readonly-disabled");
                 billingNumberFieldWrapper.style.opacity = "0.5";
             } else {
                 if (window.jQuery) {
@@ -63,7 +66,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     billingNumberField.value = "";
                     billingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
                 }
-                billingNumberField.removeAttribute("disabled");
+                billingNumberField.removeAttribute("readonly");
+                billingNumberField.classList.remove("wc-better-readonly-disabled");
                 billingNumberFieldWrapper.style.opacity = "1";
             }
         });
@@ -90,7 +94,8 @@ document.addEventListener("DOMContentLoaded", function () {
                         shippingNumberField.value = "S/N";
                         shippingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
                     }
-                    shippingNumberField.setAttribute("disabled", "disabled");
+                    shippingNumberField.setAttribute("readonly", "readonly");
+                    shippingNumberField.classList.add("wc-better-readonly-disabled");
                     shippingNumberFieldWrapper.style.opacity = "0.5";
                 } else {
                     if (window.jQuery) {
@@ -100,7 +105,8 @@ document.addEventListener("DOMContentLoaded", function () {
                         shippingNumberField.value = "";
                         shippingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
                     }
-                    shippingNumberField.removeAttribute("disabled");
+                    shippingNumberField.removeAttribute("readonly");
+                    shippingNumberField.classList.remove("wc-better-readonly-disabled");
                     shippingNumberFieldWrapper.style.opacity = "1";
                 }
             });
@@ -123,20 +129,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
         XMLHttpRequest.prototype.send = function (body) {
             if (this._isCheckoutRequest && typeof body === "string") {
+                // ✅ CORREÇÃO: Verifica se o body é JSON antes de processar como form data
+                // Se começar com { ou [, provavelmente é JSON, não form data
+                const isJson = body.trim().startsWith('{') || body.trim().startsWith('[');
+                
+                if (!isJson) {
+                    // Só processa como form data se NÃO for JSON
+                    const params = new URLSearchParams(body);
 
-                // Converte a string para um objeto URLSearchParams
-                const params = new URLSearchParams(body);
+                    if (params.has('lkn_billing_checkbox') && params.get('lkn_billing_checkbox') == '1') {
+                        params.set("billing_number", "S/N");
+                    }
 
-                if (params.has('lkn_billing_checkbox') && params.get('lkn_billing_checkbox') == '1') {
-                    params.set("billing_number", "S/N");
+                    if (params.has('lkn_shipping_checkbox') && params.get('lkn_shipping_checkbox') == '1') {
+                        params.set("shipping_number", "S/N");
+                    }
+
+                    // Converte de volta para string antes de enviar
+                    body = params.toString();
                 }
-
-                if (params.has('lkn_shipping_checkbox') && params.get('lkn_shipping_checkbox') == '1') {
-                    params.set("shipping_number", "S/N");
-                }
-
-                // Converte de volta para string antes de enviar
-                body = params.toString();
+                // Se for JSON, deixa passar sem modificar
             }
 
             return originalSend.call(this, body);
