@@ -1,3 +1,6 @@
+# 4.12.3 - 13/04/26
+* Ajuste: Campo de número de endereço.
+
 # 4.12.2 - 06/04/26
 * Ajuste: Campo data de nascimento.
 
