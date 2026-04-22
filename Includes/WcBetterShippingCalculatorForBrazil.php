@@ -85,7 +85,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.12.3';
+            $this->version = '4.12.4';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -923,7 +923,9 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_formatted_address_replacements', $this, 'add_neighborhood_replacement', 10, 2);
         $this->loader->add_filter('woocommerce_localisation_address_formats', $this, 'add_neighborhood_to_address_format', 10, 1);
         $this->loader->add_filter('woocommerce_order_formatted_billing_address', $this, 'add_neighborhood_to_billing_address', 10, 2);
+        $this->loader->add_filter('woocommerce_order_formatted_billing_address', $this, 'change_company_to_billing_address', 10, 2);
         $this->loader->add_filter('woocommerce_order_formatted_shipping_address', $this, 'add_neighborhood_to_shipping_address', 10, 2);
+        $this->loader->add_filter('woocommerce_order_formatted_shipping_address', $this, 'change_company_to_shipping_address', 10, 2);
         
         // Hooks para formatação de telefone no pedido final
         $this->loader->add_filter('woocommerce_order_get_billing_phone', $this, 'format_order_billing_phone', 10, 2);
@@ -1352,7 +1354,7 @@ class WcBetterShippingCalculatorForBrazil
             $fields['company'] = $original_fields['company'];
             unset($original_fields['company']);
         }
-        
+
         // 4. Endereço linha 1
         if (isset($original_fields['address_1'])) {
             $fields['address_1'] = $original_fields['address_1'];
@@ -1808,6 +1810,38 @@ class WcBetterShippingCalculatorForBrazil
             if (!empty($shipping_number)) {
                 $address['number'] = $shipping_number;
             }
+        }
+        
+        return $address;
+    }
+
+    /**
+     * Remove o campo company quando for "woonomedaempresa" no endereço de cobrança
+     *
+     * @param array $address
+     * @param WC_Order $order
+     * @return array
+     */
+    public function change_company_to_billing_address($address, $order)
+    {
+        if (isset($address['company']) && $address['company'] === 'woonomedaempresa') {
+            unset($address['company']);
+        }
+        
+        return $address;
+    }
+
+    /**
+     * Remove o campo company quando for "woonomedaempresa" no endereço de entrega
+     *
+     * @param array $address
+     * @param WC_Order $order
+     * @return array
+     */
+    public function change_company_to_shipping_address($address, $order)
+    {
+        if (isset($address['company']) && $address['company'] === 'woonomedaempresa') {
+            unset($address['company']);
         }
         
         return $address;
@@ -2638,7 +2672,7 @@ class WcBetterShippingCalculatorForBrazil
         
         // Processa dados de gênero
         $this->process_gender_from_data($order, $data);
-        
+
         $billing_country_code = '';
         $shipping_country_code = '';
         
@@ -2682,9 +2716,7 @@ class WcBetterShippingCalculatorForBrazil
             $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
         }
 
-        if (!empty($billing_country_code) || !empty($shipping_country_code)) {
-            $order->save();
-        }
+        $order->save();
     }
 
     /**
@@ -2845,9 +2877,7 @@ class WcBetterShippingCalculatorForBrazil
             $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
         }
         
-        if (!empty($billing_country_code) || !empty($shipping_country_code)) {
-            $order->save();
-        }
+        $order->save();
     }
 
     /**
@@ -3042,10 +3072,20 @@ class WcBetterShippingCalculatorForBrazil
             if (($billing_persontype === 'legal' || $billing_persontype === '2' || $billing_persontype === 2) && !empty($billing_company)) {
                 $order->set_billing_company($billing_company);
                 $order->set_shipping_company('');
+
+                if (is_user_logged_in()) {
+                    update_user_meta(get_current_user_id(), 'billing_company', $billing_company);
+                    update_user_meta(get_current_user_id(), 'shipping_company', '');
+                }
             } elseif ($billing_persontype === 'physical' || $billing_persontype === '1' || $billing_persontype === 1) {
                 // Para CPF, assegura que campos de empresa ficam vazios
                 $order->set_billing_company('');
                 $order->set_shipping_company('');
+                
+                if (is_user_logged_in()) {
+                    update_user_meta(get_current_user_id(), 'billing_company', '');
+                    update_user_meta(get_current_user_id(), 'shipping_company', '');
+                }
             }
         }
     }
@@ -3151,10 +3191,20 @@ class WcBetterShippingCalculatorForBrazil
             if (($billing_persontype === 'legal' || $billing_persontype === '2' || $billing_persontype === 2) && !empty($billing_company)) {
                 $order->set_billing_company($billing_company);
                 $order->set_shipping_company(''); // Garantir que shipping company fique vazio
+
+                if (is_user_logged_in()) {
+                    update_user_meta(get_current_user_id(), 'billing_company', $billing_company);
+                    update_user_meta(get_current_user_id(), 'shipping_company', '');
+                }
             } elseif ($billing_persontype === 'physical' || $billing_persontype === '1' || $billing_persontype === 1) {
                 // Para CPF, assegura que campos de empresa ficam vazios
                 $order->set_billing_company('');
                 $order->set_shipping_company('');
+                
+                if (is_user_logged_in()) {
+                    update_user_meta(get_current_user_id(), 'billing_company', '');
+                    update_user_meta(get_current_user_id(), 'shipping_company', '');
+                }
             }
         }
     }
@@ -3989,6 +4039,13 @@ class WcBetterShippingCalculatorForBrazil
         $updated = false;
         if (function_exists('WC') && WC()->customer) {
             if ($context === 'shipping') {
+                // Verifica se o país é diferente de BR ou não existe
+                $current_shipping_country = WC()->customer->get_shipping_country();
+                if (empty($current_shipping_country) || strtoupper($current_shipping_country) !== 'BR') {
+                    WC()->customer->set_shipping_country('BR');
+                    $updated = true;
+                }
+                
                 // Não concatena mais endereço e bairro - cada campo vai para seu lugar próprio
                 if ($address !== '') {
                     WC()->customer->set_shipping_address_1($address);
@@ -4012,6 +4069,13 @@ class WcBetterShippingCalculatorForBrazil
                     $updated = true;
                 }
             } else {
+                // Verifica se o país é diferente de BR ou não existe
+                $current_billing_country = WC()->customer->get_billing_country();
+                if (empty($current_billing_country) || strtoupper($current_billing_country) !== 'BR') {
+                    WC()->customer->set_billing_country('BR');
+                    $updated = true;
+                }
+                
                 // Não concatena mais endereço e bairro - cada campo vai para seu lugar próprio
                 if ($address !== '') {
                     WC()->customer->set_billing_address_1($address);
