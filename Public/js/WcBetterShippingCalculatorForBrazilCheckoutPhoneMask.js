@@ -28,7 +28,8 @@ document.addEventListener('DOMContentLoaded', function() {
             '#billing_phone',
             '#shipping_phone',
             '#billing-phone',
-            '#shipping-phone'
+            '#shipping-phone',
+            '#shipping-phone-highlight'
         ];
 
         phoneFields.forEach(function(fieldSelector) {
@@ -1214,7 +1215,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Função para mover campo de telefone para após email e implementar sincronização
+    function hideOriginalPhoneFields(customPhoneField) {
+        const originalSelectors = ['#billing_phone', '#shipping_phone', '#billing-phone', '#shipping-phone'];
+
+        originalSelectors.forEach(selector => {
+            const field = document.querySelector(selector);
+            if (!field || field === customPhoneField) {
+                return;
+            }
+
+            const container = field.closest('.wc-block-components-text-input, .form-row');
+            if (container && !container.dataset.phoneHidden) {
+                container.style.display = 'none';
+                container.dataset.phoneHidden = 'true';
+            }
+        });
+    }
+
+    // Função para criar campo personalizado de telefone abaixo do e-mail e implementar sincronização
     function setupPhoneFieldHighlight() {
         // Verifica se a funcionalidade está habilitada
         if (typeof wc_better_checkout_phone_mask_vars === 'undefined' || 
@@ -1241,57 +1259,75 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Encontra o primeiro campo de telefone disponível
         const selectors = [
+            '#billing_phone',
+            '#shipping_phone',
+            '#billing-phone',
+            '#shipping-phone',
             'input[id*="phone"]',
             'input[type="tel"]',
             'input[name*="phone"]'
         ];
 
-        let phoneField = null;
-        let phoneContainer = null;
+        let sourcePhoneField = null;
+        let sourcePhoneContainer = null;
 
         for (const selector of selectors) {
-            phoneField = document.querySelector(selector);
-            if (phoneField) {
-                phoneContainer = phoneField.closest('.wc-block-components-text-input, .form-row');
-                if (phoneContainer) {
+            sourcePhoneField = document.querySelector(selector);
+            if (sourcePhoneField && !sourcePhoneField.dataset.wcBetterCustomPhoneField) {
+                sourcePhoneContainer = sourcePhoneField.closest('.wc-block-components-text-input, .form-row');
+                if (sourcePhoneContainer) {
                     break;
                 }
             }
         }
 
-        if (!phoneField || !phoneContainer) {
+        if (!sourcePhoneField || !sourcePhoneContainer) {
             return;
         }
 
-        // Evita mover se já foi movido
-        if (phoneContainer.dataset && phoneContainer.dataset.phoneHighlighted === 'true') {
-            return;
+        let customPhoneContainer = document.querySelector('.wc-block-components-text-input[data-wc-better-custom-phone="true"]');
+        let customPhoneField = customPhoneContainer ? customPhoneContainer.querySelector('input[type="tel"]') : null;
+
+        if (!customPhoneContainer || !customPhoneField) {
+            const sourceLabel = sourcePhoneContainer.querySelector('label');
+            const phoneLabel = sourceLabel ? sourceLabel.textContent.trim() : 'Telefone (opcional)';
+
+            customPhoneContainer = document.createElement('div');
+            customPhoneContainer.className = 'wc-block-components-text-input wc-block-components-address-form__phone is-active';
+            customPhoneContainer.dataset.wcBetterCustomPhone = 'true';
+            customPhoneContainer.dataset.phoneHighlighted = 'true';
+
+            customPhoneField = document.createElement('input');
+            customPhoneField.type = 'tel';
+            customPhoneField.id = 'shipping-phone-highlight';
+            customPhoneField.name = 'shipping_phone';
+            customPhoneField.value = sourcePhoneField.value || '';
+            customPhoneField.autocapitalize = 'characters';
+            customPhoneField.autocomplete = 'section-shipping shipping tel';
+            customPhoneField.setAttribute('aria-label', phoneLabel);
+            customPhoneField.setAttribute('aria-describedby', '');
+            customPhoneField.setAttribute('aria-invalid', 'false');
+            customPhoneField.setAttribute('title', '');
+            customPhoneField.dataset.wcBetterCustomPhoneField = 'true';
+
+            const customPhoneLabel = document.createElement('label');
+            customPhoneLabel.htmlFor = customPhoneField.id;
+            customPhoneLabel.textContent = phoneLabel;
+
+            customPhoneContainer.appendChild(customPhoneField);
+            customPhoneContainer.appendChild(customPhoneLabel);
         }
 
-        // Move o campo de telefone para após o email
-        emailContainer.parentNode.insertBefore(phoneContainer, emailContainer.nextSibling);
-        phoneContainer.dataset.phoneHighlighted = 'true';
+        // Garante que o campo customizado fique abaixo do e-mail
+        emailContainer.parentNode.insertBefore(customPhoneContainer, emailContainer.nextSibling);
 
-        // Oculta outros campos de telefone duplicados
-        const allPhoneFields = document.querySelectorAll([
-            '#billing_phone',
-            '#shipping_phone',
-            '#billing-phone', 
-            '#shipping-phone',
-            'input[id*="phone"]',
-            'input[type="tel"]',
-            'input[name*="phone"]'
-        ].join(','));
+        // Oculta sempre os campos originais de telefone
+        hideOriginalPhoneFields(customPhoneField);
 
-        Array.from(allPhoneFields).forEach(field => {
-            if (field !== phoneField) {
-                const container = field.closest('.wc-block-components-text-input, .form-row');
-                if (container && !container.dataset.phoneHidden) {
-                    container.style.display = 'none';
-                    container.dataset.phoneHidden = 'true';
-                }
-            }
-        });
+        // Inicializa os mesmos eventos/comportamentos no campo customizado
+        if (!customPhoneField.dataset.intlTelInputInitialized) {
+            setTimeout(initPhoneInput, 50);
+        }
     }
 
     // Função para sincronização bidirecional de campos de telefone
@@ -1315,30 +1351,17 @@ document.addEventListener('DOMContentLoaded', function() {
             'input[name*="phone"]'
         ];
 
-        let primaryPhoneField = null;
-        for (const selector of selectors) {
-            primaryPhoneField = document.querySelector(selector);
-            if (primaryPhoneField) {
-                const container = primaryPhoneField.closest('.wc-block-components-text-input, .form-row');
-                if (container && window.getComputedStyle(container).display !== 'none') {
-                    break;
-                }
-            }
-        }
+        const phoneCandidates = Array.from(document.querySelectorAll(selectors.join(','))).filter(field => field.type === 'tel');
+        const primaryPhoneField = phoneCandidates.find(field => {
+            const container = field.closest('.wc-block-components-text-input, .form-row');
+            return container && window.getComputedStyle(container).display !== 'none';
+        });
 
         if (!primaryPhoneField) {
             return;
         }
         // Encontra todos os campos de telefone
-        const allPhoneFields = document.querySelectorAll([
-            '#billing_phone',
-            '#shipping_phone', 
-            '#billing-phone',
-            '#shipping-phone',
-            'input[id*="phone"]',
-            'input[type="tel"]',
-            'input[name*="phone"]'
-        ].join(','));
+        const allPhoneFields = phoneCandidates;
 
         // Filtra para campos únicos e remove o primário
         const otherPhoneFields = Array.from(allPhoneFields).filter(field => 
