@@ -147,6 +147,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+# 4.12.4 - 22/04/26
+* Fixed: CPF field filling.
+* Fixed: Country field changes.
+* Fixed: Field population when detecting empty country.
+
 # 4.12.3 - 13/04/26
 * Fixed: Address number field.
 

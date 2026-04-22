@@ -1,3 +1,8 @@
+# 4.12.4 - 22/04/26
+* Ajuste: Preenchimento do campo CPF.
+* Ajuste: Mudança do campo de país.
+* Ajuste: Preenchimento do campo ao detectar país vazio.
+
 # 4.12.3 - 13/04/26
 * Ajuste: Campo de número de endereço.
 
