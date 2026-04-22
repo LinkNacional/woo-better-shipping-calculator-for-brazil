@@ -1138,7 +1138,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
 
             // Scripts para máscara de telefone (DDI + formatação)
-            if($phone_mask_enabled === 'yes' && !$is_checkout_classic) {
+            if(($phone_mask_enabled === 'yes' || $phone_highlight === 'yes') && !$is_checkout_classic) {
                 wp_enqueue_style(
                     $this->plugin_name . '-checkout-phone-mask',
                     plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.css',
@@ -1159,7 +1159,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-checkout-phone-mask',
                     'wc_better_checkout_phone_mask_vars',
                     array(
-                        'highlightPhone' => $phone_highlight === 'yes' ? 'true' : 'false'
+                        'highlightPhone' => $phone_highlight === 'yes' ? 'true' : 'false',
+                        'phoneMaskEnabled' => $phone_mask_enabled === 'yes' ? 'true' : 'false'
                     )
                 );
             }

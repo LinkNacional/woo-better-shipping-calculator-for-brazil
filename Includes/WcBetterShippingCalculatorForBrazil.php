@@ -2877,9 +2877,7 @@ class WcBetterShippingCalculatorForBrazil
             $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
         }
         
-        if (!empty($billing_country_code) || !empty($shipping_country_code)) {
-            $order->save();
-        }
+        $order->save();
     }
 
     /**
@@ -4041,6 +4039,13 @@ class WcBetterShippingCalculatorForBrazil
         $updated = false;
         if (function_exists('WC') && WC()->customer) {
             if ($context === 'shipping') {
+                // Verifica se o país é diferente de BR ou não existe
+                $current_shipping_country = WC()->customer->get_shipping_country();
+                if (empty($current_shipping_country) || strtoupper($current_shipping_country) !== 'BR') {
+                    WC()->customer->set_shipping_country('BR');
+                    $updated = true;
+                }
+                
                 // Não concatena mais endereço e bairro - cada campo vai para seu lugar próprio
                 if ($address !== '') {
                     WC()->customer->set_shipping_address_1($address);
@@ -4064,6 +4069,13 @@ class WcBetterShippingCalculatorForBrazil
                     $updated = true;
                 }
             } else {
+                // Verifica se o país é diferente de BR ou não existe
+                $current_billing_country = WC()->customer->get_billing_country();
+                if (empty($current_billing_country) || strtoupper($current_billing_country) !== 'BR') {
+                    WC()->customer->set_billing_country('BR');
+                    $updated = true;
+                }
+                
                 // Não concatena mais endereço e bairro - cada campo vai para seu lugar próprio
                 if ($address !== '') {
                     WC()->customer->set_billing_address_1($address);

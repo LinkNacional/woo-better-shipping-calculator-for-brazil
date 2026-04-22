@@ -5,6 +5,25 @@ import { pt } from 'intl-tel-input/i18n';
 
 document.addEventListener('DOMContentLoaded', function() {
     function initPhoneInput() {
+        // Verifica se a máscara de telefone está habilitada
+        const isPhoneMaskEnabled = (typeof wc_better_checkout_phone_mask_vars !== 'undefined' && 
+                                   wc_better_checkout_phone_mask_vars.phoneMaskEnabled === 'true');
+        
+        // Se a máscara não está habilitada, apenas configura o destaque se necessário
+        if (!isPhoneMaskEnabled) {
+            // Configura apenas o destaque do telefone se habilitado
+            const isHighlightEnabled = (typeof wc_better_checkout_phone_mask_vars !== 'undefined' && 
+                                       wc_better_checkout_phone_mask_vars.highlightPhone === 'true');
+            
+            if (isHighlightEnabled) {
+                setTimeout(() => {
+                    setupPhoneFieldHighlight();
+                    setupPhoneSync();
+                }, 300);
+            }
+            return;
+        }
+        
         const phoneFields = [
             '#billing_phone',
             '#shipping_phone',
@@ -1134,6 +1153,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function adjustPhoneLabel(phoneField) {
+        // Verifica se a máscara de telefone está habilitada
+        const isPhoneMaskEnabled = (typeof wc_better_checkout_phone_mask_vars !== 'undefined' && 
+                                   wc_better_checkout_phone_mask_vars.phoneMaskEnabled === 'true');
+        
+        // Se a máscara não está habilitada, não aplica as modificações de padding da biblioteca
+        if (!isPhoneMaskEnabled) {
+            // Configura apenas o destaque e sincronização após um delay se habilitado
+            const isHighlightEnabled = (typeof wc_better_checkout_phone_mask_vars !== 'undefined' && 
+                                       wc_better_checkout_phone_mask_vars.highlightPhone === 'true');
+            
+            if (isHighlightEnabled) {
+                setTimeout(() => {
+                    setupPhoneFieldHighlight();
+                    setupPhoneSync();
+                }, 300);
+            }
+            return;
+        }
+        
         // Aplica !important no input e calcula padding para label
         let inputPadding = 52;
         if (phoneField && phoneField.tagName === 'INPUT') {
@@ -1165,10 +1203,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Inicia funcionalidades de destaque e sincronização se configurado após um delay
-        setTimeout(() => {
-            setupPhoneFieldHighlight();
-            setupPhoneSync();
-        }, 300);
+        const isHighlightEnabled = (typeof wc_better_checkout_phone_mask_vars !== 'undefined' && 
+                                   wc_better_checkout_phone_mask_vars.highlightPhone === 'true');
+        
+        if (isHighlightEnabled) {
+            setTimeout(() => {
+                setupPhoneFieldHighlight();
+                setupPhoneSync();
+            }, 300);
+        }
     }
 
     // Função para mover campo de telefone para após email e implementar sincronização
