@@ -1160,7 +1160,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'wc_better_checkout_phone_mask_vars',
                     array(
                         'highlightPhone' => $phone_highlight === 'yes' ? 'true' : 'false',
-                        'phoneMaskEnabled' => $phone_mask_enabled === 'yes' ? 'true' : 'false'
+                        'phoneMaskEnabled' => $phone_mask_enabled === 'yes' ? 'true' : 'false',
+                        'phoneRequired' => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false'
                     )
                 );
             }
@@ -1186,7 +1187,9 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-checkout-phone-mask-shortcode',
                     'wc_better_checkout_phone_mask_vars',
                     array(
-                        'highlightPhone' => $phone_highlight === 'yes' ? true : false
+                        'highlightPhone' => $phone_highlight === 'yes' ? 'true' : 'false',
+                        'phoneMaskEnabled' => $phone_mask_enabled === 'yes' ? 'true' : 'false',
+                        'phoneRequired' => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false'
                     )
                 );
             }
