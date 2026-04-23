@@ -4,6 +4,17 @@ import intlTelInputUtils from 'intl-tel-input/build/js/utils.js';
 import { pt } from 'intl-tel-input/i18n';
 
 document.addEventListener('DOMContentLoaded', function() {
+    // SISTEMA DE DEBOUNCE GLOBAL - disponível para todas as funções
+    let phoneUpdateTimeout;
+    let pendingPhoneData = {};
+    let countryUpdateTimeout; 
+    let pendingCountryData = {};
+    let isWatcherDisabled = false;
+    
+    // Sistema de verificação contínua
+    let fieldsToCheck = [];
+    let continuousChecker = null;
+    
     function initPhoneInput() {
         // Verifica se a máscara de telefone está habilitada
         const isPhoneMaskEnabled = (typeof wc_better_checkout_phone_mask_vars !== 'undefined' && 
@@ -58,6 +69,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 phoneField.dataset.intlTelInputInitialized = 'true';
                 adjustPhoneLabel(phoneField);
+                
+                // Adiciona campo à lista de verificação contínua
+                fieldsToCheck.push(phoneField);
+                
+                // Sistema de verificação contínua
+                if (!continuousChecker) {
+                    startContinuousFieldChecker();
+                }
                 
                 // Adicionar watcher para detectar mudanças externas no campo
                 let lastKnownValue = phoneField.value;
@@ -799,10 +818,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     return dialCodeMap[dialCode] || null;
                 }
 
-                // SISTEMA DE DEBOUNCE PARA PHONE UPDATES (evita múltiplas requisições)
-                let phoneUpdateTimeout;
-                let pendingPhoneData = {};
-                
                 function triggerReactChange(input, newValue) {
                     try {
                         if (!input || typeof input !== 'object') {
@@ -832,7 +847,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 pendingPhoneData.shipping_phone_formatted = cleanValue;
                             }
                             
-                            // Agenda execução em 1s (agrupa mudanças rápidas)
+                            // Agenda execução em 1.5s (agrupa mudanças rápidas)
                             phoneUpdateTimeout = setTimeout(() => {
                                 if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
                                     // Cria cópia dos dados para envio
@@ -845,7 +860,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                                 
                                 phoneUpdateTimeout = null;
-                            }, 1000);
+                            }, 1500);
                         }
 
                         const reactKey = Object.keys(input).find(key => 
@@ -969,6 +984,28 @@ document.addEventListener('DOMContentLoaded', function() {
                                         }
                                         
                                         checkoutDispatch.setExtensionData('woo_better_phone_country', phoneCountryData);
+                                        
+                                        // BACKUP: extensionCartUpdate com debounce de 1.5s (sincronizado com woo_better_phone_formatter)
+                                        if (countryUpdateTimeout) {
+                                            clearTimeout(countryUpdateTimeout);
+                                        }
+                                        
+                                        // Atualiza dados pendentes
+                                        pendingCountryData[fieldName] = countryCode;
+                                        if (!otherFieldExists) {
+                                            pendingCountryData[otherFieldName] = countryCode;
+                                        }
+                                        
+                                        countryUpdateTimeout = setTimeout(() => {
+                                            if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                                                const countryDataToSend = { ...pendingCountryData };
+                                                window.wc.blocksCheckout.extensionCartUpdate({
+                                                    namespace: 'woo_better_phone_country',
+                                                    data: countryDataToSend
+                                                });
+                                            }
+                                            countryUpdateTimeout = null;
+                                        }, 1500);
                                     } else if (checkoutDispatch.__unstableSetExtensionData) {
                                         // Fallback para versões antigas
                                         const currentData = select('wc/store/checkout').getExtensionData() || {};
@@ -992,6 +1029,28 @@ document.addEventListener('DOMContentLoaded', function() {
                                         }
                                         
                                         checkoutDispatch.__unstableSetExtensionData('woo_better_phone_country', phoneCountryData);
+                                        
+                                        // BACKUP: extensionCartUpdate com debounce de 1.5s (sincronizado com woo_better_phone_formatter)
+                                        if (countryUpdateTimeout) {
+                                            clearTimeout(countryUpdateTimeout);
+                                        }
+                                        
+                                        // Atualiza dados pendentes
+                                        pendingCountryData[fieldName] = countryCode;
+                                        if (!otherFieldExists) {
+                                            pendingCountryData[otherFieldName] = countryCode;
+                                        }
+                                        
+                                        countryUpdateTimeout = setTimeout(() => {
+                                            if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                                                const countryDataToSend = { ...pendingCountryData };
+                                                window.wc.blocksCheckout.extensionCartUpdate({
+                                                    namespace: 'woo_better_phone_country',
+                                                    data: countryDataToSend
+                                                });
+                                            }
+                                            countryUpdateTimeout = null;
+                                        }, 1500);
                                     }
                                 }
                             } catch (error) {
@@ -1048,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     let inputTimeout;
                     
                     phoneField.addEventListener('input', function(event) {
-                        // Cancela timeout anterior se existir (debounce para operações rápidas)
+                        // Cancela timeout anterior se existir (debounce de 1.5s para evitar múltiplas requisições)
                         if (inputTimeout) {
                             clearTimeout(inputTimeout);
                         }
@@ -1062,7 +1121,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             const isDelete = event.inputType === 'deleteContentBackward' || 
                                            event.inputType === 'deleteContentForward' ||
                                            event.data === null;
-                            const delay = isDelete ? 5 : 10;
+                            const delay = isDelete ? 250 : 1500; // 250ms para delete, 1.5s para input normal
                             
                             inputTimeout = setTimeout(() => {
                                 applyPhoneFormatting(event, 'Input');
@@ -1221,6 +1280,49 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Sistema de verificação contínua de campos
+    function startContinuousFieldChecker() {
+        continuousChecker = setInterval(() => {
+            checkFieldConsistency();
+        }, 1000); // Verifica a cada 1 segundo
+    }
+    
+    function checkFieldConsistency() {
+        let allConsistent = true;
+        
+        fieldsToCheck.forEach(field => {
+            if (!field || !field.parentNode) return;
+            
+            const currentValue = field.value;
+            const shouldBeFormatted = currentValue && currentValue.includes('+') && currentValue.replace(/\D/g, '').length > 2;
+            const isFormatted = currentValue.includes('(') || currentValue.includes('-') || currentValue.includes(' ');
+            
+            // Se deveria estar formatado mas não está, ou vice-versa
+            if (shouldBeFormatted && !isFormatted) {
+                allConsistent = false;
+                // Reaplica formatação
+                if (field.dataset.intlTelInputInitialized) {
+                    setTimeout(() => {
+                        const evt = new Event('input', { bubbles: true });
+                        field.dispatchEvent(evt);
+                    }, 100);
+                }
+            }
+        });
+        
+        // Se todos os campos estão consistentes, para a verificação
+        if (allConsistent && fieldsToCheck.length > 0) {
+            clearInterval(continuousChecker);
+            continuousChecker = null;
+            // Reinicia após 5 segundos para verificação periódica
+            setTimeout(() => {
+                if (!continuousChecker && fieldsToCheck.length > 0) {
+                    startContinuousFieldChecker();
+                }
+            }, 5000);
+        }
+    }
+
     // Função para criar campo de telefone customizado quando highlight está habilitado
     function setupPhoneFieldHighlight() {
         // Verifica se a funcionalidade está habilitada
@@ -1296,7 +1398,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const existingField = document.querySelector(selector);
             if (existingField && existingField.value && existingField.value.trim() !== '') {
                 initialPhoneValue = existingField.value.trim();
-                console.log('📱 [CUSTOM FIELD] Valor inicial encontrado:', { selector, value: initialPhoneValue });
                 break;
             }
         }
@@ -1324,7 +1425,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Se há valor inicial, ativa o container e agenda formatação
         if (initialPhoneValue) {
             customPhoneContainer.classList.add('is-active');
-            console.log('🎯 [CUSTOM FIELD] Aplicando valor inicial e ativando container');
         }
         
         // APLICA AS MESMAS FUNÇÕES do campo original no campo customizado
@@ -1332,7 +1432,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Se phoneMaskEnabled está DESABILITADO, apenas aplica ajustes visuais
             if (!isPhoneMaskEnabled) {
-                console.log('📱 [CUSTOM FIELD] phoneMaskEnabled=false, aplicando apenas higlight sem formatação');
                 
                 // Marca campo como inicializado (sem biblioteca)
                 customPhoneField.dataset.intlTelInputInitialized = 'true';
@@ -1343,55 +1442,136 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Configura campo hidden básico sem formatação (Brasil padrão)
                 updateCustomHiddenCountryCodeFieldSimple('+55');
                 
-                // Apenas sincroniza com outros campos, sem formatação
-                const syncPhoneFields = () => {
-                    const currentValue = customPhoneField.value;
+                // Sistema centralizado de sincronização com debounce
+                let syncDebounceTimer = null;
+                const SYNC_DEBOUNCE_DELAY = 100; // Reduzido para ser mais reativo
+                
+                const debouncedSync = (currentValue) => {
+                    if (syncDebounceTimer) {
+                        clearTimeout(syncDebounceTimer);
+                    }
                     
-                    // Sincroniza com billing e shipping sem formatação - busca todos os possíveis seletores
-                    const phoneSelectors = [
-                        '#billing_phone', '#shipping_phone', 
-                        '#billing-phone', '#shipping-phone',
-                        'input[name="billing_phone"]', 'input[name="shipping_phone"]',
-                        'input[name="billing-phone"]', 'input[name="shipping-phone"]'
-                    ];
+                    syncDebounceTimer = setTimeout(() => {
+                        syncPhoneFieldsImmediate(currentValue);
+                        syncDebounceTimer = null;
+                    }, SYNC_DEBOUNCE_DELAY);
+                };
+                
+                const syncPhoneFieldsImmediate = (currentValue) => {
+                    // Evita loops de sincronização
+                    if (customPhoneField._isSyncing) return;
+                    customPhoneField._isSyncing = true;
                     
-                    console.log('🔄 [SYNC] Sincronizando campo customizado com campos originais:', currentValue);
+                    try {
+                        // Sincroniza com billing e shipping
+                        const phoneSelectors = [
+                            '#billing_phone', '#shipping_phone', 
+                            '#billing-phone', '#shipping-phone',
+                            'input[name="billing_phone"]', 'input[name="shipping_phone"]',
+                            'input[name="billing-phone"]', 'input[name="shipping-phone"]'
+                        ];
+                        
+                        phoneSelectors.forEach(selector => {
+                            const targetField = document.querySelector(selector);
+                            if (targetField && targetField !== customPhoneField) {
+                                
+                                // Evita sincronizar campos que já estão sincronizando
+                                if (targetField._isSyncing) return;
+                                
+                                // Usado nativeSetter para evitar trigger de eventos desnecessários
+                                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                nativeSetter.call(targetField, currentValue);
+                                
+                                // Força React sync apenas se necessário
+                                if (typeof triggerReactChange === 'function') {
+                                    if (!currentValue || currentValue.trim() === '') {
+                                        if (targetField._valueTracker) {
+                                            targetField._valueTracker.setValue('');
+                                        }
+                                        triggerReactChange(targetField, '');
+                                    } else {
+                                        triggerReactChange(targetField, currentValue);
+                                    }
+                                }
+                            }
+                        });
+                        
+                        // **VERIFICAÇÃO SECUNDÁRIA COM DELAY DE 2S**
+                        scheduleSecondaryVerification(currentValue, phoneSelectors);
+                        
+                    } finally {
+                        // Libera flag de sincronização após pequeno delay
+                        setTimeout(() => {
+                            customPhoneField._isSyncing = false;
+                        }, 50);
+                    }
+                };
+                
+                // Sistema de verificação secundária para garantir sincronização
+                let secondaryVerificationTimer = null;
+                
+                const scheduleSecondaryVerification = (expectedValue, selectors) => {
+                    // Cancela verificação anterior se existir
+                    if (secondaryVerificationTimer) {
+                        clearTimeout(secondaryVerificationTimer);
+                    }
                     
-                    phoneSelectors.forEach(selector => {
+                    // Agenda verificação para 2s depois
+                    secondaryVerificationTimer = setTimeout(() => {
+                        performSecondaryVerification(expectedValue, selectors);
+                        secondaryVerificationTimer = null;
+                    }, 2000);
+                };
+                
+                const performSecondaryVerification = (expectedValue, selectors) => {
+                    let needsResync = false;
+                    const fieldsToResync = [];
+                    
+                    // Verifica se todos os campos têm o valor esperado
+                    selectors.forEach(selector => {
                         const targetField = document.querySelector(selector);
                         if (targetField && targetField !== customPhoneField) {
-                            console.log('✅ [SYNC] Sincronizando com campo:', selector, 'Visível:', !targetField.offsetParent === null);
+                            const currentFieldValue = targetField.value;
                             
-                            // Sincroniza mesmo que o campo esteja oculto (importante para "usar mesmo endereço")
-                            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                            nativeSetter.call(targetField, currentValue);
-                            
-                            // Dispara eventos no campo alvo para garantir que React/WooCommerce detecte
-                            const inputEvent = new Event('input', { bubbles: true });
-                            const changeEvent = new Event('change', { bubbles: true });
-                            
-                            targetField.dispatchEvent(inputEvent);
-                            targetField.dispatchEvent(changeEvent);
-                            
-                            // Força trigger do React também (usa a função correta)
-                            if (typeof triggerReactChange === 'function') {
-                                triggerReactChange(targetField, currentValue);
-                            } else {
-                                console.warn('⚠️ [SYNC] triggerReactChange não encontrada');
+                            // Compara valores (ignora espaços em branco)
+                            if (currentFieldValue.trim() !== expectedValue.trim()) {
+                                needsResync = true;
+                                fieldsToResync.push({
+                                    field: targetField,
+                                    selector: selector,
+                                    currentValue: currentFieldValue,
+                                    expectedValue: expectedValue
+                                });
                             }
                         }
                     });
+                    
+                    // Se precisa ressincronizar, faz novamente
+                    if (needsResync && fieldsToResync.length > 0) {
+                        fieldsToResync.forEach(({ field }) => {
+                            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                            nativeSetter.call(field, expectedValue);
+                            
+                            if (typeof triggerReactChange === 'function') {
+                                triggerReactChange(field, expectedValue);
+                            }
+                        });
+                    }
                 };
                 
-                // Adiciona listener simples apenas para sincronização
-                customPhoneField.addEventListener('input', syncPhoneFields);
-                customPhoneField.addEventListener('change', syncPhoneFields);
+                // Único listener centralizado para sincronização
+                customPhoneField.addEventListener('input', function(e) {
+                    debouncedSync(e.target.value);
+                });
+                
+                customPhoneField.addEventListener('change', function(e) {
+                    debouncedSync(e.target.value);
+                });
                 
                 return; // Sai da função sem inicializar intlTelInput
             }
             
             // Se phoneMaskEnabled está HABILITADO, aplica toda a formatação
-            console.log('📱 [CUSTOM FIELD] phoneMaskEnabled=true, aplicando formatação completa');
             
             let countryChanged = false;
             let isFormatting = false;
@@ -1429,12 +1609,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     'input[name="billing-phone"]', 'input[name="shipping-phone"]'
                 ];
                 
-                console.log('🔄 [SYNC] Sincronizando campo customizado formatado com campos originais:', valueToSync);
-                
                 phoneSelectors.forEach(selector => {
                     const targetField = document.querySelector(selector);
                     if (targetField && targetField !== customPhoneField) {
-                        console.log('✅ [SYNC] Sincronizando com campo:', selector, 'Visível:', !targetField.offsetParent === null);
                         
                         // Sincroniza mesmo que o campo esteja oculto
                         const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
@@ -1449,10 +1626,83 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Força trigger do React
                         if (typeof triggerReactChange === 'function') {
-                            triggerReactChange(targetField, valueToSync);
+                            // **CORREÇÃO REACT**: Para campos vazios, força sincronização imediata
+                            if (!valueToSync || valueToSync.trim() === '') {
+                                // Reset do value tracker do React
+                                if (targetField._valueTracker) {
+                                    targetField._valueTracker.setValue('');
+                                }
+                                
+                                // Força trigger React imediatamente (sem delay)
+                                triggerReactChange(targetField, '');
+                            } else {
+                                triggerReactChange(targetField, valueToSync);
+                            }
                         }
                     }
                 });
+                
+                // **VERIFICAÇÃO SECUNDÁRIA COM DELAY DE 2S para campos formatados**
+                scheduleFormattedFieldsVerification(valueToSync, phoneSelectors);
+            };
+            
+            // Sistema de verificação secundária para campos formatados
+            let formattedFieldsVerificationTimer = null;
+            
+            const scheduleFormattedFieldsVerification = (expectedValue, selectors) => {
+                // Cancela verificação anterior se existir
+                if (formattedFieldsVerificationTimer) {
+                    clearTimeout(formattedFieldsVerificationTimer);
+                }
+                
+                // Agenda verificação para 2s depois
+                formattedFieldsVerificationTimer = setTimeout(() => {
+                    performFormattedFieldsVerification(expectedValue, selectors);
+                    formattedFieldsVerificationTimer = null;
+                }, 2000);
+            };
+            
+            const performFormattedFieldsVerification = (expectedValue, selectors) => {
+                let needsResync = false;
+                const fieldsToResync = [];
+                
+                // Verifica se todos os campos têm o valor esperado
+                selectors.forEach(selector => {
+                    const targetField = document.querySelector(selector);
+                    if (targetField && targetField !== customPhoneField) {
+                        const currentFieldValue = targetField.value;
+                        
+                        // Compara valores (ignora espaços em branco)
+                        if (currentFieldValue.trim() !== expectedValue.trim()) {
+                            needsResync = true;
+                            fieldsToResync.push({
+                                field: targetField,
+                                selector: selector,
+                                currentValue: currentFieldValue,
+                                expectedValue: expectedValue
+                            });
+                        }
+                    }
+                });
+                
+                // Se precisa ressincronizar, faz novamente com força total
+                if (needsResync && fieldsToResync.length > 0) {
+                    fieldsToResync.forEach(({ field }) => {
+                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                        nativeSetter.call(field, expectedValue);
+                        
+                        // Força eventos DOM
+                        const inputEvent = new Event('input', { bubbles: true });
+                        const changeEvent = new Event('change', { bubbles: true });
+                        field.dispatchEvent(inputEvent);
+                        field.dispatchEvent(changeEvent);
+                        
+                        // Força React sync
+                        if (typeof triggerReactChange === 'function') {
+                            triggerReactChange(field, expectedValue);
+                        }
+                    });
+                }
             };
             
             // Adicionar watcher melhorado para detectar mudanças externas no campo customizado
@@ -1495,13 +1745,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     
-                    console.log('📱 [CUSTOM FORMAT] Valor inicial recebido:', initialValue);
-                    
                     // Verifica se é número internacional com +
                     if (initialValue.includes('+')) {
                         // SOLUÇÃO CORRETA: Remove apenas caracteres especiais, MANTÉM + e espaços
                         const cleanValue = initialValue.replace(/[^\d+\s]/g, '');
-                        console.log('🧹 [CUSTOM FORMAT] Valor limpo (mantendo + e espaços):', cleanValue);
                         
                         if (cleanValue.startsWith('+')) {
                             // Quebra em 2 partes: código do país e número local
@@ -1510,9 +1757,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 const countryCodePart = parts[0]; // Ex: "+1"
                                 const localNumberPart = parts.slice(1).join('').replace(/\D/g, ''); // Ex: "1111111445"
                                 
-                                console.log('🌍 [CUSTOM FORMAT] Código do país:', countryCodePart);
-                                console.log('📞 [CUSTOM FORMAT] Número local:', localNumberPart);
-                                
                                 // Extrai só os números do código do país
                                 const dialCode = countryCodePart.replace(/\D/g, '');
                                 
@@ -1520,13 +1764,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 let finalLocalNumber = localNumberPart;
                                 if (dialCode === '1' && localNumberPart.length === 11 && localNumberPart.startsWith('1')) {
                                     finalLocalNumber = localNumberPart.substring(1); // Remove primeiro '1' duplicado
-                                    console.log('🔧 [CUSTOM FORMAT] Removendo dígito 1 duplicado para US/CA:', {original: localNumberPart, corrigido: finalLocalNumber});
                                 }
                                 
                                 const foundCountry = findCustomCountryByDialCode(dialCode);
                                 
                                 if (foundCountry && finalLocalNumber.length > 0) {
-                                    console.log('✅ [CUSTOM FORMAT] País encontrado:', foundCountry, 'para código:', dialCode);
                                     
                                     iti.setCountry(foundCountry);
                                     
@@ -1546,7 +1788,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                             if (originalDigits === formattedDigits) {
                                                 // Concatena: código do país + espaço + número formatado
                                                 const finalResult = `${countryCodePart} ${formattedLocal}`;
-                                                console.log('🎉 [CUSTOM FORMAT] Resultado final:', finalResult);
                                                 
                                                 // Aplica o resultado
                                                 const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
@@ -1564,15 +1805,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                         console.warn('❌ [CUSTOM FORMAT] Erro na formatação:', formatError);
                                     }
                                 } else {
-                                    console.log('❌ [CUSTOM FORMAT] País não encontrado para código:', dialCode);
                                 }
                             } else {
-                                console.log('❌ [CUSTOM FORMAT] Não conseguiu quebrar em partes com espaço');
                             }
                         }
                     } else {
                         // Para números nacionais
-                        console.log('🏠 [CUSTOM FORMAT] Processando número nacional');
                         const countryData = iti.getSelectedCountryData();
                         const cleanDigits = initialValue.replace(/\D/g, '');
                         
@@ -1607,7 +1845,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Función para verificar se um prefixo corresponde a apenas UM país (para auto-espaçamento)
             function findUniqueCountryCode(digits) {
-                console.log('🔎 [UNIQUE COUNTRY] Verificando prefixo único para:', digits);
                 
                 const customDialCodeMap = {
                     // América do Norte
@@ -1851,12 +2088,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                console.log('🔍 [UNIQUE COUNTRY] Correspondências encontradas:', possibleMatches);
-                
                 // Se há apenas UMA correspondência possível, retorna ela
                 if (possibleMatches.length === 1) {
                     const uniqueCode = possibleMatches[0];
-                    console.log('✅ [UNIQUE COUNTRY] Código único encontrado:', uniqueCode);
                     return uniqueCode;
                 }
                 
@@ -1871,32 +2105,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     const sameLengthMatches = possibleMatches.filter(code => code.length === longestMatch.length);
                     
                     if (sameLengthMatches.length === 1) {
-                        console.log('✅ [UNIQUE COUNTRY] Código mais específico encontrado:', longestMatch);
                         return longestMatch;
                     }
                 }
                 
-                console.log('⚠️ [UNIQUE COUNTRY] Múltiplas opções, aguardando mais dígitos');
                 return null; // Múltiplas opções ainda possíveis
             }
             
             // Função para aplicar formatação (REUTILIZA a lógica existente)
             function applyCustomPhoneFormatting(event, context = 'input') {
                 try {
-                    console.log('🎯 [CUSTOM FORMATTING] Iniciando formatação:', { 
-                        context, 
-                        currentValue: customPhoneField.value,
-                        lastFormattedValue 
-                    });
                     
                     if (isFormatting) {
-                        console.log('⚠️ [CUSTOM FORMATTING] Já está formatando, pulando...');
                         return;
                     }
                     
                     const currentValue = customPhoneField.value;
                     if (currentValue === lastFormattedValue) {
-                        console.log('⚠️ [CUSTOM FORMATTING] Valor não mudou, pulando...');
                         return;
                     }
                     
@@ -1905,8 +2130,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!currentValue || currentValue.trim() === '') {
                         // Remove classe is-active quando campo estiver vazio
                         customPhoneContainer.classList.remove('is-active');
-                        triggerCustomReactChange(customPhoneField, currentValue);
-                        lastFormattedValue = currentValue;
+                        
+                        // **CORREÇÃO REACT**: Sincronização IMEDIATA para campos vazios
+                        syncFormattedPhoneFields(''); // Força limpeza imediata de todos os campos
+                        
+                        triggerCustomReactChange(customPhoneField, '');
+                        lastFormattedValue = '';
                         isFormatting = false;
                         return;
                     }
@@ -1928,46 +2157,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     const internationalWithSpace = currentValue.match(/^\+(\d{1,4})\s(.+)$/); // Ex: +55 123456789
                     const internationalWithoutSpace = currentValue.match(/^\+(\d{1,})$/); // Ex: +55123456789
                     
-                    console.log('🔍 [CUSTOM FORMATTING] Analisando número internacional:', { 
-                        currentValue, 
-                        internationalWithSpace: !!internationalWithSpace,
-                        internationalWithoutSpace: !!internationalWithoutSpace 
-                    });
-                    
                     // CASO 1: Número já tem espaço (ex: "+55 123456789")
                     if (internationalWithSpace) {
                         const countryCode = internationalWithSpace[1];
                         const localNumber = internationalWithSpace[2].replace(/\D/g, ''); // Remove não-dígitos do número local
                         
-                        console.log('📞 [CUSTOM FORMATTING] Número com espaço manual detectado:', { 
-                            countryCode, 
-                            localNumber 
-                        });
-                        
                         const foundCountryCode = findCustomCountryByDialCode(countryCode);
                         if (foundCountryCode && localNumber.length > 0) {
-                            console.log('✅ [CUSTOM FORMATTING] País encontrado para número com espaço!', { 
-                                countryCode, 
-                                foundCountryCode 
-                            });
-                            
                             iti.setCountry(foundCountryCode);
                             
                             setTimeout(() => {
                                 try {
-                                    const formattedLocal = formatLocalNumberByCountry(localNumber, foundCountryCode);
-                                    const finalResult = `+${countryCode} ${formattedLocal}`;
-                                    
-                                    console.log('🎨 [CUSTOM FORMATTING] Formatando número com espaço:', { 
-                                        original: currentValue, 
-                                        formatted: finalResult 
-                                    });
+                                    const formattedLocal = intlTelInputUtils.formatNumber(
+                                        localNumber, 
+                                        foundCountryCode, 
+                                        intlTelInputUtils.numberFormat.NATIONAL
+                                    );
+                                    const finalResult = `+${countryCode} ${formattedLocal || localNumber}`;
                                     
                                     if (finalResult !== currentValue) {
                                         setCustomValueAndCursor(finalResult, customPhoneField.selectionStart || 0, currentValue, false);
                                         lastFormattedValue = finalResult;
                                         updateCustomHiddenCountryCodeField(`+${countryCode}`);
-                                        console.log('✅ [CUSTOM FORMATTING] Formatação com espaço aplicada!');
                                     }
                                 } catch (formatError) {
                                     console.warn('❌ [CUSTOM FORMATTING] Erro na formatação com espaço:', formatError);
@@ -1981,16 +2192,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     // CASO 2: Número sem espaço - verificar auto-espaçamento e formatação completa
                     if (internationalWithoutSpace) {
                         const allDigits = internationalWithoutSpace[1];
-                        console.log('📞 [CUSTOM FORMATTING] Número sem espaço:', { allDigits, length: allDigits.length });
                         
                         // AUTO-ESPAÇAMENTO: Verifica se o prefixo atual corresponde a apenas UM país
                         const uniqueCountryCode = findUniqueCountryCode(allDigits);
                         if (uniqueCountryCode && allDigits.length > uniqueCountryCode.length) {
                             const localNumber = allDigits.substring(uniqueCountryCode.length);
-                            console.log('🚀 [CUSTOM FORMATTING] Auto-espaçamento detectado!', { 
-                                uniqueCountryCode, 
-                                localNumber 
-                            });
                             
                             const foundCountryCode = findCustomCountryByDialCode(uniqueCountryCode);
                             if (foundCountryCode) {
@@ -1999,12 +2205,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 setTimeout(() => {
                                     try {
                                         const autoSpacedNumber = `+${uniqueCountryCode} ${localNumber}`;
-                                        console.log('🎨 [CUSTOM FORMATTING] Aplicando auto-espaçamento:', autoSpacedNumber);
                                         
                                         setCustomValueAndCursor(autoSpacedNumber, customPhoneField.selectionStart || 0, currentValue, false);
                                         lastFormattedValue = autoSpacedNumber;
                                         updateCustomHiddenCountryCodeField(`+${uniqueCountryCode}`);
-                                        console.log('✅ [CUSTOM FORMATTING] Auto-espaçamento aplicado!');
                                     } catch (autoSpaceError) {
                                         console.warn('❌ [CUSTOM FORMATTING] Erro no auto-espaçamento:', autoSpaceError);
                                     }
@@ -2016,7 +2220,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // FORMATAÇÃO COMPLETA: Se há dígitos suficientes, tenta detectar país e formatar
                         if (allDigits.length >= 7) { // Pelo menos country code (1+) + 6 dígitos locais
-                            console.log('🔍 [CUSTOM FORMATTING] Tentando detectar país em número completo...');
                             
                             // Tenta diferentes tamanhos de country code (4, 3, 2, 1) - do MAIOR para o MENOR
                             let countryDetected = false;
@@ -2025,37 +2228,21 @@ document.addEventListener('DOMContentLoaded', function() {
                                     const testCountryCode = allDigits.substring(0, codeLength);
                                     const testPhoneNumber = allDigits.substring(codeLength);
                                     
-                                    console.log(`🔍 [CUSTOM FORMATTING] Testando country code ${codeLength} dígitos:`, { 
-                                        testCountryCode, 
-                                        testPhoneNumber 
-                                    });
-                                    
                                     const foundCountryCode = findCustomCountryByDialCode(testCountryCode);
                                     
                                     if (foundCountryCode) {
-                                        console.log('✅ [CUSTOM FORMATTING] País encontrado para formatação completa!', { 
-                                            testCountryCode, 
-                                            foundCountryCode 
-                                        });
                                         
                                         countryDetected = true;
                                         iti.setCountry(foundCountryCode);
                                         
                                         setTimeout(() => {
                                             try {
-                                                console.log('🎨 [CUSTOM FORMATTING] Aplicando formatação completa...');
                                                 const customFormatted = applyCustomPhoneSpacing(currentValue, testCountryCode);
-                                                
-                                                console.log('🎨 [CUSTOM FORMATTING] Resultado da formatação completa:', { 
-                                                    original: currentValue, 
-                                                    formatted: customFormatted 
-                                                });
                                                 
                                                 if (customFormatted && customFormatted !== currentValue && customFormatted.length >= currentValue.length) {
                                                     setCustomValueAndCursor(customFormatted, customPhoneField.selectionStart || 0, currentValue, false);
                                                     lastFormattedValue = customFormatted;
                                                     updateCustomHiddenCountryCodeField(`+${testCountryCode}`);
-                                                    console.log('✅ [CUSTOM FORMATTING] Formatação completa aplicada!');
                                                     return;
                                                 }
                                             } catch (formatError) {
@@ -2069,7 +2256,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                             
                             if (!countryDetected) {
-                                console.log('⚠️ [CUSTOM FORMATTING] Nenhum país encontrado para formatação completa');
+                                // Não foi possível encontrar país para formatação
                             }
                         }
                     }
@@ -2081,33 +2268,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         if (countryData && countryData.dialCode && countryData.iso2 && countryData.dialCode !== 'undefined' && cleanValue.length > 0) {
                             try {
-                                // Primeiro tenta formatação personalizada
-                                const customNationalFormatted = formatLocalNumberByCountry(cleanValue, countryData.iso2);
-                                
-                                if (customNationalFormatted && customNationalFormatted !== cleanValue) {
-                                    setCustomValueAndCursor(customNationalFormatted, customPhoneField.selectionStart || 0, currentValue, false);
-                                    lastFormattedValue = customNationalFormatted;
-                                    isFormatting = false;
-                                    return;
-                                }
-                                
-                                // Fallback para formatação padrão da biblioteca
-                                const standardFormatted = intlTelInputUtils.formatNumber(
+                                // Usa formatação nativa da biblioteca intlTelInput
+                                const formatted = intlTelInputUtils.formatNumber(
                                     cleanValue, 
                                     countryData.iso2, 
                                     intlTelInputUtils.numberFormat.NATIONAL
                                 );
                                 
-                                if (standardFormatted && standardFormatted !== 'Invalid number' && standardFormatted !== currentValue) {
-                                    const inputDigits = cleanValue.replace(/\D/g, '');
-                                    const outputDigits = standardFormatted.replace(/\D/g, '');
-                                    
-                                    if (inputDigits === outputDigits) {
-                                        setCustomValueAndCursor(standardFormatted, customPhoneField.selectionStart || 0, currentValue, false);
-                                        lastFormattedValue = standardFormatted;
-                                        isFormatting = false;
-                                        return;
-                                    }
+                                if (formatted && formatted !== 'Invalid number' && formatted !== cleanValue) {
+                                    setCustomValueAndCursor(formatted, customPhoneField.selectionStart || 0, currentValue, false);
+                                    lastFormattedValue = formatted;
+                                    isFormatting = false;
+                                    return;
                                 }
                             } catch (formatError) {
                                 console.warn('Erro na formatação nacional customizada:', formatError);
@@ -2150,11 +2322,21 @@ document.addEventListener('DOMContentLoaded', function() {
                         customPendingPhoneData.billing_phone_formatted = cleanValue;
                         customPendingPhoneData.shipping_phone_formatted = cleanValue;
                         
-                        // Agenda execução em 1s (agrupa mudanças rápidas)
+                        // Agenda execução em 1.5s (agrupa mudanças rápidas - sincronizado com outros timers)
                         customPhoneUpdateTimeout = setTimeout(() => {
-                            // Remove lógica do extensionCartUpdate pois os campos originais já fazem isso
+                            // Adiciona extensionCartUpdate para campos customizados (seguindo mesma lógica do woo_better_phone_formatter)
+                            if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                                // Cria cópia dos dados para envio
+                                const dataToSend = { ...customPendingPhoneData };
+                                
+                                window.wc.blocksCheckout.extensionCartUpdate({
+                                    namespace: 'woo_better_phone_formatter',
+                                    data: dataToSend
+                                });
+                            }
+                            
                             customPhoneUpdateTimeout = null;
-                        }, 1000);
+                        }, 1500); // 1.5s para sincronizar com outros debounces
                     }
 
                     const reactKey = Object.keys(input).find(key => 
@@ -2376,7 +2558,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Função para aplicar padding da label no campo customizado (versão simples)
             function adjustCustomPhoneLabelSimple(phoneField) {
-                console.log('🎨 [CUSTOM FIELD SIMPLE] Aplicando ajuste de label simples');
                 
                 // Aplica padding básico no input sem biblioteca
                 const basicPadding = 16; // Padding padrão sem ícones de país
@@ -2407,7 +2588,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Função para criar campos hidden básicos (versão simples para Brasil)
             function updateCustomHiddenCountryCodeFieldSimple(dialCode) {
-                console.log('🔧 [CUSTOM FIELD SIMPLE] Criando campos hidden simples:', dialCode);
+                // Criando campos hidden simples de país
                 
                 const countryCode = String(dialCode || '+55'); // Brasil padrão
                 
@@ -2424,6 +2605,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                     'billing_phone_country_code': countryCode,
                                     'shipping_phone_country_code': countryCode
                                 };
+
+                                // Debug temporário - REMOVER
                                 
                                 checkoutDispatch.setExtensionData('woo_better_phone_country', phoneCountryData);
                             }
@@ -2491,7 +2674,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Função para encontrar país pelo código de discagem (campo customizado - versão completa)
             function findCustomCountryByDialCode(dialCode) {
-                console.log('🔍 [FIND COUNTRY] Procurando país para código:', dialCode);
                 
                 const customDialCodeMap = {
                     // América do Norte
@@ -2728,30 +2910,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 
                 const result = customDialCodeMap[dialCode] || null;
-                console.log('🌍 [FIND COUNTRY] Resultado da busca:', { dialCode, result });
                 return result;
             }
             
             // Função para aplicar formatação customizada com espaçamento inteligente
             function applyCustomPhoneSpacing(phoneNumber, countryCode) {
                 try {
-                    console.log('📞 [CUSTOM SPACING] Iniciando espaçamento:', { phoneNumber, countryCode });
                     
                     if (!phoneNumber || !countryCode) {
-                        console.log('⚠️ [CUSTOM SPACING] Parâmetros inválidos, retornando original');
                         return phoneNumber;
                     }
                     
                     // Remove formatação existente, mantém apenas números e o +
                     const cleanNumber = phoneNumber.replace(/[^\d+]/g, '');
-                    console.log('🧹 [CUSTOM SPACING] Número limpo:', cleanNumber);
                     
                     // Se não começar com +, adiciona o código do país
                     if (!cleanNumber.startsWith('+')) {
                         const digits = cleanNumber.replace(/\D/g, '');
                         if (digits.length > 0) {
                             const result = `+${countryCode} ${digits}`;
-                            console.log('➕ [CUSTOM SPACING] Adicionando + e country code:', result);
                             return result;
                         }
                         return cleanNumber;
@@ -2763,135 +2940,43 @@ document.addEventListener('DOMContentLoaded', function() {
                         const allDigits = cleanNumber.substring(1); // Remove o +
                         const localNumber = allDigits.substring(countryCode.length); // Remove o country code
                         
-                        console.log('📱 [CUSTOM SPACING] Usando country code fornecido:', { 
-                            countryCode, 
-                            localNumber, 
-                            allDigits 
-                        });
-                        
                         // Busca o país pelo código fornecido
                         const foundCountry = findCustomCountryByDialCode(countryCode);
-                        console.log('🌍 [CUSTOM SPACING] País encontrado para dial code fornecido:', { countryCode, foundCountry });
                         
                         if (foundCountry && localNumber.length > 0) {
-                            // Aplica formatação específica por país
-                            console.log('🎨 [CUSTOM SPACING] Formatando número local para país:', foundCountry);
-                            const formattedLocal = formatLocalNumberByCountry(localNumber, foundCountry);
-                            const result = `+${countryCode} ${formattedLocal}`;
-                            console.log('✅ [CUSTOM SPACING] Resultado final:', result);
-                            return result;
+                            // Usa formatação nativa da biblioteca intlTelInput
+                            try {
+                                const formattedLocal = intlTelInputUtils.formatNumber(
+                                    localNumber, 
+                                    foundCountry, 
+                                    intlTelInputUtils.numberFormat.NATIONAL
+                                );
+                                const result = `+${countryCode} ${formattedLocal || localNumber}`;
+                                return result;
+                            } catch (formatError) {
+                                console.warn('❌ [CUSTOM SPACING] Erro ao formatar, usando número original');
+                                const result = `+${countryCode} ${localNumber}`;
+                                return result;
+                            }
                         }
                         
                         // Formatação genérica se país não encontrado
                         if (localNumber.length > 0) {
-                            console.log('⚠️ [CUSTOM SPACING] País não encontrado, usando formatação genérica');
                             const genericResult = `+${countryCode} ${localNumber}`;
-                            console.log('🔧 [CUSTOM SPACING] Resultado genérico:', genericResult);
                             return genericResult;
                         }
                     }
                     
-                    console.log('⚠️ [CUSTOM SPACING] Não foi possível processar, retornando original');
                     return phoneNumber;
                 } catch (error) {
                     console.warn('❌ [CUSTOM SPACING] Erro na formatação customizada:', error);
                     return phoneNumber;
                 }
             }
-            
-            // Função para formatar número local por país
-            function formatLocalNumberByCountry(localNumber, countryCode) {
-                try {
-                    console.log('🏁 [LOCAL FORMAT] Formatando número local:', { localNumber, countryCode, length: localNumber.length });
-                    
-                    // Formatações específicas para países mais comuns
-                    switch (countryCode) {
-                        case 'br': // Brasil
-                            console.log('🇧🇷 [LOCAL FORMAT] Formatando para Brasil...');
-                            if (localNumber.length === 11) {
-                                const result = `(${localNumber.substring(0, 2)}) ${localNumber.substring(2, 7)}-${localNumber.substring(7)}`;
-                                console.log('📱 [LOCAL FORMAT] Brasil 11 dígitos:', result);
-                                return result;
-                            } else if (localNumber.length === 10) {
-                                const result = `(${localNumber.substring(0, 2)}) ${localNumber.substring(2, 6)}-${localNumber.substring(6)}`;
-                                console.log('📱 [LOCAL FORMAT] Brasil 10 dígitos:', result);
-                                return result;
-                            } else {
-                                console.log('⚠️ [LOCAL FORMAT] Brasil - tamanho inválido:', localNumber.length);
-                            }
-                            break;
-                            
-                        case 'us': // Estados Unidos
-                        case 'ca': // Canadá
-                            if (localNumber.length === 10) {
-                                const result = `(${localNumber.substring(0, 3)}) ${localNumber.substring(3, 6)}-${localNumber.substring(6)}`;
-                                console.log('🇺🇸 [LOCAL FORMAT] US/CA 10 dígitos:', result);
-                                return result;
-                            } else if (localNumber.length === 11 && localNumber.startsWith('1')) {
-                                // Remove o primeiro '1' duplicado para números US/CA com 11 dígitos
-                                const cleanLocal = localNumber.substring(1);
-                                const result = `(${cleanLocal.substring(0, 3)}) ${cleanLocal.substring(3, 6)}-${cleanLocal.substring(6)}`;
-                                console.log('🇺🇸 [LOCAL FORMAT] US/CA 11 dígitos (removendo 1 duplicado):', result);
-                                return result;
-                            } else {
-                                console.log('⚠️ [LOCAL FORMAT] US/CA - tamanho inválido:', localNumber.length);
-                            }
-                            break;
-                            
-                        case 'gb': // Reino Unido
-                            if (localNumber.length === 10) {
-                                return `${localNumber.substring(0, 4)} ${localNumber.substring(4, 7)} ${localNumber.substring(7)}`;
-                            }
-                            break;
-                            
-                        case 'fr': // França
-                            if (localNumber.length === 9) {
-                                return `${localNumber.substring(0, 1)} ${localNumber.substring(1, 3)} ${localNumber.substring(3, 5)} ${localNumber.substring(5, 7)} ${localNumber.substring(7)}`;
-                            }
-                            break;
-                            
-                        case 'de': // Alemanha
-                            if (localNumber.length >= 10) {
-                                return `${localNumber.substring(0, 3)} ${localNumber.substring(3, 6)} ${localNumber.substring(6)}`;
-                            }
-                            break;
-                            
-                        case 'ar': // Argentina
-                            if (localNumber.length === 10) {
-                                return `${localNumber.substring(0, 2)} ${localNumber.substring(2, 6)}-${localNumber.substring(6)}`;
-                            }
-                            break;
-                            
-                        case 'mx': // México
-                            if (localNumber.length === 10) {
-                                return `${localNumber.substring(0, 3)} ${localNumber.substring(3, 6)}-${localNumber.substring(6)}`;
-                            }
-                            break;
-                            
-                        default:
-                            // Formatação genérica para outros países
-                            console.log('🌍 [LOCAL FORMAT] Usando formatação genérica para país:', countryCode);
-                            if (localNumber.length >= 8) {
-                                const mid = Math.floor(localNumber.length / 2);
-                                const result = `${localNumber.substring(0, mid)} ${localNumber.substring(mid)}`;
-                                console.log('🔧 [LOCAL FORMAT] Formatação genérica:', result);
-                                return result;
-                            } else {
-                                console.log('⚠️ [LOCAL FORMAT] Número muito curto para formatação genérica:', localNumber.length);
-                            }
-                    }
-                    
-                    // Se não há formatação específica, retorna o número original
-                    console.log('⚠️ [LOCAL FORMAT] Sem formatação específica, retornando original:', localNumber);
-                    return localNumber;
-                } catch (error) {
-                    console.warn('❌ [LOCAL FORMAT] Erro na formatação local do número:', error);
-                    return localNumber;
-                }
-            }
 
             // Função para criar/atualizar campos hidden dinâmicos (campo customizado)
             function updateCustomHiddenCountryCodeField(dialCode) {
+                
                 // Garante que dialCode seja uma string válida
                 const countryCode = String(dialCode || '+55');
                 
@@ -2918,6 +3003,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 phoneCountryData['shipping_phone_country_code'] = countryCode;
                                 
                                 checkoutDispatch.setExtensionData('woo_better_phone_country', phoneCountryData);
+                                
                             } else if (checkoutDispatch.__unstableSetExtensionData) {
                                 // Fallback para versões antigas
                                 const currentData = select('wc/store/checkout').getExtensionData() || {};
@@ -2932,79 +3018,243 @@ document.addEventListener('DOMContentLoaded', function() {
                                 phoneCountryData['shipping_phone_country_code'] = countryCode;
                                 
                                 checkoutDispatch.__unstableSetExtensionData('woo_better_phone_country', phoneCountryData);
+                                
+                            } else {
+                                console.warn('⚠️ [HIDDEN FIELDS] Nenhum método setExtensionData disponível!');
                             }
+                        } else {
+                            console.warn('⚠️ [HIDDEN FIELDS] dispatch(\'wc/store/checkout\') não disponível');
                         }
                     } catch (error) {
-                        // Silenciar erro
+                        console.error('❌ [HIDDEN FIELDS] Erro no processamento WooCommerce Blocks:', error);
                     }
+                } else {
                 }
                 
                 // Para checkout tradicional
-                // Remove campos existentes se houver
+                
+                // Verifica campo billing existente
                 const existingBillingField = document.querySelector('input[name="billing_phone_country_code"]');
                 if (existingBillingField) {
-                    existingBillingField.remove();
+                    if (existingBillingField.value !== countryCode) {
+                        existingBillingField.value = countryCode;
+                    }
+                } else {
                 }
                 
+                // Verifica campo shipping existente
                 const existingShippingField = document.querySelector('input[name="shipping_phone_country_code"]');
                 if (existingShippingField) {
-                    existingShippingField.remove();
+                    if (existingShippingField.value !== countryCode) {
+                        existingShippingField.value = countryCode;
+                    }
+                } else {
                 }
                 
-                // Cria novos campos hidden para ambos billing e shipping
-                const billingHiddenField = document.createElement('input');
-                billingHiddenField.type = 'hidden';
-                billingHiddenField.name = 'billing_phone_country_code';
-                billingHiddenField.value = countryCode;
+                // Só cria novos campos se não existirem
+                const needsNewFields = !existingBillingField || !existingShippingField;
                 
-                const shippingHiddenField = document.createElement('input');
-                shippingHiddenField.type = 'hidden';
-                shippingHiddenField.name = 'shipping_phone_country_code';
-                shippingHiddenField.value = countryCode;
-                
-                // Adiciona ambos os campos ao formulário tradicional
-                const checkoutForm = document.querySelector('form.checkout');
-                if (checkoutForm) {
-                    checkoutForm.appendChild(billingHiddenField);
-                    checkoutForm.appendChild(shippingHiddenField);
+                if (needsNewFields) {
+                    
+                    // Cria campo billing somente se não existir
+                    if (!existingBillingField) {
+                        const billingHiddenField = document.createElement('input');
+                        billingHiddenField.type = 'hidden';
+                        billingHiddenField.name = 'billing_phone_country_code';
+                        billingHiddenField.value = countryCode;
+                        
+                        // Adiciona ao formulário
+                        const formSelectors = [
+                            'form.checkout',
+                            'form.woocommerce-checkout',
+                            '.woocommerce-checkout form',
+                            'form[name="checkout"]',
+                            'form#checkout',
+                            'form:has(input[name*="billing"])',
+                            'form:has(input[name*="shipping"])'
+                        ];
+                        
+                        let billingFormFound = false;
+                        for (let selector of formSelectors) {
+                            const checkoutForm = document.querySelector(selector);
+                            if (checkoutForm) {
+                                checkoutForm.appendChild(billingHiddenField);
+                                billingFormFound = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!billingFormFound) {
+                            const anyForm = document.querySelector('form');
+                            if (anyForm) {
+                                anyForm.appendChild(billingHiddenField);
+                            }
+                        }
+                    }
+                    
+                    // Cria campo shipping somente se não existir
+                    if (!existingShippingField) {
+                        const shippingHiddenField = document.createElement('input');
+                        shippingHiddenField.type = 'hidden';
+                        shippingHiddenField.name = 'shipping_phone_country_code';
+                        shippingHiddenField.value = countryCode;
+                        
+                        // Adiciona ao formulário
+                        const formSelectors = [
+                            'form.checkout',
+                            'form.woocommerce-checkout',
+                            '.woocommerce-checkout form',
+                            'form[name="checkout"]',
+                            'form#checkout',
+                            'form:has(input[name*="billing"])',
+                            'form:has(input[name*="shipping"])'
+                        ];
+                        
+                        let shippingFormFound = false;
+                        for (let selector of formSelectors) {
+                            const checkoutForm = document.querySelector(selector);
+                            if (checkoutForm) {
+                                checkoutForm.appendChild(shippingHiddenField);
+                                shippingFormFound = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!shippingFormFound) {
+                            const anyForm = document.querySelector('form');
+                            if (anyForm) {
+                                anyForm.appendChild(shippingHiddenField);
+                            }
+                        }
+                    }
+                    
+                    // Campos hidden processados com sucesso!
+                } else {
+                    // Todos os campos já existem, nenhuma criação necessária!
                 }
+                
+                // SISTEMA DE DEBOUNCE PARA COUNTRY UPDATES (igual ao woo_better_phone_formatter)
+                // Cancela timeout anterior se existir
+                if (countryUpdateTimeout) {
+                    clearTimeout(countryUpdateTimeout);
+                }
+                
+                // Atualiza dados pendentes
+                pendingCountryData.billing_phone_country_code = countryCode;
+                pendingCountryData.shipping_phone_country_code = countryCode;
+                
+                // Agenda execução em 1.5s (igual ao formatter)
+                countryUpdateTimeout = setTimeout(() => {
+                    if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                        // Enviando extensionCartUpdate como backup para woo_better_phone_country (com debounce 1.5s)
+                        // Cria cópia dos dados para envio
+                        const countryDataToSend = { ...pendingCountryData };
+                        
+                        window.wc.blocksCheckout.extensionCartUpdate({
+                            namespace: 'woo_better_phone_country',
+                            data: countryDataToSend
+                        });
+                        // extensionCartUpdate executado
+                    }
+                    
+                    countryUpdateTimeout = null;
+                }, 1500); // 1.5s igual ao woo_better_phone_formatter
+                
+                // Verificação final - confirma que os campos estão presentes e com valores corretos
+                setTimeout(() => {
+                    const billingCheck = document.querySelector('input[name="billing_phone_country_code"]');
+                    const shippingCheck = document.querySelector('input[name="shipping_phone_country_code"]');
+                }, 100);
             }
 
-            // Event listeners do campo customizado (SOMENTE SE phoneMaskEnabled estiver habilitado)
+            // Sistema centralizado de event handling com debounce coordenado
             if (isPhoneMaskEnabled && !customPhoneField.dataset.inputListenerAdded) {
-                let inputTimeout;
-                
-                customPhoneField.addEventListener('input', function(event) {
-                    if (inputTimeout) clearTimeout(inputTimeout);
-                    
-                    if (event.inputType !== 'insertCompositionText' && 
-                        event.inputType !== 'selectAll' &&
-                        !event.isComposing) {
-                        
-                        const isDelete = event.inputType === 'deleteContentBackward' || 
-                                       event.inputType === 'deleteContentForward' ||
-                                       event.data === null;
-                        const delay = isDelete ? 5 : 10;
-                        
-                        inputTimeout = setTimeout(() => {
-                            applyCustomPhoneFormatting(event, 'Input');
-                            
-                            // Controla classe is-active após formatação
-                            const currentValue = customPhoneField.value;
-                            if (currentValue && currentValue.trim() !== '') {
-                                customPhoneContainer.classList.add('is-active');
-                            } else {
-                                customPhoneContainer.classList.remove('is-active');
-                            }
-                            
-                            // Sincroniza valor com campos originais após formatação
-                            syncFormattedPhoneFields(currentValue);
-                        }, delay);
-                    }
-                }, { passive: true });
                 customPhoneField.dataset.inputListenerAdded = 'true';
                 
-                // Adiciona também listener para change para garantir sincronização
+                // Sistema de debounce inteligente que evita conflitos
+                let coordinatedDebounceTimer = null;
+                const COORDINATED_DEBOUNCE_DELAY = 200; // Otimizado para responsividade
+                
+                const coordinatedHandler = (event, eventType) => {
+                    // Evita processamento simultâneo 
+                    if (customPhoneField._isProcessingCoordinated) return;
+                    
+                    if (coordinatedDebounceTimer) {
+                        clearTimeout(coordinatedDebounceTimer);
+                    }
+                    
+                    coordinatedDebounceTimer = setTimeout(() => {
+                        processCoordinatedUpdate(event, eventType);
+                        coordinatedDebounceTimer = null;
+                    }, COORDINATED_DEBOUNCE_DELAY);
+                };
+                
+                const processCoordinatedUpdate = (event, eventType) => {
+                    customPhoneField._isProcessingCoordinated = true;
+                    
+                    try {
+                        const currentValue = event.target.value;
+                        
+                        // 1. APLICA FORMATAÇÃO (se phoneMaskEnabled = true)
+                        let processedValue = currentValue;
+                        if (eventType === 'input' && currentValue && currentValue.length > 0) {
+                            // Só aplica formatação se o valor mudou significativamente
+                            if (!isMinorChange(currentValue, event.target._lastProcessedValue)) {
+                                applyCustomPhoneFormatting(event, 'Coordinated');
+                                processedValue = event.target.value; // Valor após formatação
+                            }
+                        }
+                        
+                        // 2. CONTROLA CLASSE CSS
+                        if (processedValue && processedValue.trim() !== '') {
+                            customPhoneContainer.classList.add('is-active');
+                        } else {
+                            customPhoneContainer.classList.remove('is-active');
+                        }
+                        
+                        // 3. SINCRONIZA COM CAMPOS REACT (usando função existente)
+                        syncFormattedPhoneFields(processedValue);
+                        
+                        // Marca último valor processado
+                        event.target._lastProcessedValue = processedValue;
+                        
+                    } finally {
+                        // Libera o bloqueio após um pequeno delay
+                        setTimeout(() => {
+                            customPhoneField._isProcessingCoordinated = false;
+                        }, 100);
+                    }
+                };
+                
+                // Função para detectar mudanças menores que não precisam formatação
+                const isMinorChange = (currentValue, lastValue) => {
+                    if (!lastValue) return false;
+                    
+                    // Considera mudança menor se diferença for apenas 1-2 caracteres
+                    const diff = Math.abs(currentValue.length - lastValue.length);
+                    return diff <= 2 && currentValue.includes(lastValue.substring(0, Math.min(lastValue.length, currentValue.length)));
+                };
+                
+                // ÚNICO LISTENER DE INPUT centralizado
+                customPhoneField.addEventListener('input', function(event) {
+                    // Evita processamento se outros sistemas estão ativos
+                    if (this._isSyncing || this._isProcessing) return;
+                    
+                    // Ignora eventos de composição (IME keyboards)
+                    if (event.inputType === 'insertCompositionText' || 
+                        event.inputType === 'selectAll' ||
+                        event.isComposing) {
+                        return;
+                    }
+                    
+                    coordinatedHandler(event, 'input');
+                }, { passive: true });
+                
+                // Listener para change (garantia de sincronização)
+                customPhoneField.addEventListener('change', function(event) {
+                    if (this._isSyncing || this._isProcessing) return;
+                    coordinatedHandler(event, 'change');
+                });
                 customPhoneField.addEventListener('change', function(event) {
                     const currentValue = customPhoneField.value;
                     syncFormattedPhoneFields(currentValue);
@@ -3151,29 +3401,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // CAMPO CUSTOMIZADO como PAI - sincroniza para todos os filhos
-        if (!customPhoneField.dataset.syncParentListener) {
-            customPhoneField.addEventListener('input', function(e) {
-                if (syncing) return;
-                
-                syncing = true;
-                
-                setTimeout(() => {
-                    const value = e.target.value;
-                    
-                    // Sincroniza valor para TODOS os campos filhos
-                    otherPhoneFields.forEach(field => {
-                        if (field && field.type === 'tel') {
-                            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                            nativeSetter.call(field, value);
-                            triggerReactEvent(field, value);
-                        }
-                    });
-
-                    syncing = false;
-                }, 50);
-            });
-            customPhoneField.dataset.syncParentListener = 'true';
-        }
+        // Sistema de sincronização já implementado no listener centralizado acima
+        // Remove listener duplicado para evitar conflitos
+        customPhoneField.dataset.syncParentListener = 'true';
 
         // Observer para recriar campos e esconder automaticamente
         const fieldObserver = new MutationObserver(() => {
@@ -3244,6 +3474,26 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         
                         checkoutDispatch.setExtensionData('woo_better_phone_country', phoneCountryData);
+                        
+                        // BACKUP: extensionCartUpdate com debounce de 1.5s para inicialização (sincronizado com woo_better_phone_formatter)
+                        if (countryUpdateTimeout) {
+                            clearTimeout(countryUpdateTimeout);
+                        }
+                        
+                        // Atualiza dados pendentes na inicialização
+                        pendingCountryData.billing_phone_country_code = phoneCountryData.billing_phone_country_code;
+                        pendingCountryData.shipping_phone_country_code = phoneCountryData.shipping_phone_country_code;
+                        
+                        countryUpdateTimeout = setTimeout(() => {
+                            if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                                const countryDataToSend = { ...pendingCountryData };
+                                window.wc.blocksCheckout.extensionCartUpdate({
+                                    namespace: 'woo_better_phone_country',
+                                    data: countryDataToSend
+                                });
+                            }
+                            countryUpdateTimeout = null;
+                        }, 1500);
                     }
                 }
             } catch (error) {
@@ -3264,11 +3514,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 wc_better_checkout_phone_mask_vars.phoneRequired === 'true');
         
         if (!isPhoneRequired) {
-            console.log('📱 [PHONE VALIDATION] phoneRequired=false, validação desabilitada');
+            // phoneRequired=false, validação desabilitada
             return;
         }
 
-        console.log('📱 [PHONE VALIDATION] phoneRequired=true, configurando validação');
+        // phoneRequired=true, configurando validação
 
         // Função para validar telefone
         function validatePhoneField() {
@@ -3283,7 +3533,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.querySelector('input[name="shipping_phone"]')
             ].filter(field => field && field.offsetParent !== null); // Remove campos ocultos
 
-            console.log('📱 [PHONE VALIDATION] Campos encontrados para validação:', phoneFieldsToCheck.length);
 
             // Verifica se pelo menos um campo está preenchido
             let hasValidPhone = false;
@@ -3292,17 +3541,9 @@ document.addEventListener('DOMContentLoaded', function() {
             for (const field of phoneFieldsToCheck) {
                 const value = field.value.trim();
                 
-                console.log('📱 [PHONE VALIDATION] Verificando campo:', { 
-                    id: field.id, 
-                    name: field.name, 
-                    value, 
-                    isEmpty: value === ''
-                });
-
                 // Considera válido se tem qualquer conteúdo (não está vazio)
                 if (value !== '') {
                     hasValidPhone = true;
-                    console.log('✅ [PHONE VALIDATION] Campo preenchido encontrado!');
                     break;
                 } else if (!firstEmptyField) {
                     firstEmptyField = field;
@@ -3319,7 +3560,6 @@ document.addEventListener('DOMContentLoaded', function() {
         function displayPhoneError(field, message) {
             if (!field) return;
 
-            console.log('❌ [PHONE VALIDATION] Exibindo erro:', message);
 
             // Remove erros existentes
             removePhoneError(field);
@@ -3372,12 +3612,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Handler para validação no submit do formulário
         function handleFormSubmit(event) {
-            console.log('📋 [PHONE VALIDATION] Formulário sendo submetido, validando...');
             
             const validation = validatePhoneField();
             
             if (!validation.isValid) {
-                console.log('❌ [PHONE VALIDATION] Validação falhou, bloqueando submit');
                 
                 event.preventDefault();
                 event.stopImmediatePropagation();
@@ -3388,7 +3626,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
 
-            console.log('✅ [PHONE VALIDATION] Validação passou, permitindo submit');
             removePhoneError(validation.firstEmptyField);
             return true;
         }
@@ -3400,7 +3637,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!form.dataset.phoneValidationSetup) {
                     form.addEventListener('submit', handleFormSubmit, { capture: true, passive: false });
                     form.dataset.phoneValidationSetup = 'true';
-                    console.log('📋 [PHONE VALIDATION] Validação configurada para checkout tradicional');
+                    // Validação configurada para checkout tradicional
                 }
             });
         }
@@ -3427,12 +3664,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             // Se o status mudou para 'processing' (submissão iniciando)
                             if (currentStatus !== lastCheckoutStatus && currentStatus === 'processing') {
-                                console.log('📋 [BLOCKS VALIDATION] Checkout blocks sendo processado, validando...');
+                                // Checkout blocks sendo processado, validando...
                                 
                                 const validation = validatePhoneField();
                                 
                                 if (!validation.isValid) {
-                                    console.log('❌ [BLOCKS VALIDATION] Validação falhou');
                                     
                                     const errorMessage = 'Por favor, preencha um número de telefone válido.';
                                     displayPhoneError(validation.firstEmptyField, errorMessage);
@@ -3445,7 +3681,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                         }
                                     }, 0);
                                 } else {
-                                    console.log('✅ [BLOCKS VALIDATION] Validação passou');
                                     removePhoneError(validation.firstEmptyField);
                                 }
                             }
@@ -3461,7 +3696,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Marca como configurado e exibe mensagem apenas uma vez
                     window.wcBscBrazilBlocksValidationSetup = true;
-                    console.log('📋 [BLOCKS VALIDATION] Monitor de WooCommerce Blocks configurado');
+                    // Monitor de WooCommerce Blocks configurado
                 }
             }
 
@@ -3477,12 +3712,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 placeOrderButtons.forEach(button => {
                     if (!button.dataset.phoneValidationSetup) {
                         button.addEventListener('click', function(event) {
-                            console.log('🔘 [BUTTON VALIDATION] Botão place order clicado, validando...');
                             
                             const validation = validatePhoneField();
                             
                             if (!validation.isValid) {
-                                console.log('❌ [BUTTON VALIDATION] Validação falhou, bloqueando clique');
                                 
                                 event.preventDefault();
                                 event.stopImmediatePropagation();
@@ -3493,12 +3726,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 return false;
                             }
 
-                            console.log('✅ [BUTTON VALIDATION] Validação passou');
                             removePhoneError(validation.firstEmptyField);
                         }, { capture: true, passive: false });
                         
                         button.dataset.phoneValidationSetup = 'true';
-                        console.log('🔘 [BUTTON VALIDATION] Interceptação configurada para botão');
                     }
                 });
             }
@@ -3521,7 +3752,7 @@ document.addEventListener('DOMContentLoaded', function() {
             subtree: true
         });
 
-        console.log('✅ [PHONE VALIDATION] Sistema de validação totalmente configurado');
+        // Sistema de validação totalmente configurado
     }
 
     // Inicializa validação após um delay para garantir que os campos estejam prontos
