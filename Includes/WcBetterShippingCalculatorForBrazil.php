@@ -3757,31 +3757,25 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // Guarda os dados de telefone formatado na sessão para manter durante o checkout
-        if (!empty($billing_phone_formatted)) {
-            WC()->session->set( 'billing_phone', $billing_phone_formatted );
-            WC()->session->set( 'billing_phone_formatted', $billing_phone_formatted );
-            if (is_user_logged_in()) {
-                update_user_meta( get_current_user_id(), 'billing_phone', $billing_phone_formatted );
-                update_user_meta( get_current_user_id(), 'billing_phone_formatted', $billing_phone_formatted );
-            }
+        WC()->session->set( 'billing_phone', $billing_phone_formatted );
+        WC()->session->set( 'billing_phone_formatted', $billing_phone_formatted );
+        if (is_user_logged_in()) {
+            update_user_meta( get_current_user_id(), 'billing_phone', $billing_phone_formatted );
+            update_user_meta( get_current_user_id(), 'billing_phone_formatted', $billing_phone_formatted );
         }
 
-        if (!empty($shipping_phone_formatted)) {
-            WC()->session->set( 'shipping_phone', $shipping_phone_formatted );
-            WC()->session->set( 'shipping_phone_formatted', $shipping_phone_formatted );
-            if (is_user_logged_in()) {
-                update_user_meta( get_current_user_id(), 'shipping_phone', $shipping_phone_formatted );
-                update_user_meta( get_current_user_id(), 'shipping_phone_formatted', $shipping_phone_formatted );
-            }
+        WC()->session->set( 'shipping_phone', $shipping_phone_formatted );
+        WC()->session->set( 'shipping_phone_formatted', $shipping_phone_formatted );
+        if (is_user_logged_in()) {
+            update_user_meta( get_current_user_id(), 'shipping_phone', $shipping_phone_formatted );
+            update_user_meta( get_current_user_id(), 'shipping_phone_formatted', $shipping_phone_formatted );
         }
 
-        if (!empty($custom_phone_formatted)) {
-            WC()->session->set( 'custom_phone', $custom_phone_formatted );
-            WC()->session->set( 'custom_phone_formatted', $custom_phone_formatted );
-            if (is_user_logged_in()) {
-                update_user_meta( get_current_user_id(), 'custom_phone', $custom_phone_formatted );
-                update_user_meta( get_current_user_id(), 'custom_phone_formatted', $custom_phone_formatted );
-            }
+        WC()->session->set( 'custom_phone', $custom_phone_formatted );
+        WC()->session->set( 'custom_phone_formatted', $custom_phone_formatted );
+        if (is_user_logged_in()) {
+            update_user_meta( get_current_user_id(), 'custom_phone', $custom_phone_formatted );
+            update_user_meta( get_current_user_id(), 'custom_phone_formatted', $custom_phone_formatted );
         }
     }
 
@@ -5093,6 +5087,9 @@ class WcBetterShippingCalculatorForBrazil
                     // Aplica o telefone formatado usando apenas os setters do WooCommerce
                     $order->set_billing_phone($custom_phone_formatted);
                     $order->set_shipping_phone($custom_phone_formatted);
+                } else {
+                    $order->set_billing_phone('');
+                    $order->set_shipping_phone(''); 
                 }
             }
         }
