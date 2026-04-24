@@ -24,10 +24,14 @@
 - Depend on abstractions, not concrete implementations
 - Use dependency injection where possible, especially for external services (APIs, databases)
 
+## Development Methodology
+
+- Test-Driven Development (TDD)-based development.
+
 ## Code Standards
 
 **WordPress Coding Standards**
-- Follow WordPress PHP, JavaScript, CSS coding standards strictly
+- Follow WordPress 6.8+ PHP 8.2+, JavaScript, CSS coding standards strictly
 - Use WordPress nonce verification: `wp_verify_nonce()` for all form submissions
 - Sanitize all inputs: `sanitize_text_field()`, `sanitize_email()`, etc.
 - Escape all outputs: `esc_html()`, `esc_attr()`, `esc_url()`, etc.
@@ -58,6 +62,7 @@
 - Test responsive design and cross-browser compatibility
 
 **Test Structure**
+
 ```php
 // File: tests/unit/test-class-name.php
 class Test_Class_Name extends WP_UnitTestCase {
