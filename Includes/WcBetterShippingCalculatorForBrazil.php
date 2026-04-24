@@ -4073,7 +4073,21 @@ class WcBetterShippingCalculatorForBrazil
         $context    = isset($_POST['context']) ? sanitize_text_field(wp_unslash($_POST['context'])) : 'shipping';
 
         $updated = false;
+        $replicated_to_billing = false;
+        $replicated_to_shipping = false;
+        $should_replicate_to_billing = false;
+        $should_replicate_to_shipping = false;
+        
         if (function_exists('WC') && WC()->customer) {
+            // Verifica se precisa replicar ANTES de fazer as alterações
+            if ($context === 'shipping') {
+                $billing_address_empty = $this->is_address_empty('billing', WC()->customer);
+                $should_replicate_to_billing = $billing_address_empty && ($address !== '' || $city !== '' || $state !== '');
+            } else {
+                $shipping_address_empty = $this->is_address_empty('shipping', WC()->customer);
+                $should_replicate_to_shipping = $shipping_address_empty && ($address !== '' || $city !== '' || $state !== '');
+            }
+            
             if ($context === 'shipping') {
                 // Verifica se o país é diferente de BR ou não existe
                 $current_shipping_country = WC()->customer->get_shipping_country();
@@ -4104,6 +4118,21 @@ class WcBetterShippingCalculatorForBrazil
                     WC()->customer->update_meta('shipping_neighborhood', $district);
                     $updated = true;
                 }
+                
+                // Replica para cobrança se necessário
+                if ($should_replicate_to_billing) {
+                    WC()->customer->set_billing_country('BR');
+                    if ($address !== '') WC()->customer->set_billing_address_1($address);
+                    if ($city !== '') WC()->customer->set_billing_city($city);
+                    if ($state !== '') WC()->customer->set_billing_state($state);
+                    if ($postcode !== '') WC()->customer->set_billing_postcode($postcode);
+                    if ($district !== '' && method_exists(WC()->customer, 'update_meta')) {
+                        WC()->customer->update_meta('billing_neighborhood', $district);
+                    }
+                    $replicated_to_billing = true;
+                    $updated = true;
+                }
+                
             } else {
                 // Verifica se o país é diferente de BR ou não existe
                 $current_billing_country = WC()->customer->get_billing_country();
@@ -4134,12 +4163,46 @@ class WcBetterShippingCalculatorForBrazil
                     WC()->customer->update_meta('billing_neighborhood', $district);
                     $updated = true;
                 }
+                
+                // Replica para entrega se necessário
+                if ($should_replicate_to_shipping) {
+                    WC()->customer->set_shipping_country('BR');
+                    if ($address !== '') WC()->customer->set_shipping_address_1($address);
+                    if ($city !== '') WC()->customer->set_shipping_city($city);
+                    if ($state !== '') WC()->customer->set_shipping_state($state);
+                    if ($postcode !== '') WC()->customer->set_shipping_postcode($postcode);
+                    if ($district !== '' && method_exists(WC()->customer, 'update_meta')) {
+                        WC()->customer->update_meta('shipping_neighborhood', $district);
+                    }
+                    $replicated_to_shipping = true;
+                    $updated = true;
+                }
             }
             if ($updated) {
                 WC()->customer->save();
             }
         }
         if ($updated) {
+            // Monta mensagem indicando onde o endereço foi inserido
+            $message_parts = [];
+            $address_text = "{$address}, {$city}";
+            if (!empty($district)) $address_text .= " - {$district}";
+            $address_text .= " - {$state}";
+            
+            // Mensagem principal
+            if ($context === 'shipping') {
+                $message_parts[] = "Endereço de entrega inserido: {$address_text}";
+            } else {
+                $message_parts[] = "Endereço de cobrança inserido: {$address_text}";
+            }
+            
+            // Indica se houve replicação
+            if ($replicated_to_billing) {
+                $message_parts[] = "Mesmo endereço aplicado para cobrança";
+            } elseif ($replicated_to_shipping) {
+                $message_parts[] = "Mesmo endereço aplicado para entrega";
+            }
+            
             wp_send_json_success([
                 'message' => "Endereço inserido: {$address}, {$city} - {$district} - {$state}"
             ]);
@@ -4148,6 +4211,30 @@ class WcBetterShippingCalculatorForBrazil
                 'message' => 'Nenhum endereço inserido, dados em branco.'
             ]);
         }
+    }
+
+    /**
+     * Verifica se um endereço (billing ou shipping) está vazio
+     *
+     * @param string $type Tipo do endereço: 'billing' ou 'shipping'
+     * @param WC_Customer $customer Instância do customer do WooCommerce
+     * @return bool True se o endereço estiver vazio, false caso contrário
+     */
+    private function is_address_empty($type, $customer) {
+        if ($type === 'billing') {
+            $address_1 = $customer->get_billing_address_1();
+            $city = $customer->get_billing_city();
+            $state = $customer->get_billing_state();
+            $postcode = $customer->get_billing_postcode();
+        } else {
+            $address_1 = $customer->get_shipping_address_1();
+            $city = $customer->get_shipping_city();
+            $state = $customer->get_shipping_state();
+            $postcode = $customer->get_shipping_postcode();
+        }
+
+        // Considera vazio se todos os campos principais estão em branco
+        return (empty($address_1) && empty($city) && empty($state) && empty($postcode));
     }
 
     /**
