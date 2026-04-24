@@ -3787,15 +3787,28 @@ class WcBetterShippingCalculatorForBrazil
 
     public function wc_better_calc_phone_number($locale)
     {
-        // Torna o campo phone do shipping obrigatório no Brasil se a opção estiver ativada
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
-        if ($phone_required === 'yes') {
-            $locale['BR']['phone']['required'] = true;
-        }
-
         $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
-        if($phone_highlight === 'yes') {
-            $locale['BR']['phone']['hidden'] = true;
+        
+        // Carrega a lista de códigos de países
+        $country_codes = include plugin_dir_path(__FILE__) . 'country-codes.php';
+        
+        // Aplica as configurações para todos os países da lista
+        foreach ($country_codes as $country_code) {
+            // Garante que a chave 'phone' exista no array do país para evitar warnings do PHP
+            if (!isset($locale[$country_code]['phone'])) {
+                $locale[$country_code]['phone'] = [];
+            }
+
+            // Aplica telefone obrigatório se a opção estiver ativada
+            if ($phone_required === 'yes') {
+                $locale[$country_code]['phone']['required'] = true;
+            }
+
+            // Aplica o ocultamento se o highlight estiver ativado
+            if ($phone_highlight === 'yes') {
+                $locale[$country_code]['phone']['hidden'] = true;
+            }
         }
         
         return $locale;
