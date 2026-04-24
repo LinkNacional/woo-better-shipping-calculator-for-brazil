@@ -74,6 +74,60 @@ jQuery(function ($) {
             return;
         }
         
+        // Função auxiliar para disparar todos os eventos necessários incluindo React
+        function triggerAllEvents(element, eventType = 'input') {
+            // Eventos nativos para compatibilidade
+            element.dispatchEvent(new Event(eventType, { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            // Eventos React específicos
+            if (window.React) {
+                const reactEvents = ['onInput', 'onChange', 'onBlur'];
+                reactEvents.forEach(reactEvent => {
+                    if (element[reactEvent]) {
+                        element[reactEvent]({ target: element, currentTarget: element });
+                    }
+                });
+            }
+            
+            // Força atualização do container de campo para mostrar como ativo
+            const fieldContainer = element.closest('.wc-block-components-text-input');
+            if (fieldContainer && element.value && element.value.trim() !== '') {
+                fieldContainer.classList.add('is-active');
+            }
+            
+            // Proteção adicional para React - define propriedade diretamente no elemento
+            if (element.value && element.value.trim() !== '') {
+                Object.defineProperty(element, '_wcBetterValue', {
+                    value: element.value,
+                    writable: true
+                });
+                
+                // Adiciona um observer para detectar se o React limpa o campo
+                if (!element._wcBetterProtected) {
+                    element._wcBetterProtected = true;
+                    
+                    const checkValue = () => {
+                        if (element._wcBetterValue && (!element.value || element.value.trim() === '')) {
+                            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                            nativeSetter.call(element, element._wcBetterValue);
+                            element.setAttribute('value', element._wcBetterValue);
+                        }
+                    };
+                    
+                    // Verifica a cada 2 segundos por 10 segundos
+                    let checkCount = 0;
+                    const intervalId = setInterval(() => {
+                        checkCount++;
+                        checkValue();
+                        if (checkCount >= 5) { // 5 x 2s = 10s
+                            clearInterval(intervalId);
+                        }
+                    }, 2000);
+                }
+            }
+        }
+        
         // Mapeia os campos relevantes
         const fieldMap = [
             { id: `${type}-address_1`, key: 'address' },
@@ -89,6 +143,9 @@ jQuery(function ($) {
                 return;
             }
             const value = apiData[field.key];
+            
+            // Acessa updateCount do contexto global ou local
+            const updateCount = window.wcBetterUpdateCount || 0;
 
             if (field.key === 'state') {
                 // Usa o estado retornado pela API
@@ -96,10 +153,12 @@ jQuery(function ($) {
                 const newValue = value || '';
                 
                 if (currentValue !== newValue) {
-                    input.value = newValue;
+                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                    nativeSetter.call(input, newValue);
+                    input.setAttribute('value', newValue); // Força sincronização com React
                     // Sempre dispara evento para campo estado na primeira execução
                     if (skipCheck || updateCount <= 1) {
-                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                        triggerAllEvents(input, 'change');
                     }
                 }
             } else if (field.key === 'address') {
@@ -119,8 +178,9 @@ jQuery(function ($) {
                     if (currentValue !== finalAddressValue) {
                         const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                         nativeSetter.call(input, finalAddressValue);
+                        input.setAttribute('value', finalAddressValue); // Força sincronização com React
                         if (skipCheck || updateCount <= 1) {
-                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                            triggerAllEvents(input);
                         }
                     }
                 }
@@ -146,19 +206,14 @@ jQuery(function ($) {
                     if (currentValue !== value) {
                         const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                         nativeSetter.call(input, value);
+                        input.setAttribute('value', value); // Força sincronização com React
                         if (skipCheck || updateCount <= 1) {
-                            input.dispatchEvent(new Event('input', { bubbles: true }));
-                        }
-                        
-                        // Adiciona classe is-active se o campo tiver valor
-                        const fieldContainer = input.closest('.wc-block-components-text-input');
-                        if (fieldContainer) {
-                            fieldContainer.classList.add('is-active');
+                            triggerAllEvents(input);
                         }
                     }
                 }
             } else if (field.key === 'address_2') {
-                // Para address_2, trata especificamente para evitar restauração de valores antigos
+                // Para address_2, deixa vazio se não tiver valor da API
                 const currentValue = input.value;
                 
                 if (value && value.trim() !== '') {
@@ -166,37 +221,22 @@ jQuery(function ($) {
                     if (currentValue !== value) {
                         const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                         nativeSetter.call(input, value);
+                        input.setAttribute('value', value);
                         if (skipCheck || updateCount <= 1) {
-                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                            triggerAllEvents(input);
                         }
                     }
                 } else {
-                    // Se não tem valor na API, define um espaço em vez de vazio para evitar restauração
-                    const targetValue = ' '; // Espaço em branco em vez de string vazia
+                    // Se não tem valor na API, deixa vazio
+                    const targetValue = '';
                     if (currentValue !== targetValue) {
-                        
-                        // Define espaço em branco
                         const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                         nativeSetter.call(input, targetValue);
-                        input.value = targetValue;
                         input.setAttribute('value', targetValue);
                         
                         if (skipCheck || updateCount <= 1) {
-                            input.dispatchEvent(new Event('input', { bubbles: true }));
-                            input.dispatchEvent(new Event('change', { bubbles: true }));
+                            triggerAllEvents(input);
                         }
-                        
-                        // Verificação adicional para garantir que mantém o espaço
-                        setTimeout(() => {
-                            if (input.value !== targetValue && input.value.trim() !== '') {
-                                const nativeSetter2 = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                                nativeSetter2.call(input, targetValue);
-                                input.value = targetValue;
-                                input.dispatchEvent(new Event('input', { bubbles: true }));
-                                input.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                        }, 200);
-                        
                     }
                 }
             } else {
@@ -206,9 +246,55 @@ jQuery(function ($) {
                     if (currentValue !== '') {
                         const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                         nativeSetter.call(input, '');
+                        input.setAttribute('value', '');
                         if (skipCheck || updateCount <= 1) {
-                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                            triggerAllEvents(input);
                         }
+                    }
+                }
+            }
+        });
+    }
+
+    // Função para validar e corrigir campos após inserção
+    function validateAndFixFields(type, apiData) {
+        const fieldsToValidate = [
+            { id: `${type}-address_1`, expectedValue: apiData.address, key: 'address' },
+            { id: `${type}-city`, expectedValue: apiData.city, key: 'city' },
+            { id: `${type}-state`, expectedValue: apiData.state, key: 'state' }
+        ];
+
+        fieldsToValidate.forEach(fieldInfo => {
+            const input = document.getElementById(fieldInfo.id);
+            if (!input || !fieldInfo.expectedValue) return;
+
+            const currentValue = input.value;
+            if (!currentValue || currentValue.trim() === '' || currentValue !== fieldInfo.expectedValue) {
+                // Re-preenche o campo
+                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                nativeSetter.call(input, fieldInfo.expectedValue);
+                input.setAttribute('value', fieldInfo.expectedValue);
+                
+                // Dispara eventos para notificar o sistema
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                input.dispatchEvent(new Event('blur', { bubbles: true }));
+                
+                // Força container ativo
+                const fieldContainer = input.closest('.wc-block-components-text-input');
+                if (fieldContainer) {
+                    fieldContainer.classList.add('is-active');
+                }
+                
+                // Força validação do WooCommerce se disponível
+                if (window.wp && window.wp.data) {
+                    try {
+                        const storeActions = window.wp.data.dispatch('wc/store/validation');
+                        if (storeActions && storeActions.clearValidationError) {
+                            storeActions.clearValidationError(fieldInfo.id);
+                        }
+                    } catch (e) {
+                        console.warn('Não foi possível limpar erros de validação:', e);
                     }
                 }
             }
@@ -371,7 +457,6 @@ jQuery(function ($) {
                     method: 'POST',
                     data: data,
                     success: function (response) {
-                        
                         ajaxCompleted = true;
                         resolve(response);
                     },
@@ -418,7 +503,6 @@ jQuery(function ($) {
                         // Verifica se o campo foi atualizado
                         const input = document.getElementById(`${this.context}-address_1`);
                         if (input) {
-                            
                             updateCount++;
                             
                             // Chama updateAddressFields na primeira vez sem verificação
@@ -442,6 +526,11 @@ jQuery(function ($) {
                             setTimeout(() => {
                                 isProcessingAddressUpdate = false;
                             }, 800);
+                            
+                            // Validação pós-inserção para garantir que os campos foram preenchidos
+                            setTimeout(() => {
+                                validateAndFixFields(this.context, data);
+                            }, 1000);
                             
                             // Reset do timeout
                             clearTimeout(observerTimeout);
@@ -475,7 +564,7 @@ jQuery(function ($) {
                     }
                 }
             } else {
-                
+                // WP/React não disponível - modo fallback
             }
         }
         showInsertingLabel() {
@@ -556,7 +645,6 @@ jQuery(function ($) {
         }
         
         async _performCepLookup(cep, $checkboxInput, $checkboxLabel) {
-            
             // Verifica rate limiting
             const now = Date.now();
             const timeSinceLastRequest = now - this._lastRequestTime;
@@ -673,14 +761,14 @@ jQuery(function ($) {
                 method: 'POST',
                 data: data
             }).fail(() => {
-                
+                // Silently handle AJAX error
             });
             
             if (window.wp && window.wp.data && typeof window.wp.data.dispatch === 'function') {
                 try {
                     window.wp.data.dispatch('wc/store/cart').invalidateResolutionForStore('shippingAddress');
                 } catch (e) {
-                    
+                    // Silently handle store dispatch error// Silently handle error
                 }
             }
         }
@@ -915,4 +1003,29 @@ jQuery(function ($) {
             }
         });
     }, 1000); // Executa após 1 segundo
+    
+    // Adiciona listener para validação antes do envio do formulário
+    $(document).on('submit', 'form.wc-block-checkout__form, form[name="checkout"]', function(e) {
+        // Valida campos críticos antes do envio
+        const requiredFields = ['billing-address_1', 'billing-city', 'billing-state'];
+        let hasInvalidFields = false;
+        
+        requiredFields.forEach(fieldId => {
+            const input = document.getElementById(fieldId);
+            if (input) {
+                const value = input.value;
+                if (!value || value.trim() === '' || value.trim() === ' ') {
+                    hasInvalidFields = true;
+                    
+                    // Força focus no campo para mostrar o erro
+                    input.focus();
+                    setTimeout(() => input.blur(), 100);
+                }
+            }
+        });
+        
+        if (hasInvalidFields) {
+            console.warn('Formulário contém campos vazios - verificar preenchimento automático');
+        }
+    });
 });
