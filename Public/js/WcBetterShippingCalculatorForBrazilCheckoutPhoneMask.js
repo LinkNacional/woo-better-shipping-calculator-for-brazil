@@ -89,10 +89,42 @@ document.addEventListener('DOMContentLoaded', function() {
         return customPhoneContainer;
     }
     
+    // Função para converter dial code para código ISO do país
+    function getCountryCodeFromDialCode(dialCode) {
+        const dialCodeMap = {
+            '+55': 'br',   // Brasil
+            '+1': 'us',    // Estados Unidos/Canadá
+            '+44': 'gb',   // Reino Unido
+            '+33': 'fr',   // França
+            '+49': 'de',   // Alemanha
+            '+34': 'es',   // Espanha
+            '+39': 'it',   // Itália
+            '+351': 'pt',  // Portugal
+            '+54': 'ar',   // Argentina
+            '+56': 'cl',   // Chile
+            '+57': 'co',   // Colômbia
+            '+51': 'pe',   // Peru
+        };
+        
+        return dialCodeMap[dialCode] || 'br'; // Default para Brasil se não encontrar
+    }
+
     function initializeCustomPhoneField(customPhoneField) {
+        // Obtém o país customizado das variáveis do PHP
+        let initialCountry = 'br'; // Default para Brasil
+        let preferredCountries = ['br'];
+        
+        if (typeof wc_better_checkout_phone_mask_vars !== 'undefined' && 
+            wc_better_checkout_phone_mask_vars.customCountry) {
+            const customCountry = wc_better_checkout_phone_mask_vars.customCountry;
+            const countryCode = getCountryCodeFromDialCode(customCountry);
+            initialCountry = countryCode;
+            preferredCountries = [countryCode, 'br']; // Inclui o customizado + Brasil
+        }
+
         let iti = intlTelInput(customPhoneField, {
-            initialCountry: 'br',
-            preferredCountries: ['br'],
+            initialCountry: initialCountry,
+            preferredCountries: preferredCountries,
             separateDialCode: false,
             nationalMode: false,
             formatOnDisplay: false,
