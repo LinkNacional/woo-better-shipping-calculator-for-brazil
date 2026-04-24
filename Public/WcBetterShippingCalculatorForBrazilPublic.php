@@ -1155,13 +1155,20 @@ class WcBetterShippingCalculatorForBrazilPublic
                     false
                 );
                 
+                // Obter dados de sessão para campo custom phone
+                $custom_phone = '';
+                if (function_exists('WC') && WC()->session) {
+                    $custom_phone = WC()->session->get('custom_phone', '');
+                }
+                
                 wp_localize_script(
                     $this->plugin_name . '-checkout-phone-mask',
                     'wc_better_checkout_phone_mask_vars',
                     array(
                         'highlightPhone' => $phone_highlight === 'yes' ? 'true' : 'false',
                         'phoneMaskEnabled' => $phone_mask_enabled === 'yes' ? 'true' : 'false',
-                        'phoneRequired' => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false'
+                        'phoneRequired' => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false',
+                        'customPhone' => $custom_phone
                     )
                 );
             }

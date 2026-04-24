@@ -929,8 +929,7 @@ class WcBetterShippingCalculatorForBrazil
         
         // Hooks para formatação de telefone no pedido final
         $this->loader->add_filter('woocommerce_order_get_billing_phone', $this, 'format_order_billing_phone', 10, 2);
-        $this->loader->add_filter('woocommerce_order_get_shipping_phone', $this, 'format_order_shipping_phone', 10, 2);
-        
+        $this->loader->add_filter('woocommerce_order_get_shipping_phone', $this, 'format_order_shipping_phone', 10, 2);    
         // Hook para validação de CPF/CNPJ no checkout
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_person_type_documents');
         
@@ -3419,12 +3418,17 @@ class WcBetterShippingCalculatorForBrazil
                             'type'     => 'string',
                             'readonly' => true,
                         ],
+                        'custom_phone_formatted' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ]
                     ];
                 },
                 'data_callback' => function() {
                     return [
                         'billing_phone_formatted'  => '', 
                         'shipping_phone_formatted' => '', 
+                        'custom_phone_formatted'   => '',
                     ];
                 },
             ]);
@@ -3738,6 +3742,7 @@ class WcBetterShippingCalculatorForBrazil
         // Captura os dados de telefone formatado
         $billing_phone_formatted = '';
         $shipping_phone_formatted = '';
+        $custom_phone_formatted = '';
 
         if ( isset( $data['billing_phone_formatted'] ) ) {
             $billing_phone_formatted = sanitize_text_field( (string) $data['billing_phone_formatted'] );
@@ -3747,18 +3752,35 @@ class WcBetterShippingCalculatorForBrazil
             $shipping_phone_formatted = sanitize_text_field( (string) $data['shipping_phone_formatted'] );
         }
 
+        if ( isset( $data['custom_phone_formatted'] ) ) {
+            $custom_phone_formatted = sanitize_text_field( (string) $data['custom_phone_formatted'] );
+        }
+
         // Guarda os dados de telefone formatado na sessão para manter durante o checkout
         if (!empty($billing_phone_formatted)) {
             WC()->session->set( 'billing_phone', $billing_phone_formatted );
+            WC()->session->set( 'billing_phone_formatted', $billing_phone_formatted );
             if (is_user_logged_in()) {
                 update_user_meta( get_current_user_id(), 'billing_phone', $billing_phone_formatted );
+                update_user_meta( get_current_user_id(), 'billing_phone_formatted', $billing_phone_formatted );
             }
         }
 
         if (!empty($shipping_phone_formatted)) {
             WC()->session->set( 'shipping_phone', $shipping_phone_formatted );
+            WC()->session->set( 'shipping_phone_formatted', $shipping_phone_formatted );
             if (is_user_logged_in()) {
                 update_user_meta( get_current_user_id(), 'shipping_phone', $shipping_phone_formatted );
+                update_user_meta( get_current_user_id(), 'shipping_phone_formatted', $shipping_phone_formatted );
+            }
+        }
+
+        if (!empty($custom_phone_formatted)) {
+            WC()->session->set( 'custom_phone', $custom_phone_formatted );
+            WC()->session->set( 'custom_phone_formatted', $custom_phone_formatted );
+            if (is_user_logged_in()) {
+                update_user_meta( get_current_user_id(), 'custom_phone', $custom_phone_formatted );
+                update_user_meta( get_current_user_id(), 'custom_phone_formatted', $custom_phone_formatted );
             }
         }
     }
@@ -3770,8 +3792,15 @@ class WcBetterShippingCalculatorForBrazil
         if ($phone_required === 'yes') {
             $locale['BR']['phone']['required'] = true;
         }
+
+        $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
+        if($phone_highlight === 'yes') {
+            $locale['BR']['phone']['hidden'] = true;
+        }
+        
         return $locale;
     }
+
 
     public function wc_better_calc_checkout_fields($fields)
     {
@@ -5026,7 +5055,7 @@ class WcBetterShippingCalculatorForBrazil
             if (isset($phone_data['billing_phone_formatted'])) {
                 $billing_phone_formatted = sanitize_text_field($phone_data['billing_phone_formatted']);
                 if (!empty($billing_phone_formatted)) {
-                    $order->update_meta_data('_billing_phone', $billing_phone_formatted);
+                    $order->set_billing_phone($billing_phone_formatted);
                 }
             }
 
@@ -5034,7 +5063,23 @@ class WcBetterShippingCalculatorForBrazil
             if (isset($phone_data['shipping_phone_formatted'])) {
                 $shipping_phone_formatted = sanitize_text_field($phone_data['shipping_phone_formatted']);
                 if (!empty($shipping_phone_formatted)) {
-                    $order->update_meta_data('_shipping_phone', $shipping_phone_formatted);
+                    $order->set_shipping_phone($shipping_phone_formatted);
+                }
+            }
+
+            // Verifica se o highlight está ativo e processa telefone customizado
+            $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
+            if ($phone_highlight === 'yes' && isset($phone_data['custom_phone_formatted'])) {
+                $custom_phone_formatted = sanitize_text_field($phone_data['custom_phone_formatted']);
+
+                if(empty($custom_phone_formatted)) {
+                    $custom_phone_formatted = WC()->session->get('custom_phone');
+                }
+                
+                if (!empty($custom_phone_formatted)) {
+                    // Aplica o telefone formatado usando apenas os setters do WooCommerce
+                    $order->set_billing_phone($custom_phone_formatted);
+                    $order->set_shipping_phone($custom_phone_formatted);
                 }
             }
         }
