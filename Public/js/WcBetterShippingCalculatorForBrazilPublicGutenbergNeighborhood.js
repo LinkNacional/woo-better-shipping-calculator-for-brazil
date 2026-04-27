@@ -246,9 +246,10 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const billingAddress = billingBlock.querySelector('#billing-address_1');
+        // Procurar o campo de cidade para inserir o bairro antes dele
+        const billingCity = billingBlock.querySelector('#billing-city');
         
-        if (!billingAddress) {
+        if (!billingCity) {
             return;
         }
 
@@ -263,10 +264,11 @@ document.addEventListener("DOMContentLoaded", function () {
             savedNeighborhoodData.billing_neighborhood = initialNeighborhood;
         }
 
-        let lastInsertedElement = billingAddress.parentElement; // Começar da div pai do address_1
+        // Inserir antes do campo de cidade
+        let insertBeforeElement = billingCity.parentElement;
 
         // Criar o campo de bairro
-        createNeighborhoodField(lastInsertedElement, 'billing-neighborhood', 'Bairro', initialNeighborhood);
+        createNeighborhoodFieldBefore(insertBeforeElement, 'billing-neighborhood', 'Bairro', initialNeighborhood);
 
         // Configurar eventos do campo
         setupNeighborhoodEvents('billing-neighborhood');
@@ -281,9 +283,10 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const shippingAddress = shippingBlock.querySelector('#shipping-address_1');
+        // Procurar o campo de cidade para inserir o bairro antes dele
+        const shippingCity = shippingBlock.querySelector('#shipping-city');
         
-        if (!shippingAddress) {
+        if (!shippingCity) {
             return;
         }
 
@@ -298,10 +301,11 @@ document.addEventListener("DOMContentLoaded", function () {
             savedNeighborhoodData.shipping_neighborhood = initialNeighborhood;
         }
 
-        let lastInsertedElement = shippingAddress.parentElement; // Começar da div pai do address_1
+        // Inserir antes do campo de cidade
+        let insertBeforeElement = shippingCity.parentElement;
 
         // Criar o campo de bairro
-        createNeighborhoodField(lastInsertedElement, 'shipping-neighborhood', 'Bairro', initialNeighborhood);
+        createNeighborhoodFieldBefore(insertBeforeElement, 'shipping-neighborhood', 'Bairro', initialNeighborhood);
 
         // Configurar eventos do campo
         setupNeighborhoodEvents('shipping-neighborhood');
@@ -520,6 +524,103 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         insertAfter.insertAdjacentElement('afterend', fieldContainer);
+    }
+
+    function createNeighborhoodFieldBefore(insertBefore, fieldId, labelText, initialValue) {
+        const fieldContainer = document.createElement('div');
+        fieldContainer.className = 'wc-block-components-text-input wc-block-components-address-form__neighborhood wc-better-' + fieldId.replace('_', '-');
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = fieldId;
+        input.name = fieldId;
+        input.setAttribute('autocomplete', 'address-line2');
+        input.setAttribute('aria-label', labelText);
+        input.setAttribute('aria-invalid', 'false');
+        input.setAttribute('autocapitalize', 'words');
+        input.setAttribute('required', 'true');
+        input.value = initialValue;
+        input.setAttribute('title', 'Digite o nome do bairro');
+
+        let lastValue = initialValue; // Armazenar último valor para detectar mudanças reais
+        
+        input.addEventListener('input', function() {
+            const newValue = this.value.trim();
+            
+            // Salvar na variável global
+            if (fieldId === 'billing-neighborhood') {
+                savedNeighborhoodData.billing_neighborhood = newValue;
+            } else if (fieldId === 'shipping-neighborhood') {
+                savedNeighborhoodData.shipping_neighborhood = newValue;
+            }
+            
+            // Só atualizar se o valor realmente mudou
+            if (newValue !== lastValue) {
+                lastValue = newValue;
+                updateNeighborhoodData();
+                
+                // Validação em tempo real - ocultar erro se campo ficar preenchido
+                if (newValue.length > 0) {
+                    hideNeighborhoodValidationError(this);
+                }
+            }
+        });
+
+        const label = document.createElement('label');
+        label.setAttribute('for', fieldId);
+        label.textContent = labelText;
+
+        fieldContainer.appendChild(input);
+        fieldContainer.appendChild(label);
+
+        // Criar elemento de erro (inicialmente oculto)
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'wc-block-components-validation-error wc-better-neighborhood-error';
+        errorDiv.setAttribute('role', 'alert');
+        errorDiv.style.display = 'none';
+
+        const errorParagraph = document.createElement('p');
+        errorParagraph.id = 'validate-error-' + fieldId;
+
+        const errorSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        errorSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        errorSvg.setAttribute('viewBox', '-2 -2 24 24');
+        errorSvg.setAttribute('width', '24');
+        errorSvg.setAttribute('height', '24');
+        errorSvg.setAttribute('aria-hidden', 'true');
+        errorSvg.setAttribute('focusable', 'false');
+
+        const errorPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        errorPath.setAttribute('d', 'M10 2c4.42 0 8 3.58 8 8s-3.58 8-8 8-8-3.58-8-8 3.58-8 8-8zm1.13 9.38l.35-6.46H8.52l.35 6.46h2.26zm-.09 3.36c.24-.23.37-.55.37-.96 0-.42-.12-.74-.36-.97s-.59-.35-1.06-.35-.82.12-1.07.35-.37.55-.37.97c0 .41.13.73.38.96.26.23.61.34 1.06.34s.8-.11 1.05-.34z');
+
+        errorSvg.appendChild(errorPath);
+        const errorMessage = document.createElement('span');
+        errorMessage.textContent = 'Por favor, informe o bairro.';
+
+        errorParagraph.appendChild(errorSvg);
+        errorParagraph.appendChild(errorMessage);
+        errorDiv.appendChild(errorParagraph);
+
+        fieldContainer.appendChild(errorDiv);
+
+        if (initialValue) {
+            fieldContainer.classList.add('is-active');
+        }
+
+        input.addEventListener('focus', () => {
+            fieldContainer.classList.add('is-active');
+        });
+
+        input.addEventListener('blur', () => {
+            if (!input.value.trim()) {
+                fieldContainer.classList.remove('is-active');
+                showNeighborhoodValidationError(input, 'Por favor, informe o bairro.');
+            } else {
+                hideNeighborhoodValidationError(input);
+            }
+        });
+
+        insertBefore.insertAdjacentElement('beforebegin', fieldContainer);
     }
 
     function showNeighborhoodValidationError(inputElement, message) {

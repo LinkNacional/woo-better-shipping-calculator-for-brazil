@@ -259,9 +259,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         checkboxLabel.appendChild(checkboxText);
                         clonedCheckbox.appendChild(checkboxLabel);
 
-                        // Inserindo no DOM
-                        shippingAddress1.insertAdjacentElement('afterend', clonedCheckbox);
+                        // Inserindo no DOM - checkbox primeiro, depois número
                         shippingAddress1.insertAdjacentElement('afterend', customInputDiv);
+                        shippingAddress1.insertAdjacentElement('afterend', clonedCheckbox);
 
                         input.addEventListener('focus', () => {
                             customInputDiv.classList.add('is-active');
@@ -627,9 +627,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 checkboxLabel.appendChild(checkboxText);
                 clonedCheckbox.appendChild(checkboxLabel);
 
-                // Inserindo no DOM
-                billingAddress1.insertAdjacentElement('afterend', clonedCheckbox);
+                // Inserindo no DOM - checkbox primeiro, depois número
                 billingAddress1.insertAdjacentElement('afterend', customInputDiv);
+                billingAddress1.insertAdjacentElement('afterend', clonedCheckbox);
 
                 input.addEventListener('focus', () => {
                     customInputDiv.classList.add('is-active');

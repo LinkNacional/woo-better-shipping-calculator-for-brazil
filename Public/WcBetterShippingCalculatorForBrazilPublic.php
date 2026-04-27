@@ -1161,6 +1161,18 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $custom_phone = WC()->session->get('custom_phone', '');
                 }
 
+                if(!isset($custom_phone) || empty($custom_phone)) {
+                    // Fallback: tentar pegar do telefone de shipping primeiro
+                    if (function_exists('WC') && WC()->customer) {
+                        $custom_phone = WC()->customer->get_shipping_phone();
+                        
+                        // Se ainda estiver vazio, pegar do telefone de billing
+                        if (empty($custom_phone)) {
+                            $custom_phone = WC()->customer->get_billing_phone();
+                        }
+                    }
+                }
+
                 $custom_country = '+55';
                 if (function_exists('WC') && WC()->session) {
                     $custom_country = WC()->session->get('billing_phone_country_code', '');
