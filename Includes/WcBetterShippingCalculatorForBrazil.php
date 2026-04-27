@@ -626,7 +626,7 @@ class WcBetterShippingCalculatorForBrazil
                 'placeholder' => __('Ex: 123a', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
                 'class'       => array('form-row-wide'),
-                'priority'    => 52,
+                'priority'    => 55,
             );
 
             // Checkbox
@@ -635,7 +635,7 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => false,
                 'class'       => array('form-row-wide'),
-                'priority'    => 55,
+                'priority'    => 52,
             );
 
             $fields['shipping']['shipping_number'] = array(
@@ -643,7 +643,7 @@ class WcBetterShippingCalculatorForBrazil
                 'placeholder' => __('Ex: 123a', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
                 'class'       => array('form-row-wide'),
-                'priority'    => 52,
+                'priority'    => 55,
             );
 
             // Checkbox
@@ -652,7 +652,7 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => false,
                 'class'       => array('form-row-wide'),
-                'priority'    => 55,
+                'priority'    => 52,
             );
         }
 
@@ -1360,16 +1360,7 @@ class WcBetterShippingCalculatorForBrazil
             unset($original_fields['address_1']);
         }
         
-        // 5. Bairro logo após address_1 (se habilitado)
-        if ($neighborhood_enabled === 'yes') {
-            $fields['neighborhood'] = array(
-                'label' => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
-                'type'  => 'text',
-                'show'  => false
-            );
-        }
-        
-        // 6. Número logo após bairro (ou após address_1 se não tiver bairro)
+        // 5. Número logo após address_1 (no lugar do bairro)
         if ($number_field === 'yes') {
             $fields['number'] = array(
                 'label' => __('Número', 'woo-better-shipping-calculator-for-brazil'),
@@ -1378,8 +1369,23 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
         
-        // 7. Continuar com address_2 e demais campos
-        $remaining_standard = ['address_2', 'city', 'postcode', 'country', 'state'];
+        // 6. Endereço linha 2
+        if (isset($original_fields['address_2'])) {
+            $fields['address_2'] = $original_fields['address_2'];
+            unset($original_fields['address_2']);
+        }
+        
+        // 7. Bairro antes da cidade
+        if ($neighborhood_enabled === 'yes') {
+            $fields['neighborhood'] = array(
+                'label' => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'text',
+                'show'  => false
+            );
+        }
+        
+        // 8. Continuar com cidade e demais campos
+        $remaining_standard = ['city', 'postcode', 'country', 'state'];
         foreach ($remaining_standard as $key) {
             if (isset($original_fields[$key])) {
                 $fields[$key] = $original_fields[$key];
@@ -1496,16 +1502,7 @@ class WcBetterShippingCalculatorForBrazil
             $fields['address_1']['show'] = false;
         }
         
-        // Bairro (após address_1)
-        if ($neighborhood_enabled === 'yes') {
-            $fields['neighborhood'] = array(
-                'label' => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
-                'type'  => 'text',
-                'show'  => false
-            );
-        }
-        
-        // Número (após bairro se existir, senão após address_1)
+        // Número (após address_1, no lugar do bairro)
         if ($number_field === 'yes') {
             $fields['number'] = array(
                 'label' => __('Número', 'woo-better-shipping-calculator-for-brazil'),
@@ -1518,6 +1515,15 @@ class WcBetterShippingCalculatorForBrazil
         if (isset($original_fields['address_2'])) {
             $fields['address_2'] = $original_fields['address_2'];
             $fields['address_2']['show'] = false;
+        }
+        
+        // Bairro (antes da cidade)
+        if ($neighborhood_enabled === 'yes') {
+            $fields['neighborhood'] = array(
+                'label' => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'text',
+                'show'  => false
+            );
         }
         
         // Cidade
@@ -3940,7 +3946,7 @@ class WcBetterShippingCalculatorForBrazil
                 'placeholder' => __('Digite o nome do bairro', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
                 'class'       => array('form-row-wide'),
-                'priority'    => 50,
+                'priority'    => 69,
                 'type'        => 'text'
             );
             
@@ -3949,7 +3955,7 @@ class WcBetterShippingCalculatorForBrazil
                 'placeholder' => __('Digite o nome do bairro', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
                 'class'       => array('form-row-wide'),
-                'priority'    => 50,
+                'priority'    => 69,
                 'type'        => 'text'
             );
         }
@@ -5204,14 +5210,6 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
         
-        // Também verifica os campos de país nos próprios fields (para casos onde ainda não foi salvo no customer)
-        if (isset($fields['billing']['billing_country']['default']) && $fields['billing']['billing_country']['default'] !== 'BR') {
-            $should_disable = true;
-        }
-        if (isset($fields['shipping']['shipping_country']['default']) && $fields['shipping']['shipping_country']['default'] !== 'BR') {
-            $should_disable = true;
-        }
-        
         if ($should_disable) {
             // Campos CPF/CNPJ
             if (isset($fields['billing']['billing_document'])) {
@@ -5699,8 +5697,8 @@ class WcBetterShippingCalculatorForBrazil
             $fields['billing']['fields'] = $new_billing_fields;
         }
         
-        // Adiciona campo de bairro após address_1
-        if ($neighborhood_field === 'yes') {
+        // Adiciona campo de número após address_1 (no lugar do bairro)
+        if ($number_field === 'yes') {
             // Billing
             $billing_fields = $fields['billing']['fields'];
             $new_billing_fields = array();
@@ -5709,47 +5707,6 @@ class WcBetterShippingCalculatorForBrazil
                 $new_billing_fields[$key] = $field;
                 
                 if ($key === 'billing_address_1') {
-                    $new_billing_fields['billing_neighborhood'] = array(
-                        'label'       => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
-                        'description' => '',
-                    );
-                }
-            }
-            
-            $fields['billing']['fields'] = $new_billing_fields;
-            
-            // Shipping
-            $shipping_fields = $fields['shipping']['fields'];
-            $new_shipping_fields = array();
-            
-            foreach ($shipping_fields as $key => $field) {
-                $new_shipping_fields[$key] = $field;
-                
-                if ($key === 'shipping_address_1') {
-                    $new_shipping_fields['shipping_neighborhood'] = array(
-                        'label'       => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
-                        'description' => '',
-                    );
-                }
-            }
-            
-            $fields['shipping']['fields'] = $new_shipping_fields;
-        }
-        
-        // Adiciona campo de número
-        if ($number_field === 'yes') {
-            // Determina após qual campo inserir (bairro se habilitado, senão address_1)
-            $insert_after = ($neighborhood_field === 'yes') ? 'billing_neighborhood' : 'billing_address_1';
-            $insert_after_shipping = ($neighborhood_field === 'yes') ? 'shipping_neighborhood' : 'shipping_address_1';
-            
-            // Billing
-            $billing_fields = $fields['billing']['fields'];
-            $new_billing_fields = array();
-            
-            foreach ($billing_fields as $key => $field) {
-                $new_billing_fields[$key] = $field;
-                
-                if ($key === $insert_after) {
                     $new_billing_fields['billing_number'] = array(
                         'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
                         'description' => '',
@@ -5766,9 +5723,46 @@ class WcBetterShippingCalculatorForBrazil
             foreach ($shipping_fields as $key => $field) {
                 $new_shipping_fields[$key] = $field;
                 
-                if ($key === $insert_after_shipping) {
+                if ($key === 'shipping_address_1') {
                     $new_shipping_fields['shipping_number'] = array(
                         'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
+                        'description' => '',
+                    );
+                }
+            }
+            
+            $fields['shipping']['fields'] = $new_shipping_fields;
+        }
+        
+        // Adiciona campo de bairro antes da cidade (após address_2)
+        if ($neighborhood_field === 'yes') {
+            // Billing
+            $billing_fields = $fields['billing']['fields'];
+            $new_billing_fields = array();
+            
+            foreach ($billing_fields as $key => $field) {
+                $new_billing_fields[$key] = $field;
+                
+                if ($key === 'billing_address_2') {
+                    $new_billing_fields['billing_neighborhood'] = array(
+                        'label'       => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
+                        'description' => '',
+                    );
+                }
+            }
+            
+            $fields['billing']['fields'] = $new_billing_fields;
+            
+            // Shipping
+            $shipping_fields = $fields['shipping']['fields'];
+            $new_shipping_fields = array();
+            
+            foreach ($shipping_fields as $key => $field) {
+                $new_shipping_fields[$key] = $field;
+                
+                if ($key === 'shipping_address_2') {
+                    $new_shipping_fields['shipping_neighborhood'] = array(
+                        'label'       => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
                         'description' => '',
                     );
                 }
@@ -5944,7 +5938,7 @@ class WcBetterShippingCalculatorForBrazil
                 'placeholder' => __('Nome do bairro', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => ($number_enabled === 'yes'), // Obrigatório se número for obrigatório
                 'class'       => array('form-row-wide'),
-                'priority'    => 70
+                'priority'    => 69
             );
         }
         
@@ -5955,7 +5949,7 @@ class WcBetterShippingCalculatorForBrazil
                 'placeholder' => __('Ex: 123a', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
                 'class'       => array('form-row-wide'),
-                'priority'    => 55
+                'priority'    => 56
             );
             
             // Checkbox sem número
@@ -5964,7 +5958,7 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => false,
                 'class'       => array('form-row-wide'),
-                'priority'    => 56,
+                'priority'    => 55,
             );
         }
         
@@ -6079,7 +6073,7 @@ class WcBetterShippingCalculatorForBrazil
                 'placeholder' => __('Nome do bairro', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => ($number_enabled === 'yes'), // Obrigatório se número for obrigatório
                 'class'       => array('form-row-wide'),
-                'priority'    => 70
+                'priority'    => 69
             );
         }
         
@@ -6090,7 +6084,7 @@ class WcBetterShippingCalculatorForBrazil
                 'placeholder' => __('Ex: 123a', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
                 'class'       => array('form-row-wide'),
-                'priority'    => 55
+                'priority'    => 56
             );
             
             // Checkbox sem número
@@ -6099,7 +6093,7 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => false,
                 'class'       => array('form-row-wide'),
-                'priority'    => 56,
+                'priority'    => 55,
             );
         }
         
