@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', function () {
             processUserPostcode(cartCep);
         })
         .catch(error => {
-            console.log('Não foi possível obter CEP do usuário:', error);
             // Continua o script mesmo sem CEP
             processUserPostcode('');
         });
