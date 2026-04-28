@@ -4540,6 +4540,46 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
+        // Garante que a sessão do WooCommerce está inicializada, mesmo sem produtos no carrinho
+        if (!WC()->session->has_session()) {
+            WC()->session->set_customer_session_cookie(true);
+        }
+        
+        // Garante que o customer está inicializado
+        if (!WC()->customer) {
+            WC()->initialize_session();
+        }
+
+        if (!is_null($shipping_data['address_1'])) {
+            WC()->customer->set_shipping_address_1($shipping_data['address_1']);
+            WC()->customer->set_billing_address_1($shipping_data['address_1']);
+        }
+        if (!is_null($shipping_data['address_2'])) {
+            WC()->customer->set_shipping_address_2($shipping_data['address_2']);
+            WC()->customer->set_billing_address_2($shipping_data['address_2']);
+        }
+        if (!is_null($shipping_data['city'])) {
+            WC()->customer->set_shipping_city($shipping_data['city']);
+            WC()->customer->set_billing_city($shipping_data['city']);
+        }
+        if (!is_null($shipping_data['state'])) {
+            WC()->customer->set_shipping_state($shipping_data['state']);
+            WC()->customer->set_billing_state($shipping_data['state']);
+        }
+        if (!is_null($shipping_data['postcode'])) {
+            WC()->customer->set_shipping_postcode($shipping_data['postcode']);
+            WC()->customer->set_billing_postcode($shipping_data['postcode']);
+        }
+        if (!is_null($shipping_data['country'])) {
+            WC()->customer->set_shipping_country('BR');
+            WC()->customer->set_billing_country('BR');
+        }
+
+        WC()->customer->save();
+        
+        // Força a persistência dos dados na sessão, especialmente quando não há carrinho ativo
+        WC()->session->save_data();
+
         // Retorna o JSON de sucesso
         wp_send_json_success(array(
             'message'        => 'Endereço de envio registrado com sucesso e frete calculado.',
