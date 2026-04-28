@@ -4246,9 +4246,53 @@ class WcBetterShippingCalculatorForBrazil
                     }
                 }
 
+                // Salva também nos dados do usuário logado se aplicável
+                if (is_user_logged_in()) {
+                    $user_id = get_current_user_id();
+                    
+                    if ($context === 'shipping') {
+                        // Salva dados de shipping no user meta
+                        if ($address !== '') update_user_meta($user_id, 'shipping_address_1', $address);
+                        if ($city !== '') update_user_meta($user_id, 'shipping_city', $city);
+                        if ($state !== '') update_user_meta($user_id, 'shipping_state', $state);
+                        if ($postcode !== '') update_user_meta($user_id, 'shipping_postcode', $postcode);
+                        if ($district !== '') update_user_meta($user_id, 'shipping_neighborhood', $district);
+                        update_user_meta($user_id, 'shipping_country', 'BR');
+                        
+                        // Se replicou para cobrança, salva também no user meta
+                        if ($should_replicate_to_billing) {
+                            if ($address !== '') update_user_meta($user_id, 'billing_address_1', $address);
+                            if ($city !== '') update_user_meta($user_id, 'billing_city', $city);
+                            if ($state !== '') update_user_meta($user_id, 'billing_state', $state);
+                            if ($postcode !== '') update_user_meta($user_id, 'billing_postcode', $postcode);
+                            if ($district !== '') update_user_meta($user_id, 'billing_neighborhood', $district);
+                            update_user_meta($user_id, 'billing_country', 'BR');
+                        }
+                    } else {
+                        // Salva dados de billing no user meta
+                        if ($address !== '') update_user_meta($user_id, 'billing_address_1', $address);
+                        if ($city !== '') update_user_meta($user_id, 'billing_city', $city);
+                        if ($state !== '') update_user_meta($user_id, 'billing_state', $state);
+                        if ($postcode !== '') update_user_meta($user_id, 'billing_postcode', $postcode);
+                        if ($district !== '') update_user_meta($user_id, 'billing_neighborhood', $district);
+                        update_user_meta($user_id, 'billing_country', 'BR');
+                        
+                        // Se replicou para entrega, salva também no user meta
+                        if ($should_replicate_to_shipping) {
+                            if ($address !== '') update_user_meta($user_id, 'shipping_address_1', $address);
+                            if ($city !== '') update_user_meta($user_id, 'shipping_city', $city);
+                            if ($state !== '') update_user_meta($user_id, 'shipping_state', $state);
+                            if ($postcode !== '') update_user_meta($user_id, 'shipping_postcode', $postcode);
+                            if ($district !== '') update_user_meta($user_id, 'shipping_neighborhood', $district);
+                            update_user_meta($user_id, 'shipping_country', 'BR');
+                        }
+                    }
+                }
+
                 WC()->customer->save();
             }
         }
+        
         if ($updated) {
             // Monta mensagem indicando onde o endereço foi inserido
             $message_parts = [];
@@ -4352,9 +4396,9 @@ class WcBetterShippingCalculatorForBrazil
 
         $cart_cep = '';
         if (WC()->customer) {
-            $cart_cep = WC()->customer->get_shipping_postcode();
+            $cart_cep = WC()->customer->get_billing_postcode();
             if (empty($cart_cep)) {
-                $cart_cep = WC()->customer->get_billing_postcode();
+                $cart_cep = WC()->customer->get_shipping_postcode();
             }
         }
 

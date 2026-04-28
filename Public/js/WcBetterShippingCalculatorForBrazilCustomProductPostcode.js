@@ -45,7 +45,6 @@ document.addEventListener('DOMContentLoaded', function () {
             // Reseta cache e faz nova consulta usando o CEP do carrinho
             invalidateCache();
             setLastUsedPostcode(normalizedCartCep);
-            sendCEP(normalizedCartCep, true);
         }
     }
 
