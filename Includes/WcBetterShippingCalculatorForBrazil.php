@@ -902,6 +902,9 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_wc_better_insert_address', $this, 'wc_better_insert_address');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_insert_address', $this, 'wc_better_insert_address');
 
+        $this->loader->add_action('wp_ajax_wc_better_get_user_postcode', $this, 'wc_better_get_user_postcode');
+        $this->loader->add_action('wp_ajax_nopriv_wc_better_get_user_postcode', $this, 'wc_better_get_user_postcode');
+
         $this->loader->add_action('woocommerce_get_country_locale', $this, 'wc_better_calc_phone_number', 10, 1);
 
         $this->loader->add_action('woocommerce_init', $this, 'init_woocommerce');
@@ -4263,6 +4266,43 @@ class WcBetterShippingCalculatorForBrazil
         $action = sanitize_text_field(wp_unslash($_REQUEST['action_nonce']));
         $nonce = wp_create_nonce($action);
         wp_send_json_success(['nonce' => $nonce]);
+    }
+
+    /**
+     * AJAX endpoint para obter o CEP do usuário da sessão
+     *
+     * @since 4.11.0
+     * @access public
+     * @return void JSON com o CEP do usuário
+     */
+    public function wc_better_get_user_postcode() {
+        // Verifica nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wc_better_get_user_postcode')) {
+            wp_send_json_error([
+                'error' => true,
+                'message' => 'Falha na verificação de segurança (nonce).'
+            ], 403);
+        }
+        
+        // Verifica se WooCommerce está disponível
+        if (!function_exists('WC')) {
+            wp_send_json_error([
+                'error' => true,
+                'message' => 'WooCommerce não está disponível.'
+            ], 400);
+        }
+
+        $cart_cep = '';
+        if (WC()->customer) {
+            $cart_cep = WC()->customer->get_shipping_postcode();
+            if (empty($cart_cep)) {
+                $cart_cep = WC()->customer->get_billing_postcode();
+            }
+        }
+
+        wp_send_json_success([
+            'postcode' => $cart_cep
+        ]);
     }
 
     /**

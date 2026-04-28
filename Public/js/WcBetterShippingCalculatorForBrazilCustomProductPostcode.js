@@ -2,20 +2,56 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const WooBetterData = window.WooBetterData || {};
 
-    // --- Lógica para sincronizar CEP do carrinho com cache personalizado ---
-    const cartCep = WooBetterData.cart_cep || '';
-    const lastPostcode = getLastUsedPostcode();
-    
-    // Normaliza ambos os CEPs para comparação
-    const normalizedCartCep = formatCEP(cartCep);
-    const normalizedLastPostcode = formatCEP(lastPostcode);
-    
-    if (normalizedCartCep && normalizedCartCep !== normalizedLastPostcode) {
-        // Reseta cache e faz nova consulta usando o CEP do carrinho
-        invalidateCache();
-        setLastUsedPostcode(normalizedCartCep);
-        sendCEP(normalizedCartCep, true);
+    // --- Lógica para obter CEP dinamicamente via AJAX ---
+    function fetchUserPostcodeAndInitialize() {
+        // Faz requisição AJAX para obter o CEP do usuário
+        const formData = new FormData();
+        formData.append('action', 'wc_better_get_user_postcode');
+        formData.append('nonce', WooBetterData.get_postcode_nonce);
+
+        // Adiciona timestamp na URL para evitar cache
+        const ajaxUrlWithBuster = WooBetterData.ajaxurl + '?t=' + Date.now();
+
+        fetch(ajaxUrlWithBuster, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            let cartCep = '';
+            
+            // Se a requisição foi bem-sucedida e há CEP
+            if (data.success && data.data && data.data.postcode) {
+                cartCep = data.data.postcode;
+            }
+            
+            // Processa o CEP obtido (ou vazio se não há)
+            processUserPostcode(cartCep);
+        })
+        .catch(error => {
+            console.log('Não foi possível obter CEP do usuário:', error);
+            // Continua o script mesmo sem CEP
+            processUserPostcode('');
+        });
     }
+
+    function processUserPostcode(cartCep) {
+        const lastPostcode = getLastUsedPostcode();
+        
+        // Normaliza ambos os CEPs para comparação
+        const normalizedCartCep = formatCEP(cartCep);
+        const normalizedLastPostcode = formatCEP(lastPostcode);
+        
+        if (normalizedCartCep && normalizedCartCep !== normalizedLastPostcode) {
+            // Reseta cache e faz nova consulta usando o CEP do carrinho
+            invalidateCache();
+            setLastUsedPostcode(normalizedCartCep);
+            sendCEP(normalizedCartCep, true);
+        }
+    }
+
+    // Inicia a busca do CEP quando o DOM carregar
+    fetchUserPostcodeAndInitialize();
 
     // Configura listener para mudanças em produtos variáveis
     setupVariationChangeListener();
