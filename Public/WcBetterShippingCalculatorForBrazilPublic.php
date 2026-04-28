@@ -650,6 +650,15 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
+            // Registrar script para detecção de checkbox "Usar mesmo endereço para faturamento"
+            wp_enqueue_script(
+                $this->plugin_name . '-gutenberg-shipping-as-billing',
+                plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergShippingAsBilling.COMPILED.js',
+                array('wp-data'),
+                $this->version,
+                true
+            );
+
             if ($disabled_shipping === 'all' || ($only_virtual && $disabled_shipping === 'digital')) {
                 wp_enqueue_script(
                     $this->plugin_name . '-gutenberg-disabled-shipping',

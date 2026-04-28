@@ -9,7 +9,7 @@ jQuery(function ($) {
         var checkboxId = 'wc-better-checkbox-' + type;
         var $checkboxInput = $('#' + checkboxId);
         var $checkboxLabel = $checkboxInput.closest('label');
-        $checkboxInput.prop('disabled', true).addClass('wc-better-checkbox-disabled').prop('checked', false);
+        $checkboxInput.prop('readonly', true).addClass('wc-better-readonly-disabled').prop('checked', false);
         $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
     }
 
@@ -41,11 +41,11 @@ jQuery(function ($) {
         var $checkboxLabel = $('<label>', { for: checkboxId });
         var $checkboxInput = $('<input>', {
             id: checkboxId,
-            class: 'wc-block-components-checkbox__input wc-better-checkbox-disabled',
+            class: 'wc-block-components-checkbox__input wc-better-readonly-disabled',
             type: 'checkbox',
             'aria-invalid': 'false',
             checked: false,
-            disabled: true
+            readonly: true
         });
         var $checkboxSvg = $(
             '<svg class="wc-block-components-checkbox__mark" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"></path></svg>'
@@ -325,7 +325,7 @@ jQuery(function ($) {
             // Ao marcar, desabilita imediatamente o checkbox
             if (event.target.checked) {
                 const $checkboxInput = $(event.target);
-                $checkboxInput.prop('disabled', true).addClass('wc-better-checkbox-disabled');
+                $checkboxInput.prop('readonly', true).addClass('wc-better-readonly-disabled');
                 $checkboxInput.closest('label').addClass('wc-better-checkbox-disabled-label');
             }
             // Se marcou o checkbox e tem endereço
@@ -333,7 +333,7 @@ jQuery(function ($) {
             var numberFieldId = this.context + '-number';
             var $numberInput = $('#' + numberFieldId);
             if ($numberInput.length) {
-                $numberInput.val('').prop('disabled', false).removeAttr('style').trigger('change');
+                $numberInput.val('').prop('readonly', false).removeAttr('style').trigger('change');
                 const $parentDiv = $numberInput.parent();
                 $parentDiv.removeClass('is-active');
                 var betterCheckboxId = 'wc-' + this.context + '-better-checkbox';
@@ -541,8 +541,8 @@ jQuery(function ($) {
 
             if (this.isValidCep(cep)) {
                 // Desabilita o checkbox imediatamente
-                $checkboxInput.prop('disabled', true);
-                $checkboxInput.addClass('wc-better-checkbox-disabled');
+                $checkboxInput.prop('readonly', true);
+                $checkboxInput.addClass('wc-better-readonly-disabled');
                 $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
                 
                 // Implementa debounce de 300ms
@@ -617,8 +617,8 @@ jQuery(function ($) {
                 this.addressData = { ...address, _rawCep: currentRawCep };
                 this.updateCheckboxLabel(address);
                 
-                $checkboxInput.prop('disabled', false);
-                $checkboxInput.removeClass('wc-better-checkbox-disabled');
+                $checkboxInput.prop('readonly', false);
+                $checkboxInput.removeClass('wc-better-readonly-disabled');
                 $checkboxLabel.removeClass('wc-better-checkbox-disabled-label');
                 
                 // Garante que a inserção automática ocorra se o endereço mudou OU o CEP digitado mudou
@@ -637,8 +637,8 @@ jQuery(function ($) {
         }
         
         _handleInvalidCep($checkboxInput, $checkboxLabel) {
-            $checkboxInput.prop('disabled', true);
-            $checkboxInput.addClass('wc-better-checkbox-disabled');
+            $checkboxInput.prop('readonly', true);
+            $checkboxInput.addClass('wc-better-readonly-disabled');
             $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
             $checkboxInput.prop('checked', false);
             if (this.checkboxLabel.length) {
@@ -650,8 +650,8 @@ jQuery(function ($) {
         _handleAddressNotFound(cep, $checkboxInput, $checkboxLabel) {
             this.addressData = null;
             this.showNotFoundLabel();
-            $checkboxInput.prop('disabled', true);
-            $checkboxInput.addClass('wc-better-checkbox-disabled');
+            $checkboxInput.prop('readonly', true);
+            $checkboxInput.addClass('wc-better-readonly-disabled');
             $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
             $checkboxInput.prop('checked', false);
             
