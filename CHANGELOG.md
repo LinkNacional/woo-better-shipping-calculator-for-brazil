@@ -1,3 +1,7 @@
+# 4.12.5 - 29/04/24
+* Ajuste: Sistema de preenchimento de CEP para cache.
+* Ajuste: Sincronização do endereço ao preencher o formulário.
+
 # 4.12.4 - 22/04/26
 * Ajuste: Preenchimento do campo CPF.
 * Ajuste: Mudança do campo de país.
