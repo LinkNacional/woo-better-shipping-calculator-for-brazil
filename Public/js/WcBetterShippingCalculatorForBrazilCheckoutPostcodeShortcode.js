@@ -230,8 +230,8 @@ jQuery(function ($) {
             }
 
             if (this.isValidCep(cep) || /^\d{5}-\d{3}$/.test(rawCep)) {
-                $checkboxInput.prop('disabled', true);
-                $checkboxInput.addClass('wc-better-checkbox-disabled');
+                $checkboxInput.prop('readonly', true);
+                $checkboxInput.addClass('wc-better-readonly-disabled');
                 this.showLoadingLabel();
 
                 // Cria novo AbortController para esta consulta
@@ -268,8 +268,8 @@ jQuery(function ($) {
                     const currentRawCep = this.input.val();
                     this.addressData = { ...address, _rawCep: currentRawCep };
                     this.updateCheckboxLabel(address);
-                    $checkboxInput.prop('disabled', false);
-                    $checkboxInput.removeClass('wc-better-checkbox-disabled');
+                    $checkboxInput.prop('readonly', false);
+                    $checkboxInput.removeClass('wc-better-readonly-disabled');
                     // Garante que a inserção automática ocorra se o endereço mudou OU o CEP digitado mudou
                     if (
                         !previousAddress ||
@@ -283,8 +283,8 @@ jQuery(function ($) {
                 } else {
                     this.addressData = null;
                     this.showNotFoundLabel();
-                    $checkboxInput.prop('disabled', true);
-                    $checkboxInput.addClass('wc-better-checkbox-disabled');
+                    $checkboxInput.prop('readonly', true);
+                    $checkboxInput.addClass('wc-better-readonly-disabled');
                     $checkboxInput.prop('checked', false);
                     const data = {
                         action: 'wc_better_insert_address',
@@ -304,9 +304,9 @@ jQuery(function ($) {
                     });
                 }
             } else {
-                // Se o CEP não é válido, mantém desabilitado e atualiza texto
-                $checkboxInput.prop('disabled', true);
-                $checkboxInput.addClass('wc-better-checkbox-disabled');
+                // Se o CEP não é válido, mantém readonly e atualiza texto
+                $checkboxInput.prop('readonly', true);
+                $checkboxInput.addClass('wc-better-readonly-disabled');
                 $checkboxInput.prop('checked', false);
                 if (this.checkboxLabel.length) {
                     const $labelSpan = this.checkboxLabel.find('.wc-block-components-checkbox__label');
@@ -590,7 +590,7 @@ jQuery(function ($) {
         var customCheckboxId = field === 'billing' ? 'lkn_billing_checkbox' : (field === 'shipping' ? 'lkn_shipping_checkbox' : null);
         if (customNumberId && $("#" + customNumberId).length) {
             var $customNumber = $("#" + customNumberId);
-            $customNumber.val('').prop('disabled', false).trigger('change');
+            $customNumber.val('').prop('readonly', false).trigger('change');
             // Remove opacidade do campo pai
             $customNumber.closest('.form-row').removeAttr('style').css('opacity', '');
             if (customCheckboxId && $("#" + customCheckboxId).length) {
@@ -610,29 +610,29 @@ jQuery(function ($) {
             let loadingPulse = null;
             let lastCepRaw = '';
             let lastValidCep = '';
-            // Função para aplicar/remover disabled e classe na label
-            function setCheckboxDisabled(disabled) {
+            // Função para aplicar/remover readonly e classe na label
+            function setCheckboxReadonly(readonly) {
                 if ($checkbox.length) {
-                    $checkbox.prop('disabled', !!disabled);
+                    $checkbox.prop('readonly', !!readonly);
                     var $label = $checkbox.closest('label');
-                    if (disabled) {
-                        $checkbox.addClass('wc-better-checkbox-disabled');
-                        $label.addClass('wc-better-checkbox-disabled-label');
+                    if (readonly) {
+                        $checkbox.addClass('wc-better-readonly-disabled');
+                        $label.addClass('wc-better-readonly-disabled-label');
                     } else {
-                        $checkbox.removeClass('wc-better-checkbox-disabled');
-                        $label.removeClass('wc-better-checkbox-disabled-label');
+                        $checkbox.removeClass('wc-better-readonly-disabled');
+                        $label.removeClass('wc-better-readonly-disabled-label');
                     }
                 }
             }
             // Função para bloquear o checkbox após inserção
             function blockCheckbox() {
                 checkboxBlocked = true;
-                setCheckboxDisabled(true);
+                setCheckboxReadonly(true);
             }
             // Função para desbloquear o checkbox
             function unblockCheckbox() {
                 checkboxBlocked = false;
-                setCheckboxDisabled(false);
+                setCheckboxReadonly(false);
             }
             $postcode.on('input', async function (e) {
                 const rawValue = e.target.value;
@@ -640,7 +640,7 @@ jQuery(function ($) {
                 // Se o campo foi apagado ou ficou inválido, desabilita e bloqueia
                 if (cep.length !== 8) {
                     updateCheckboxLabel(type, 'default');
-                    setCheckboxDisabled(true);
+                    setCheckboxReadonly(true);
                     addressData = null;
                     if (loadingPulse) { clearInterval(loadingPulse); loadingPulse = null; }
                     lastCepRaw = '';
@@ -653,7 +653,7 @@ jQuery(function ($) {
                 if (lastCepRaw === rawValue) return;
                 lastCepRaw = rawValue;
                 updateCheckboxLabel(type, 'loading');
-                setCheckboxDisabled(true);
+                setCheckboxReadonly(true);
                 if (loadingPulse) clearInterval(loadingPulse);
                 let pulseState = true;
                 loadingPulse = setInterval(function () {
@@ -694,7 +694,7 @@ jQuery(function ($) {
                     if (!checkboxBlocked) {
                         unblockCheckbox();
                     } else {
-                        setCheckboxDisabled(true);
+                        setCheckboxReadonly(true);
                     }
                     // Se o checkbox já estiver marcado, verifica se o endereço mudou
                     if ($checkbox.prop('checked')) {
@@ -772,7 +772,7 @@ jQuery(function ($) {
                     }
                 } else {
                     updateCheckboxLabel(type, 'notfound');
-                    setCheckboxDisabled(true);
+                    setCheckboxReadonly(true);
                     addressData = null;
                     $checkbox.prop('checked', false);
                     checkboxBlocked = false;
@@ -856,7 +856,7 @@ jQuery(function ($) {
             });
             // Estado inicial ao carregar
             const initialCep = $postcode.val().replace(/\D/g, '');
-            setCheckboxDisabled(initialCep.length !== 8);
+            setCheckboxReadonly(initialCep.length !== 8);
             $postcode.data('hasInputListener', true);
         }
     });

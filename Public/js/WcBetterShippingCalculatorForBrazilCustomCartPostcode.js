@@ -6,37 +6,72 @@ document.addEventListener('DOMContentLoaded', function () {
     function debugLog(...args) {
     }
 
-    // --- Lógica para sincronizar CEP do carrinho com cache personalizado ---
-    const cartCep = WooBetterData.cart_cep || '';
-    const lastPostcode = getLastUsedPostcode();
-    
-    // Normaliza ambos os CEPs para comparação
-    const normalizedCartCep = formatCEP(cartCep);
-    const normalizedLastPostcode = formatCEP(lastPostcode);
-    
-    if (normalizedCartCep && normalizedCartCep !== normalizedLastPostcode) {
-        // Reseta cache e aguarda DOM estar pronto para simular clique
-        invalidateCache();
-        setLastUsedPostcode(normalizedCartCep);
+    // --- Lógica para obter CEP dinamicamente via AJAX ---
+    function fetchUserPostcodeAndInitialize() {
+        // Faz requisição AJAX para obter o CEP do usuário
+        const formData = new FormData();
+        formData.append('action', 'wc_better_get_user_postcode');
+        formData.append('nonce', WooBetterData.get_postcode_nonce);
+
+        // Adiciona timestamp na URL para evitar cache
+        const ajaxUrlWithBuster = WooBetterData.ajaxurl + '?t=' + Date.now();
+
+        fetch(ajaxUrlWithBuster, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            let cartCep = '';
+            
+            // Se a requisição foi bem-sucedida e há CEP
+            if (data.success && data.data && data.data.postcode) {
+                cartCep = data.data.postcode;
+            }
+            
+            // Processa o CEP obtido (ou vazio se não há)
+            processUserPostcode(cartCep);
+        })
+        .catch(error => {
+            // Continua o script mesmo sem CEP
+            processUserPostcode('');
+        });
+    }
+
+    function processUserPostcode(cartCep) {
+        const lastPostcode = getLastUsedPostcode();
         
-        // Aguarda DOM estar pronto para simular clique no botão
-        setTimeout(() => {
-            const form = document.querySelector('#custom-postcode-form');
-            if (form) {
-                const input = form.querySelector('.woo-better-input-current-style');
-                const button = form.querySelector('.woo-better-button-current-style');
-                
-                if (input && button) {
-                    applyFormatToInput(input, normalizedCartCep);
-                    button.click();
+        // Normaliza ambos os CEPs para comparação
+        const normalizedCartCep = formatCEP(cartCep);
+        const normalizedLastPostcode = formatCEP(lastPostcode);
+        
+        if (normalizedCartCep && normalizedCartCep !== normalizedLastPostcode) {
+            // Reseta cache e aguarda DOM estar pronto para simular clique
+            invalidateCache();
+            setLastUsedPostcode(normalizedCartCep);
+            
+            // Aguarda DOM estar pronto para simular clique no botão
+            setTimeout(() => {
+                const form = document.querySelector('#custom-postcode-form');
+                if (form) {
+                    const input = form.querySelector('.woo-better-input-current-style');
+                    const button = form.querySelector('.woo-better-button-current-style');
+                    
+                    if (input && button) {
+                        applyFormatToInput(input, normalizedCartCep);
+                        button.click();
+                    } else {
+                        sendCEP(normalizedCartCep, true);
+                    }
                 } else {
                     sendCEP(normalizedCartCep, true);
                 }
-            } else {
-                sendCEP(normalizedCartCep, true);
-            }
-        }, 500); // Aguarda 500ms para DOM estar pronto
+            }, 500); // Aguarda 500ms para DOM estar pronto
+        }
     }
+
+    // Inicia a busca do CEP quando o DOM carregar
+    fetchUserPostcodeAndInitialize();
 
     let containerFound = false;
     let blockPosition = 'h2[class*="order"]'
@@ -1232,6 +1267,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Adiciona parâmetro t=Date.now() para evitar cache
         const timestamp = Date.now();
+        let apiUrl;
         if (typeof wpApiSettings !== 'undefined' && wpApiSettings.root) {
             apiUrl = wpApiSettings.root + `lknwcbettershipping/v1/cep/?postcode=${postcode}&t=${timestamp}`;
         } else {

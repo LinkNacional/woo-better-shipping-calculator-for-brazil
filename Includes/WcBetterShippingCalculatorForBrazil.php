@@ -85,7 +85,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.12.4';
+            $this->version = '4.12.5';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -901,6 +901,9 @@ class WcBetterShippingCalculatorForBrazil
         
         $this->loader->add_action('wp_ajax_wc_better_insert_address', $this, 'wc_better_insert_address');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_insert_address', $this, 'wc_better_insert_address');
+
+        $this->loader->add_action('wp_ajax_wc_better_get_user_postcode', $this, 'wc_better_get_user_postcode');
+        $this->loader->add_action('wp_ajax_nopriv_wc_better_get_user_postcode', $this, 'wc_better_get_user_postcode');
 
         $this->loader->add_action('woocommerce_get_country_locale', $this, 'wc_better_calc_phone_number', 10, 1);
 
@@ -2659,9 +2662,23 @@ class WcBetterShippingCalculatorForBrazil
         if (!$order) {
             return;
         }
+        
         // LOG: Captura números de telefone do pedido para debug
         $billing_phone = $order->get_billing_phone();
         $shipping_phone = $order->get_shipping_phone();
+
+        // Detecta se está usando o mesmo endereço para aplicar nos telefones
+        $use_same_address = $this->detect_same_address_usage($order, $data);
+        
+        // Lógica de sincronização de telefones considerando o checkbox de mesmo endereço
+        if ($use_same_address) {
+            // Se usar mesmo endereço, prioriza o telefone de cobrança (billing)
+            if (!empty($billing_phone)) {
+                $order->set_shipping_phone($billing_phone);
+            } elseif (!empty($shipping_phone)) {
+                $order->set_billing_phone($shipping_phone);
+            }
+        }
 
         // Processa números de endereço primeiro
         $this->process_address_numbers_from_data($order, $data);
@@ -2681,9 +2698,6 @@ class WcBetterShippingCalculatorForBrazil
         $billing_country_code = '';
         $shipping_country_code = '';
         
-        // Detecta se está usando o mesmo endereço para cobrança
-        $use_same_address = $this->detect_same_address_usage($order, $data);
-        
         // Salvar código do país do telefone de faturação (campos tradicionais)
         if (isset($data['billing_phone_country']) && !empty($data['billing_phone_country'])) {
             $billing_country_code = sanitize_text_field($data['billing_phone_country']);
@@ -2696,11 +2710,11 @@ class WcBetterShippingCalculatorForBrazil
 
         // Lógica aprimorada considerando o checkbox de mesmo endereço
         if ($use_same_address) {
-            // Se usar mesmo endereço, prioriza o código de entrega (shipping)
-            if (!empty($shipping_country_code)) {
-                $billing_country_code = $shipping_country_code;
-            } elseif (!empty($billing_country_code)) {
+            // Se usar mesmo endereço, prioriza o código de cobrança (billing)
+            if (!empty($billing_country_code)) {
                 $shipping_country_code = $billing_country_code;
+            } elseif (!empty($shipping_country_code)) {
+                $billing_country_code = $shipping_country_code;
             }
         } else {
             // Lógica original quando não usa mesmo endereço
@@ -2802,10 +2816,6 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        // LOG: Captura números de telefone do pedido para debug
-        $billing_phone = $order->get_billing_phone();
-        $shipping_phone = $order->get_shipping_phone();
-
         // Processa números de endereço primeiro
         $this->process_address_numbers_from_request($order, $request);
         
@@ -2823,6 +2833,9 @@ class WcBetterShippingCalculatorForBrazil
         
         // Processa dados de telefone formatado
         $this->process_phone_formatter_from_request($order, $request);
+        
+        // Processa dados de "usar mesmo endereço para faturamento"
+        $this->process_shipping_as_billing_from_request($order, $request);
         
         $billing_country_code = '';
         $shipping_country_code = '';
@@ -2909,12 +2922,26 @@ class WcBetterShippingCalculatorForBrazil
                 $shipping_number = sanitize_text_field(wp_unslash($_POST['shipping_number']));
             }
 
-            if (empty($shipping_number) && !empty($billing_number)) {
-                $shipping_number = $billing_number;
-            }
+            // Detecta se está usando o mesmo endereço
+            $use_same_address = $this->detect_same_address_usage($order, $data);
+            
+            // Lógica de sincronização considerando o checkbox de mesmo endereço
+            if ($use_same_address) {
+                // Se usar mesmo endereço, prioriza o número de cobrança (billing)
+                if (!empty($billing_number)) {
+                    $shipping_number = $billing_number;
+                } elseif (!empty($shipping_number)) {
+                    $billing_number = $shipping_number;
+                }
+            } else {
+                // Lógica original quando não usa mesmo endereço
+                if (empty($shipping_number) && !empty($billing_number)) {
+                    $shipping_number = $billing_number;
+                }
 
-            if (empty($billing_number) && !empty($shipping_number)) {
-                $billing_number = $shipping_number;
+                if (empty($billing_number) && !empty($shipping_number)) {
+                    $billing_number = $shipping_number;
+                }
             }
 
             if (empty($shipping_number) && empty($billing_number)) {
@@ -3223,25 +3250,15 @@ class WcBetterShippingCalculatorForBrazil
      */
     private function detect_same_address_usage($order, $data)
     {
-        // Verifica se os endereços são idênticos (indica uso do mesmo endereço)
-        $billing_address_1 = $order->get_billing_address_1();
-        $shipping_address_1 = $order->get_shipping_address_1();
-        
-        $billing_city = $order->get_billing_city();
-        $shipping_city = $order->get_shipping_city();
-        
-        $billing_postcode = $order->get_billing_postcode();
-        $shipping_postcode = $order->get_shipping_postcode();
-        
-        // Se endereços são idênticos, assume que checkbox estava marcado
-        if ($billing_address_1 === $shipping_address_1 &&
-            $billing_city === $shipping_city &&
-            $billing_postcode === $shipping_postcode &&
-            !empty($billing_address_1)) {
-            return true;
+        // PRIORIDADE: Verifica primeiro o campo ship_to_different_address do checkout
+        if (isset($data['ship_to_different_address'])) {
+            // false = usar mesmo endereço, true = endereços diferentes
+            return $data['ship_to_different_address'] === false || $data['ship_to_different_address'] === 'false';
         }
-        
+
         return false;
+        
+
     }
     
     /**
@@ -3438,6 +3455,25 @@ class WcBetterShippingCalculatorForBrazil
                     ];
                 },
             ]);
+
+            // Registra campos para detectar checkbox "usar mesmo endereço para cobrança"
+            woocommerce_store_api_register_endpoint_data( [
+                'endpoint'        => 'checkout',
+                'namespace'       => 'woo_better_shipping_as_billing',
+                'schema_callback' => function() {
+                    return [
+                        'use_shipping_as_billing' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                    ];
+                },
+                'data_callback' => function() {
+                    return [
+                        'use_shipping_as_billing'  => '', 
+                    ];
+                },
+            ]);
         }
 
         if ( function_exists( 'woocommerce_store_api_register_update_callback' ) ) {
@@ -3481,6 +3517,12 @@ class WcBetterShippingCalculatorForBrazil
             woocommerce_store_api_register_update_callback([
                 'namespace' => 'woo_better_phone_formatter',
                 'callback'  => [ $this, 'handle_phone_formatter_update' ],
+            ]);
+            
+            // Callback para checkbox "usar mesmo endereço para cobrança"
+            woocommerce_store_api_register_update_callback([
+                'namespace' => 'woo_better_shipping_as_billing',
+                'callback'  => [ $this, 'handle_shipping_as_billing_update' ],
             ]);
         }
     }
@@ -3785,6 +3827,23 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
+    public function handle_shipping_as_billing_update( $data ) {
+        if (! function_exists('WC') || ! WC()->session ) {
+            return;
+        }
+
+        // Captura o estado do checkbox "usar mesmo endereço para cobrança"
+        if ( isset( $data['use_shipping_as_billing'] ) ) {
+            $use_shipping_as_billing = sanitize_text_field(wp_unslash($data['use_shipping_as_billing']));
+            
+            // Converte string para boolean para uso interno
+            $is_using_same_address = ($use_shipping_as_billing === 'true');
+            
+            // Salva na sessão para uso durante o checkout
+            WC()->session->set( 'use_shipping_as_billing', $use_shipping_as_billing );
+        }
+    }
+
     public function wc_better_calc_phone_number($locale)
     {
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
@@ -4070,6 +4129,12 @@ class WcBetterShippingCalculatorForBrazil
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wc_better_insert_address')) {
             wp_send_json_error(['message' => 'Falha na verificação de segurança (nonce).'], 403);
         }
+        
+        // Inicializa a sessão do WooCommerce se necessário
+        if (!WC()->session->has_session()) {
+            WC()->session->set_customer_session_cookie(true);
+        }
+        
         // Recebe e sanitiza os dados
         $address    = isset($_POST['address']) ? sanitize_text_field(wp_unslash($_POST['address'])) : '';
         $city       = isset($_POST['city']) ? sanitize_text_field(wp_unslash($_POST['city'])) : '';
@@ -4184,10 +4249,91 @@ class WcBetterShippingCalculatorForBrazil
                     $updated = true;
                 }
             }
-            if ($updated) {
+            if ($updated) {                
+                // Salva explicitamente na sessão para garantir persistencia em requisições subsequentes
+                if ($context === 'shipping') {
+                    if ($address !== '') WC()->session->set('shipping_address_1', $address);
+                    if ($city !== '') WC()->session->set('shipping_city', $city);
+                    if ($state !== '') WC()->session->set('shipping_state', $state);
+                    if ($postcode !== '') WC()->session->set('shipping_postcode', $postcode);
+                    if ($district !== '') WC()->session->set('shipping_neighborhood', $district);
+                    WC()->session->set('shipping_country', 'BR');
+                    
+                    // Se replicou para cobrança, salva também na sessão
+                    if ($should_replicate_to_billing) {
+                        if ($address !== '') WC()->session->set('billing_address_1', $address);
+                        if ($city !== '') WC()->session->set('billing_city', $city);
+                        if ($state !== '') WC()->session->set('billing_state', $state);
+                        if ($postcode !== '') WC()->session->set('billing_postcode', $postcode);
+                        if ($district !== '') WC()->session->set('billing_neighborhood', $district);
+                        WC()->session->set('billing_country', 'BR');
+                    }
+                } else {
+                    if ($address !== '') WC()->session->set('billing_address_1', $address);
+                    if ($city !== '') WC()->session->set('billing_city', $city);
+                    if ($state !== '') WC()->session->set('billing_state', $state);
+                    if ($postcode !== '') WC()->session->set('billing_postcode', $postcode);
+                    if ($district !== '') WC()->session->set('billing_neighborhood', $district);
+                    WC()->session->set('billing_country', 'BR');
+                    
+                    // Se replicou para entrega, salva também na sessão
+                    if ($should_replicate_to_shipping) {
+                        if ($address !== '') WC()->session->set('shipping_address_1', $address);
+                        if ($city !== '') WC()->session->set('shipping_city', $city);
+                        if ($state !== '') WC()->session->set('shipping_state', $state);
+                        if ($postcode !== '') WC()->session->set('shipping_postcode', $postcode);
+                        if ($district !== '') WC()->session->set('shipping_neighborhood', $district);
+                        WC()->session->set('shipping_country', 'BR');
+                    }
+                }
+
+                // Salva também nos dados do usuário logado se aplicável
+                if (is_user_logged_in()) {
+                    $user_id = get_current_user_id();
+                    
+                    if ($context === 'shipping') {
+                        // Salva dados de shipping no user meta
+                        if ($address !== '') update_user_meta($user_id, 'shipping_address_1', $address);
+                        if ($city !== '') update_user_meta($user_id, 'shipping_city', $city);
+                        if ($state !== '') update_user_meta($user_id, 'shipping_state', $state);
+                        if ($postcode !== '') update_user_meta($user_id, 'shipping_postcode', $postcode);
+                        if ($district !== '') update_user_meta($user_id, 'shipping_neighborhood', $district);
+                        update_user_meta($user_id, 'shipping_country', 'BR');
+                        
+                        // Se replicou para cobrança, salva também no user meta
+                        if ($should_replicate_to_billing) {
+                            if ($address !== '') update_user_meta($user_id, 'billing_address_1', $address);
+                            if ($city !== '') update_user_meta($user_id, 'billing_city', $city);
+                            if ($state !== '') update_user_meta($user_id, 'billing_state', $state);
+                            if ($postcode !== '') update_user_meta($user_id, 'billing_postcode', $postcode);
+                            if ($district !== '') update_user_meta($user_id, 'billing_neighborhood', $district);
+                            update_user_meta($user_id, 'billing_country', 'BR');
+                        }
+                    } else {
+                        // Salva dados de billing no user meta
+                        if ($address !== '') update_user_meta($user_id, 'billing_address_1', $address);
+                        if ($city !== '') update_user_meta($user_id, 'billing_city', $city);
+                        if ($state !== '') update_user_meta($user_id, 'billing_state', $state);
+                        if ($postcode !== '') update_user_meta($user_id, 'billing_postcode', $postcode);
+                        if ($district !== '') update_user_meta($user_id, 'billing_neighborhood', $district);
+                        update_user_meta($user_id, 'billing_country', 'BR');
+                        
+                        // Se replicou para entrega, salva também no user meta
+                        if ($should_replicate_to_shipping) {
+                            if ($address !== '') update_user_meta($user_id, 'shipping_address_1', $address);
+                            if ($city !== '') update_user_meta($user_id, 'shipping_city', $city);
+                            if ($state !== '') update_user_meta($user_id, 'shipping_state', $state);
+                            if ($postcode !== '') update_user_meta($user_id, 'shipping_postcode', $postcode);
+                            if ($district !== '') update_user_meta($user_id, 'shipping_neighborhood', $district);
+                            update_user_meta($user_id, 'shipping_country', 'BR');
+                        }
+                    }
+                }
+
                 WC()->customer->save();
             }
         }
+        
         if ($updated) {
             // Monta mensagem indicando onde o endereço foi inserido
             $message_parts = [];
@@ -4263,6 +4409,43 @@ class WcBetterShippingCalculatorForBrazil
         $action = sanitize_text_field(wp_unslash($_REQUEST['action_nonce']));
         $nonce = wp_create_nonce($action);
         wp_send_json_success(['nonce' => $nonce]);
+    }
+
+    /**
+     * AJAX endpoint para obter o CEP do usuário da sessão
+     *
+     * @since 4.11.0
+     * @access public
+     * @return void JSON com o CEP do usuário
+     */
+    public function wc_better_get_user_postcode() {
+        // Verifica nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wc_better_get_user_postcode')) {
+            wp_send_json_error([
+                'error' => true,
+                'message' => 'Falha na verificação de segurança (nonce).'
+            ], 403);
+        }
+        
+        // Verifica se WooCommerce está disponível
+        if (!function_exists('WC')) {
+            wp_send_json_error([
+                'error' => true,
+                'message' => 'WooCommerce não está disponível.'
+            ], 400);
+        }
+
+        $cart_cep = '';
+        if (WC()->customer) {
+            $cart_cep = WC()->customer->get_billing_postcode();
+            if (empty($cart_cep)) {
+                $cart_cep = WC()->customer->get_shipping_postcode();
+            }
+        }
+
+        wp_send_json_success([
+            'postcode' => $cart_cep
+        ]);
     }
 
     /**
@@ -4967,6 +5150,26 @@ class WcBetterShippingCalculatorForBrazil
             $billing_neighborhood = isset($_POST['billing_neighborhood']) ? sanitize_text_field(wp_unslash($_POST['billing_neighborhood'])) : '';
             $shipping_neighborhood = isset($_POST['shipping_neighborhood']) ? sanitize_text_field(wp_unslash($_POST['shipping_neighborhood'])) : '';
 
+            // Detecta se está usando o mesmo endereço
+            $use_same_address = $this->detect_same_address_usage($order, $data);
+            
+            // Lógica de sincronização considerando o checkbox de mesmo endereço
+            if ($use_same_address) {
+                // Se usar mesmo endereço, prioriza o bairro de cobrança (billing)
+                if (!empty($billing_neighborhood)) {
+                    $shipping_neighborhood = $billing_neighborhood;
+                } elseif (!empty($shipping_neighborhood)) {
+                    $billing_neighborhood = $shipping_neighborhood;
+                }
+            } else {
+                // Lógica original quando não usa mesmo endereço
+                if (!empty($billing_neighborhood) && empty($shipping_neighborhood)) {
+                    $shipping_neighborhood = $billing_neighborhood;
+                } elseif (!empty($shipping_neighborhood) && empty($billing_neighborhood)) {
+                    $billing_neighborhood = $shipping_neighborhood;
+                }
+            }
+
             // Salva os bairros
             if (!empty($billing_neighborhood)) {
                 $order->update_meta_data('_billing_neighborhood', $billing_neighborhood);
@@ -5224,6 +5427,67 @@ class WcBetterShippingCalculatorForBrazil
                     $order->set_billing_phone('');
                     $order->set_shipping_phone(''); 
                 }
+            }
+        }
+    }
+
+    /**
+     * Processa o extension data de "usar mesmo endereço para faturamento"
+     * e copia dados do shipping para billing quando ativo
+     *
+     * @param WC_Order $order
+     * @param WP_REST_Request $request
+     * @return void
+     */
+    private function process_shipping_as_billing_from_request($order, $request)
+    {
+        // Captura dos dados do request do Block Checkout
+        $extensions = $request->get_param('extensions') ?? [];
+        
+        // Verifica o namespace dos dados de shipping as billing
+        if (isset($extensions['woo_better_shipping_as_billing'])) {
+            $billing_data = $extensions['woo_better_shipping_as_billing'];
+            
+            // Verifica se checkbox está marcado
+            if (isset($billing_data['use_shipping_as_billing']) && 
+                ($billing_data['use_shipping_as_billing'] === 'true' || $billing_data['use_shipping_as_billing'] === true)) {
+                
+                // Copia todos os campos do shipping para billing
+                $shipping_fields = [
+                    'first_name' => $order->get_shipping_first_name(),
+                    'last_name' => $order->get_shipping_last_name(), 
+                    'company' => $order->get_shipping_company(),
+                    'address_1' => $order->get_shipping_address_1(),
+                    'address_2' => $order->get_shipping_address_2(),
+                    'city' => $order->get_shipping_city(),
+                    'state' => $order->get_shipping_state(),
+                    'postcode' => $order->get_shipping_postcode(),
+                    'country' => $order->get_shipping_country()
+                ];
+                
+                // Aplica os campos de shipping no billing
+                foreach ($shipping_fields as $field => $value) {
+                    if (!empty($value)) {
+                        $setter_method = "set_billing_{$field}";
+                        if (method_exists($order, $setter_method)) {
+                            $order->$setter_method($value);
+                        }
+                    }
+                }
+                
+                // Copia metadados customizados do plugin se existirem
+                $custom_shipping_fields = [
+                    '_shipping_number' => '_billing_number',
+                    '_shipping_neighborhood' => '_billing_neighborhood'  
+                ];
+                
+                foreach ($custom_shipping_fields as $shipping_meta => $billing_meta) {
+                    $shipping_value = $order->get_meta($shipping_meta);
+                    if (!empty($shipping_value)) {
+                        $order->update_meta_data($billing_meta, $shipping_value);
+                    }
+                }
+                
             }
         }
     }
