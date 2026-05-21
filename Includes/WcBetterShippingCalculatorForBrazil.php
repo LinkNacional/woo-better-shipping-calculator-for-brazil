@@ -160,9 +160,9 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('admin_notices', $this, 'lkn_show_admin_notice');
         $this->loader->add_action('wp_ajax_woo_better_calc_dismiss_notice', $this, 'lkn_dismiss_admin_notice');
         $this->loader->add_action('wp_ajax_woo_better_calc_update_cache_token', $this, 'lkn_update_cache_token');
-        
-        // Hook para desabilitar validações de campos específicos
-        $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_set_checkout_fields_optional', 99998);
+
+        // Remover erros de validação de CPF/CNPJ quando país não é BR
+        $this->loader->add_action('woocommerce_after_checkout_validation', $this, 'lkn_bypass_document_validation_for_non_br', 10, 2);
 
         // Hook para atualizar billing_document quando dados do usuário são salvos
         
@@ -5493,52 +5493,25 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
-     * Função para tornar campos específicos do checkout opcionais
-     * Inclui CPF/CNPJ, bairro e outros campos customizados
+     * Remove erros de validação dos campos CPF/CNPJ quando o país de cobrança não é o Brasil.
+     * Disparado após a validação padrão do WooCommerce, sem afetar a renderização do formulário.
      *
-     * @param array $fields
-     * @return array
+     * @param array    $data   Dados submetidos no checkout.
+     * @param \WP_Error $errors Objeto de erros acumulados pelo WooCommerce.
+     * @return void
      */
-    public function lkn_set_checkout_fields_optional($fields)
-    {
-        $should_disable = false;
-        
-        // Se WooCommerce estiver carregado, verifica o país
-        if (function_exists('WC') && WC()->customer) {
-            $billing_country = WC()->customer->get_billing_country();
-            $shipping_country = WC()->customer->get_shipping_country();
-            
-            // Se qualquer um dos países não for BR, desabilita validação
-            if ($billing_country !== 'BR' || $shipping_country !== 'BR') {
-                $should_disable = true;
-            }
-        }
-        
-        if ($should_disable) {
-            // Campos CPF/CNPJ
-            if (isset($fields['billing']['billing_document'])) {
-                $fields['billing']['billing_document']['required'] = false;
-                $fields['billing']['billing_document']['validate'] = array();
-            }
-            if (isset($fields['billing']['billing_cpf'])) {
-                $fields['billing']['billing_cpf']['required'] = false;
-                $fields['billing']['billing_cpf']['validate'] = array();
-            }
-            if (isset($fields['billing']['billing_cnpj'])) {
-                $fields['billing']['billing_cnpj']['required'] = false;
-                $fields['billing']['billing_cnpj']['validate'] = array();
-            }
+    public function lkn_bypass_document_validation_for_non_br( $data, $errors ) {
+        $billing_country = isset( $data['billing_country'] ) ? sanitize_text_field( $data['billing_country'] ) : '';
 
-            // Campos de bairro
-            if (isset($fields['billing']['billing_neighborhood'])) {
-                $fields['billing']['billing_neighborhood']['required'] = false;
-            }
-            if (isset($fields['shipping']['shipping_neighborhood'])) {
-                $fields['shipping']['shipping_neighborhood']['required'] = false;
-            }
+        if ( 'BR' === $billing_country ) {
+            return;
         }
-        
-        return $fields;
+
+        // Remover erros de campos obrigatórios que não se aplicam fora do Brasil
+        $errors->remove( 'billing_document_required' );
+        $errors->remove( 'billing_cpf_required' );
+        $errors->remove( 'billing_cnpj_required' );
+        $errors->remove( 'billing_neighborhood_required' );
     }
 
     /**
