@@ -162,7 +162,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_woo_better_calc_update_cache_token', $this, 'lkn_update_cache_token');
 
         // Remover erros de validação de CPF/CNPJ quando país não é BR
-        $this->loader->add_action('woocommerce_after_checkout_validation', $this, 'lkn_bypass_document_validation_for_non_br', 10, 2);
+        $this->loader->add_action('woocommerce_after_checkout_validation', $this, 'lkn_disabled_require_field', 10, 2);
 
         // Hook para atualizar billing_document quando dados do usuário são salvos
         
@@ -938,6 +938,9 @@ class WcBetterShippingCalculatorForBrazil
         
         // Hook para validação de data de nascimento no checkout
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_birthdate_value');
+
+        // Hook para validação de Inscrição Estadual (IE) no checkout clássico
+        $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_ie_field_value_classic');
         
         // Hooks para controlar campos da calculadora de frete no carrinho
         $this->loader->add_filter('woocommerce_shipping_calculator_enable_country', $this, 'maybe_disable_cart_fields');
@@ -977,13 +980,20 @@ class WcBetterShippingCalculatorForBrazil
     public function postcode_param_priority( $params ) {
         // Verifica se o reposicionamento do CEP está ativo
         $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
+        $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+        $postcode_priority = 32;
+
+        if ($ie_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+            $postcode_priority = 34;
+        }
         
         // Só aplica a prioridade se a opção estiver ativa
         if ($cep_position === 'yes') {
             $locales = json_decode( $params['locale'], true );
             foreach ( $locales as &$locale ) {
                 if ( isset( $locale['postcode'] ) ) {
-                    $locale['postcode']['priority'] = 32;
+                    $locale['postcode']['priority'] = $postcode_priority;
                 }
             }
             $params['locale'] = wp_json_encode( $locales );
@@ -1606,6 +1616,11 @@ class WcBetterShippingCalculatorForBrazil
             $order->update_meta_data('_billing_cnpj', sanitize_text_field(wp_unslash($_POST['_billing_cnpj'])));
         }
         
+        if (isset($_POST['_billing_ie'])) {
+            $ie_value = strtoupper(sanitize_text_field(wp_unslash($_POST['_billing_ie'])));
+            $order->update_meta_data('_billing_ie', $ie_value);
+        }
+        
         if (isset($_POST['_billing_number'])) {
             $order->update_meta_data('_billing_number', sanitize_text_field(wp_unslash($_POST['_billing_number'])));
         }
@@ -1995,6 +2010,7 @@ class WcBetterShippingCalculatorForBrazil
     private function prepare_billing_display_data($order, $person_type, $phone_mask_enabled, $billing_persontype, $billing_cpf, $billing_cnpj, $billing_phone_country_code)
     {
         $display_data = [];
+        $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
 
         // Convert numeric persontype to string (1 = physical, 2 = legal)
         if (is_numeric($billing_persontype)) {
@@ -2027,6 +2043,15 @@ class WcBetterShippingCalculatorForBrazil
                         'label' => __('CNPJ', 'woo-better-shipping-calculator-for-brazil'),
                         'value' => $billing_cnpj
                     ];
+                }
+                if ($ie_field_enabled === 'yes') {
+                    $billing_ie = $order->get_meta('_billing_ie');
+                    if (!empty($billing_ie)) {
+                        $display_data['ie'] = [
+                            'label' => __('Inscrição Estadual (IE)', 'woo-better-shipping-calculator-for-brazil'),
+                            'value' => $billing_ie
+                        ];
+                    }
                 }
             }
             
@@ -2489,6 +2514,52 @@ class WcBetterShippingCalculatorForBrazil
 
         // Gênero é opcional - não há validação obrigatória
     }
+
+    /**
+     * Valida campo de Inscrição Estadual (IE) no checkout clássico.
+     *
+     * Quando o recurso está habilitado, exige o preenchimento da IE em todos os
+     * cenários do checkout clássico.
+     *
+     * @return void
+     */
+    public function validate_ie_field_value_classic() {
+        $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+
+        if ($ie_field_enabled !== 'yes' || ($person_type !== 'legal' && $person_type !== 'both')) {
+            return;
+        }
+
+        $billing_document = isset($_POST['billing_document']) ? sanitize_text_field(wp_unslash($_POST['billing_document'])) : '';
+        $billing_cpf = isset($_POST['billing_cpf']) ? sanitize_text_field(wp_unslash($_POST['billing_cpf'])) : '';
+        $billing_cnpj = isset($_POST['billing_cnpj']) ? sanitize_text_field(wp_unslash($_POST['billing_cnpj'])) : '';
+
+        if (empty($billing_document)) {
+            if (!empty($billing_cpf)) {
+                $billing_document = $billing_cpf;
+            } elseif (!empty($billing_cnpj)) {
+                $billing_document = $billing_cnpj;
+            }
+        }
+
+        $clean_document = preg_replace('/\D/', '', $billing_document);
+        $is_cpf_document = strlen($clean_document) === 11;
+        $is_cnpj_document = strlen($clean_document) === 14;
+
+        // IE só é obrigatória quando for CNPJ (ou quando configuração for exclusivamente jurídica).
+        $should_require_ie = ($person_type === 'legal') || $is_cnpj_document;
+
+        if ($is_cpf_document || !$should_require_ie) {
+            return;
+        }
+
+        $billing_ie = isset($_POST['billing_ie']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['billing_ie']))) : '';
+
+        if ('' === trim($billing_ie)) {
+            wc_add_notice(__('Por favor, preencha a Inscrição Estadual (IE) ou marque como ISENTO.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+        }
+    }
     
     /**
      * Valida data de nascimento
@@ -2695,6 +2766,9 @@ class WcBetterShippingCalculatorForBrazil
         // Processa dados de gênero
         $this->process_gender_from_data($order, $data);
 
+        // Processa dados de Inscrição Estadual (IE)
+        $this->process_ie_from_data($order, $data);
+
         $billing_country_code = '';
         $shipping_country_code = '';
         
@@ -2830,6 +2904,9 @@ class WcBetterShippingCalculatorForBrazil
         
         // Processa dados de gênero
         $this->process_gender_from_request($order, $request);
+        
+        // Processa dados de Inscrição Estadual (IE)
+        $this->process_ie_from_request($order, $request);
         
         // Processa dados de telefone formatado
         $this->process_phone_formatter_from_request($order, $request);
@@ -3427,6 +3504,25 @@ class WcBetterShippingCalculatorForBrazil
                 },
             ]);
 
+            // Registra campos para Inscrição Estadual (IE)
+            woocommerce_store_api_register_endpoint_data( [
+                'endpoint'        => 'checkout',
+                'namespace'       => 'woo_better_ie_field',
+                'schema_callback' => function() {
+                    return [
+                        'billing_ie' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                    ];
+                },
+                'data_callback' => function() {
+                    return [
+                        'billing_ie'  => '',
+                    ];
+                },
+            ]);
+
             // Registra campos para telefone formatado
             woocommerce_store_api_register_endpoint_data( [
                 'endpoint'        => 'checkout',
@@ -3511,6 +3607,12 @@ class WcBetterShippingCalculatorForBrazil
             woocommerce_store_api_register_update_callback([
                 'namespace' => 'woo_better_gender',
                 'callback'  => [ $this, 'handle_gender_update' ],
+            ]);
+
+            // Callback para Inscrição Estadual (IE)
+            woocommerce_store_api_register_update_callback([
+                'namespace' => 'woo_better_ie_field',
+                'callback'  => [ $this, 'handle_ie_update' ],
             ]);
 
             // Callback para telefone formatado
@@ -3782,6 +3884,21 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
+    public function handle_ie_update( $data ) {
+        if (! function_exists('WC') || ! WC()->session ) {
+            return;
+        }
+
+        if ( isset( $data['billing_ie'] ) ) {
+            $billing_ie = strtoupper(sanitize_text_field( (string) $data['billing_ie'] ));
+            WC()->session->set( 'billing_ie', $billing_ie );
+
+            if (is_user_logged_in()) {
+                update_user_meta( get_current_user_id(), 'billing_ie', $billing_ie );
+            }
+        }
+    }
+
     public function handle_phone_formatter_update( $data ) {
         if (! function_exists('WC') || ! WC()->session ) {
             return;
@@ -3997,6 +4114,24 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
+        // Campo de Inscrição Estadual (IE) - somente para Pessoa Jurídica
+        $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+        if ($ie_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+            $fields['billing']['billing_ie'] = array(
+                'label'       => __('Inscrição Estadual (IE)', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Digite a IE ou marque Isento', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => true,
+                'class'       => array('form-row-wide', 'woo-better-ie-field'),
+                'priority'    => 32,
+                'type'        => 'text',
+                'autocomplete' => 'off',
+                'custom_attributes' => array(
+                    'maxlength' => '14',
+                    'data-ie-field' => '1'
+                )
+            );
+        }
+
         // Campos de bairro
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         if ($neighborhood_enabled === 'yes') {
@@ -4075,12 +4210,12 @@ class WcBetterShippingCalculatorForBrazil
 
         // Reposicionamento do CEP quando cep_position estiver ativo
         if ($cep_position === 'yes') {
-            // Move o campo CEP (postcode) para prioridade 32
+            // Move o campo CEP (postcode) para depois do campo IE
             if (isset($fields['billing']['billing_postcode'])) {
-                $fields['billing']['billing_postcode']['priority'] = 32;
+                $fields['billing']['billing_postcode']['priority'] = 34;
             }
             if (isset($fields['shipping']['shipping_postcode'])) {
-                $fields['shipping']['shipping_postcode']['priority'] = 32;
+                $fields['shipping']['shipping_postcode']['priority'] = 34;
             }
         }
 
@@ -4098,7 +4233,7 @@ class WcBetterShippingCalculatorForBrazil
             'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
             'required'    => false,
             'class'       => array('form-row-wide'),
-            'priority'    => 33,
+            'priority'    => 35,
             'id'          => 'wc_better_calc_checkbox_billing',
         );
         $shipping_checkbox_field = array(
@@ -4106,7 +4241,7 @@ class WcBetterShippingCalculatorForBrazil
             'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
             'required'    => false,
             'class'       => array('form-row-wide'),
-            'priority'    => 33,
+            'priority'    => 35,
             'id'          => 'wc_better_calc_checkbox_shipping',
         );
 
@@ -5379,6 +5514,62 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Processa os dados de Inscrição Estadual (IE) no checkout de blocos
+     *
+     * @param WC_Order $order
+     * @param WP_REST_Request $request
+     * @return void
+     */
+    private function process_ie_from_request($order, $request)
+    {
+        $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+
+        if ($ie_field_enabled !== 'yes' || ($person_type !== 'legal' && $person_type !== 'both')) {
+            return;
+        }
+
+        $extensions = $request->get_param('extensions') ?? [];
+
+        if (isset($extensions['woo_better_ie_field'])) {
+            $ie_data = $extensions['woo_better_ie_field'];
+            if (isset($ie_data['billing_ie'])) {
+                $billing_ie = strtoupper(sanitize_text_field($ie_data['billing_ie']));
+                $order->update_meta_data('_billing_ie', $billing_ie);
+
+                if (is_user_logged_in()) {
+                    update_user_meta(get_current_user_id(), 'billing_ie', $billing_ie);
+                }
+            }
+        }
+    }
+
+    /**
+     * Processa os dados de Inscrição Estadual (IE) no checkout clássico
+     *
+     * @param WC_Order $order
+     * @param array $data
+     * @return void
+     */
+    private function process_ie_from_data($order, $data)
+    {
+        $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+
+        if ($ie_field_enabled !== 'yes' || ($person_type !== 'legal' && $person_type !== 'both')) {
+            return;
+        }
+
+        $billing_ie = isset($_POST['billing_ie']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['billing_ie']))) : '';
+
+        $order->update_meta_data('_billing_ie', $billing_ie);
+
+        if (is_user_logged_in() && !empty($billing_ie)) {
+            update_user_meta(get_current_user_id(), 'billing_ie', $billing_ie);
+        }
+    }
+
+    /**
      * Processa os dados de telefone formatado no checkout de blocos
      *
      * @param WC_Order $order
@@ -5493,25 +5684,46 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
-     * Remove erros de validação dos campos CPF/CNPJ quando o país de cobrança não é o Brasil.
-     * Disparado após a validação padrão do WooCommerce, sem afetar a renderização do formulário.
+     * Desabilita erros de required para campos que não se aplicam ao contexto atual.
      *
-     * @param array    $data   Dados submetidos no checkout.
+     * Regras:
+     * - Fora do Brasil, remove required de documento, bairro e IE.
+     * - No Brasil, se o documento identificado for CPF, remove required de IE.
+     * - No Brasil, se for CNPJ, mantém IE obrigatório.
+     *
+     * @param array     $data   Dados submetidos no checkout.
      * @param \WP_Error $errors Objeto de erros acumulados pelo WooCommerce.
      * @return void
      */
-    public function lkn_bypass_document_validation_for_non_br( $data, $errors ) {
-        $billing_country = isset( $data['billing_country'] ) ? sanitize_text_field( $data['billing_country'] ) : '';
+    public function lkn_disabled_require_field( $data, $errors ) {
+        $billing_country = isset( $data['billing_country'] ) ? sanitize_text_field( (string) $data['billing_country'] ) : '';
+        $billing_document = isset( $data['billing_document'] ) ? sanitize_text_field( (string) $data['billing_document'] ) : '';
 
-        if ( 'BR' === $billing_country ) {
+        if ( empty( $billing_document ) ) {
+            if ( ! empty( $data['billing_cpf'] ) ) {
+                $billing_document = sanitize_text_field( (string) $data['billing_cpf'] );
+            } elseif ( ! empty( $data['billing_cnpj'] ) ) {
+                $billing_document = sanitize_text_field( (string) $data['billing_cnpj'] );
+            }
+        }
+
+        $clean_document = preg_replace( '/\D/', '', $billing_document );
+        $is_cpf = strlen( $clean_document ) === 11;
+
+        if ( 'BR' !== $billing_country ) {
+            // Remover erros de campos obrigatórios que não se aplicam fora do Brasil.
+            $errors->remove( 'billing_document_required' );
+            $errors->remove( 'billing_cpf_required' );
+            $errors->remove( 'billing_cnpj_required' );
+            $errors->remove( 'billing_neighborhood_required' );
+            $errors->remove( 'billing_ie_required' );
             return;
         }
 
-        // Remover erros de campos obrigatórios que não se aplicam fora do Brasil
-        $errors->remove( 'billing_document_required' );
-        $errors->remove( 'billing_cpf_required' );
-        $errors->remove( 'billing_cnpj_required' );
-        $errors->remove( 'billing_neighborhood_required' );
+        // Se for CPF, IE não é obrigatório.
+        if ( $is_cpf ) {
+            $errors->remove( 'billing_ie_required' );
+        }
     }
 
     /**
@@ -5594,6 +5806,7 @@ class WcBetterShippingCalculatorForBrazil
         $order_data['billing_address']['persontype']   = $this->get_person_type_letter($order->get_meta('_billing_persontype'));
         $order_data['billing_address']['cpf']          = $this->format_number($order->get_meta('_billing_cpf'));
         $order_data['billing_address']['cnpj']         = $this->format_number($order->get_meta('_billing_cnpj'));
+        $order_data['billing_address']['ie']           = $order->get_meta('_billing_ie');
         $order_data['billing_address']['number']       = $order->get_meta('_billing_number');
         $order_data['billing_address']['neighborhood'] = $order->get_meta('_billing_neighborhood');
         $order_data['billing_address']['birthdate']    = $order->get_meta('_billing_birthdate');
@@ -5608,6 +5821,7 @@ class WcBetterShippingCalculatorForBrazil
             $order_data['customer']['billing_address']['persontype']   = $this->get_person_type_letter($order->get_meta('_billing_persontype'));
             $order_data['customer']['billing_address']['cpf']          = $this->format_number($order->get_meta('_billing_cpf'));
             $order_data['customer']['billing_address']['cnpj']         = $this->format_number($order->get_meta('_billing_cnpj'));
+            $order_data['customer']['billing_address']['ie']           = $order->get_meta('_billing_ie');
             $order_data['customer']['billing_address']['number']       = $order->get_meta('_billing_number');
             $order_data['customer']['billing_address']['neighborhood'] = $order->get_meta('_billing_neighborhood');
             $order_data['customer']['billing_address']['birthdate']    = $order->get_meta('_billing_birthdate');
@@ -5635,6 +5849,7 @@ class WcBetterShippingCalculatorForBrazil
         $customer_data['billing_address']['persontype']   = $this->get_person_type_letter($customer->get_meta('billing_persontype'));
         $customer_data['billing_address']['cpf']          = $this->format_number($customer->get_meta('billing_cpf'));
         $customer_data['billing_address']['cnpj']         = $this->format_number($customer->get_meta('billing_cnpj'));
+        $customer_data['billing_address']['ie']           = $customer->get_meta('billing_ie');
         $customer_data['billing_address']['number']       = $customer->get_meta('billing_number');
         $customer_data['billing_address']['neighborhood'] = $customer->get_meta('billing_neighborhood');
         $customer_data['billing_address']['birthdate']    = $customer->get_meta('billing_birthdate');
@@ -5662,6 +5877,7 @@ class WcBetterShippingCalculatorForBrazil
         $response->data['billing']['persontype']   = $this->get_person_type_letter($customer->get_meta('billing_persontype'));
         $response->data['billing']['cpf']          = $this->format_number($customer->get_meta('billing_cpf'));
         $response->data['billing']['cnpj']         = $this->format_number($customer->get_meta('billing_cnpj'));
+        $response->data['billing']['ie']           = $customer->get_meta('billing_ie');
         $response->data['billing']['number']       = $customer->get_meta('billing_number');
         $response->data['billing']['neighborhood'] = $customer->get_meta('billing_neighborhood');
 
@@ -5703,6 +5919,7 @@ class WcBetterShippingCalculatorForBrazil
         $response->data['billing']['persontype']   = $this->get_person_type_letter($order->get_meta('_billing_persontype'));
         $response->data['billing']['cpf']          = $this->format_number($order->get_meta('_billing_cpf'));
         $response->data['billing']['cnpj']         = $this->format_number($order->get_meta('_billing_cnpj'));
+        $response->data['billing']['ie']           = $order->get_meta('_billing_ie');
         $response->data['billing']['number']       = $order->get_meta('_billing_number');
         $response->data['billing']['neighborhood'] = $order->get_meta('_billing_neighborhood');
         $response->data['billing']['birthdate']    = $order->get_meta('_billing_birthdate');
@@ -5890,11 +6107,12 @@ class WcBetterShippingCalculatorForBrazil
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
         $number_field = get_option('woo_better_calc_number_required', 'no');
         $neighborhood_field = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
         $birthdate_field = get_option('woo_better_calc_enable_birthdate_field', 'no');
         $gender_field = get_option('woo_better_calc_enable_gender_field', 'no');
         
         // Se nenhum campo está habilitado, não adiciona nada
-        if ($person_type === 'none' && $number_field === 'no' && $neighborhood_field === 'no' && $birthdate_field === 'no' && $gender_field === 'no') {
+        if ($person_type === 'none' && $number_field === 'no' && $neighborhood_field === 'no' && $ie_field_enabled === 'no' && $birthdate_field === 'no' && $gender_field === 'no') {
             return $fields;
         }
         
@@ -5941,6 +6159,13 @@ class WcBetterShippingCalculatorForBrazil
                             'label'       => __('CNPJ', 'woo-better-shipping-calculator-for-brazil'),
                             'description' => '',
                         );
+
+                        if ($ie_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+                            $new_billing_fields['billing_ie'] = array(
+                                'label'       => __('Inscrição Estadual (IE)', 'woo-better-shipping-calculator-for-brazil'),
+                                'description' => '',
+                            );
+                        }
                     }
                     
                     // Adiciona campo de data de nascimento se habilitado
@@ -6177,6 +6402,25 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
         
+        // Campo de Inscrição Estadual (IE) - somente para Pessoa Jurídica
+        $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+        if ($ie_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+            $billing_ie_value = get_user_meta(get_current_user_id(), 'billing_ie', true);
+            $fields['billing_ie'] = array(
+                'label'       => __('Inscrição Estadual (IE)', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Digite a IE ou marque Isento', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => true,
+                'class'       => array('form-row-wide', 'woo-better-ie-field'),
+                'priority'    => 32,
+                'type'        => 'text',
+                'value'       => $billing_ie_value,
+                'custom_attributes' => array(
+                    'maxlength' => '14',
+                    'data-ie-field' => '1'
+                )
+            );
+        }
+        
         // Campo de data de nascimento
         if ($birthdate_enabled === 'yes') {
             $fields['billing_birthdate'] = array(
@@ -6245,7 +6489,7 @@ class WcBetterShippingCalculatorForBrazil
 
         // Reposicionamento do CEP quando cep_position estiver ativo
         if ($cep_position === 'yes' && isset($fields['billing_postcode'])) {
-            $fields['billing_postcode']['priority'] = 32;
+            $fields['billing_postcode']['priority'] = 34;
         }
 
         if ($cep_position === 'yes' && $fill_checkout_address === 'yes') {
@@ -6255,7 +6499,7 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => false,
                 'class'       => array('form-row-wide'),
-                'priority'    => 36,
+                'priority'    => 35,
                 'id'          => 'wc_better_calc_checkbox_billing'
             );
         }
@@ -6380,7 +6624,7 @@ class WcBetterShippingCalculatorForBrazil
         
         // Reposicionamento do CEP quando cep_position estiver ativo
         if ($cep_position === 'yes' && isset($fields['shipping_postcode'])) {
-            $fields['shipping_postcode']['priority'] = 32;
+            $fields['shipping_postcode']['priority'] = 34;
         }
 
         if ($cep_position === 'yes' && $fill_checkout_address === 'yes') {
@@ -6390,7 +6634,7 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => false,
                 'class'       => array('form-row-wide'),
-                'priority'    => 33,
+                'priority'    => 35,
                 'id'          => 'wc_better_calc_checkbox_shipping'
             );
         }
@@ -6522,6 +6766,13 @@ class WcBetterShippingCalculatorForBrazil
             if ($gender_enabled === 'yes') {
                 $gender = isset($_POST['billing_gender']) ? sanitize_text_field(wp_unslash($_POST['billing_gender'])) : '';
                 update_user_meta($user_id, 'billing_gender', $gender);
+            }
+            
+            // Salvar Inscrição Estadual (IE)
+            $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+            if ($ie_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+                $billing_ie = isset($_POST['billing_ie']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['billing_ie']))) : '';
+                update_user_meta($user_id, 'billing_ie', $billing_ie);
             }
         }
     }

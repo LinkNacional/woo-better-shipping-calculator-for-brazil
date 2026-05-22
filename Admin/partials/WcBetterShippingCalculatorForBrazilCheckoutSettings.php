@@ -124,6 +124,22 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Controla a formatação do CNPJ ao salvar os dados do cliente.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+                'enable_ie_field' => array(
+                    'title'    => __('Campo de Inscrição Estadual (IE)', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_enable_ie_field',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Adiciona o campo de Inscrição Estadual (IE) no checkout para Pessoa Jurídica.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Habilite para exibir o campo "Inscrição Estadual (IE)" no endereço de cobrança do checkout, visível somente quando o cliente selecionar Pessoa Jurídica (CNPJ). Inclui opção "Isento". Requer que o campo "Tipo de Cliente" esteja configurado como "Pessoa Jurídica" ou "Pessoa Física e Pessoa Jurídica".', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Adiciona o campo de IE (Inscrição Estadual) ao checkout, exclusivo para Pessoas Jurídicas. Fundamental para emissão de Nota Fiscal eletrônica (NF-e).', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
                 'enable_neighborhood_field' => array(
                     'title'    => __('Campo de Bairro', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_enable_neighborhood_field',
