@@ -19,52 +19,77 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function setupCountryControl() {
+        // Aplicar estado inicial baseado no país atual
         const billingCountrySelect = document.getElementById('billing_country');
-        const billingDocumentField = document.getElementById('billing_document_field');
-        
-        if (billingCountrySelect && billingDocumentField) {
-            // Aplicar controle inicial baseado no país atual
+        if (billingCountrySelect) {
             toggleFieldVisibility(billingCountrySelect.value);
-            
-            // Monitorar mudanças no país de cobrança
-            billingCountrySelect.addEventListener('change', function() {
-                const selectedCountry = this.value;
-                
-                // Primeiro aplicar visibilidade
-                toggleFieldVisibility(selectedCountry);
-                
-                // Se não for Brasil, resetar todos os campos (já é feito dentro do toggleFieldVisibility)
-                // Adicionar trigger extra para garantir atualização do checkout
-                if (typeof jQuery !== 'undefined') {
-                    setTimeout(() => {
-                        jQuery('body').trigger('update_checkout');
-                    }, 100);
+        }
+
+        if (typeof jQuery === 'undefined') {
+            return;
+        }
+
+        // WooCommerce usa select2 para o dropdown de país.
+        // O evento nativo 'change' não dispara no select2 — por isso usamos
+        // country_to_state_changing, que o próprio WooCommerce dispara internamente.
+        jQuery('body')
+            .off('country_to_state_changing.woo_better_person_type')
+            .on('country_to_state_changing.woo_better_person_type', function(event, country, wrapper) {
+                // Só atua quando é o wrapper de cobrança
+                if (wrapper && wrapper.find && wrapper.find('#billing_country').length > 0) {
+                    toggleFieldVisibility(country);
                 }
             });
-        }
+
+        // Fallback delegado: captura mudança direta (sobrevive a re-renderizações do DOM)
+        jQuery(document)
+            .off('change.woo_better_billing_country', '#billing_country')
+            .on('change.woo_better_billing_country', '#billing_country', function() {
+                toggleFieldVisibility(jQuery(this).val());
+            });
     }
 
     function toggleFieldVisibility(country) {
         const billingDocumentField = document.getElementById('billing_document_field');
-        
-        if (billingDocumentField) {
-            if (country !== 'BR') {
-                // Esconder campo e aplicar padding/margin 0px
-                billingDocumentField.style.display = 'none';
-                billingDocumentField.style.padding = '0px';
-                billingDocumentField.style.margin = '0px';
-                billingDocumentField.style.height = '0px';
-                billingDocumentField.style.overflow = 'hidden';
-                
-                // Limpar imediatamente e triggerar eventos
-                resetDocumentFields();
-            } else {
-                // Exibir campo e remover estilos de padding/margin
-                billingDocumentField.style.display = '';
-                billingDocumentField.style.padding = '';
-                billingDocumentField.style.margin = '';
-                billingDocumentField.style.height = '';
-                billingDocumentField.style.overflow = '';
+        const documentInput = document.getElementById('billing_document');
+
+        if (!billingDocumentField) {
+            return;
+        }
+
+        if (country !== 'BR') {
+            // Ocultar campo
+            billingDocumentField.style.display = 'none';
+            billingDocumentField.style.padding = '0px';
+            billingDocumentField.style.margin = '0px';
+            billingDocumentField.style.height = '0px';
+            billingDocumentField.style.overflow = 'hidden';
+
+            // Remover required para o WooCommerce não bloquear o submit
+            if (documentInput) {
+                documentInput.removeAttribute('required');
+            }
+            billingDocumentField.classList.remove('validate-required');
+            billingDocumentField.classList.add('optional');
+
+            resetDocumentFields();
+        } else {
+            // Exibir campo
+            billingDocumentField.style.display = '';
+            billingDocumentField.style.padding = '';
+            billingDocumentField.style.margin = '';
+            billingDocumentField.style.height = '';
+            billingDocumentField.style.overflow = '';
+
+            // Restaurar required se pessoa física/jurídica estiver configurada
+            const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined'
+                ? WooBetterPersonTypeConfig.person_type : null;
+            if (personTypeConfig && personTypeConfig !== 'none') {
+                if (documentInput) {
+                    documentInput.setAttribute('required', 'required');
+                }
+                billingDocumentField.classList.add('validate-required');
+                billingDocumentField.classList.remove('optional');
             }
         }
     }

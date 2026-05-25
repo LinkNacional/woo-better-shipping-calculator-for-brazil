@@ -533,6 +533,47 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
+            // Registrar script para campo de Inscrição Estadual (IE) no checkout de blocos
+            $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+            if ($ie_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+                $billing_ie = '';
+
+                if (function_exists('WC') && WC()->session) {
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_ie = get_user_meta($user_id, 'billing_ie', true);
+                    }
+
+                    if (empty($billing_ie)) {
+                        $billing_ie = WC()->session->get('billing_ie', '');
+                    }
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-ie-field',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergIEField.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-ie-field',
+                    'WooBetterIEData',
+                    array(
+                        'billing_ie' => $billing_ie,
+                    )
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-ie-field',
+                    'WooBetterIEConfig',
+                    array(
+                        'person_type' => $person_type,
+                    )
+                );
+            }
+
             // Registrar script para campos de bairro no checkout de blocos
             $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
             
@@ -750,6 +791,49 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'person_type' => $person_type,
                         'show_select' => ($person_type === 'both'), // Só mostrar select quando for 'both'
                         'company_field_behavior' => get_option('woo_better_calc_company_field_behavior', 'dynamic')
+                    )
+                );
+            }
+
+            // Registrar script para campo de Inscrição Estadual (IE) no checkout shortcode (tradicional)
+            $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+            $person_type_for_ie = get_option('woo_better_calc_person_type_select', 'none');
+
+            if ($ie_field_enabled === 'yes' && ($person_type_for_ie === 'legal' || $person_type_for_ie === 'both')) {
+                $billing_ie = '';
+
+                if (function_exists('WC') && WC()->session) {
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_ie = get_user_meta($user_id, 'billing_ie', true);
+                    }
+
+                    if (empty($billing_ie)) {
+                        $billing_ie = WC()->session->get('billing_ie', '');
+                    }
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-shortcode-ie-field',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeIEField.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-shortcode-ie-field',
+                    'WooBetterIEData',
+                    array(
+                        'billing_ie' => $billing_ie
+                    )
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-shortcode-ie-field',
+                    'WooBetterIEConfig',
+                    array(
+                        'person_type' => $person_type_for_ie
                     )
                 );
             }
@@ -1304,6 +1388,50 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'person_type' => $person_type,
                         'show_select' => ($person_type === 'both'),
                         'company_field_behavior' => get_option('woo_better_calc_company_field_behavior', 'dynamic')
+                    )
+                );
+            }
+
+            // Script para campo de Inscrição Estadual (IE) na edição de endereço de cobrança
+            $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+            $person_type_for_ie = get_option('woo_better_calc_person_type_select', 'none');
+
+            if (
+                $ie_field_enabled === 'yes' &&
+                ($person_type_for_ie === 'legal' || $person_type_for_ie === 'both')
+            ) {
+                $billing_ie = '';
+
+                if (is_user_logged_in()) {
+                    $user_id = get_current_user_id();
+                    $billing_ie = get_user_meta($user_id, 'billing_ie', true);
+                }
+
+                if (empty($billing_ie) && function_exists('WC') && WC()->session) {
+                    $billing_ie = WC()->session->get('billing_ie', '');
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-edit-address-ie-field',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeIEField.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-ie-field',
+                    'WooBetterIEData',
+                    array(
+                        'billing_ie' => $billing_ie
+                    )
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-ie-field',
+                    'WooBetterIEConfig',
+                    array(
+                        'person_type' => $person_type_for_ie
                     )
                 );
             }
