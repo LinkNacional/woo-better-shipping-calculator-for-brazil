@@ -501,7 +501,7 @@ document.addEventListener("DOMContentLoaded", function () {
 		}
 	}
 
-	function hideIEField(clearValue) {
+	function hideIEField() {
 		const container = getIEContainer()
 		if (!container) {
 			return
@@ -515,18 +515,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 		setIERequired(false)
 		hideIEValidationError()
-
-		if (isentoCheckbox) {
-			isentoCheckbox.checked = false
-		}
-
-		setIEFieldDisabled(false)
-
-		if (clearValue && ieInput) {
-			setInputValue(ieInput, '')
-			savedIEData.billing_ie = ''
-			updateIEStoreData('')
-		}
 	}
 
 	function showIEField() {
@@ -559,7 +547,7 @@ document.addEventListener("DOMContentLoaded", function () {
 		if (shouldShowIEField()) {
 			showIEField()
 		} else {
-			hideIEField(true)
+			hideIEField()
 		}
 	}
 

@@ -1347,8 +1347,7 @@ class WcBetterShippingCalculatorForBrazil
                 'type'  => 'text',
                 'show'  => false
             );
-        }
-        
+        }  
         // 3. Campo empresa (se for pessoa jurídica)
         if ($person_type === 'legal' || $person_type === 'both') {
             if (isset($original_fields['company'])) {
@@ -1365,6 +1364,15 @@ class WcBetterShippingCalculatorForBrazil
             // Se não é pessoa jurídica mas campo existe, manter na posição original
             $fields['company'] = $original_fields['company'];
             unset($original_fields['company']);
+        }
+
+        $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+        if ($ie_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+            $fields['ie'] = array(
+                'label' => __('Inscrição Estadual', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'text',
+                'show'  => false
+            );
         }
 
         // 4. Endereço linha 1
@@ -5531,6 +5539,27 @@ class WcBetterShippingCalculatorForBrazil
 
         $extensions = $request->get_param('extensions') ?? [];
 
+        // Determina se o documento submetido é um CNPJ (14 dígitos)
+        $billing_cnpj = '';
+        if (isset($extensions['woo_better_person_type']['billing_cnpj'])) {
+            $billing_cnpj = sanitize_text_field($extensions['woo_better_person_type']['billing_cnpj']);
+        }
+        if (empty($billing_cnpj) && isset($_POST['billing_cnpj'])) {
+            $billing_cnpj = sanitize_text_field(wp_unslash($_POST['billing_cnpj']));
+        }
+        if (empty($billing_cnpj) && isset($_POST['billing_document'])) {
+            $billing_cnpj = sanitize_text_field(wp_unslash($_POST['billing_document']));
+        }
+        $is_cnpj = strlen(preg_replace('/\D/', '', $billing_cnpj)) === 14;
+
+        if (!$is_cnpj) {
+            $order->update_meta_data('_billing_ie', '');
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'billing_ie', '');
+            }
+            return;
+        }
+
         if (isset($extensions['woo_better_ie_field'])) {
             $ie_data = $extensions['woo_better_ie_field'];
             if (isset($ie_data['billing_ie'])) {
@@ -5560,11 +5589,28 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
+        // Determina se o documento submetido é um CNPJ (14 dígitos)
+        $billing_document = '';
+        if (!empty($_POST['billing_cnpj'])) {
+            $billing_document = sanitize_text_field(wp_unslash($_POST['billing_cnpj']));
+        } elseif (!empty($_POST['billing_document'])) {
+            $billing_document = sanitize_text_field(wp_unslash($_POST['billing_document']));
+        }
+        $is_cnpj = strlen(preg_replace('/\D/', '', $billing_document)) === 14;
+
+        if (!$is_cnpj) {
+            $order->update_meta_data('_billing_ie', '');
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'billing_ie', '');
+            }
+            return;
+        }
+
         $billing_ie = isset($_POST['billing_ie']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['billing_ie']))) : '';
 
         $order->update_meta_data('_billing_ie', $billing_ie);
 
-        if (is_user_logged_in() && !empty($billing_ie)) {
+        if (is_user_logged_in()) {
             update_user_meta(get_current_user_id(), 'billing_ie', $billing_ie);
         }
     }
