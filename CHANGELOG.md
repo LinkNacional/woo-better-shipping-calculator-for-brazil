@@ -1,4 +1,8 @@
-# 4.12.5 - 29/04/24
+# 4.13.0 - 25/05/26
+* Ajuste: Campo de CPF opcional/requerido.
+* Novo: Campo de inscrição estadual (IE).
+
+# 4.12.5 - 29/04/26
 * Ajuste: Sistema de preenchimento de CEP para cache.
 * Ajuste: Sincronização do endereço ao preencher o formulário.
 
