@@ -274,6 +274,8 @@ jQuery(function ($) {
             this._spinnerContainer = null;
             this._spinnerRestoredStatic = false;
             this._spinnerRestoredOverflow = false;
+            // Flag de carregamento inicial: impede handleCheckboxChange no remount do componente
+            this._isInitialLoad = true;
             
             // Registra esta instância
             activeCepFetchers[context] = this;
@@ -361,8 +363,7 @@ jQuery(function ($) {
             var $numberInput = $('#' + numberFieldId);
             if ($numberInput.length) {
                 $numberInput.val('').prop('readonly', false).removeAttr('style').trigger('change');
-                const $parentDiv = $numberInput.parent();
-                $parentDiv.removeClass('is-active');
+                $numberInput.closest('.wc-block-components-text-input').removeClass('is-active');
                 var betterCheckboxId = 'wc-' + this.context + '-better-checkbox';
                 var $betterCheckbox = $('#' + betterCheckboxId);
                 if ($betterCheckbox.length) {
@@ -537,6 +538,10 @@ jQuery(function ($) {
         }
         async handleInput(event) {
             this._isUserInitiated = true;
+            // Evento real do usuário (isTrusted): marca fim do carregamento inicial
+            if (event.isTrusted) {
+                this._isInitialLoad = false;
+            }
             const cep = this.sanitizeCep(event.target.value);
             const $checkboxInput = this.checkboxLabel.find('input[type="checkbox"]');
             const $checkboxLabel = $checkboxInput.closest('label');
@@ -639,6 +644,7 @@ jQuery(function ($) {
 
             // Se o usuário mudou o CEP durante a consulta, não faz nada
             if (this._lastCep !== cep) {
+                this._isInitialLoad = false;
                 return;
             }
 
@@ -648,6 +654,22 @@ jQuery(function ($) {
                 const currentRawCep = this.input.val();
                 
                 this.addressData = { ...address, _rawCep: currentRawCep };
+
+                // Limpa o campo de número ao preencher um novo endereço
+                var $numberInput = $('#' + this.context + '-number');
+                if ($numberInput.length) {
+                    var numberEl = $numberInput[0];
+                    var nativeNumberSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                    nativeNumberSetter.call(numberEl, '');
+                    numberEl.dispatchEvent(new Event('input', { bubbles: true }));
+                    numberEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    $numberInput.prop('readonly', false).removeAttr('style');
+                    $numberInput.closest('.wc-block-components-text-input').removeClass('is-active');
+                    var $betterCheckbox = $('#wc-' + this.context + '-better-checkbox');
+                    if ($betterCheckbox.length) {
+                        $betterCheckbox.prop('checked', false).trigger('change');
+                    }
+                }
 
                 if (this._isSilentMode) {
                     // Modo silencioso: mantém o input desabilitado durante o AJAX
@@ -668,11 +690,15 @@ jQuery(function ($) {
                         previousCep !== currentRawCep
                     );
                     
-                    if (shouldAutoInsert && $checkboxInput.prop('checked')) {
+                    // Não dispara auto-insert no carregamento inicial (remount do Blocks)
+                    // para evitar que edições manuais do usuário sejam revertidas
+                    if (shouldAutoInsert && $checkboxInput.prop('checked') && !this._isInitialLoad) {
                         this.handleCheckboxChange({ target: $checkboxInput[0] });
                     }
+                    this._isInitialLoad = false;
                 }
             } else {
+                this._isInitialLoad = false;
                 this._handleAddressNotFound(cep, $checkboxInput, $checkboxLabel);
             }
         }
