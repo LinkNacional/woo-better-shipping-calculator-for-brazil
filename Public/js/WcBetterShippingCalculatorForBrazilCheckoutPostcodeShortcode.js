@@ -35,6 +35,59 @@ jQuery(function ($) {
         enableCheckbox = false;
     }
 
+    var silentMode = typeof wc_better_checkout_vars_shortcode !== 'undefined' && wc_better_checkout_vars_shortcode.silent_address_fill === 'yes';
+
+    // Mostra animação de cobrinha SVG na borda do input de CEP
+    function showBorderSpinnerOnInput($input) {
+        var inputEl = $input[0];
+        if (!inputEl) return null;
+        var container = inputEl.closest('span.woocommerce-input-wrapper') || inputEl.parentElement;
+        if (!container || container.querySelector('.wc-better-cep-spinner-svg')) return null;
+        var containerStyle = window.getComputedStyle(container);
+        var restoredStatic = false, restoredOverflow = false;
+        if (containerStyle.position === 'static') { container.style.position = 'relative'; restoredStatic = true; }
+        if (containerStyle.overflow === 'hidden') { container.style.overflow = 'visible'; restoredOverflow = true; }
+        var inputStyle = window.getComputedStyle(inputEl);
+        var bw = parseFloat(inputStyle.borderTopWidth) || 1;
+        var outerRadius = parseFloat(inputStyle.borderTopLeftRadius) || 4;
+        var rx = Math.max(0, outerRadius - bw / 2);
+        var ow = inputEl.offsetWidth, oh = inputEl.offsetHeight;
+        var offsetLeft = inputEl.offsetLeft, offsetTop = inputEl.offsetTop;
+        var straightW = Math.max(0, ow - bw - 2 * rx);
+        var straightH = Math.max(0, oh - bw - 2 * rx);
+        var perimeter = 2 * (straightW + straightH) + 2 * Math.PI * rx;
+        var trailLength = perimeter * 0.25;
+        var ns = 'http://www.w3.org/2000/svg';
+        var svg = document.createElementNS(ns, 'svg');
+        svg.setAttribute('width', ow);
+        svg.setAttribute('height', oh);
+        svg.setAttribute('class', 'wc-better-cep-spinner-svg');
+        svg.style.cssText = 'position:absolute;left:' + offsetLeft + 'px;top:' + offsetTop + 'px;pointer-events:none;z-index:5;overflow:visible;';
+        var rectEl = document.createElementNS(ns, 'rect');
+        rectEl.setAttribute('x', bw / 2); rectEl.setAttribute('y', bw / 2);
+        rectEl.setAttribute('width', ow - bw); rectEl.setAttribute('height', oh - bw);
+        rectEl.setAttribute('rx', rx); rectEl.setAttribute('ry', rx);
+        rectEl.setAttribute('fill', 'none');
+        rectEl.setAttribute('stroke', '#555');
+        rectEl.setAttribute('stroke-width', bw + 1);
+        rectEl.setAttribute('stroke-dasharray', trailLength + ' ' + (perimeter - trailLength));
+        rectEl.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(rectEl);
+        container.appendChild(svg);
+        rectEl.animate(
+            [{ strokeDashoffset: '0' }, { strokeDashoffset: String(-perimeter) }],
+            { duration: 1200, iterations: Infinity, easing: 'linear' }
+        );
+        return { svg: svg, container: container, restoredStatic: restoredStatic, restoredOverflow: restoredOverflow };
+    }
+
+    function hideBorderSpinnerOnInput(state) {
+        if (!state) return;
+        if (state.svg) state.svg.remove();
+        if (state.restoredStatic && state.container) state.container.style.position = '';
+        if (state.restoredOverflow && state.container) state.container.style.overflow = '';
+    }
+
     function toggleCheckboxVisibility(type) {
         var $checkboxDiv = $('#wc_better_calc_checkbox_' + type + '_field');
         var $countrySelect = $('#' + type + '_country');
@@ -415,8 +468,10 @@ jQuery(function ($) {
     // MutationObserver para monitorar mudanças no DOM
     var observer = new MutationObserver(function () {
         ['billing', 'shipping'].forEach(function (type) {
-            moveCheckboxBelowPostcodeField(type);
-            toggleCheckboxVisibility(type);
+            if (!silentMode) {
+                moveCheckboxBelowPostcodeField(type);
+                toggleCheckboxVisibility(type);
+            }
             // Lógica para remover número do endereço apenas uma vez
             if (!addressSanitized[type]) {
                 var number = (type === 'billing') ? (window.wc_better_checkout_vars_shortcode && window.wc_better_checkout_vars_shortcode.billing_number) : (window.wc_better_checkout_vars_shortcode && window.wc_better_checkout_vars_shortcode.shipping_number);
@@ -438,14 +493,20 @@ jQuery(function ($) {
 
     // Chama uma vez para garantir que já está no DOM
     ['billing', 'shipping'].forEach(function (type) {
-        moveCheckboxBelowPostcodeField(type);
-        toggleCheckboxVisibility(type);
-        // Monitora mudanças no campo de país
-        var $countrySelect = $('#' + type + '_country');
-        if ($countrySelect.length) {
-            $countrySelect.on('change', function () {
-                toggleCheckboxVisibility(type);
-            });
+        if (silentMode) {
+            // Modo silencioso: esconde o campo de checkbox
+            var $cbField = $('#wc_better_calc_checkbox_' + type + '_field');
+            if ($cbField.length) $cbField.hide();
+        } else {
+            moveCheckboxBelowPostcodeField(type);
+            toggleCheckboxVisibility(type);
+            // Monitora mudanças no campo de país
+            var $countrySelect = $('#' + type + '_country');
+            if ($countrySelect.length) {
+                $countrySelect.on('change', function () {
+                    toggleCheckboxVisibility(type);
+                });
+            }
         }
     });
 
@@ -606,6 +667,7 @@ jQuery(function ($) {
         var addressData = null;
         var checkboxBlocked = false;
         var lastInsertedAddress = null;
+        var spinnerState = null;
         if ($postcode.length && !$postcode.data('hasInputListener')) {
             let loadingPulse = null;
             let lastCepRaw = '';
@@ -637,6 +699,68 @@ jQuery(function ($) {
             $postcode.on('input', async function (e) {
                 const rawValue = e.target.value;
                 const cep = rawValue.replace(/\D/g, '');
+
+                // Modo silencioso: preenche automaticamente sem exibir checkbox
+                if (silentMode) {
+                    if (cep.length !== 8) {
+                        if (spinnerState) { hideBorderSpinnerOnInput(spinnerState); spinnerState = null; }
+                        $postcode.prop('disabled', false);
+                        lastCepRaw = '';
+                        return;
+                    }
+                    if (lastCepRaw === rawValue) return;
+                    lastCepRaw = rawValue;
+
+                    $postcode.prop('disabled', true);
+                    if (spinnerState) { hideBorderSpinnerOnInput(spinnerState); spinnerState = null; }
+                    spinnerState = showBorderSpinnerOnInput($postcode);
+
+                    const silentResult = await fetchAddressByCep(cep);
+                    const silentFound = silentResult[0];
+                    const silentAddressObj = silentResult[2];
+
+                    hideBorderSpinnerOnInput(spinnerState);
+                    spinnerState = null;
+
+                    if (!silentFound || !silentAddressObj) {
+                        $postcode.prop('disabled', false);
+                        return;
+                    }
+
+                    // Aguarda AJAX salvar na sessão antes de preencher os campos
+                    let silentAjaxDone = false;
+                    const silentAjaxPromise = new Promise(function (resolve, reject) {
+                        $.ajax({
+                            url: (typeof wc_better_checkout_vars_shortcode !== 'undefined' && wc_better_checkout_vars_shortcode.ajax_url) ? wc_better_checkout_vars_shortcode.ajax_url : '/wp-admin/admin-ajax.php',
+                            method: 'POST',
+                            data: {
+                                action: 'wc_better_insert_address',
+                                address: silentAddressObj.address || '',
+                                city: silentAddressObj.city || '',
+                                state: silentAddressObj.state || '',
+                                district: silentAddressObj.district || '',
+                                postcode: $postcode.val(),
+                                context: type,
+                                nonce: (typeof wc_better_checkout_vars_shortcode !== 'undefined' ? wc_better_checkout_vars_shortcode.nonce : '')
+                            },
+                            success: function (r) { silentAjaxDone = true; resolve(r); },
+                            error: function () { silentAjaxDone = true; reject(); }
+                        });
+                    });
+                    await Promise.race([silentAjaxPromise, new Promise(function (r) { setTimeout(r, 5000); })]);
+                    if (!silentAjaxDone) { await silentAjaxPromise.catch(function () {}); }
+
+                    fillFields(type, {
+                        address: silentAddressObj.address,
+                        city: silentAddressObj.city,
+                        state: silentAddressObj.state,
+                        neighborhood: silentAddressObj.district || '',
+                        postcode: $postcode.val()
+                    });
+                    $postcode.prop('disabled', false);
+                    return;
+                }
+
                 // Se o campo foi apagado ou ficou inválido, desabilita e bloqueia
                 if (cep.length !== 8) {
                     updateCheckboxLabel(type, 'default');

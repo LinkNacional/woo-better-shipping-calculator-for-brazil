@@ -19,7 +19,25 @@ jQuery(function ($) {
         enableCheckbox = false;
     }
 
+    var silentMode = typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.silent_address_fill === 'yes';
+
+    function injectSpinnerCss() {
+        // SVG stroke-dashoffset approach: no global CSS needed
+        if (document.getElementById('wc-better-spinner-css')) return;
+        var style = document.createElement('style');
+        style.id = 'wc-better-spinner-css';
+        style.textContent = '';
+        document.head.appendChild(style);
+    }
+
     function insertCustomCheckboxBelowPostcode(type) {
+        if (silentMode) {
+            // Modo silencioso: cria apenas o fetcher, sem UI de checkbox
+            if (!activeCepFetchers[type]) {
+                activeCepFetchers[type] = new CepAddressFetcher('#' + type + '-postcode', '', type);
+            }
+            return;
+        }
         if (!enableCheckbox) return; // Não insere o checkbox se não permitido
         var $postcodeInput = $('#' + type + '-postcode');
         if ($postcodeInput.length === 0) return;
@@ -250,6 +268,12 @@ jQuery(function ($) {
             this._requestInProgress = false;
             this._lastRequestTime = 0;
             this._minRequestInterval = 500; // Mínimo de 500ms entre requisições
+            this._isSilentMode = (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.silent_address_fill === 'yes');
+            this._isUserInitiated = false;
+            this._spinnerEl = null;
+            this._spinnerContainer = null;
+            this._spinnerRestoredStatic = false;
+            this._spinnerRestoredOverflow = false;
             
             // Registra esta instância
             activeCepFetchers[context] = this;
@@ -264,15 +288,18 @@ jQuery(function ($) {
             // Adiciona evento de change para disparar AJAX
             this.checkboxInput.on('change.wcBetterCep', this.handleCheckboxChange.bind(this));
             
-            // Verifica se já existe um CEP preenchido ao carregar
-            const initialCep = this.sanitizeCep(this.input.val());
-            if (this.isValidCep(initialCep)) {
-                // Executa busca e animação inicial
-                this.handleInput({ target: { value: initialCep } });
+            // Em modo silencioso não consulta ao carregar (apenas quando o usuário digitar)
+            if (!this._isSilentMode) {
+                const initialCep = this.sanitizeCep(this.input.val());
+                if (this.isValidCep(initialCep)) {
+                    // Executa busca e animação inicial
+                    this.handleInput({ target: { value: initialCep } });
+                }
             }
         }
 
         destroy() {
+            this._hideBorderSpinner();
             // Remove event listeners com namespace específico
             if (this.input && this.input.length) {
                 this.input.off('input.wcBetterCep');
@@ -509,6 +536,7 @@ jQuery(function ($) {
             $labelSpan.stop(true, true).css('opacity', 1).text(labelText).show();
         }
         async handleInput(event) {
+            this._isUserInitiated = true;
             const cep = this.sanitizeCep(event.target.value);
             const $checkboxInput = this.checkboxLabel.find('input[type="checkbox"]');
             const $checkboxLabel = $checkboxInput.closest('label');
@@ -540,10 +568,15 @@ jQuery(function ($) {
             }
 
             if (this.isValidCep(cep)) {
-                // Desabilita o checkbox imediatamente
-                $checkboxInput.prop('disabled', true);
-                $checkboxInput.addClass('wc-better-readonly-disabled');
-                $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
+                if (this._isSilentMode) {
+                    // Modo silencioso: desabilita o input do CEP durante a consulta
+                    this.input.prop('disabled', true);
+                } else {
+                    // Desabilita o checkbox imediatamente
+                    $checkboxInput.prop('disabled', true);
+                    $checkboxInput.addClass('wc-better-readonly-disabled');
+                    $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
+                }
                 
                 // Implementa debounce de 300ms
                 this._debounceTimer = setTimeout(async () => {
@@ -615,21 +648,29 @@ jQuery(function ($) {
                 const currentRawCep = this.input.val();
                 
                 this.addressData = { ...address, _rawCep: currentRawCep };
-                this.updateCheckboxLabel(address);
-                
-                $checkboxInput.prop('disabled', false);
-                $checkboxInput.removeClass('wc-better-readonly-disabled');
-                $checkboxLabel.removeClass('wc-better-checkbox-disabled-label');
-                
-                // Garante que a inserção automática ocorra se o endereço mudou OU o CEP digitado mudou
-                const shouldAutoInsert = (
-                    !previousAddress ||
-                    JSON.stringify(previousAddress) !== JSON.stringify(address) ||
-                    previousCep !== currentRawCep
-                );
-                
-                if (shouldAutoInsert && $checkboxInput.prop('checked')) {
-                    this.handleCheckboxChange({ target: $checkboxInput[0] });
+
+                if (this._isSilentMode) {
+                    // Modo silencioso: mantém o input desabilitado durante o AJAX
+                    // _silentFillAddress irá reabilitá-lo após o servidor confirmar
+                    this._hideBorderSpinner();
+                    this._silentFillAddress(address);
+                } else {
+                    this.updateCheckboxLabel(address);
+                    
+                    $checkboxInput.prop('disabled', false);
+                    $checkboxInput.removeClass('wc-better-readonly-disabled');
+                    $checkboxLabel.removeClass('wc-better-checkbox-disabled-label');
+                    
+                    // Garante que a inserção automática ocorra se o endereço mudou OU o CEP digitado mudou
+                    const shouldAutoInsert = (
+                        !previousAddress ||
+                        JSON.stringify(previousAddress) !== JSON.stringify(address) ||
+                        previousCep !== currentRawCep
+                    );
+                    
+                    if (shouldAutoInsert && $checkboxInput.prop('checked')) {
+                        this.handleCheckboxChange({ target: $checkboxInput[0] });
+                    }
                 }
             } else {
                 this._handleAddressNotFound(cep, $checkboxInput, $checkboxLabel);
@@ -637,6 +678,11 @@ jQuery(function ($) {
         }
         
         _handleInvalidCep($checkboxInput, $checkboxLabel) {
+            if (this._isSilentMode) {
+                this._hideBorderSpinner();
+                this.input.prop('disabled', false);
+                return;
+            }
             $checkboxInput.prop('disabled', true);
             $checkboxInput.addClass('wc-better-readonly-disabled');
             $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
@@ -649,11 +695,16 @@ jQuery(function ($) {
         
         _handleAddressNotFound(cep, $checkboxInput, $checkboxLabel) {
             this.addressData = null;
-            this.showNotFoundLabel();
-            $checkboxInput.prop('disabled', true);
-            $checkboxInput.addClass('wc-better-readonly-disabled');
-            $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
-            $checkboxInput.prop('checked', false);
+            if (this._isSilentMode) {
+                this._hideBorderSpinner();
+                this.input.prop('disabled', false);
+            } else {
+                this.showNotFoundLabel();
+                $checkboxInput.prop('disabled', true);
+                $checkboxInput.addClass('wc-better-readonly-disabled');
+                $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
+                $checkboxInput.prop('checked', false);
+            }
             
             const data = {
                 action: 'wc_better_insert_address',
@@ -684,7 +735,184 @@ jQuery(function ($) {
                 }
             }
         }
+        _showBorderSpinner() {
+            injectSpinnerCss();
+            const inputEl = this.input && this.input[0];
+            if (!inputEl) return;
+            const container = inputEl.closest('.wc-block-components-text-input');
+            if (!container || container.querySelector('.wc-better-cep-spinner-svg')) return;
+            const computedStyle = window.getComputedStyle(container);
+            if (computedStyle.position === 'static') {
+                container.style.position = 'relative';
+                this._spinnerRestoredStatic = true;
+            }
+            if (computedStyle.overflow === 'hidden') {
+                container.style.overflow = 'visible';
+                this._spinnerRestoredOverflow = true;
+            }
+            this._spinnerContainer = container;
+
+            const bw = parseFloat(computedStyle.borderTopWidth) || 1;
+            // Raio da linha central do traço SVG: metade da borda para dentro do raio externo
+            const outerRadius = parseFloat(computedStyle.borderTopLeftRadius) || 4;
+            const rx = Math.max(0, outerRadius - bw / 2);
+            const ow = container.offsetWidth;
+            const oh = container.offsetHeight;
+
+            // Perímetro do retângulo arredondado (linha central do traço)
+            const straightW = Math.max(0, ow - bw - 2 * rx);
+            const straightH = Math.max(0, oh - bw - 2 * rx);
+            const perimeter = 2 * (straightW + straightH) + 2 * Math.PI * rx;
+            const trailLength = perimeter * 0.25; // 25% = comprimento da cobrinha
+
+            const ns = 'http://www.w3.org/2000/svg';
+            const svg = document.createElementNS(ns, 'svg');
+            svg.setAttribute('width', ow);
+            svg.setAttribute('height', oh);
+            svg.setAttribute('class', 'wc-better-cep-spinner-svg');
+            svg.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:5;overflow:visible;';
+
+            const rectEl = document.createElementNS(ns, 'rect');
+            rectEl.setAttribute('x', bw / 2);
+            rectEl.setAttribute('y', bw / 2);
+            rectEl.setAttribute('width', ow - bw);
+            rectEl.setAttribute('height', oh - bw);
+            rectEl.setAttribute('rx', rx);
+            rectEl.setAttribute('ry', rx);
+            rectEl.setAttribute('fill', 'none');
+            rectEl.setAttribute('stroke', '#555');
+            rectEl.setAttribute('stroke-width', bw + 1); // +1px para ficar visível sobre a borda
+            rectEl.setAttribute('stroke-dasharray', `${trailLength} ${perimeter - trailLength}`);
+            rectEl.setAttribute('stroke-linecap', 'round');
+
+            svg.appendChild(rectEl);
+            container.appendChild(svg);
+            this._spinnerEl = svg;
+
+            // Anima o traço percorrendo a borda: stroke-dashoffset 0 → -perimeter = 1 volta completa
+            rectEl.animate(
+                [{ strokeDashoffset: '0' }, { strokeDashoffset: `${-perimeter}` }],
+                { duration: 1200, iterations: Infinity, easing: 'linear' }
+            );
+        }
+
+        _hideBorderSpinner() {
+            if (this._spinnerEl) {
+                this._spinnerEl.remove();
+                this._spinnerEl = null;
+            }
+            if (this._spinnerRestoredStatic && this._spinnerContainer) {
+                this._spinnerContainer.style.position = '';
+                this._spinnerRestoredStatic = false;
+            }
+            if (this._spinnerRestoredOverflow && this._spinnerContainer) {
+                this._spinnerContainer.style.overflow = '';
+                this._spinnerRestoredOverflow = false;
+            }
+            this._spinnerContainer = null;
+        }
+
+        async _silentFillAddress(address) {
+            const context = this.context;
+            const data = {
+                action: 'wc_better_insert_address',
+                address: address.address,
+                city: address.city,
+                state: address.state,
+                district: address.district,
+                postcode: this.formatCep(this.input.val()),
+                context: context,
+                nonce: (typeof wc_better_checkout_vars !== 'undefined' ? wc_better_checkout_vars.nonce : '')
+            };
+
+            // Aguarda o AJAX salvar o endereço na sessão antes de invalidar o cache do Blocks.
+            // Sem esse await, o invalidateResolutionForStore re-busca os dados antigos do servidor
+            // e reverte o preenchimento dos campos.
+            let ajaxCompleted = false;
+            const ajaxPromise = new Promise((resolve, reject) => {
+                $.ajax({
+                    url: (typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.ajax_url) ? wc_better_checkout_vars.ajax_url : '/wp-admin/admin-ajax.php',
+                    method: 'POST',
+                    data: data,
+                    success: function (response) {
+                        ajaxCompleted = true;
+                        resolve(response);
+                    },
+                    error: function () {
+                        ajaxCompleted = true;
+                        reject();
+                    }
+                });
+            });
+
+            await Promise.race([
+                ajaxPromise,
+                new Promise(resolve => setTimeout(resolve, 5000))
+            ]);
+            if (!ajaxCompleted) {
+                await ajaxPromise.catch(() => {});
+            }
+
+            // Reabilita o input do CEP agora que o servidor confirmou o endereço
+            if (this.input && this.input.length) {
+                this.input.prop('disabled', false);
+            }
+
+            if (window.wp && window.wp.data && typeof window.wp.data.dispatch === 'function') {
+                try {
+                    window.wp.data.dispatch('wc/store/cart').invalidateResolutionForStore('shippingAddress');
+
+                    let observerActive = true;
+                    let updateCount = 0;
+                    const maxUpdates = 2;
+                    let observerTimeout;
+
+                    const observer = new MutationObserver((mutations, obs) => {
+                        if (!observerActive || updateCount >= maxUpdates) {
+                            obs.disconnect();
+                            return;
+                        }
+                        const input = document.getElementById(`${context}-address_1`);
+                        if (input) {
+                            updateCount++;
+                            if (updateCount === 1) {
+                                updateAddressFields(context, { ...data, skipProcessingCheck: true });
+                                setTimeout(() => { isProcessingAddressUpdate = true; }, 100);
+                            } else {
+                                if (isProcessingAddressUpdate) {
+                                    return;
+                                }
+                                isProcessingAddressUpdate = true;
+                                updateAddressFields(context, data);
+                            }
+                            setTimeout(() => { isProcessingAddressUpdate = false; }, 800);
+                            clearTimeout(observerTimeout);
+                            observerTimeout = setTimeout(() => {
+                                observerActive = false;
+                                obs.disconnect();
+                            }, 3000);
+                        }
+                    });
+
+                    observer.observe(document.body, { childList: true, subtree: true });
+                    setTimeout(() => {
+                        if (observerActive) {
+                            observerActive = false;
+                            observer.disconnect();
+                            isProcessingAddressUpdate = false;
+                        }
+                    }, 5000);
+                } catch (e) {
+                    isProcessingAddressUpdate = false;
+                }
+            }
+        }
+
         showLoadingLabel() {
+            if (this._isSilentMode) {
+                this._showBorderSpinner();
+                return;
+            }
             if (!this.checkboxLabel.length) return;
             if (this._loadingPulse) {
                 clearInterval(this._loadingPulse);

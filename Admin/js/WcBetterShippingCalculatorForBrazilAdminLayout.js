@@ -911,6 +911,7 @@
 
               //Checkout
               'woo_better_calc_enable_auto_address_fill': 'woo_better_calc_cep_field_position',
+              'woo_better_calc_enable_silent_address_fill': 'woo_better_calc_cep_field_position',
               'woo_better_calc_contact_required': 'woo_better_calc_apply_phone_mask',
               'woo_better_calc_contact_field_position': 'woo_better_calc_apply_phone_mask',
               
@@ -1165,6 +1166,39 @@
           });
         });
       }
+    }
+
+    function handleAddressFillMutualExclusion() {
+      const autoRadios   = document.querySelectorAll('input[name="woo_better_calc_enable_auto_address_fill"]');
+      const silentRadios = document.querySelectorAll('input[name="woo_better_calc_enable_silent_address_fill"]');
+
+      if (autoRadios.length === 0 || silentRadios.length === 0) {
+        return;
+      }
+
+      autoRadios.forEach(function (radio) {
+        radio.addEventListener('change', function () {
+          if (this.value === 'yes' && this.checked) {
+            const silentNo = document.querySelector('input[name="woo_better_calc_enable_silent_address_fill"][value="no"]');
+            if (silentNo) {
+              silentNo.checked = true;
+              silentNo.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
+        });
+      });
+
+      silentRadios.forEach(function (radio) {
+        radio.addEventListener('change', function () {
+          if (this.value === 'yes' && this.checked) {
+            const autoNo = document.querySelector('input[name="woo_better_calc_enable_auto_address_fill"][value="no"]');
+            if (autoNo) {
+              autoNo.checked = true;
+              autoNo.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
+        });
+      });
     }
 
     function handleClearCacheButton() {
@@ -1479,6 +1513,7 @@
     handleCustomPosition('product');
     handleCacheSettings();
     handleClearCacheButton();
+    handleAddressFillMutualExclusion();
     addProgressBarPreview();
 
     if (WCBetterCalcWooVersion.status === 'invalid') {
