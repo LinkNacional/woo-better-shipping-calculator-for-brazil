@@ -2078,30 +2078,7 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
-        // 6. Telefone
-        if ($phone_mask_enabled === 'yes') {
-            $phone = $order->get_billing_phone();
-            if (!empty($phone)) {
-                $formatted_phone = $this->format_complete_phone($phone, $billing_phone_country_code);
-                $display_data['phone'] = [
-                    'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => $formatted_phone,
-                    'is_link' => true
-                ];
-            }
-        }
-
-        // 7. Email
-        $email = $order->get_billing_email();
-        if (!empty($email)) {
-            $display_data['email'] = [
-                'label' => __('Email', 'woo-better-shipping-calculator-for-brazil'),
-                'value' => $email,
-                'is_clickable' => true
-            ];
-        }
-
-        // Gender data (seguindo padrão do CPF)
+        // 6. Gênero
         $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
         if ($gender_enabled === 'yes') {
             $billing_gender = $order->get_meta('_billing_gender');
@@ -2114,14 +2091,35 @@ class WcBetterShippingCalculatorForBrazil
                     __('Outro', 'woo-better-shipping-calculator-for-brazil') => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
                     __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
                 ];
-                
                 $gender_label = isset($gender_labels[$billing_gender]) ? $gender_labels[$billing_gender] : $billing_gender;
-                
                 $display_data['gender'] = [
                     'label' => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
                     'value' => $gender_label
                 ];
             }
+        }
+
+        // 7. Telefone
+        if ($phone_mask_enabled === 'yes') {
+            $phone = $order->get_billing_phone();
+            if (!empty($phone)) {
+                $formatted_phone = $this->format_complete_phone($phone, $billing_phone_country_code);
+                $display_data['phone'] = [
+                    'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
+                    'value' => $formatted_phone,
+                    'is_link' => true
+                ];
+            }
+        }
+
+        // 8. Email
+        $email = $order->get_billing_email();
+        if (!empty($email)) {
+            $display_data['email'] = [
+                'label' => __('Email', 'woo-better-shipping-calculator-for-brazil'),
+                'value' => $email,
+                'is_clickable' => true
+            ];
         }
         
         return $display_data;
