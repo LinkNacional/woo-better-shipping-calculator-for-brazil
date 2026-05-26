@@ -17,10 +17,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         inputWrapper.style.position = 'relative';
-        isentoWrapper.style.top = '50%';
-        isentoWrapper.style.right = '12px';
-        isentoWrapper.style.transform = 'translateY(-50%)';
-
         ieInput.style.paddingRight = '96px';
     }
 
@@ -62,19 +58,52 @@ document.addEventListener("DOMContentLoaded", function () {
             inputWrapper.style.position = 'relative';
         }
 
-        var checkboxWrapper = document.createElement('p');
+        var checkboxWrapper = document.createElement('span');
         checkboxWrapper.id = 'woo_better_ie_isento_wrapper';
-        checkboxWrapper.style.cssText = 'position: absolute; right: 12px; top: 50%; transform: translateY(-50%); margin: 0; z-index: 2;';
+        checkboxWrapper.setAttribute('style',
+            'display: flex !important; ' +
+            'position: absolute !important; ' +
+            'right: 12px !important; ' +
+            'top: 50% !important; ' +
+            'transform: translateY(-50%) !important; ' +
+            'margin: 0 !important; ' +
+            'padding: 0 !important; ' +
+            'z-index: 2 !important;'
+        );
 
         var label = document.createElement('label');
         label.htmlFor = 'woo_better_ie_isento_checkbox';
-        label.style.cssText = 'display: inline-flex; align-items: end; gap: 4px; cursor: pointer; font-weight: normal; font-size: 12px; line-height: 1; background: transparent;';
+        label.setAttribute('style',
+            'display: inline-flex !important; ' +
+            'align-items: flex-start !important; ' +
+            'gap: 4px !important; ' +
+            'cursor: pointer !important; ' +
+            'font-size: 12px !important; ' +
+            'font-weight: normal !important; ' +
+            'line-height: 1 !important; ' +
+            'letter-spacing: 0 !important; ' +
+            'text-transform: none !important; ' +
+            'background: transparent !important; ' +
+            'padding: 0 !important; ' +
+            'margin: 0 !important; ' +
+            'border: none !important; ' +
+            'box-shadow: none !important;'
+        );
 
         isentoCheckbox = document.createElement('input');
         isentoCheckbox.type = 'checkbox';
         isentoCheckbox.id = 'woo_better_ie_isento_checkbox';
         isentoCheckbox.name = 'woo_better_ie_isento';
-        isentoCheckbox.style.cssText = 'margin: 0; width: auto; cursor: pointer;';
+        isentoCheckbox.setAttribute('style',
+            'margin: 0 !important; ' +
+            'padding: 0 !important; ' +
+            'width: auto !important; ' +
+            'height: auto !important; ' +
+            'cursor: pointer !important; ' +
+            'flex-shrink: 0 !important; ' +
+            'vertical-align: middle !important;' +
+            'line-height: normal !important;'
+        );
 
         var labelText = document.createTextNode(
             typeof window.wp !== 'undefined' && typeof window.wp.i18n !== 'undefined'
@@ -198,7 +227,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Mostrar também o wrapper do checkbox isento
         var isentoWrapper = document.getElementById('woo_better_ie_isento_wrapper');
         if (isentoWrapper) {
-            isentoWrapper.style.display = '';
+            isentoWrapper.style.setProperty('display', 'flex', 'important');
         }
     }
 
@@ -215,7 +244,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var isentoWrapper = document.getElementById('woo_better_ie_isento_wrapper');
         if (isentoWrapper) {
-            isentoWrapper.style.display = 'none';
+            isentoWrapper.style.setProperty('display', 'none', 'important');
         }
 
         setIERequired(false);

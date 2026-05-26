@@ -50,20 +50,53 @@ document.addEventListener("DOMContentLoaded", function () {
             inputWrapper.style.position = 'relative';
         }
 
-        var snWrapper = document.createElement('p');
+        var snWrapper = document.createElement('span');
         snWrapper.id = checkboxId + '_wrapper';
-        snWrapper.style.cssText = 'position: absolute; right: 12px; top: 50%; transform: translateY(-50%); margin: 0; z-index: 2;';
+        snWrapper.setAttribute('style',
+            'display: flex !important; ' +
+            'position: absolute !important; ' +
+            'right: 12px !important; ' +
+            'top: 50% !important; ' +
+            'transform: translateY(-50%) !important; ' +
+            'margin: 0 !important; ' +
+            'padding: 0 !important; ' +
+            'z-index: 2 !important;'
+        );
 
         var label = document.createElement('label');
         label.htmlFor = checkboxId;
-        label.style.cssText = 'display: inline-flex; align-items: end; gap: 4px; cursor: pointer; font-weight: normal; font-size: 12px; line-height: 1; background: transparent;';
+        label.setAttribute('style',
+            'display: inline-flex !important; ' +
+            'align-items: flex-end !important; ' +
+            'gap: 4px !important; ' +
+            'cursor: pointer !important; ' +
+            'font-size: 12px !important; ' +
+            'font-weight: normal !important; ' +
+            'line-height: 1 !important; ' +
+            'letter-spacing: 0 !important; ' +
+            'text-transform: none !important; ' +
+            'background: transparent !important; ' +
+            'padding: 0 !important; ' +
+            'margin: 0 !important; ' +
+            'border: none !important; ' +
+            'box-shadow: none !important;'
+        );
 
         var snText = document.createTextNode('S/N');
 
         var checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.id = checkboxId;
-        checkbox.style.cssText = 'margin: 0; width: auto; cursor: pointer;';
+        checkbox.setAttribute('style',
+            'margin: 0 !important; ' +
+            'padding: 0 !important; ' +
+            'width: auto !important; ' +
+            'height: auto !important; ' +
+            'cursor: pointer !important; ' +
+            'flex-shrink: 0 !important; ' +
+            'vertical-align: middle !important;' +
+            'line-height: normal !important;'
+        );
 
         label.appendChild(snText);
         label.appendChild(checkbox);
