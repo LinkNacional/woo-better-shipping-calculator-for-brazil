@@ -1,115 +1,178 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const billingNumberField = document.querySelector("#billing_number");
-    const billingNumberFieldWrapper = document.querySelector("#billing_number_field");
-    const checkbox = document.querySelector("#lkn_billing_checkbox");
 
-    // Preenche os campos de número com valores vindos do wp_localize_script, se existirem
-    if (typeof wc_better_checkout_shortcode_number_vars !== 'undefined') {
-        if (billingNumberField && wc_better_checkout_shortcode_number_vars.billing_number) {
-            if (window.jQuery) {
-                var $billingField = window.jQuery(billingNumberField);
-                $billingField.val(wc_better_checkout_shortcode_number_vars.billing_number).trigger("change");
-            } else {
-                billingNumberField.value = wc_better_checkout_shortcode_number_vars.billing_number;
-                billingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
-            }
-            // Se o valor preenchido for 'S/N', marca o checkbox e desabilita o campo
-            if (wc_better_checkout_shortcode_number_vars.billing_number === "S/N" && checkbox) {
-                checkbox.checked = true;
-                billingNumberField.setAttribute("readonly", "readonly");
-                billingNumberField.classList.add("wc-better-readonly-disabled");
-                billingNumberFieldWrapper.style.opacity = "0.5";
-            }
+    var billingSnCheckbox = null;
+    var shippingSnCheckbox = null;
+    var billingInitialized = false;
+    var shippingInitialized = false;
+
+    function setFieldValue(inputEl, value) {
+        if (!inputEl) {
+            return;
         }
-        // Detecta e preenche o campo de número de shipping se existir
-        var shippingNumberField = document.querySelector("#shipping_number");
-        if (shippingNumberField && wc_better_checkout_shortcode_number_vars.shipping_number) {
-            if (window.jQuery) {
-                var $shippingField = window.jQuery(shippingNumberField);
-                $shippingField.val(wc_better_checkout_shortcode_number_vars.shipping_number).trigger("change");
-            } else {
-                shippingNumberField.value = wc_better_checkout_shortcode_number_vars.shipping_number;
-                shippingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
-            }
-            // Se o valor preenchido for 'S/N', marca o checkbox e desabilita o campo
-            var shippingCheckbox = document.querySelector("#lkn_shipping_checkbox");
-            var shippingNumberFieldWrapper = document.querySelector("#shipping_number_field");
-            if (wc_better_checkout_shortcode_number_vars.shipping_number === "S/N" && shippingCheckbox) {
-                shippingCheckbox.checked = true;
-                shippingNumberField.setAttribute("readonly", "readonly");
-                shippingNumberField.classList.add("wc-better-readonly-disabled");
-                if (shippingNumberFieldWrapper) shippingNumberFieldWrapper.style.opacity = "0.5";
-            }
+        if (window.jQuery) {
+            window.jQuery(inputEl).val(value).trigger('change');
+        } else {
+            inputEl.value = value;
+            inputEl.dispatchEvent(new Event('change', { bubbles: true }));
         }
     }
 
-    let shippingFound = false
+    function setFieldDisabled(inputEl, disabled) {
+        if (!inputEl) {
+            return;
+        }
+        if (disabled) {
+            inputEl.setAttribute('readonly', 'readonly');
+            inputEl.classList.add('wc-better-readonly-disabled');
+            inputEl.style.opacity = '0.6';
+            inputEl.style.cursor = 'not-allowed';
+            inputEl.style.pointerEvents = 'none';
+        } else {
+            inputEl.removeAttribute('readonly');
+            inputEl.classList.remove('wc-better-readonly-disabled');
+            inputEl.style.opacity = '';
+            inputEl.style.cursor = '';
+            inputEl.style.pointerEvents = '';
+        }
+    }
 
-    if (checkbox && billingNumberField) {
-        checkbox.addEventListener("change", function () {
-            if (this.checked) {
-                if (window.jQuery) {
-                    var $billingField = window.jQuery(billingNumberField);
-                    $billingField.val("S/N").trigger("change");
-                } else {
-                    billingNumberField.value = "S/N";
-                    billingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
-                }
-                billingNumberField.setAttribute("readonly", "readonly");
-                billingNumberField.classList.add("wc-better-readonly-disabled");
-                billingNumberFieldWrapper.style.opacity = "0.5";
-            } else {
-                if (window.jQuery) {
-                    var $billingField = window.jQuery(billingNumberField);
-                    $billingField.val("").trigger("change");
-                } else {
-                    billingNumberField.value = "";
-                    billingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
-                }
-                billingNumberField.removeAttribute("readonly");
-                billingNumberField.classList.remove("wc-better-readonly-disabled");
-                billingNumberFieldWrapper.style.opacity = "1";
-            }
+    function injectSnCheckbox(inputEl, fieldWrapperEl, checkboxId, onCheckedChange) {
+        if (!inputEl || !fieldWrapperEl) {
+            return null;
+        }
+
+        if (document.getElementById(checkboxId)) {
+            return document.getElementById(checkboxId);
+        }
+
+        var inputWrapper = fieldWrapperEl.querySelector('.woocommerce-input-wrapper');
+        if (inputWrapper) {
+            inputWrapper.style.position = 'relative';
+        }
+
+        var snWrapper = document.createElement('p');
+        snWrapper.id = checkboxId + '_wrapper';
+        snWrapper.style.cssText = 'position: absolute; right: 12px; top: 50%; transform: translateY(-50%); margin: 0; z-index: 2;';
+
+        var label = document.createElement('label');
+        label.htmlFor = checkboxId;
+        label.style.cssText = 'display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-weight: normal; font-size: 12px; line-height: 1; background: transparent;';
+
+        var snText = document.createTextNode('S/N');
+
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = checkboxId;
+        checkbox.style.cssText = 'margin: 0; width: auto; cursor: pointer;';
+
+        label.appendChild(snText);
+        label.appendChild(checkbox);
+        snWrapper.appendChild(label);
+
+        if (inputWrapper) {
+            inputWrapper.appendChild(snWrapper);
+        } else {
+            fieldWrapperEl.appendChild(snWrapper);
+        }
+
+        inputEl.style.paddingRight = '72px';
+
+        checkbox.addEventListener('change', function () {
+            onCheckedChange(this.checked);
         });
+
+        return checkbox;
     }
 
-    const observer = new MutationObserver(() => {
-        const shippingCheckbox = document.querySelector("#lkn_shipping_checkbox");
+    function initBillingSnField() {
+        var billingNumberField = document.getElementById('billing_number');
+        var billingNumberFieldWrapper = document.getElementById('billing_number_field');
 
-        if (!shippingCheckbox) {
-            shippingFound = false
+        if (!billingNumberField || !billingNumberFieldWrapper) {
+            return;
         }
 
-        if (shippingCheckbox && !shippingFound) {
-            shippingFound = true
-            shippingCheckbox.addEventListener("change", function () {
-                const shippingNumberField = document.querySelector("#shipping_number");
-                const shippingNumberFieldWrapper = document.querySelector("#shipping_number_field");
+        billingInitialized = true;
 
-                if (this.checked) {
-                    if (window.jQuery) {
-                        var $shippingField = window.jQuery(shippingNumberField);
-                        $shippingField.val("S/N").trigger("change");
-                    } else {
-                        shippingNumberField.value = "S/N";
-                        shippingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
-                    }
-                    shippingNumberField.setAttribute("readonly", "readonly");
-                    shippingNumberField.classList.add("wc-better-readonly-disabled");
-                    shippingNumberFieldWrapper.style.opacity = "0.5";
+        billingSnCheckbox = injectSnCheckbox(
+            billingNumberField,
+            billingNumberFieldWrapper,
+            'lkn_billing_checkbox',
+            function (checked) {
+                if (checked) {
+                    setFieldValue(billingNumberField, 'S/N');
+                    setFieldDisabled(billingNumberField, true);
                 } else {
-                    if (window.jQuery) {
-                        var $shippingField = window.jQuery(shippingNumberField);
-                        $shippingField.val("").trigger("change");
-                    } else {
-                        shippingNumberField.value = "";
-                        shippingNumberField.dispatchEvent(new Event("change", { bubbles: true }));
-                    }
-                    shippingNumberField.removeAttribute("readonly");
-                    shippingNumberField.classList.remove("wc-better-readonly-disabled");
-                    shippingNumberFieldWrapper.style.opacity = "1";
+                    setFieldValue(billingNumberField, '');
+                    setFieldDisabled(billingNumberField, false);
+                    billingNumberField.focus();
                 }
-            });
+            }
+        );
+
+        // Preenche valor salvo via wp_localize_script
+        if (typeof wc_better_checkout_shortcode_number_vars !== 'undefined' && wc_better_checkout_shortcode_number_vars.billing_number) {
+            setFieldValue(billingNumberField, wc_better_checkout_shortcode_number_vars.billing_number);
+            if (wc_better_checkout_shortcode_number_vars.billing_number === 'S/N' && billingSnCheckbox) {
+                billingSnCheckbox.checked = true;
+                setFieldDisabled(billingNumberField, true);
+            }
+        }
+    }
+
+    function initShippingSnField() {
+        var shippingNumberField = document.getElementById('shipping_number');
+        var shippingNumberFieldWrapper = document.getElementById('shipping_number_field');
+
+        if (!shippingNumberField || !shippingNumberFieldWrapper) {
+            return;
+        }
+
+        shippingInitialized = true;
+
+        shippingSnCheckbox = injectSnCheckbox(
+            shippingNumberField,
+            shippingNumberFieldWrapper,
+            'lkn_shipping_checkbox',
+            function (checked) {
+                if (checked) {
+                    setFieldValue(shippingNumberField, 'S/N');
+                    setFieldDisabled(shippingNumberField, true);
+                } else {
+                    setFieldValue(shippingNumberField, '');
+                    setFieldDisabled(shippingNumberField, false);
+                    shippingNumberField.focus();
+                }
+            }
+        );
+
+        // Preenche valor salvo via wp_localize_script
+        if (typeof wc_better_checkout_shortcode_number_vars !== 'undefined' && wc_better_checkout_shortcode_number_vars.shipping_number) {
+            setFieldValue(shippingNumberField, wc_better_checkout_shortcode_number_vars.shipping_number);
+            if (wc_better_checkout_shortcode_number_vars.shipping_number === 'S/N' && shippingSnCheckbox) {
+                shippingSnCheckbox.checked = true;
+                setFieldDisabled(shippingNumberField, true);
+            }
+        }
+    }
+
+    // Inicializa billing
+    initBillingSnField();
+
+    // Observer para shipping (aparece dinamicamente quando "enviar para endereço diferente" é marcado)
+    var observer = new MutationObserver(function () {
+        if (!billingInitialized) {
+            initBillingSnField();
+        }
+
+        var shippingNumberField = document.getElementById('shipping_number');
+        if (!shippingNumberField) {
+            shippingInitialized = false;
+            shippingSnCheckbox = null;
+        }
+
+        if (!shippingInitialized) {
+            initShippingSnField();
         }
     });
 
@@ -117,41 +180,4 @@ document.addEventListener("DOMContentLoaded", function () {
         childList: true,
         subtree: true
     });
-
-    (function () {
-        const originalOpen = XMLHttpRequest.prototype.open;
-        const originalSend = XMLHttpRequest.prototype.send;
-
-        XMLHttpRequest.prototype.open = function (method, url) {
-            this._isCheckoutRequest = url.includes("wc-ajax=checkout");
-            return originalOpen.apply(this, arguments);
-        };
-
-        XMLHttpRequest.prototype.send = function (body) {
-            if (this._isCheckoutRequest && typeof body === "string") {
-                // ✅ CORREÇÃO: Verifica se o body é JSON antes de processar como form data
-                // Se começar com { ou [, provavelmente é JSON, não form data
-                const isJson = body.trim().startsWith('{') || body.trim().startsWith('[');
-                
-                if (!isJson) {
-                    // Só processa como form data se NÃO for JSON
-                    const params = new URLSearchParams(body);
-
-                    if (params.has('lkn_billing_checkbox') && params.get('lkn_billing_checkbox') == '1') {
-                        params.set("billing_number", "S/N");
-                    }
-
-                    if (params.has('lkn_shipping_checkbox') && params.get('lkn_shipping_checkbox') == '1') {
-                        params.set("shipping_number", "S/N");
-                    }
-
-                    // Converte de volta para string antes de enviar
-                    body = params.toString();
-                }
-                // Se for JSON, deixa passar sem modificar
-            }
-
-            return originalSend.call(this, body);
-        };
-    })();
 });

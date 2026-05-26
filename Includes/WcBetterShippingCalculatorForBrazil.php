@@ -629,30 +629,12 @@ class WcBetterShippingCalculatorForBrazil
                 'priority'    => 55,
             );
 
-            // Checkbox
-            $fields['billing']['lkn_billing_checkbox'] = array(
-                'type'        => 'checkbox',
-                'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => false,
-                'class'       => array('form-row-wide'),
-                'priority'    => 52,
-            );
-
             $fields['shipping']['shipping_number'] = array(
                 'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
                 'placeholder' => __('Ex: 123a', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
                 'class'       => array('form-row-wide'),
                 'priority'    => 55,
-            );
-
-            // Checkbox
-            $fields['shipping']['lkn_shipping_checkbox'] = array(
-                'type'        => 'checkbox',
-                'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => false,
-                'class'       => array('form-row-wide'),
-                'priority'    => 52,
             );
         }
 
@@ -6518,15 +6500,6 @@ class WcBetterShippingCalculatorForBrazil
                 'class'       => array('form-row-wide'),
                 'priority'    => 56
             );
-            
-            // Checkbox sem número
-            $fields['lkn_billing_checkbox'] = array(
-                'type'        => 'checkbox',
-                'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => false,
-                'class'       => array('form-row-wide'),
-                'priority'    => 55,
-            );
         }
         
         // Verificar se auto-preenchimento de CEP está habilitado
@@ -6653,15 +6626,6 @@ class WcBetterShippingCalculatorForBrazil
                 'class'       => array('form-row-wide'),
                 'priority'    => 56
             );
-            
-            // Checkbox sem número
-            $fields['lkn_shipping_checkbox'] = array(
-                'type'        => 'checkbox',
-                'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => false,
-                'class'       => array('form-row-wide'),
-                'priority'    => 55,
-            );
         }
         
         // Verificar se auto-preenchimento de CEP está habilitado
@@ -6761,17 +6725,6 @@ class WcBetterShippingCalculatorForBrazil
             if ($load_address === 'shipping' && isset($_POST['shipping_number'])) {
                 $number = sanitize_text_field(wp_unslash($_POST['shipping_number']));
                 update_user_meta($user_id, 'shipping_number', $number);
-            }
-            
-            // Salvar checkbox "sem número"
-            if ($load_address === 'billing') {
-                $checkbox_value = isset($_POST['lkn_billing_checkbox']) ? '1' : '0';
-                update_user_meta($user_id, 'lkn_billing_checkbox', $checkbox_value);
-            }
-            
-            if ($load_address === 'shipping') {
-                $checkbox_value = isset($_POST['lkn_shipping_checkbox']) ? '1' : '0';
-                update_user_meta($user_id, 'lkn_shipping_checkbox', $checkbox_value);
             }
         }
         
