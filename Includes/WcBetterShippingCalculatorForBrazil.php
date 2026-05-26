@@ -1920,22 +1920,9 @@ class WcBetterShippingCalculatorForBrazil
                 
                 $display_data['phone'] = [
                     'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => $formatted_phone, // Usar telefone formatado
+                    'value' => $formatted_phone,
                     'is_link' => true
                 ];
-                
-                // Country code (opcional, já que está incluído no telefone formatado)
-                if (str_starts_with($phone, '+') && !empty($shipping_phone_country_code)) {
-                    $clean_country_code = trim($shipping_phone_country_code);
-                    if (!str_starts_with($clean_country_code, '+')) {
-                        $clean_country_code = '+' . $clean_country_code;
-                    }
-                    
-                    $display_data['phone_country'] = [
-                        'label' => __('Código do país', 'woo-better-shipping-calculator-for-brazil'),
-                        'value' => $clean_country_code
-                    ];
-                }
             }
         }
         
@@ -2006,10 +1993,46 @@ class WcBetterShippingCalculatorForBrazil
         if (is_numeric($billing_persontype)) {
             $billing_persontype = ($billing_persontype == '1') ? 'physical' : 'legal';
         }
-        
-        // Process person type data
+
+        // 1. Data de Nascimento
+        $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
+        if ($birthdate_enabled === 'yes') {
+            $billing_birthdate = $order->get_meta('_billing_birthdate');
+            if (!empty($billing_birthdate)) {
+                $birthdate_obj = \DateTime::createFromFormat('Y-m-d', $billing_birthdate);
+                if ($birthdate_obj) {
+                    $today = new \DateTime();
+                    $age = $today->diff($birthdate_obj)->y;
+                    $formatted_birthdate = $birthdate_obj->format('d/m/Y') . ' (' . $age . ' anos)';
+                } else {
+                    $formatted_birthdate = $billing_birthdate;
+                }
+                $display_data['birthdate'] = [
+                    'label' => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
+                    'value' => $formatted_birthdate
+                ];
+            }
+        }
+
+        // 2-5. Tipo de Pessoa / CPF ou CNPJ / Empresa / IE
         if ($person_type !== 'none') {
-            // Physical person data (CPF)
+            // 2. Tipo de Pessoa (apenas quando 'both')
+            if ($person_type === 'both' && !empty($billing_persontype)) {
+                $person_type_label = '';
+                if ($billing_persontype === '1' || $billing_persontype === 1 || $billing_persontype === 'physical') {
+                    $person_type_label = __('Pessoa Física', 'woo-better-shipping-calculator-for-brazil');
+                } elseif ($billing_persontype === '2' || $billing_persontype === 2 || $billing_persontype === 'legal') {
+                    $person_type_label = __('Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil');
+                }
+                if (!empty($person_type_label)) {
+                    $display_data['person_type'] = [
+                        'label' => __('Tipo de Pessoa', 'woo-better-shipping-calculator-for-brazil'),
+                        'value' => $person_type_label
+                    ];
+                }
+            }
+
+            // 3. CPF
             if ($this->should_show_physical_data($person_type, $billing_persontype)) {
                 if (!empty($billing_cpf)) {
                     $display_data['cpf'] = [
@@ -2019,19 +2042,19 @@ class WcBetterShippingCalculatorForBrazil
                 }
             }
 
-            // Legal person data (Company and CNPJ)
+            // 3. CNPJ / 4. Empresa / 5. IE
             if ($this->should_show_legal_data($person_type, $billing_persontype)) {
+                if (!empty($billing_cnpj)) {
+                    $display_data['cnpj'] = [
+                        'label' => __('CNPJ', 'woo-better-shipping-calculator-for-brazil'),
+                        'value' => $billing_cnpj
+                    ];
+                }
                 $company = $order->get_billing_company();
                 if (!empty($company)) {
                     $display_data['company'] = [
                         'label' => __('Empresa', 'woo-better-shipping-calculator-for-brazil'),
                         'value' => $company
-                    ];
-                }
-                if (!empty($billing_cnpj)) {
-                    $display_data['cnpj'] = [
-                        'label' => __('CNPJ', 'woo-better-shipping-calculator-for-brazil'),
-                        'value' => $billing_cnpj
                     ];
                 }
                 if ($ie_field_enabled === 'yes') {
@@ -2044,23 +2067,6 @@ class WcBetterShippingCalculatorForBrazil
                     }
                 }
             }
-            
-            // Person type label (only for 'both' setting)
-            if ($person_type === 'both' && !empty($billing_persontype)) {
-                $person_type_label = '';
-                if ($billing_persontype === '1' || $billing_persontype === 1 || $billing_persontype === 'physical') {
-                    $person_type_label = __('Pessoa Física', 'woo-better-shipping-calculator-for-brazil');
-                } elseif ($billing_persontype === '2' || $billing_persontype === 2 || $billing_persontype === 'legal') {
-                    $person_type_label = __('Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil');
-                }
-                
-                if (!empty($person_type_label)) {
-                    $display_data['person_type'] = [
-                        'label' => __('Tipo de Pessoa', 'woo-better-shipping-calculator-for-brazil'),
-                        'value' => $person_type_label
-                    ];
-                }
-            }
         } else {
             // When person type is 'none', only show company if available
             $company = $order->get_billing_company();
@@ -2071,36 +2077,21 @@ class WcBetterShippingCalculatorForBrazil
                 ];
             }
         }
-        
-        // Phone data
+
+        // 6. Telefone
         if ($phone_mask_enabled === 'yes') {
             $phone = $order->get_billing_phone();
             if (!empty($phone)) {
-                // Formatar telefone completo
                 $formatted_phone = $this->format_complete_phone($phone, $billing_phone_country_code);
-                
                 $display_data['phone'] = [
                     'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => $formatted_phone, // Usar telefone formatado
+                    'value' => $formatted_phone,
                     'is_link' => true
                 ];
-                
-                // Country code (opcional, já que está incluído no telefone formatado)
-                if (str_starts_with($phone, '+') && !empty($billing_phone_country_code)) {
-                    $clean_country_code = trim($billing_phone_country_code);
-                    if (!str_starts_with($clean_country_code, '+')) {
-                        $clean_country_code = '+' . $clean_country_code;
-                    }
-                    
-                    $display_data['phone_country'] = [
-                        'label' => __('Código do país', 'woo-better-shipping-calculator-for-brazil'),
-                        'value' => $clean_country_code
-                    ];
-                }
             }
         }
-        
-        // Email data
+
+        // 7. Email
         $email = $order->get_billing_email();
         if (!empty($email)) {
             $display_data['email'] = [
@@ -2109,29 +2100,7 @@ class WcBetterShippingCalculatorForBrazil
                 'is_clickable' => true
             ];
         }
-        
-        // Birthdate data (seguindo padrão do CPF)
-        $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
-        if ($birthdate_enabled === 'yes') {
-            $billing_birthdate = $order->get_meta('_billing_birthdate');
-            if (!empty($billing_birthdate)) {
-                // Calculate age from birthdate
-                $birthdate_obj = \DateTime::createFromFormat('Y-m-d', $billing_birthdate);
-                if ($birthdate_obj) {
-                    $today = new \DateTime();
-                    $age = $today->diff($birthdate_obj)->y;
-                    $formatted_birthdate = $birthdate_obj->format('d/m/Y') . ' (' . $age . ' anos)';
-                } else {
-                    $formatted_birthdate = $billing_birthdate;
-                }
-                
-                $display_data['birthdate'] = [
-                    'label' => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => $formatted_birthdate
-                ];
-            }
-        }
-        
+
         // Gender data (seguindo padrão do CPF)
         $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
         if ($gender_enabled === 'yes') {
