@@ -147,6 +147,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+# 4.14.0 - 26/05/26
+* New: CEP address auto-fill feature.
+* Fixed: Checkbox behavior when filling the address.
+* Fixed: Field positioning in order data + removal of country code.
+
 # 4.13.0 - 25/05/26
 * Fixed: Optional/required CPF field.
 * New: State Registration (IE) field.

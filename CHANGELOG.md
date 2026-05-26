@@ -1,3 +1,8 @@
+# 4.14.0 - 26/05/26
+* Novo: Recurso de preenchimento de CEP.
+* Ajuste: Correção na checkbox ao preencher o endereço.
+* Ajuste: Posicionamento dos campos nos dados do pedido + remoção do código do país.
+
 # 4.13.0 - 25/05/26
 * Ajuste: Campo de CPF opcional/requerido.
 * Novo: Campo de inscrição estadual (IE).
