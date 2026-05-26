@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var label = document.createElement('label');
         label.htmlFor = checkboxId;
-        label.style.cssText = 'display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-weight: normal; font-size: 12px; line-height: 1; background: transparent;';
+        label.style.cssText = 'display: inline-flex; align-items: end; gap: 4px; cursor: pointer; font-weight: normal; font-size: 12px; line-height: 1; background: transparent;';
 
         var snText = document.createTextNode('S/N');
 
