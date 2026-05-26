@@ -230,7 +230,7 @@ jQuery(function ($) {
             }
 
             if (this.isValidCep(cep) || /^\d{5}-\d{3}$/.test(rawCep)) {
-                $checkboxInput.prop('readonly', true);
+                $checkboxInput.prop('disabled', true);
                 $checkboxInput.addClass('wc-better-readonly-disabled');
                 this.showLoadingLabel();
 
@@ -268,7 +268,7 @@ jQuery(function ($) {
                     const currentRawCep = this.input.val();
                     this.addressData = { ...address, _rawCep: currentRawCep };
                     this.updateCheckboxLabel(address);
-                    $checkboxInput.prop('readonly', false);
+                    $checkboxInput.prop('disabled', false);
                     $checkboxInput.removeClass('wc-better-readonly-disabled');
                     // Garante que a inserção automática ocorra se o endereço mudou OU o CEP digitado mudou
                     if (
@@ -283,7 +283,7 @@ jQuery(function ($) {
                 } else {
                     this.addressData = null;
                     this.showNotFoundLabel();
-                    $checkboxInput.prop('readonly', true);
+                    $checkboxInput.prop('disabled', true);
                     $checkboxInput.addClass('wc-better-readonly-disabled');
                     $checkboxInput.prop('checked', false);
                     const data = {
@@ -304,8 +304,8 @@ jQuery(function ($) {
                     });
                 }
             } else {
-                // Se o CEP não é válido, mantém readonly e atualiza texto
-                $checkboxInput.prop('readonly', true);
+                // Se o CEP não é válido, mantém disabled e atualiza texto
+                $checkboxInput.prop('disabled', true);
                 $checkboxInput.addClass('wc-better-readonly-disabled');
                 $checkboxInput.prop('checked', false);
                 if (this.checkboxLabel.length) {
@@ -610,10 +610,10 @@ jQuery(function ($) {
             let loadingPulse = null;
             let lastCepRaw = '';
             let lastValidCep = '';
-            // Função para aplicar/remover readonly e classe na label
+            // Função para aplicar/remover disabled e classe na label
             function setCheckboxReadonly(readonly) {
                 if ($checkbox.length) {
-                    $checkbox.prop('readonly', !!readonly);
+                    $checkbox.prop('disabled', !!readonly);
                     var $label = $checkbox.closest('label');
                     if (readonly) {
                         $checkbox.addClass('wc-better-readonly-disabled');
