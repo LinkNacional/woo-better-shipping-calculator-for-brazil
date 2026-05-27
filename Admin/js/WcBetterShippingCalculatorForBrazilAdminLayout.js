@@ -147,12 +147,12 @@
     }
 
     const featureMessage1 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Campos de Data de Nascimento e Gênero para coleta completa de dados demográficos do cliente no checkout.'
+      '<strong>NOVO:</strong> Preenchimento de endereço por CEP com sugestão ou preenchimento automático no checkout.'
     ]);
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Campos brasileiros personalizados do checkout e nova opção para detecção de frete gratuito na Calculadora de frete.'
+      '<strong>RESOLVIDO:</strong> Preenchimento do campo CPF como obrigatório corrigido para funcionar corretamente no checkout.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento

@@ -217,6 +217,11 @@ class WcBetterShippingCalculatorForBrazil
                     Aproveite também o novo recurso de frete grátis por valor, agora integrado aos métodos de entrega do WooCommerce. Precisa de Suporte WordPress? Entre no Grupo do <a href="https://chat.whatsapp.com/IjzHhDXwmzGLDnBfOibJKO" target="_blank" rel="noopener noreferrer">WhatsApp</a> ou <a href="https://t.me/wpprobr" target="_blank" rel="noopener noreferrer">Telegram</a>.
                 </p>
 
+                <p style="font-size: 14px;">
+                    ✨ <strong>Novo:</strong> Preenchimento de endereço por CEP com sugestão ou preenchimento automático no checkout. Configure em <strong>Campos Brasileiros</strong> → <strong>Destaque do Campo CEP</strong> &#8594;
+                    <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout#destaque-do-campo-cep">Configurar agora</a>.
+                </p>
+
                 <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
                     <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout" class="button button-primary" style="display: flex; align-items: center; justify-content: center;">
                         Configurar campos do Brasil
