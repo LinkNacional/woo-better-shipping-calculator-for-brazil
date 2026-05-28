@@ -919,6 +919,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_nopriv_wc_better_get_user_postcode', $this, 'wc_better_get_user_postcode');
 
         $this->loader->add_action('woocommerce_get_country_locale', $this, 'wc_better_calc_phone_number', 10, 1);
+        $this->loader->add_filter('woocommerce_get_country_locale', $this, 'lkn_checkout_fields_locale_priority', 11, 1);
 
         $this->loader->add_action('woocommerce_init', $this, 'init_woocommerce');
 
@@ -3947,6 +3948,46 @@ class WcBetterShippingCalculatorForBrazil
             // Salva na sessão para uso durante o checkout
             WC()->session->set( 'use_shipping_as_billing', $use_shipping_as_billing );
         }
+    }
+
+    public function lkn_checkout_fields_locale_priority( $locale ) {
+        $email_highlight    = get_option( 'woo_better_calc_email_field_position_shortcode', 'no' );
+        $phone_highlight    = get_option( 'woo_better_calc_contact_field_position', 'no' );
+        $person_type        = get_option( 'woo_better_calc_person_type_select', 'none' );
+
+        // Nenhuma das opções ativa, sem alterações
+        if ( $email_highlight !== 'yes' && $phone_highlight !== 'yes' && $person_type === 'none' ) {
+            return $locale;
+        }
+
+        $country_codes = include plugin_dir_path( __FILE__ ) . 'country-codes.php';
+        foreach ( $country_codes as $country_code ) {
+            // email → priority 1
+            if ( $email_highlight === 'yes' ) {
+                if ( ! isset( $locale[ $country_code ]['email'] ) ) {
+                    $locale[ $country_code ]['email'] = [];
+                }
+                $locale[ $country_code ]['email']['priority'] = 1;
+            }
+
+            // phone → priority 2
+            if ( $phone_highlight === 'yes' ) {
+                if ( ! isset( $locale[ $country_code ]['phone'] ) ) {
+                    $locale[ $country_code ]['phone'] = [];
+                }
+                $locale[ $country_code ]['phone']['priority'] = 2;
+            }
+
+            // country → priority 3 quando person_type estiver ativo
+            if ( $person_type !== 'none' ) {
+                if ( ! isset( $locale[ $country_code ]['country'] ) ) {
+                    $locale[ $country_code ]['country'] = [];
+                }
+                $locale[ $country_code ]['country']['priority'] = 3;
+            }
+        }
+
+        return $locale;
     }
 
     public function wc_better_calc_phone_number($locale)
