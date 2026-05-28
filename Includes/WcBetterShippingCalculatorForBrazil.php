@@ -405,6 +405,19 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_woo_better_shipping_calculator_locale($locale)
     {
+        // Ocultar campos de endereço via locale só tem efeito no checkout em blocos (Gutenberg).
+        // No checkout clássico/shortcode os campos são removidos via woocommerce_checkout_fields.
+        $is_blocks_checkout = false;
+        if ( function_exists( 'has_block' ) ) {
+            global $post;
+            if ( isset( $post ) && is_a( $post, 'WP_Post' ) ) {
+                $is_blocks_checkout = has_block( 'woocommerce/checkout', $post );
+            }
+        }
+        if ( ! $is_blocks_checkout ) {
+            return $locale;
+        }
+
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
         $only_virtual = false;
         if ($this->is_valid_woocommerce_context() && isset(WC()->cart)) {
@@ -441,6 +454,19 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_disable_company_required_based_on_person_type($locale)
     {
+        // Ajustar required via locale só tem efeito no checkout em blocos (Gutenberg).
+        // No checkout clássico/shortcode a validação é controlada por outros meios.
+        $is_blocks_checkout = false;
+        if ( function_exists( 'has_block' ) ) {
+            global $post;
+            if ( isset( $post ) && is_a( $post, 'WP_Post' ) ) {
+                $is_blocks_checkout = has_block( 'woocommerce/checkout', $post );
+            }
+        }
+        if ( ! $is_blocks_checkout ) {
+            return $locale;
+        }
+
         $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
         
         // Só aplica a lógica se for dinâmico
@@ -3927,7 +3953,19 @@ class WcBetterShippingCalculatorForBrazil
     {
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
         $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
-        
+
+        // Ocultar o campo nativo de telefone só faz sentido no checkout em blocos (Gutenberg).
+        // No checkout clássico/shortcode, o reposicionamento é feito via wc_better_calc_checkout_fields
+        // usando priority. Aplicar hidden=true no locale também no clássico causa o campo sumir
+        // a partir do WooCommerce 10.8.1+.
+        $is_blocks_checkout = false;
+        if ( function_exists( 'has_block' ) ) {
+            global $post;
+            if ( isset( $post ) && is_a( $post, 'WP_Post' ) ) {
+                $is_blocks_checkout = has_block( 'woocommerce/checkout', $post );
+            }
+        }
+
         // Carrega a lista de códigos de países
         $country_codes = include plugin_dir_path(__FILE__) . 'country-codes.php';
         
@@ -3943,8 +3981,9 @@ class WcBetterShippingCalculatorForBrazil
                 $locale[$country_code]['phone']['required'] = true;
             }
 
-            // Aplica o ocultamento se o highlight estiver ativado
-            if ($phone_highlight === 'yes') {
+            // Oculta o campo nativo apenas no checkout em blocos.
+            // No shortcode/clássico o destaque é controlado via priority no wc_better_calc_checkout_fields.
+            if ($phone_highlight === 'yes' && $is_blocks_checkout) {
                 $locale[$country_code]['phone']['hidden'] = true;
             }
         }
