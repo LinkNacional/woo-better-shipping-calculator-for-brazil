@@ -190,9 +190,9 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        // Chave única para o notice da versão
-        $version = $this->version;
-        $notice_key = 'woo_better_calc_notice_dismissed_' . $version;
+        // Chave única para o notice da versão atual
+        $version     = $this->version;
+        $notice_key  = 'woo_better_calc_notice_dismissed_' . $version;
         $notice_dismissed = get_user_meta(get_current_user_id(), $notice_key, true);
 
         if ($notice_dismissed || (isset($_GET['tab']) && 
@@ -201,39 +201,81 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        // URL dinâmica para configurações
-        $settings_url = admin_url('admin.php?page=wc-settings&tab=wc-better-calc');
-        
-        ?>
-        <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
-            <div style="height: 100%; padding: 10px;">
-                <strong style="font-size: 18px;">🚀 Calculadora de Frete e Campos Checkout para o Brasil</strong>
-                
-                <p style="font-size: 14px; margin-top: 10px;">
-                    <strong>Agora é oficial:</strong> somos a melhor alternativa ao "Brazilian Fields"! Nossos campos de checkout agora são compatíveis com shortcodes e temas em blocos, com integração total ao Melhor Envio, Correios, entre outros.
-                </p>
-                
-                <p style="font-size: 14px;">
-                    Aproveite também o novo recurso de frete grátis por valor, agora integrado aos métodos de entrega do WooCommerce. Precisa de Suporte WordPress? Entre no Grupo do <a href="https://chat.whatsapp.com/IjzHhDXwmzGLDnBfOibJKO" target="_blank" rel="noopener noreferrer">WhatsApp</a> ou <a href="https://t.me/wpprobr" target="_blank" rel="noopener noreferrer">Telegram</a>.
-                </p>
+        // Verifica se o usuário é veterano
+        // Prioridade 1: flag persistente salva ao dispensar qualquer notice anterior
+        $is_veteran = get_user_meta( get_current_user_id(), 'woo_better_calc_is_veteran', true );
 
-                <p style="font-size: 14px;">
-                    ✨ <strong>Novo:</strong> Preenchimento de endereço por CEP com sugestão ou preenchimento automático no checkout. Configure em <strong>Campos Brasileiros</strong> → <strong>Destaque do Campo CEP</strong> &#8594;
-                    <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout#destaque-do-campo-cep">Configurar agora</a>.
-                </p>
+        if ( $is_veteran ) {
+            $is_new_install = false;
+        } else {
+            // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
+            $old_versions   = array( '4.13.0', '4.12.5', '4.12.4', '4.12.3', '4.12.2', '4.12.1' );
+            $is_new_install = true;
+            foreach ( $old_versions as $old_version ) {
+                if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
+                    $is_new_install = false;
+                    break;
+                }
+            }
+        }
 
-                <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
-                    <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout" class="button button-primary" style="display: flex; align-items: center; justify-content: center;">
-                        Configurar campos do Brasil
-                    </a>
-                    <a href="admin.php?page=wc-settings&tab=wc-better-calc" class="button button-secondary" style="display: flex; align-items: center; justify-content: center;">
-                        Configurar Calculadora de Frete
-                    </a>
+        if ($is_new_install) {
+            // ── Card de Boas-vindas (nova instalação) ──────────────────────────────
+            ?>
+            <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
+                <div style="height: 100%; padding: 10px;">
+                    <strong style="font-size: 18px;">🚀 Calculadora de Frete e Campos Checkout para o Brasil</strong>
+                    
+                    <p style="font-size: 14px; margin-top: 10px;">
+                        <strong>Agora é oficial:</strong> somos a melhor alternativa ao "Brazilian Fields"! Nossos campos de checkout agora são compatíveis com shortcodes e temas em blocos, com integração total ao Melhor Envio, Correios, entre outros.
+                    </p>
+                    
+                    <p style="font-size: 14px;">
+                        Aproveite também o novo recurso de frete grátis por valor, agora integrado aos métodos de entrega do WooCommerce. Precisa de Suporte WordPress? Entre no Grupo do <a href="https://chat.whatsapp.com/IjzHhDXwmzGLDnBfOibJKO" target="_blank" rel="noopener noreferrer">WhatsApp</a> ou <a href="https://t.me/wpprobr" target="_blank" rel="noopener noreferrer">Telegram</a>.
+                    </p>
+
+                    <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
+                        <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout" class="button button-primary" style="display: flex; align-items: center; justify-content: center;">
+                            Configurar campos do Brasil
+                        </a>
+                        <a href="admin.php?page=wc-settings&tab=wc-better-calc" class="button button-secondary" style="display: flex; align-items: center; justify-content: center;">
+                            Configurar Calculadora de Frete
+                        </a>
+                    </div>
                 </div>
+                <button type="button" class="notice-dismiss"><span class="screen-reader-text">Dispensar este aviso.</span></button>
             </div>
-            <button type="button" class="notice-dismiss"><span class="screen-reader-text">Dispensar este aviso.</span></button>
-        </div>
-        <?php
+            <?php
+        } else {
+            // ── Card de Atualização / Changelog (usuário veterano) ─────────────────
+            ?>
+            <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
+                <div style="height: 100%; padding: 10px;">
+                    <strong style="font-size: 18px;">🚀 Calculadora de Frete e Campos Checkout para o Brasil — Atualização v<?php echo esc_html( $version ); ?></strong>
+
+                    <div style="margin-top: 10px;">
+                        <p style="font-size: 14px; margin-top: 8px;">
+                            ✨ <strong>Novo:</strong> Preenchimento de endereço por CEP com sugestão ou preenchimento automático no checkout. Configure em <strong>Campos Brasileiros</strong> → <strong>Destaque do Campo CEP</strong> —
+                            <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout#destaque-do-campo-cep">Configurar agora</a>.
+                        </p>
+                        <p style="font-size: 14px; margin-top: 6px;">
+                            🔧 Correção na checkbox ao preencher o endereço e ajuste no posicionamento dos campos nos dados do pedido com remoção do código do país.
+                        </p>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
+                        <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout" class="button button-primary" style="display: flex; align-items: center; justify-content: center;">
+                            Configurar campos do Brasil
+                        </a>
+                        <a href="admin.php?page=wc-settings&tab=wc-better-calc" class="button button-secondary" style="display: flex; align-items: center; justify-content: center;">
+                            Configurar Calculadora de Frete
+                        </a>
+                    </div>
+                </div>
+                <button type="button" class="notice-dismiss"><span class="screen-reader-text">Dispensar este aviso.</span></button>
+            </div>
+            <?php
+        }
     }
 
     /**
@@ -249,12 +291,12 @@ class WcBetterShippingCalculatorForBrazil
             wp_die('Unauthorized');
         }
 
-        // Chave única para o notice da versão
-        $version = isset($this->version) ? $this->version : 'unknown';
+        // Salva o dismiss da versão atual
+        $version    = isset($this->version) ? $this->version : 'unknown';
         $notice_key = 'woo_better_calc_notice_dismissed_' . $version;
         update_user_meta(get_current_user_id(), $notice_key, true);
-        // Também salva o meta antigo para evitar duplicidade
-        update_user_meta(get_current_user_id(), 'woo_better_calc_notice_dismissed', true);
+        // Marca o usuário como veterano — nas próximas versões não precisará checar o array
+        update_user_meta(get_current_user_id(), 'woo_better_calc_is_veteran', 'yes');
         wp_send_json_success();
     }
 
