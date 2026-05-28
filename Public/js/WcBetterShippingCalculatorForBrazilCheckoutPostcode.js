@@ -276,6 +276,8 @@ jQuery(function ($) {
             this._spinnerRestoredOverflow = false;
             // Flag de carregamento inicial: impede handleCheckboxChange no remount do componente
             this._isInitialLoad = true;
+            // CEP que estava no campo ao criar o fetcher: usado para distinguir init de nova digitação
+            this._initialCep = this.sanitizeCep(this.input.val());
             
             // Registra esta instância
             activeCepFetchers[context] = this;
@@ -290,11 +292,12 @@ jQuery(function ($) {
             // Adiciona evento de change para disparar AJAX
             this.checkboxInput.on('change.wcBetterCep', this.handleCheckboxChange.bind(this));
             
-            // Em modo silencioso não consulta ao carregar (apenas quando o usuário digitar)
+            // Modo não-silencioso: consulta o CEP para exibir sugestão no checkbox.
+            // O checkbox começa desabilitado — o preenchimento só ocorre quando o usuário confirmá-lo.
+            // Modo silencioso: aguarda o usuário digitar (sem UI de checkbox).
             if (!this._isSilentMode) {
                 const initialCep = this.sanitizeCep(this.input.val());
                 if (this.isValidCep(initialCep)) {
-                    // Executa busca e animação inicial
                     this.handleInput({ target: { value: initialCep } });
                 }
             }
@@ -542,6 +545,11 @@ jQuery(function ($) {
             if (event.isTrusted) {
                 this._isInitialLoad = false;
             }
+            // Evento sintético do WooCommerce Blocks (isTrusted === false): ignora durante carregamento inicial.
+            // Nota: eventos do init() têm isTrusted === undefined, portanto não são bloqueados aqui.
+            if (event.isTrusted === false && this._isInitialLoad) {
+                return;
+            }
             const cep = this.sanitizeCep(event.target.value);
             const $checkboxInput = this.checkboxLabel.find('input[type="checkbox"]');
             const $checkboxLabel = $checkboxInput.closest('label');
@@ -612,7 +620,6 @@ jQuery(function ($) {
             
             this._requestInProgress = true;
             this._lastRequestTime = now;
-            
             this.showLoadingLabel();
 
             // Cria novo AbortController para esta consulta
@@ -655,9 +662,9 @@ jQuery(function ($) {
                 
                 this.addressData = { ...address, _rawCep: currentRawCep };
 
-                // Limpa o campo de número ao preencher um novo endereço
+                // Limpa o campo de número ao preencher um novo endereço (apenas quando o usuário digita)
                 var $numberInput = $('#' + this.context + '-number');
-                if ($numberInput.length) {
+                if ($numberInput.length && !this._isInitialLoad) {
                     var numberEl = $numberInput[0];
                     var nativeNumberSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                     nativeNumberSetter.call(numberEl, '');
@@ -672,6 +679,17 @@ jQuery(function ($) {
                 }
 
                 if (this._isSilentMode) {
+                    // Bloqueia o fill automático SOMENTE se o CEP não mudou desde a criação do fetcher.
+                    if (this._isInitialLoad && cep === this._initialCep) {
+                        this._hideBorderSpinner();
+                        if (this.input && this.input.length) {
+                            this.input.prop('disabled', false);
+                        }
+                        this._isInitialLoad = false;
+                        return;
+                    }
+                    // CEP diferente do inicial (ou _isInitialLoad já false) → preenche normalmente
+                    this._isInitialLoad = false;
                     // Modo silencioso: mantém o input desabilitado durante o AJAX
                     // _silentFillAddress irá reabilitá-lo após o servidor confirmar
                     this._hideBorderSpinner();
