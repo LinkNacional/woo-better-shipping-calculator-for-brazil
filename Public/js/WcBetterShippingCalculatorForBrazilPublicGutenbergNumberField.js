@@ -112,20 +112,6 @@ document.addEventListener("DOMContentLoaded", function () {
                             }, 100);
                         }
 
-                        // Criando o checkbox
-                        const shippingCheckboxInput = document.createElement('input');
-                        shippingCheckboxInput.id = 'wc-shipping-better-checkbox';
-                        shippingCheckboxInput.className = 'wc-block-components-checkbox__input';
-                        shippingCheckboxInput.type = 'checkbox';
-                        shippingCheckboxInput.setAttribute('aria-invalid', 'false');
-                        // Estado inicial do checkbox/input
-                        if (initialValue === 'S/N') {
-                            shippingCheckboxInput.checked = true;
-                            input.readOnly = true;
-                            input.classList.add('wc-better-readonly-disabled');
-                            input.style.backgroundColor = '#e0e0e0';
-                            input.style.color = '#808080';
-                        }
                         // Evento de input para registrar valor
                         input.addEventListener('input', function () {
                             let val = input.value.trim();
@@ -157,9 +143,46 @@ document.addEventListener("DOMContentLoaded", function () {
                         label.setAttribute('for', 'shipping-number');
                         label.textContent = 'Número';
 
-                        // Adicionando input e label ao container
-                        customInputDiv.appendChild(input);
-                        customInputDiv.appendChild(label);
+                        // Overlay S/N dentro do fieldMainWrapper (igual ao campo IE)
+                        input.style.paddingRight = '80px';
+
+                        const fieldMainWrapper = document.createElement('div');
+                        fieldMainWrapper.className = 'wc-better-number-main-wrapper';
+                        fieldMainWrapper.style.position = 'relative';
+
+                        const snOverlay = document.createElement('div');
+                        snOverlay.className = 'wc-better-number-sn-overlay';
+                        snOverlay.style.position = 'absolute';
+                        snOverlay.style.right = '0';
+                        snOverlay.style.top = '0';
+                        snOverlay.style.height = '100%';
+                        snOverlay.style.zIndex = '2';
+
+                        const snBlock = document.createElement('div');
+                        snBlock.className = 'wc-better-number-sn-block';
+                        snBlock.style.position = 'relative';
+                        snBlock.style.height = '100%';
+
+                        const snLabel = document.createElement('label');
+                        snLabel.className = 'wc-better-number-sn-label';
+                        snLabel.setAttribute('for', 'wc-shipping-better-checkbox');
+                        snLabel.style.position = 'absolute';
+                        snLabel.style.top = '50%';
+                        snLabel.style.left = '50%';
+                        snLabel.style.transform = 'translate(-50%, -50%)';
+                        snLabel.style.display = 'inline-flex';
+                        snLabel.style.alignItems = 'center';
+                        snLabel.style.gap = '6px';
+                        snLabel.style.cursor = 'pointer';
+                        snLabel.style.fontSize = '12px';
+                        snLabel.style.lineHeight = '1';
+                        snLabel.style.whiteSpace = 'nowrap';
+
+                        fieldMainWrapper.appendChild(input);
+                        fieldMainWrapper.appendChild(label);
+                        fieldMainWrapper.appendChild(snOverlay);
+
+                        customInputDiv.appendChild(fieldMainWrapper);
 
                         // Criando a div de erro (inicialmente oculta)
                         const errorDiv = document.createElement('div');
@@ -189,17 +212,10 @@ document.addEventListener("DOMContentLoaded", function () {
                         errorParagraph.appendChild(errorMessage);
                         errorDiv.appendChild(errorParagraph);
 
-                        // Adicionando a mensagem de erro ao input
+                        // Adicionando a mensagem de erro ao container
                         customInputDiv.appendChild(errorDiv);
 
-                        // Também adiciona o checkbox personalizado
-                        const clonedCheckbox = document.createElement('div');
-                        clonedCheckbox.className = 'wc-block-components-checkbox wc-block-checkout__use-address-for-shipping wc-better';
-
-                        const checkboxLabel = document.createElement('label');
-                        checkboxLabel.setAttribute('for', 'wc-shipping-better-checkbox');
-
-                        // Criando o checkbox
+                        // Checkbox S/N dentro do overlay (estrutura igual ao campo IE)
                         const checkboxInput = document.createElement('input');
                         checkboxInput.id = 'wc-shipping-better-checkbox';
                         checkboxInput.className = 'wc-block-components-checkbox__input';
@@ -240,28 +256,27 @@ document.addEventListener("DOMContentLoaded", function () {
                             }
                         });
 
-                        const checkboxSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                        checkboxSvg.setAttribute('class', 'wc-block-components-checkbox__mark');
-                        checkboxSvg.setAttribute('aria-hidden', 'true');
-                        checkboxSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                        checkboxSvg.setAttribute('viewBox', '0 0 24 20');
+                        const snText = document.createElement('span');
+                        snText.textContent = 'S/N';
 
-                        const checkboxPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        checkboxPath.setAttribute('d', 'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z');
-                        checkboxSvg.appendChild(checkboxPath);
+                        snLabel.appendChild(checkboxInput);
+                        snLabel.appendChild(snText);
+                        snBlock.appendChild(snLabel);
+                        snOverlay.appendChild(snBlock);
 
-                        const checkboxText = document.createElement('span');
-                        checkboxText.className = 'wc-block-components-checkbox__label';
-                        checkboxText.textContent = 'Sem número (S/N)';
-
-                        checkboxLabel.appendChild(checkboxInput);
-                        checkboxLabel.appendChild(checkboxSvg);
-                        checkboxLabel.appendChild(checkboxText);
-                        clonedCheckbox.appendChild(checkboxLabel);
-
-                        // Inserindo no DOM - checkbox primeiro, depois número
+                        // Inserindo no DOM
                         shippingAddress1.insertAdjacentElement('afterend', customInputDiv);
-                        shippingAddress1.insertAdjacentElement('afterend', clonedCheckbox);
+
+                        // Calcula width do overlay dinamicamente após inserção no DOM (igual ao campo IE)
+                        const applySnOverlayLayout = () => {
+                            const measuredLabelWidth = Math.ceil(snLabel.getBoundingClientRect().width);
+                            const safeLabelWidth = measuredLabelWidth > 0 ? measuredLabelWidth : 40;
+                            const overlayWidth = Math.max(84, safeLabelWidth + 20);
+                            snOverlay.style.width = `${overlayWidth}px`;
+                            input.style.paddingRight = `${overlayWidth + 12}px`;
+                        };
+                        applySnOverlayLayout();
+                        setTimeout(applySnOverlayLayout, 50);
 
                         input.addEventListener('focus', () => {
                             customInputDiv.classList.add('is-active');
@@ -478,20 +493,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     }, 100);
                 }
 
-                // Criando o checkbox
-                const billingCheckboxInput = document.createElement('input');
-                billingCheckboxInput.id = 'wc-billing-better-checkbox';
-                billingCheckboxInput.className = 'wc-block-components-checkbox__input';
-                billingCheckboxInput.type = 'checkbox';
-                billingCheckboxInput.setAttribute('aria-invalid', 'false');
-                // Estado inicial do checkbox/input
-                if (initialValue === 'S/N') {
-                    billingCheckboxInput.checked = true;
-                    input.readOnly = true;
-                    input.classList.add('wc-better-readonly-disabled');
-                    input.style.backgroundColor = '#e0e0e0';
-                    input.style.color = '#808080';
-                }
                 // Evento de input para registrar valor
                 input.addEventListener('input', function () {
                     let val = input.value.trim();
@@ -524,9 +525,46 @@ document.addEventListener("DOMContentLoaded", function () {
                 label.setAttribute('for', 'billing-number');
                 label.textContent = 'Número';
 
-                // Adicionando input e label ao container
-                customInputDiv.appendChild(input);
-                customInputDiv.appendChild(label);
+                // Overlay S/N dentro do fieldMainWrapper (igual ao campo IE)
+                input.style.paddingRight = '80px';
+
+                const fieldMainWrapper = document.createElement('div');
+                fieldMainWrapper.className = 'wc-better-number-main-wrapper';
+                fieldMainWrapper.style.position = 'relative';
+
+                const snOverlay = document.createElement('div');
+                snOverlay.className = 'wc-better-number-sn-overlay';
+                snOverlay.style.position = 'absolute';
+                snOverlay.style.right = '0';
+                snOverlay.style.top = '0';
+                snOverlay.style.height = '100%';
+                snOverlay.style.zIndex = '2';
+
+                const snBlock = document.createElement('div');
+                snBlock.className = 'wc-better-number-sn-block';
+                snBlock.style.position = 'relative';
+                snBlock.style.height = '100%';
+
+                const snLabel = document.createElement('label');
+                snLabel.className = 'wc-better-number-sn-label';
+                snLabel.setAttribute('for', 'wc-billing-better-checkbox');
+                snLabel.style.position = 'absolute';
+                snLabel.style.top = '50%';
+                snLabel.style.left = '50%';
+                snLabel.style.transform = 'translate(-50%, -50%)';
+                snLabel.style.display = 'inline-flex';
+                snLabel.style.alignItems = 'center';
+                snLabel.style.gap = '6px';
+                snLabel.style.cursor = 'pointer';
+                snLabel.style.fontSize = '12px';
+                snLabel.style.lineHeight = '1';
+                snLabel.style.whiteSpace = 'nowrap';
+
+                fieldMainWrapper.appendChild(input);
+                fieldMainWrapper.appendChild(label);
+                fieldMainWrapper.appendChild(snOverlay);
+
+                customInputDiv.appendChild(fieldMainWrapper);
 
                 // Criando a div de erro (inicialmente oculta)
                 const errorDiv = document.createElement('div');
@@ -556,17 +594,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 errorParagraph.appendChild(errorMessage);
                 errorDiv.appendChild(errorParagraph);
 
-                // Adicionando a mensagem de erro ao input
+                // Adicionando a mensagem de erro ao container
                 customInputDiv.appendChild(errorDiv);
 
-                // Também adiciona o checkbox personalizado
-                const clonedCheckbox = document.createElement('div');
-                clonedCheckbox.className = 'wc-block-components-checkbox wc-block-checkout__use-address-for-billing wc-better';
-
-                const checkboxLabel = document.createElement('label');
-                checkboxLabel.setAttribute('for', 'wc-billing-better-checkbox');
-
-                // Criando o checkbox
+                // Checkbox S/N dentro do overlay (estrutura igual ao campo IE)
                 const checkboxInput = document.createElement('input');
                 checkboxInput.id = 'wc-billing-better-checkbox';
                 checkboxInput.className = 'wc-block-components-checkbox__input';
@@ -607,29 +638,27 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                 });
 
-                const checkboxSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                checkboxSvg.setAttribute('class', 'wc-block-components-checkbox__mark');
-                checkboxSvg.setAttribute('aria-hidden', 'true');
-                checkboxSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                checkboxSvg.setAttribute('viewBox', '0 0 24 20');
+                const snText = document.createElement('span');
+                snText.textContent = 'S/N';
 
-                const checkboxPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                checkboxPath.setAttribute('d', 'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z');
+                snLabel.appendChild(checkboxInput);
+                snLabel.appendChild(snText);
+                snBlock.appendChild(snLabel);
+                snOverlay.appendChild(snBlock);
 
-                checkboxSvg.appendChild(checkboxPath);
-
-                const checkboxText = document.createElement('span');
-                checkboxText.className = 'wc-block-components-checkbox__label';
-                checkboxText.textContent = 'Sem número (S/N)';
-
-                checkboxLabel.appendChild(checkboxInput);
-                checkboxLabel.appendChild(checkboxSvg);
-                checkboxLabel.appendChild(checkboxText);
-                clonedCheckbox.appendChild(checkboxLabel);
-
-                // Inserindo no DOM - checkbox primeiro, depois número
+                // Inserindo no DOM
                 billingAddress1.insertAdjacentElement('afterend', customInputDiv);
-                billingAddress1.insertAdjacentElement('afterend', clonedCheckbox);
+
+                // Calcula width do overlay dinamicamente após inserção no DOM (igual ao campo IE)
+                const applySnOverlayLayout = () => {
+                    const measuredLabelWidth = Math.ceil(snLabel.getBoundingClientRect().width);
+                    const safeLabelWidth = measuredLabelWidth > 0 ? measuredLabelWidth : 40;
+                    const overlayWidth = Math.max(84, safeLabelWidth + 20);
+                    snOverlay.style.width = `${overlayWidth}px`;
+                    input.style.paddingRight = `${overlayWidth + 12}px`;
+                };
+                applySnOverlayLayout();
+                setTimeout(applySnOverlayLayout, 50);
 
                 input.addEventListener('focus', () => {
                     customInputDiv.classList.add('is-active');

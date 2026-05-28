@@ -42,7 +42,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     )
                 ),
                 'enable_auto_address_fill' => array(
-                    'title'    => __('Preenchimento automático por CEP', 'woo-better-shipping-calculator-for-brazil'),
+                    'title'    => __('Sugestão de Endereço por CEP', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_enable_auto_address_fill',
                     'desc_tip' => false,
                     'default'  => 'no',
@@ -52,9 +52,25 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                     ),
                     'custom_attributes' => array(
-                        'data-desc-tip' => __('Permitir que o usuário preencha o endereço automaticamente ao digitar o CEP no checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Com esta opção ativada, uma sugestão de endereço aparecerá, e o utilizador poderá optar por usá-la para preencher os campos do checkout automaticamente.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-title-description' => __('Habilite o preenchimento automático do endereço via CEP no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                        'data-desc-tip' => __('Exibe uma sugestão de endereço ao digitar o CEP. O cliente precisa confirmar clicando no checkbox para que os campos sejam preenchidos.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Com esta opção ativada, ao digitar o CEP no checkout, um checkbox de sugestão aparecerá com o endereço encontrado. O cliente deverá marcar o checkbox para confirmar e preencher os campos automaticamente. Ideal para quem quer dar controle ao cliente antes de sobrescrever os dados já digitados.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Exibe uma sugestão de endereço via CEP que o cliente precisa confirmar clicando em um checkbox.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
+                'enable_silent_address_fill' => array(
+                    'title'    => __('Preenchimento Automático Silencioso por CEP', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_enable_silent_address_fill',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Preenche os campos de endereço automaticamente ao digitar o CEP, sem nenhuma confirmação do cliente.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Com esta opção ativada, assim que o CEP for digitado e validado, os campos de endereço (Rua, Bairro, Cidade, Estado) serão preenchidos automaticamente, sem que o cliente precise confirmar nada. Atenção: dados já digitados pelo cliente serão sobrescritos. Não pode ser usado ao mesmo tempo que a opção "Sugestão de Endereço por CEP".', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Preenche o endereço automaticamente ao digitar o CEP, sem confirmação do cliente.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
                 'person_type_select' => array(

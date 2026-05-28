@@ -750,10 +750,11 @@ jQuery(function ($) {
                             setTimeout(initPhoneInput, 100);
                         }
                         
-                        if (node.className && 
-                            (node.className.includes('woocommerce-billing-fields') ||
-                             node.className.includes('woocommerce-shipping-fields') ||
-                             node.className.includes('woocommerce-checkout'))) {
+                        const nodeClassName = typeof node.className === 'string' ? node.className : '';
+                        if (nodeClassName && 
+                            (nodeClassName.includes('woocommerce-billing-fields') ||
+                             nodeClassName.includes('woocommerce-shipping-fields') ||
+                             nodeClassName.includes('woocommerce-checkout'))) {
                             setTimeout(initPhoneInput, 200);
                         }
                     }

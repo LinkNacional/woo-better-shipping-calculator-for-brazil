@@ -1191,11 +1191,12 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-checkout-postcode',
                     'wc_better_checkout_vars',
                     array(
-                        'ajax_url' => $this->get_admin_ajax_url(),
+                        'ajax_url'             => $this->get_admin_ajax_url(),
                         'fill_checkout_address' => $fill_checkout_address,
-                        'billing_number' => $billing_number,
-                        'shipping_number' => $shipping_number,
-                        'nonce' => wp_create_nonce('wc_better_insert_address')
+                        'silent_address_fill'  => get_option('woo_better_calc_enable_silent_address_fill', 'no'),
+                        'billing_number'       => $billing_number,
+                        'shipping_number'      => $shipping_number,
+                        'nonce'                => wp_create_nonce('wc_better_insert_address')
                     )
                 );
             }
@@ -1214,11 +1215,12 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-checkout-postcode-shortcode',
                     'wc_better_checkout_vars_shortcode',
                     array(
-                        'ajax_url' => $this->get_admin_ajax_url(),
+                        'ajax_url'             => $this->get_admin_ajax_url(),
                         'fill_checkout_address' => $fill_checkout_address,
-                        'billing_number' => $billing_number,
-                        'shipping_number' => $shipping_number,
-                        'nonce' => wp_create_nonce('wc_better_insert_address')
+                        'silent_address_fill'   => get_option('woo_better_calc_enable_silent_address_fill', 'no'),
+                        'billing_number'       => $billing_number,
+                        'shipping_number'      => $shipping_number,
+                        'nonce'                => wp_create_nonce('wc_better_insert_address')
                     )
                 );
             }
@@ -1605,11 +1607,12 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-edit-address-postcode',
                     'wc_better_checkout_vars_shortcode',
                     array(
-                        'ajax_url' => $this->get_admin_ajax_url(),
+                        'ajax_url'             => $this->get_admin_ajax_url(),
                         'fill_checkout_address' => 'yes', // Always enable for edit-address pages
-                        'billing_number' => $billing_number,
-                        'shipping_number' => $shipping_number,
-                        'nonce' => wp_create_nonce('wc_better_insert_address')
+                        'silent_address_fill'   => get_option('woo_better_calc_enable_silent_address_fill', 'no'),
+                        'billing_number'       => $billing_number,
+                        'shipping_number'      => $shipping_number,
+                        'nonce'                => wp_create_nonce('wc_better_insert_address')
                     )
                 );
             }

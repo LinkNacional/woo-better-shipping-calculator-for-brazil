@@ -273,8 +273,8 @@ document.addEventListener("DOMContentLoaded", function () {
         // Configurar eventos do campo
         setupNeighborhoodEvents('billing-neighborhood');
 
-        // Atualizar dados imediatamente
-        updateNeighborhoodData(true);
+        // Atualizar store local no init (sem chamar extensionCartUpdate para não resetar o checkout)
+        updateNeighborhoodData(true, true);
     }
 
     function addShippingNeighborhoodField(shippingBlock) {
@@ -310,7 +310,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Configurar eventos do campo
         setupNeighborhoodEvents('shipping-neighborhood');
 
-        // Se temos valor salvo, executar evento de input para sincronizar
+        // Se temos valor salvo, executar evento de input para sincronizar (apenas UI, não carrinho)
         if (initialNeighborhood) {
             setTimeout(() => {
                 const neighborhoodInput = document.getElementById('shipping-neighborhood');
@@ -322,8 +322,8 @@ document.addEventListener("DOMContentLoaded", function () {
             }, 100);
         }
 
-        // Atualizar dados imediatamente
-        updateNeighborhoodData(true);
+        // Atualizar store local no init (sem chamar extensionCartUpdate para não resetar o checkout)
+        updateNeighborhoodData(true, true);
     }
 
     // Função para observar mudanças nos campos de país
@@ -665,7 +665,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Função para atualizar dados no Store API com debounce
-    function updateNeighborhoodData(immediate = false) {
+    // skipCartUpdate=true: não chama extensionCartUpdate (evita reset do checkout no init)
+    function updateNeighborhoodData(immediate = false, skipCartUpdate = false) {
         // Só atualizar se pelo menos um país for Brasil
         if (!isAnyCountryBrazil()) {
             return;
@@ -679,19 +680,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Se for imediato, executar diretamente
         if (immediate) {
-            executeNeighborhoodDataUpdate();
+            executeNeighborhoodDataUpdate(skipCartUpdate);
             return;
         }
 
-        // Definir novo timeout de 1.5 segundos
+        // Definir novo timeout de 1.5 segundos (sempre sincroniza com o carrinho)
         updateDataTimeout = setTimeout(() => {
-            executeNeighborhoodDataUpdate();
+            executeNeighborhoodDataUpdate(false);
             updateDataTimeout = null;
         }, 1500);
     }
 
     // Função que efetivamente executa a atualização
-    function executeNeighborhoodDataUpdate() {
+    function executeNeighborhoodDataUpdate(skipCartUpdate = false) {
         // Só executar se pelo menos um país for Brasil
         if (!isAnyCountryBrazil()) {
             return;
@@ -720,8 +721,8 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // Usar extensionCartUpdate como backup
-        if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+        // Usar extensionCartUpdate para sincronizar com o servidor (apenas quando o usuário interagir)
+        if (!skipCartUpdate && window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
             window.wc.blocksCheckout.extensionCartUpdate({
                 namespace: 'woo_better_neighborhood',
                 data: data
@@ -793,7 +794,7 @@ document.addEventListener("DOMContentLoaded", function () {
         
         if (hasNeighborhoodFieldsChanged) {
             setTimeout(() => {
-                updateNeighborhoodData(true);
+                updateNeighborhoodData(true, true); // init: não dispara extensionCartUpdate
                 
                 // Adicionar listeners aos campos se ainda não existem
                 const billingNeighborhoodInput = document.getElementById('billing-neighborhood');

@@ -85,7 +85,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.13.0';
+            $this->version = '4.14.0';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -190,9 +190,9 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        // Chave única para o notice da versão
-        $version = $this->version;
-        $notice_key = 'woo_better_calc_notice_dismissed_' . $version;
+        // Chave única para o notice da versão atual
+        $version     = $this->version;
+        $notice_key  = 'woo_better_calc_notice_dismissed_' . $version;
         $notice_dismissed = get_user_meta(get_current_user_id(), $notice_key, true);
 
         if ($notice_dismissed || (isset($_GET['tab']) && 
@@ -201,34 +201,81 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        // URL dinâmica para configurações
-        $settings_url = admin_url('admin.php?page=wc-settings&tab=wc-better-calc');
-        
-        ?>
-        <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
-            <div style="height: 100%; padding: 10px;">
-                <strong style="font-size: 18px;">🚀 Calculadora de Frete e Campos Checkout para o Brasil</strong>
-                
-                <p style="font-size: 14px; margin-top: 10px;">
-                    <strong>Agora é oficial:</strong> somos a melhor alternativa ao "Brazilian Fields"! Nossos campos de checkout agora são compatíveis com shortcodes e temas em blocos, com integração total ao Melhor Envio, Correios, entre outros.
-                </p>
-                
-                <p style="font-size: 14px;">
-                    Aproveite também o novo recurso de frete grátis por valor, agora integrado aos métodos de entrega do WooCommerce. Precisa de Suporte WordPress? Entre no Grupo do <a href="https://chat.whatsapp.com/IjzHhDXwmzGLDnBfOibJKO" target="_blank" rel="noopener noreferrer">WhatsApp</a> ou <a href="https://t.me/wpprobr" target="_blank" rel="noopener noreferrer">Telegram</a>.
-                </p>
+        // Verifica se o usuário é veterano
+        // Prioridade 1: flag persistente salva ao dispensar qualquer notice anterior
+        $is_veteran = get_user_meta( get_current_user_id(), 'woo_better_calc_is_veteran', true );
 
-                <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
-                    <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout" class="button button-primary" style="display: flex; align-items: center; justify-content: center;">
-                        Configurar campos do Brasil
-                    </a>
-                    <a href="admin.php?page=wc-settings&tab=wc-better-calc" class="button button-secondary" style="display: flex; align-items: center; justify-content: center;">
-                        Configurar Calculadora de Frete
-                    </a>
+        if ( $is_veteran ) {
+            $is_new_install = false;
+        } else {
+            // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
+            $old_versions   = array( '4.13.0', '4.12.5', '4.12.4', '4.12.3', '4.12.2', '4.12.1' );
+            $is_new_install = true;
+            foreach ( $old_versions as $old_version ) {
+                if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
+                    $is_new_install = false;
+                    break;
+                }
+            }
+        }
+
+        if ($is_new_install) {
+            // ── Card de Boas-vindas (nova instalação) ──────────────────────────────
+            ?>
+            <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
+                <div style="height: 100%; padding: 10px;">
+                    <strong style="font-size: 18px;">🚀 Calculadora de Frete e Campos Checkout para o Brasil</strong>
+                    
+                    <p style="font-size: 14px; margin-top: 10px;">
+                        <strong>Agora é oficial:</strong> somos a melhor alternativa ao "Brazilian Fields"! Nossos campos de checkout agora são compatíveis com shortcodes e temas em blocos, com integração total ao Melhor Envio, Correios, entre outros.
+                    </p>
+                    
+                    <p style="font-size: 14px;">
+                        Aproveite também o novo recurso de frete grátis por valor, agora integrado aos métodos de entrega do WooCommerce. Precisa de Suporte WordPress? Entre no Grupo do <a href="https://chat.whatsapp.com/IjzHhDXwmzGLDnBfOibJKO" target="_blank" rel="noopener noreferrer">WhatsApp</a> ou <a href="https://t.me/wpprobr" target="_blank" rel="noopener noreferrer">Telegram</a>.
+                    </p>
+
+                    <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
+                        <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout" class="button button-primary" style="display: flex; align-items: center; justify-content: center;">
+                            Configurar campos do Brasil
+                        </a>
+                        <a href="admin.php?page=wc-settings&tab=wc-better-calc" class="button button-secondary" style="display: flex; align-items: center; justify-content: center;">
+                            Configurar Calculadora de Frete
+                        </a>
+                    </div>
                 </div>
+                <button type="button" class="notice-dismiss"><span class="screen-reader-text">Dispensar este aviso.</span></button>
             </div>
-            <button type="button" class="notice-dismiss"><span class="screen-reader-text">Dispensar este aviso.</span></button>
-        </div>
-        <?php
+            <?php
+        } else {
+            // ── Card de Atualização / Changelog (usuário veterano) ─────────────────
+            ?>
+            <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
+                <div style="height: 100%; padding: 10px;">
+                    <strong style="font-size: 18px;">🚀 Calculadora de Frete e Campos Checkout para o Brasil — Atualização v<?php echo esc_html( $version ); ?></strong>
+
+                    <div style="margin-top: 10px;">
+                        <p style="font-size: 14px; margin-top: 8px;">
+                            ✨ <strong>Novo:</strong> Preenchimento de endereço por CEP com sugestão ou preenchimento automático no checkout. Configure em <strong>Campos Brasileiros</strong> → <strong>Destaque do Campo CEP</strong> —
+                            <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout#destaque-do-campo-cep">Configurar agora</a>.
+                        </p>
+                        <p style="font-size: 14px; margin-top: 6px;">
+                            🔧 Correção na checkbox ao preencher o endereço e ajuste no posicionamento dos campos nos dados do pedido com remoção do código do país.
+                        </p>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
+                        <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout" class="button button-primary" style="display: flex; align-items: center; justify-content: center;">
+                            Configurar campos do Brasil
+                        </a>
+                        <a href="admin.php?page=wc-settings&tab=wc-better-calc" class="button button-secondary" style="display: flex; align-items: center; justify-content: center;">
+                            Configurar Calculadora de Frete
+                        </a>
+                    </div>
+                </div>
+                <button type="button" class="notice-dismiss"><span class="screen-reader-text">Dispensar este aviso.</span></button>
+            </div>
+            <?php
+        }
     }
 
     /**
@@ -244,12 +291,12 @@ class WcBetterShippingCalculatorForBrazil
             wp_die('Unauthorized');
         }
 
-        // Chave única para o notice da versão
-        $version = isset($this->version) ? $this->version : 'unknown';
+        // Salva o dismiss da versão atual
+        $version    = isset($this->version) ? $this->version : 'unknown';
         $notice_key = 'woo_better_calc_notice_dismissed_' . $version;
         update_user_meta(get_current_user_id(), $notice_key, true);
-        // Também salva o meta antigo para evitar duplicidade
-        update_user_meta(get_current_user_id(), 'woo_better_calc_notice_dismissed', true);
+        // Marca o usuário como veterano — nas próximas versões não precisará checar o array
+        update_user_meta(get_current_user_id(), 'woo_better_calc_is_veteran', 'yes');
         wp_send_json_success();
     }
 
@@ -400,6 +447,19 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_woo_better_shipping_calculator_locale($locale)
     {
+        // Ocultar campos de endereço via locale só tem efeito no checkout em blocos (Gutenberg).
+        // No checkout clássico/shortcode os campos são removidos via woocommerce_checkout_fields.
+        $is_blocks_checkout = false;
+        if ( function_exists( 'has_block' ) ) {
+            global $post;
+            if ( isset( $post ) && is_a( $post, 'WP_Post' ) ) {
+                $is_blocks_checkout = has_block( 'woocommerce/checkout', $post );
+            }
+        }
+        if ( ! $is_blocks_checkout ) {
+            return $locale;
+        }
+
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
         $only_virtual = false;
         if ($this->is_valid_woocommerce_context() && isset(WC()->cart)) {
@@ -436,6 +496,19 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_disable_company_required_based_on_person_type($locale)
     {
+        // Ajustar required via locale só tem efeito no checkout em blocos (Gutenberg).
+        // No checkout clássico/shortcode a validação é controlada por outros meios.
+        $is_blocks_checkout = false;
+        if ( function_exists( 'has_block' ) ) {
+            global $post;
+            if ( isset( $post ) && is_a( $post, 'WP_Post' ) ) {
+                $is_blocks_checkout = has_block( 'woocommerce/checkout', $post );
+            }
+        }
+        if ( ! $is_blocks_checkout ) {
+            return $locale;
+        }
+
         $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
         
         // Só aplica a lógica se for dinâmico
@@ -629,30 +702,12 @@ class WcBetterShippingCalculatorForBrazil
                 'priority'    => 55,
             );
 
-            // Checkbox
-            $fields['billing']['lkn_billing_checkbox'] = array(
-                'type'        => 'checkbox',
-                'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => false,
-                'class'       => array('form-row-wide'),
-                'priority'    => 52,
-            );
-
             $fields['shipping']['shipping_number'] = array(
                 'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
                 'placeholder' => __('Ex: 123a', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
                 'class'       => array('form-row-wide'),
                 'priority'    => 55,
-            );
-
-            // Checkbox
-            $fields['shipping']['lkn_shipping_checkbox'] = array(
-                'type'        => 'checkbox',
-                'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => false,
-                'class'       => array('form-row-wide'),
-                'priority'    => 52,
             );
         }
 
@@ -906,6 +961,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_nopriv_wc_better_get_user_postcode', $this, 'wc_better_get_user_postcode');
 
         $this->loader->add_action('woocommerce_get_country_locale', $this, 'wc_better_calc_phone_number', 10, 1);
+        $this->loader->add_filter('woocommerce_get_country_locale', $this, 'lkn_checkout_fields_locale_priority', 11, 1);
 
         $this->loader->add_action('woocommerce_init', $this, 'init_woocommerce');
 
@@ -1938,22 +1994,9 @@ class WcBetterShippingCalculatorForBrazil
                 
                 $display_data['phone'] = [
                     'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => $formatted_phone, // Usar telefone formatado
+                    'value' => $formatted_phone,
                     'is_link' => true
                 ];
-                
-                // Country code (opcional, já que está incluído no telefone formatado)
-                if (str_starts_with($phone, '+') && !empty($shipping_phone_country_code)) {
-                    $clean_country_code = trim($shipping_phone_country_code);
-                    if (!str_starts_with($clean_country_code, '+')) {
-                        $clean_country_code = '+' . $clean_country_code;
-                    }
-                    
-                    $display_data['phone_country'] = [
-                        'label' => __('Código do país', 'woo-better-shipping-calculator-for-brazil'),
-                        'value' => $clean_country_code
-                    ];
-                }
             }
         }
         
@@ -2024,10 +2067,46 @@ class WcBetterShippingCalculatorForBrazil
         if (is_numeric($billing_persontype)) {
             $billing_persontype = ($billing_persontype == '1') ? 'physical' : 'legal';
         }
-        
-        // Process person type data
+
+        // 1. Data de Nascimento
+        $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
+        if ($birthdate_enabled === 'yes') {
+            $billing_birthdate = $order->get_meta('_billing_birthdate');
+            if (!empty($billing_birthdate)) {
+                $birthdate_obj = \DateTime::createFromFormat('Y-m-d', $billing_birthdate);
+                if ($birthdate_obj) {
+                    $today = new \DateTime();
+                    $age = $today->diff($birthdate_obj)->y;
+                    $formatted_birthdate = $birthdate_obj->format('d/m/Y') . ' (' . $age . ' anos)';
+                } else {
+                    $formatted_birthdate = $billing_birthdate;
+                }
+                $display_data['birthdate'] = [
+                    'label' => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
+                    'value' => $formatted_birthdate
+                ];
+            }
+        }
+
+        // 2-5. Tipo de Pessoa / CPF ou CNPJ / Empresa / IE
         if ($person_type !== 'none') {
-            // Physical person data (CPF)
+            // 2. Tipo de Pessoa (apenas quando 'both')
+            if ($person_type === 'both' && !empty($billing_persontype)) {
+                $person_type_label = '';
+                if ($billing_persontype === '1' || $billing_persontype === 1 || $billing_persontype === 'physical') {
+                    $person_type_label = __('Pessoa Física', 'woo-better-shipping-calculator-for-brazil');
+                } elseif ($billing_persontype === '2' || $billing_persontype === 2 || $billing_persontype === 'legal') {
+                    $person_type_label = __('Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil');
+                }
+                if (!empty($person_type_label)) {
+                    $display_data['person_type'] = [
+                        'label' => __('Tipo de Pessoa', 'woo-better-shipping-calculator-for-brazil'),
+                        'value' => $person_type_label
+                    ];
+                }
+            }
+
+            // 3. CPF
             if ($this->should_show_physical_data($person_type, $billing_persontype)) {
                 if (!empty($billing_cpf)) {
                     $display_data['cpf'] = [
@@ -2037,19 +2116,19 @@ class WcBetterShippingCalculatorForBrazil
                 }
             }
 
-            // Legal person data (Company and CNPJ)
+            // 3. CNPJ / 4. Empresa / 5. IE
             if ($this->should_show_legal_data($person_type, $billing_persontype)) {
+                if (!empty($billing_cnpj)) {
+                    $display_data['cnpj'] = [
+                        'label' => __('CNPJ', 'woo-better-shipping-calculator-for-brazil'),
+                        'value' => $billing_cnpj
+                    ];
+                }
                 $company = $order->get_billing_company();
                 if (!empty($company)) {
                     $display_data['company'] = [
                         'label' => __('Empresa', 'woo-better-shipping-calculator-for-brazil'),
                         'value' => $company
-                    ];
-                }
-                if (!empty($billing_cnpj)) {
-                    $display_data['cnpj'] = [
-                        'label' => __('CNPJ', 'woo-better-shipping-calculator-for-brazil'),
-                        'value' => $billing_cnpj
                     ];
                 }
                 if ($ie_field_enabled === 'yes') {
@@ -2062,23 +2141,6 @@ class WcBetterShippingCalculatorForBrazil
                     }
                 }
             }
-            
-            // Person type label (only for 'both' setting)
-            if ($person_type === 'both' && !empty($billing_persontype)) {
-                $person_type_label = '';
-                if ($billing_persontype === '1' || $billing_persontype === 1 || $billing_persontype === 'physical') {
-                    $person_type_label = __('Pessoa Física', 'woo-better-shipping-calculator-for-brazil');
-                } elseif ($billing_persontype === '2' || $billing_persontype === 2 || $billing_persontype === 'legal') {
-                    $person_type_label = __('Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil');
-                }
-                
-                if (!empty($person_type_label)) {
-                    $display_data['person_type'] = [
-                        'label' => __('Tipo de Pessoa', 'woo-better-shipping-calculator-for-brazil'),
-                        'value' => $person_type_label
-                    ];
-                }
-            }
         } else {
             // When person type is 'none', only show company if available
             $company = $order->get_billing_company();
@@ -2089,68 +2151,8 @@ class WcBetterShippingCalculatorForBrazil
                 ];
             }
         }
-        
-        // Phone data
-        if ($phone_mask_enabled === 'yes') {
-            $phone = $order->get_billing_phone();
-            if (!empty($phone)) {
-                // Formatar telefone completo
-                $formatted_phone = $this->format_complete_phone($phone, $billing_phone_country_code);
-                
-                $display_data['phone'] = [
-                    'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => $formatted_phone, // Usar telefone formatado
-                    'is_link' => true
-                ];
-                
-                // Country code (opcional, já que está incluído no telefone formatado)
-                if (str_starts_with($phone, '+') && !empty($billing_phone_country_code)) {
-                    $clean_country_code = trim($billing_phone_country_code);
-                    if (!str_starts_with($clean_country_code, '+')) {
-                        $clean_country_code = '+' . $clean_country_code;
-                    }
-                    
-                    $display_data['phone_country'] = [
-                        'label' => __('Código do país', 'woo-better-shipping-calculator-for-brazil'),
-                        'value' => $clean_country_code
-                    ];
-                }
-            }
-        }
-        
-        // Email data
-        $email = $order->get_billing_email();
-        if (!empty($email)) {
-            $display_data['email'] = [
-                'label' => __('Email', 'woo-better-shipping-calculator-for-brazil'),
-                'value' => $email,
-                'is_clickable' => true
-            ];
-        }
-        
-        // Birthdate data (seguindo padrão do CPF)
-        $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
-        if ($birthdate_enabled === 'yes') {
-            $billing_birthdate = $order->get_meta('_billing_birthdate');
-            if (!empty($billing_birthdate)) {
-                // Calculate age from birthdate
-                $birthdate_obj = \DateTime::createFromFormat('Y-m-d', $billing_birthdate);
-                if ($birthdate_obj) {
-                    $today = new \DateTime();
-                    $age = $today->diff($birthdate_obj)->y;
-                    $formatted_birthdate = $birthdate_obj->format('d/m/Y') . ' (' . $age . ' anos)';
-                } else {
-                    $formatted_birthdate = $billing_birthdate;
-                }
-                
-                $display_data['birthdate'] = [
-                    'label' => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => $formatted_birthdate
-                ];
-            }
-        }
-        
-        // Gender data (seguindo padrão do CPF)
+
+        // 6. Gênero
         $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
         if ($gender_enabled === 'yes') {
             $billing_gender = $order->get_meta('_billing_gender');
@@ -2163,14 +2165,35 @@ class WcBetterShippingCalculatorForBrazil
                     __('Outro', 'woo-better-shipping-calculator-for-brazil') => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
                     __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
                 ];
-                
                 $gender_label = isset($gender_labels[$billing_gender]) ? $gender_labels[$billing_gender] : $billing_gender;
-                
                 $display_data['gender'] = [
                     'label' => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
                     'value' => $gender_label
                 ];
             }
+        }
+
+        // 7. Telefone
+        if ($phone_mask_enabled === 'yes') {
+            $phone = $order->get_billing_phone();
+            if (!empty($phone)) {
+                $formatted_phone = $this->format_complete_phone($phone, $billing_phone_country_code);
+                $display_data['phone'] = [
+                    'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
+                    'value' => $formatted_phone,
+                    'is_link' => true
+                ];
+            }
+        }
+
+        // 8. Email
+        $email = $order->get_billing_email();
+        if (!empty($email)) {
+            $display_data['email'] = [
+                'label' => __('Email', 'woo-better-shipping-calculator-for-brazil'),
+                'value' => $email,
+                'is_clickable' => true
+            ];
         }
         
         return $display_data;
@@ -3969,11 +3992,63 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
+    public function lkn_checkout_fields_locale_priority( $locale ) {
+        $email_highlight    = get_option( 'woo_better_calc_email_field_position_shortcode', 'no' );
+        $phone_highlight    = get_option( 'woo_better_calc_contact_field_position', 'no' );
+        $person_type        = get_option( 'woo_better_calc_person_type_select', 'none' );
+
+        // Nenhuma das opções ativa, sem alterações
+        if ( $email_highlight !== 'yes' && $phone_highlight !== 'yes' && $person_type === 'none' ) {
+            return $locale;
+        }
+
+        $country_codes = include plugin_dir_path( __FILE__ ) . 'country-codes.php';
+        foreach ( $country_codes as $country_code ) {
+            // email → priority 1
+            if ( $email_highlight === 'yes' ) {
+                if ( ! isset( $locale[ $country_code ]['email'] ) ) {
+                    $locale[ $country_code ]['email'] = [];
+                }
+                $locale[ $country_code ]['email']['priority'] = 1;
+            }
+
+            // phone → priority 2
+            if ( $phone_highlight === 'yes' ) {
+                if ( ! isset( $locale[ $country_code ]['phone'] ) ) {
+                    $locale[ $country_code ]['phone'] = [];
+                }
+                $locale[ $country_code ]['phone']['priority'] = 2;
+            }
+
+            // country → priority 3 quando person_type estiver ativo
+            if ( $person_type !== 'none' ) {
+                if ( ! isset( $locale[ $country_code ]['country'] ) ) {
+                    $locale[ $country_code ]['country'] = [];
+                }
+                $locale[ $country_code ]['country']['priority'] = 3;
+            }
+        }
+
+        return $locale;
+    }
+
     public function wc_better_calc_phone_number($locale)
     {
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
         $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
-        
+
+        // Ocultar o campo nativo de telefone só faz sentido no checkout em blocos (Gutenberg).
+        // No checkout clássico/shortcode, o reposicionamento é feito via wc_better_calc_checkout_fields
+        // usando priority. Aplicar hidden=true no locale também no clássico causa o campo sumir
+        // a partir do WooCommerce 10.8.1+.
+        $is_blocks_checkout = false;
+        if ( function_exists( 'has_block' ) ) {
+            global $post;
+            if ( isset( $post ) && is_a( $post, 'WP_Post' ) ) {
+                $is_blocks_checkout = has_block( 'woocommerce/checkout', $post );
+            }
+        }
+
         // Carrega a lista de códigos de países
         $country_codes = include plugin_dir_path(__FILE__) . 'country-codes.php';
         
@@ -3989,8 +4064,9 @@ class WcBetterShippingCalculatorForBrazil
                 $locale[$country_code]['phone']['required'] = true;
             }
 
-            // Aplica o ocultamento se o highlight estiver ativado
-            if ($phone_highlight === 'yes') {
+            // Oculta o campo nativo apenas no checkout em blocos.
+            // No shortcode/clássico o destaque é controlado via priority no wc_better_calc_checkout_fields.
+            if ($phone_highlight === 'yes' && $is_blocks_checkout) {
                 $locale[$country_code]['phone']['hidden'] = true;
             }
         }
@@ -6518,15 +6594,6 @@ class WcBetterShippingCalculatorForBrazil
                 'class'       => array('form-row-wide'),
                 'priority'    => 56
             );
-            
-            // Checkbox sem número
-            $fields['lkn_billing_checkbox'] = array(
-                'type'        => 'checkbox',
-                'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => false,
-                'class'       => array('form-row-wide'),
-                'priority'    => 55,
-            );
         }
         
         // Verificar se auto-preenchimento de CEP está habilitado
@@ -6653,15 +6720,6 @@ class WcBetterShippingCalculatorForBrazil
                 'class'       => array('form-row-wide'),
                 'priority'    => 56
             );
-            
-            // Checkbox sem número
-            $fields['lkn_shipping_checkbox'] = array(
-                'type'        => 'checkbox',
-                'label'       => __('Sem número (S/N)', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => false,
-                'class'       => array('form-row-wide'),
-                'priority'    => 55,
-            );
         }
         
         // Verificar se auto-preenchimento de CEP está habilitado
@@ -6761,17 +6819,6 @@ class WcBetterShippingCalculatorForBrazil
             if ($load_address === 'shipping' && isset($_POST['shipping_number'])) {
                 $number = sanitize_text_field(wp_unslash($_POST['shipping_number']));
                 update_user_meta($user_id, 'shipping_number', $number);
-            }
-            
-            // Salvar checkbox "sem número"
-            if ($load_address === 'billing') {
-                $checkbox_value = isset($_POST['lkn_billing_checkbox']) ? '1' : '0';
-                update_user_meta($user_id, 'lkn_billing_checkbox', $checkbox_value);
-            }
-            
-            if ($load_address === 'shipping') {
-                $checkbox_value = isset($_POST['lkn_shipping_checkbox']) ? '1' : '0';
-                update_user_meta($user_id, 'lkn_shipping_checkbox', $checkbox_value);
             }
         }
         
