@@ -152,6 +152,7 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * Fixed: Checkbox behavior when filling the address.
 * Fixed: Field positioning in order data + removal of country code.
 * New: Icons, banners and screenshots.
+* Fixed: highlighted field position in classic checkout.
 
 # 4.13.0 - 25/05/26
 * Fixed: Optional/required CPF field.
