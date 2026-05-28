@@ -1179,6 +1179,17 @@
       autoRadios.forEach(function (radio) {
         radio.addEventListener('change', function () {
           if (this.value === 'yes' && this.checked) {
+            const silentYes = document.querySelector('input[name="woo_better_calc_enable_silent_address_fill"][value="yes"]');
+            if (silentYes && silentYes.checked) {
+              const confirmed = confirm('O "Preenchimento Silencioso por CEP" está habilitado e será desabilitado. Deseja continuar?');
+              if (!confirmed) {
+                const autoNo = document.querySelector('input[name="woo_better_calc_enable_auto_address_fill"][value="no"]');
+                if (autoNo) {
+                  autoNo.checked = true;
+                }
+                return;
+              }
+            }
             const silentNo = document.querySelector('input[name="woo_better_calc_enable_silent_address_fill"][value="no"]');
             if (silentNo) {
               silentNo.checked = true;
@@ -1191,6 +1202,17 @@
       silentRadios.forEach(function (radio) {
         radio.addEventListener('change', function () {
           if (this.value === 'yes' && this.checked) {
+            const autoYes = document.querySelector('input[name="woo_better_calc_enable_auto_address_fill"][value="yes"]');
+            if (autoYes && autoYes.checked) {
+              const confirmed = confirm('O "Preenchimento Automático por CEP" está habilitado e será desabilitado. Deseja continuar?');
+              if (!confirmed) {
+                const silentNo = document.querySelector('input[name="woo_better_calc_enable_silent_address_fill"][value="no"]');
+                if (silentNo) {
+                  silentNo.checked = true;
+                }
+                return;
+              }
+            }
             const autoNo = document.querySelector('input[name="woo_better_calc_enable_auto_address_fill"][value="no"]');
             if (autoNo) {
               autoNo.checked = true;
