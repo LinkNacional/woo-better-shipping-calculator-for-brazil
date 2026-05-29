@@ -455,7 +455,19 @@ jQuery(function ($) {
                             // Chama updateAddressFields na primeira vez sem verificação
                             if (updateCount === 1) {
                                 updateAddressFields(this.context, { ...data, skipProcessingCheck: true });
-                                
+
+                                // Limpa campo de número após o re-render do WooCommerce Blocks
+                                var $numInput = $('#' + this.context + '-number');
+                                if ($numInput.length) {
+                                    var numEl = $numInput[0];
+                                    var nativeNumSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                    nativeNumSetter.call(numEl, '');
+                                    numEl.dispatchEvent(new Event('input', { bubbles: true }));
+                                    numEl.dispatchEvent(new Event('change', { bubbles: true }));
+                                    $numInput.prop('readonly', false).removeAttr('style');
+                                    $numInput.closest('.wc-block-components-text-input').removeClass('is-active');
+                                }
+
                                 // Ativa flag APÓS a primeira execução
                                 setTimeout(() => {
                                     isProcessingAddressUpdate = true;
@@ -921,6 +933,19 @@ jQuery(function ($) {
                             updateCount++;
                             if (updateCount === 1) {
                                 updateAddressFields(context, { ...data, skipProcessingCheck: true });
+
+                                // Limpa campo de número após o re-render do WooCommerce Blocks
+                                var $numInput = $('#' + context + '-number');
+                                if ($numInput.length) {
+                                    var numEl = $numInput[0];
+                                    var nativeNumSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                    nativeNumSetter.call(numEl, '');
+                                    numEl.dispatchEvent(new Event('input', { bubbles: true }));
+                                    numEl.dispatchEvent(new Event('change', { bubbles: true }));
+                                    $numInput.prop('readonly', false).removeAttr('style');
+                                    $numInput.closest('.wc-block-components-text-input').removeClass('is-active');
+                                }
+
                                 setTimeout(() => { isProcessingAddressUpdate = true; }, 100);
                             } else {
                                 if (isProcessingAddressUpdate) {
