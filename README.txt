@@ -151,6 +151,8 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * New: Alphanumeric CNPJ format support (IN RFB 2.229/2024).
 * Fixed: Address number field auto-fill on first automatic lookup.
 * Fixed: has-error class on the Gutenberg number field when the field is empty.
+* Fixed: CEP autofill on autocomplete.
+* Fixed: Nonce for the contact number field.
 
 # 4.14.0 - 27/05/26
 * New: CEP address auto-fill feature.
