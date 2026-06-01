@@ -285,6 +285,8 @@ document.addEventListener("DOMContentLoaded", function () {
                         input.addEventListener('blur', () => {
                             if (!input.value) {
                                 customInputDiv.classList.remove('is-active');
+                                errorDiv.style.display = 'block';
+                                customInputDiv.classList.add('has-error');
                             }
                         });
                     }
@@ -352,7 +354,8 @@ document.addEventListener("DOMContentLoaded", function () {
                                 divInputNumber.classList.add('is-active');
                             }
                             if (shippingErrorNumberInput) {
-                                shippingErrorNumberInput.style.display = 'none'
+                                shippingErrorNumberInput.style.display = 'none';
+                                if (divInputNumber) { divInputNumber.classList.remove('has-error'); }
                             }
                         } else {
                             shippingNumberInput.readOnly = false;
@@ -372,10 +375,12 @@ document.addEventListener("DOMContentLoaded", function () {
                         shippingNumberInput.addEventListener('input', function () {
                             if (shippingNumberInput.value.trim().length > 0) {
                                 // Remove a restrição ao clique
-                                shippingErrorNumberInput.style.display = 'none'
+                                shippingErrorNumberInput.style.display = 'none';
+                                if (divInputNumber) { divInputNumber.classList.remove('has-error'); }
                             } else {
                                 // Adiciona novamente a restrição caso fique vazio
-                                shippingErrorNumberInput.style.display = 'block'
+                                shippingErrorNumberInput.style.display = 'block';
+                                if (divInputNumber) { divInputNumber.classList.add('has-error'); }
                             }
                         });
                     }
@@ -395,14 +400,16 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (shippingNumberInput && !shippingNumberInput.value.trim().length) {
                         event.stopPropagation(); // Bloqueia a propagação se estiver vazio
                         event.preventDefault(); // Previne o envio do formulário
-                        shippingErrorNumberInput.style.display = 'block'
-
+                        shippingErrorNumberInput.style.display = 'block';
+                        const shippingContainer = document.querySelector('.wc-better-shipping-number');
+                        if (shippingContainer) { shippingContainer.classList.add('has-error'); }
                         shippingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     } else if (billingNumberInput && !billingNumberInput.value.trim().length) {
                         event.stopPropagation(); // Bloqueia a propagação se estiver vazio
                         event.preventDefault(); // Previne o envio do formulário
-                        billingErrorNumberInput.style.display = 'block'
-
+                        billingErrorNumberInput.style.display = 'block';
+                        const billingContainer = document.querySelector('.wc-better-billing-number');
+                        if (billingContainer) { billingContainer.classList.add('has-error'); }
                         billingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                 }
@@ -667,6 +674,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 input.addEventListener('blur', () => {
                     if (!input.value) {
                         customInputDiv.classList.remove('is-active');
+                        errorDiv.style.display = 'block';
+                        customInputDiv.classList.add('has-error');
                     }
                 });
 
@@ -689,7 +698,8 @@ document.addEventListener("DOMContentLoaded", function () {
                             divInputNumber.classList.add('is-active');
                         }
                         if (billingErrorNumberInput) {
-                            billingErrorNumberInput.style.display = 'none'
+                            billingErrorNumberInput.style.display = 'none';
+                            if (divInputNumber) { divInputNumber.classList.remove('has-error'); }
                         }
                     } else {
                         billingNumberInputEl.readOnly = false;
@@ -709,10 +719,12 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (billingNumberInputEl) {
                         if (billingNumberInputEl.value.trim().length > 0) {
                             // Remove a restrição ao clique
-                            billingErrorNumberInput.style.display = 'none'
+                            billingErrorNumberInput.style.display = 'none';
+                            customInputDiv.classList.remove('has-error');
                         } else {
                             // Adiciona novamente a restrição caso fique vazio
-                            billingErrorNumberInput.style.display = 'block'
+                            billingErrorNumberInput.style.display = 'block';
+                            customInputDiv.classList.add('has-error');
                         }
                     }
                 });

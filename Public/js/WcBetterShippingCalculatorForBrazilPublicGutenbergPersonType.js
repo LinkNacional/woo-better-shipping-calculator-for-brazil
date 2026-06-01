@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             setTimeout(() => {
                                 const documentInput = document.getElementById('billing_document');
                                 if (documentInput && documentInput.value) {
-                                    const cleanValue = documentInput.value.replace(/\D/g, '');
+                                    const cleanValue = documentInput.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                                     const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
                                     const detectedType = detectDocumentType(cleanValue, personTypeConfig);
                                     updateHiddenFields(documentInput.value, detectedType);
@@ -175,20 +175,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /**
      * Valida CNPJ usando algoritmo matemático
-     * @param {string} cnpj - CNPJ apenas com números
+     * Suporta o novo CNPJ alfanumérico (IN RFB 2.229/2024), ativo a partir de julho/2026.
+     * CNPJs puramente numéricos (legados) continuam validando normalmente.
+     * @param {string} cnpj - CNPJ com ou sem formatação (numérico ou alfanumérico)
      * @returns {boolean}
      */
     function validateCNPJ(cnpj) {
-        // Remove caracteres não numéricos
-        cnpj = cnpj.replace(/[^0-9]/g, '');
+        // Normaliza: mantém apenas alfanumérico maiúsculo (dígitos 0-9 e letras A-Z)
+        cnpj = cnpj.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
         
-        // Verifica se tem 14 dígitos
+        // Verifica se tem 14 caracteres
         if (cnpj.length !== 14) {
             return false;
         }
         
-        // Verifica sequências inválidas (11.111.111/0001-11, 22.222.222/0001-22, etc.)
-        if (/^(\d)\1{13}$/.test(cnpj)) {
+        // Verifica sequências inválidas (ex: 00000000000000 ou AAAAAAAAAAAAAA)
+        if (/^(.)\1{13}$/.test(cnpj)) {
+            return false;
+        }
+        
+        // Os dígitos verificadores (posições 13 e 14) devem ser sempre numéricos
+        if (!/^\d$/.test(cnpj[12]) || !/^\d$/.test(cnpj[13])) {
             return false;
         }
         
@@ -196,10 +203,12 @@ document.addEventListener("DOMContentLoaded", function () {
         const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
         const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
         
+        // Valor de cada caractere: charCode - 48
+        // Dígitos: '0'=0 ... '9'=9 | Letras: 'A'=17 ... 'Z'=42
         // Calcula primeiro dígito verificador
         let sum = 0;
         for (let i = 0; i < 12; i++) {
-            sum += parseInt(cnpj[i]) * weights1[i];
+            sum += (cnpj.charCodeAt(i) - 48) * weights1[i];
         }
         let firstDigit = sum % 11;
         firstDigit = firstDigit < 2 ? 0 : 11 - firstDigit;
@@ -212,7 +221,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Calcula segundo dígito verificador
         sum = 0;
         for (let i = 0; i < 13; i++) {
-            sum += parseInt(cnpj[i]) * weights2[i];
+            sum += (cnpj.charCodeAt(i) - 48) * weights2[i];
         }
         let secondDigit = sum % 11;
         secondDigit = secondDigit < 2 ? 0 : 11 - secondDigit;
@@ -227,7 +236,8 @@ document.addEventListener("DOMContentLoaded", function () {
      * @returns {object} - {isValid: boolean, type: 'cpf'|'cnpj'|null, message: string}
      */
     function validateDocument(document) {
-        const cleanDoc = document.replace(/[^0-9]/g, '');
+        // Normaliza: mantém apenas alfanumérico maiúsculo para suportar CNPJ alfanumérico (IN RFB 2.229/2024)
+        const cleanDoc = document.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
         
         if (cleanDoc.length === 11) {
             const isValidCPF = validateCPF(cleanDoc);
@@ -247,7 +257,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return {
                 isValid: false,
                 type: null,
-                message: 'Documento deve ter 11 dígitos (CPF) ou 14 dígitos (CNPJ).'
+                message: 'Documento deve ter 11 dígitos (CPF) ou 14 caracteres (CNPJ).'
             };
         }
     }
@@ -272,7 +282,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         
         const documentValue = billingDocumentInput.value.trim();
-        const cleanValue = documentValue.replace(/\D/g, '');
+        const cleanValue = documentValue.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
         const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
         const detectedType = detectDocumentType(cleanValue, personTypeConfig);
         
@@ -505,7 +515,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     // Validação do campo de documento unificado
                     if (billingDocumentInput) {
                         const documentValue = billingDocumentInput.value.trim();
-                        const cleanValue = documentValue.replace(/\D/g, '');
+                        const cleanValue = documentValue.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                         const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
                         
                         let isValid = false;
@@ -818,7 +828,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     documentInput.dispatchEvent(inputEvent);
                     
                     // Garantir que a detecção de tipo seja executada
-                    const cleanValue = documentInput.value.replace(/\D/g, '');
+                    const cleanValue = documentInput.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                     const detectedType = detectDocumentType(cleanValue, personTypeConfig);
                     updateHiddenFields(documentInput.value, detectedType);
                 }
@@ -829,7 +839,7 @@ document.addEventListener("DOMContentLoaded", function () {
         setTimeout(() => {
             const documentInput = document.getElementById('billing_document');
             if (documentInput && documentInput.value) {
-                const cleanValue = documentInput.value.replace(/\D/g, '');
+                const cleanValue = documentInput.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                 const detectedType = detectDocumentType(cleanValue, personTypeConfig);
                 updateHiddenFields(documentInput.value, detectedType);
                 
@@ -1002,13 +1012,13 @@ document.addEventListener("DOMContentLoaded", function () {
         
         let shouldShowInitially = false;
         if (initialCnpj) {
-            const cleanCnpj = initialCnpj.replace(/\D/g, '');
+            const cleanCnpj = initialCnpj.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
             if (cleanCnpj.length === 14) {
                 shouldShowInitially = true;
             }
         }
         if (initialDocument && !shouldShowInitially) {
-            const cleanDocument = initialDocument.replace(/\D/g, '');
+            const cleanDocument = initialDocument.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
             if (cleanDocument.length === 14) {
                 shouldShowInitially = true;
             }
@@ -1118,7 +1128,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // Verificar se existe documento preenchido e forçar sincronização
             const documentInput = document.getElementById('billing_document');
             if (documentInput && documentInput.value) {
-                const cleanValue = documentInput.value.replace(/\D/g, '');
+                const cleanValue = documentInput.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                 const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
                 const detectedType = detectDocumentType(cleanValue, personTypeConfig);
                 updateHiddenFields(documentInput.value, detectedType);
@@ -1174,13 +1184,13 @@ document.addEventListener("DOMContentLoaded", function () {
         // Verificar se há CNPJ completo inicial
         let shouldShowInitially = false;
         if (initialCnpj) {
-            const cleanCnpj = initialCnpj.replace(/\D/g, '');
+            const cleanCnpj = initialCnpj.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
             if (cleanCnpj.length === 14) {
                 shouldShowInitially = true;
             }
         }
         if (initialDocument && !shouldShowInitially) {
-            const cleanDocument = initialDocument.replace(/\D/g, '');
+            const cleanDocument = initialDocument.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
             if (cleanDocument.length === 14) {
                 shouldShowInitially = true;
             }
@@ -1241,7 +1251,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Verificar se existe documento preenchido e forçar sincronização
                 const documentInput = document.getElementById('billing_document');
                 if (documentInput && documentInput.value) {
-                    const cleanValue = documentInput.value.replace(/\D/g, '');
+                    const cleanValue = documentInput.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                     const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
                     const detectedType = detectDocumentType(cleanValue, personTypeConfig);
                     updateHiddenFields(documentInput.value, detectedType);
@@ -1337,7 +1347,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let lastValue = initialValue; // Armazenar último valor para detectar mudanças reais
         
         input.addEventListener('input', function() {
-            const cleanValue = this.value.replace(/\D/g, '');
+            const cleanValue = this.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
             const detectedType = detectDocumentType(cleanValue, personTypeConfig);
             
             // Aplicar formatação apropriada
@@ -1436,25 +1446,33 @@ document.addEventListener("DOMContentLoaded", function () {
         if (personTypeConfig === 'physical') return 'cpf';
         if (personTypeConfig === 'legal') return 'cnpj';
         
+        // CPF é sempre numérico — qualquer letra indica CNPJ alfanumérico (IN RFB 2.229/2024)
+        if (/[A-Z]/.test(cleanValue)) {
+            return 'cnpj';
+        }
+        
         // Para configuração 'both', detectar baseado no comprimento
-        if (cleanValue.length >= 11 && cleanValue.length <= 11) {
+        if (cleanValue.length === 11) {
             return 'cpf'; // CPF completo tem 11 dígitos
-        } else if (cleanValue.length >= 14) {
-            return 'cnpj'; // CNPJ completo tem 14 dígitos
         } else if (cleanValue.length > 11) {
-            return 'cnpj'; // Mais de 11 dígitos indica CNPJ
+            return 'cnpj'; // Mais de 11 caracteres indica CNPJ
         }
         
         return null; // Indeterminado
     }
 
     function applyDynamicMask(value, personTypeConfig) {
-        const cleanValue = value.replace(/\D/g, '');
+        const cleanValue = value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
         
         // Se configuração é fixa, aplicar máscara específica
         if (personTypeConfig === 'physical') {
             return applyCpfMask(value);
         } else if (personTypeConfig === 'legal') {
+            return applyCnpjMask(value);
+        }
+        
+        // Qualquer letra indica CNPJ alfanumérico — CPF é sempre numérico
+        if (/[A-Z]/.test(cleanValue)) {
             return applyCnpjMask(value);
         }
         
@@ -1483,7 +1501,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         
         // Lógica para controlar visibilidade do campo company
-        const cleanValue = documentValue.replace(/\D/g, '');
+        const cleanValue = documentValue.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
         const isCnpjComplete = cleanValue.length === 14;
         
         // Verificar configuração do comportamento do campo empresa
@@ -1558,7 +1576,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 savedPersonTypeData.billing_cnpj = documentValue;
             } else {
                 // Para 'both', decidir baseado no comprimento parcial
-                const cleanValue = documentValue.replace(/\D/g, '');
+                const cleanValue = documentValue.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                 if (cleanValue.length <= 11) {
                     if (personTypeInput) personTypeInput.value = cleanValue.length === 11 ? '1' : '0';
                     if (cpfInput) cpfInput.value = documentValue;
@@ -1650,7 +1668,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function validateDocumentRealTime(documentValue, personTypeConfig) {
-        const cleanValue = documentValue.replace(/\D/g, '');
+        const cleanValue = documentValue.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
         let isValid = false;
         
         if (documentValue.length > 0) {
@@ -1683,7 +1701,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // Adicionar validação de CPF/CNPJ completo
             documentInput.addEventListener('blur', function() {
                 const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
-                const cleanValue = this.value.replace(/\D/g, '');
+                const cleanValue = this.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                 const detectedType = detectDocumentType(cleanValue, personTypeConfig);
                 
                 // Marcar campo como obrigatório se configurado
@@ -1709,13 +1727,24 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function applyCnpjMask(value) {
-        return value
-            .replace(/\D/g, '')
-            .replace(/(\d{2})(\d)/, '$1.$2')
-            .replace(/(\d{3})(\d)/, '$1.$2')
-            .replace(/(\d{3})(\d)/, '$1/$2')
-            .replace(/(\d{4})(\d{1,2})/, '$1-$2')
-            .replace(/(-\d{2})\d+?$/, '$1');
+        // Mantém apenas alfanumérico maiúsculo (suporte CNPJ alfanumérico — IN RFB 2.229/2024)
+        // Posições 1-12: alfanumérico livre | Posições 13-14 (DVs): somente dígitos
+        const rawClean = value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+        let clean = rawClean.substring(0, 12);
+        const rest = rawClean.substring(12);
+        for (let i = 0; i < rest.length && clean.length < 14; i++) {
+            if (/\d/.test(rest[i])) {
+                clean += rest[i];
+            } else {
+                break; // Letras não são permitidas nas posições dos dígitos verificadores
+            }
+        }
+        const len = clean.length;
+        if (len <= 2) return clean;
+        if (len <= 5) return clean.substring(0, 2) + '.' + clean.substring(2);
+        if (len <= 8) return clean.substring(0, 2) + '.' + clean.substring(2, 5) + '.' + clean.substring(5);
+        if (len <= 12) return clean.substring(0, 2) + '.' + clean.substring(2, 5) + '.' + clean.substring(5, 8) + '/' + clean.substring(8);
+        return clean.substring(0, 2) + '.' + clean.substring(2, 5) + '.' + clean.substring(5, 8) + '/' + clean.substring(8, 12) + '-' + clean.substring(12);
     }
 
     // Função para atualizar dados no Store API com debounce
@@ -1877,7 +1906,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     let lastDocumentValue = documentInput.value; // Armazenar último valor
                     
                     documentInput.addEventListener('input', function() {
-                        const cleanValue = this.value.replace(/\D/g, '');
+                        const cleanValue = this.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                         const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
                         const detectedType = detectDocumentType(cleanValue, personTypeConfig);
                         
@@ -1933,7 +1962,7 @@ document.addEventListener("DOMContentLoaded", function () {
             let lastDocumentValue = documentInput.value; // Armazenar último valor
             
             documentInput.addEventListener('input', function() {
-                const cleanValue = this.value.replace(/\D/g, '');
+                const cleanValue = this.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                 const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
                 const detectedType = detectDocumentType(cleanValue, personTypeConfig);
                 

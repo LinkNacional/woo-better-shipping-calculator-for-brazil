@@ -114,6 +114,12 @@ document.addEventListener("DOMContentLoaded", function () {
             onCheckedChange(this.checked);
         });
 
+        if (window.jQuery) {
+            window.jQuery(checkbox).on('validate change focusout', function (e) {
+                e.stopImmediatePropagation();
+            });
+        }
+
         return checkbox;
     }
 

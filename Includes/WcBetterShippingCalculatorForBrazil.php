@@ -85,7 +85,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.14.0';
+            $this->version = '4.15.0';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -255,11 +255,10 @@ class WcBetterShippingCalculatorForBrazil
 
                     <div style="margin-top: 10px;">
                         <p style="font-size: 14px; margin-top: 8px;">
-                            ✨ <strong>Novo:</strong> Preenchimento de endereço por CEP com sugestão ou preenchimento automático no checkout. Configure em <strong>Campos Brasileiros</strong> → <strong>Destaque do Campo CEP</strong> —
-                            <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout#destaque-do-campo-cep">Configurar agora</a>.
+                            ✨ <strong>Novo:</strong> Formato para o CNPJ alfanumérico (IN RFB 2.229/2024).
                         </p>
                         <p style="font-size: 14px; margin-top: 6px;">
-                            🔧 Correção na checkbox ao preencher o endereço e ajuste no posicionamento dos campos nos dados do pedido com remoção do código do país.
+                            🔧 <strong>Ajuste:</strong> Preenchimento do campo de número na primeira consulta automática, classe has-error no campo de número do Gutenberg e preenchimento do CEP no autocomplete.
                         </p>
                     </div>
 
@@ -2360,20 +2359,27 @@ class WcBetterShippingCalculatorForBrazil
     
     /**
      * Valida CNPJ usando algoritmo matemático
-     * @param string $cnpj - CNPJ apenas com números
+     * Suporta o novo CNPJ alfanumérico (IN RFB 2.229/2024), ativo a partir de julho/2026.
+     * CNPJs puramente numéricos (legados) continuam validando normalmente.
+     * @param string $cnpj - CNPJ com ou sem formatação (numérico ou alfanumérico)
      * @return boolean
      */
     private function validate_cnpj($cnpj) {
-        // Remove caracteres não numéricos
-        $cnpj = preg_replace('/[^0-9]/', '', $cnpj);
+        // Normaliza: mantém apenas alfanumérico maiúsculo (dígitos 0-9 e letras A-Z)
+        $cnpj = preg_replace('/[^0-9A-Z]/', '', strtoupper($cnpj));
         
-        // Verifica se tem 14 dígitos
+        // Verifica se tem 14 caracteres
         if (strlen($cnpj) !== 14) {
             return false;
         }
         
-        // Verifica sequências inválidas
-        if (preg_match('/^(\d)\1{13}$/', $cnpj)) {
+        // Verifica sequências inválidas (ex: 00000000000000 ou AAAAAAAAAAAAAA)
+        if (preg_match('/^(.)\1{13}$/', $cnpj)) {
+            return false;
+        }
+        
+        // Os dígitos verificadores (posições 13 e 14) devem ser sempre numéricos
+        if (!ctype_digit(substr($cnpj, 12, 2))) {
             return false;
         }
         
@@ -2382,9 +2388,11 @@ class WcBetterShippingCalculatorForBrazil
         $weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
         
         // Calcula primeiro dígito verificador
+        // Valor de cada caractere: ord(char) - 48
+        // Dígitos: '0'=0 ... '9'=9 | Letras: 'A'=17 ... 'Z'=42
         $sum = 0;
         for ($i = 0; $i < 12; $i++) {
-            $sum += intval($cnpj[$i]) * $weights1[$i];
+            $sum += (ord($cnpj[$i]) - 48) * $weights1[$i];
         }
         $first_digit = $sum % 11;
         $first_digit = $first_digit < 2 ? 0 : 11 - $first_digit;
@@ -2397,7 +2405,7 @@ class WcBetterShippingCalculatorForBrazil
         // Calcula segundo dígito verificador
         $sum = 0;
         for ($i = 0; $i < 13; $i++) {
-            $sum += intval($cnpj[$i]) * $weights2[$i];
+            $sum += (ord($cnpj[$i]) - 48) * $weights2[$i];
         }
         $second_digit = $sum % 11;
         $second_digit = $second_digit < 2 ? 0 : 11 - $second_digit;
@@ -2412,7 +2420,8 @@ class WcBetterShippingCalculatorForBrazil
      * @return array - ['is_valid' => boolean, 'type' => 'cpf'|'cnpj'|null, 'message' => string]
      */
     private function validate_document($document) {
-        $clean_doc = preg_replace('/[^0-9]/', '', $document);
+        // Normaliza: mantém apenas alfanumérico maiúsculo para suportar CNPJ alfanumérico (IN RFB 2.229/2024)
+        $clean_doc = preg_replace('/[^0-9A-Z]/', '', strtoupper($document));
         
         if (strlen($clean_doc) === 11) {
             $is_valid_cpf = $this->validate_cpf($clean_doc);
@@ -2432,7 +2441,7 @@ class WcBetterShippingCalculatorForBrazil
             return [
                 'is_valid' => false,
                 'type' => null,
-                'message' => 'Documento deve ter 11 dígitos (CPF) ou 14 dígitos (CNPJ).'
+                'message' => 'Documento deve ter 11 dígitos (CPF) ou 14 caracteres (CNPJ).'
             ];
         }
     }
@@ -2574,7 +2583,7 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
-        $clean_document = preg_replace('/\D/', '', $billing_document);
+        $clean_document = preg_replace('/[^0-9A-Z]/', '', strtoupper($billing_document));
         $is_cpf_document = strlen($clean_document) === 11;
         $is_cnpj_document = strlen($clean_document) === 14;
 
@@ -2697,12 +2706,12 @@ class WcBetterShippingCalculatorForBrazil
     private function cnpj_number_format($cnpj) {
         $apply_mask = get_option('woo_better_calc_apply_cnpj_mask', 'yes');
         
-        // Remove todos os caracteres não numéricos
-        $clean_cnpj = preg_replace('/[^0-9]/', '', $cnpj);
+        // Mantém apenas alfanumérico maiúsculo (suporte ao CNPJ alfanumérico — IN RFB 2.229/2024)
+        $clean_cnpj = preg_replace('/[^0-9A-Z]/', '', strtoupper($cnpj));
         
-        // Se deve aplicar máscara, formata; senão retorna apenas números
+        // Se deve aplicar máscara, formata; senão retorna sem separadores
         if ($apply_mask === 'yes') {
-            // Aplica máscara ##.###.###/####-##
+            // Aplica máscara AA.AAA.AAA/AAAA-DV
             if (strlen($clean_cnpj) === 14) {
                 return substr($clean_cnpj, 0, 2) . '.' . 
                        substr($clean_cnpj, 2, 3) . '.' . 
@@ -2710,10 +2719,10 @@ class WcBetterShippingCalculatorForBrazil
                        substr($clean_cnpj, 8, 4) . '-' . 
                        substr($clean_cnpj, 12, 2);
             }
-            return $cnpj; // Retorna original se não tem 14 dígitos
+            return $cnpj; // Retorna original se não tem 14 caracteres
         }
         
-        return $clean_cnpj; // Retorna apenas números
+        return $clean_cnpj; // Retorna apenas alfanumérico sem separadores
     }
     
     /**
@@ -3171,7 +3180,7 @@ class WcBetterShippingCalculatorForBrazil
             
             // Se há documento unificado mas não há dados específicos, processar
             if (!empty($billing_document) && empty($billing_cpf) && empty($billing_cnpj)) {
-                $clean_value = preg_replace('/\D/', '', $billing_document);
+                $clean_value = preg_replace('/[^0-9A-Z]/', '', strtoupper($billing_document));
                 
                 if (strlen($clean_value) === 11) {
                     // É CPF
@@ -3290,7 +3299,7 @@ class WcBetterShippingCalculatorForBrazil
             
             // Se há documento unificado mas não há dados específicos, processar
             if (!empty($billing_document) && empty($billing_cpf) && empty($billing_cnpj)) {
-                $clean_value = preg_replace('/\D/', '', $billing_document);
+                $clean_value = preg_replace('/[^0-9A-Z]/', '', strtoupper($billing_document));
                 
                 if (strlen($clean_value) === 11) {
                     // É CPF
@@ -5626,7 +5635,7 @@ class WcBetterShippingCalculatorForBrazil
         if (empty($billing_cnpj) && isset($_POST['billing_document'])) {
             $billing_cnpj = sanitize_text_field(wp_unslash($_POST['billing_document']));
         }
-        $is_cnpj = strlen(preg_replace('/\D/', '', $billing_cnpj)) === 14;
+        $is_cnpj = strlen(preg_replace('/[^0-9A-Z]/', '', strtoupper($billing_cnpj))) === 14;
 
         if (!$is_cnpj) {
             $order->update_meta_data('_billing_ie', '');
@@ -5672,7 +5681,7 @@ class WcBetterShippingCalculatorForBrazil
         } elseif (!empty($_POST['billing_document'])) {
             $billing_document = sanitize_text_field(wp_unslash($_POST['billing_document']));
         }
-        $is_cnpj = strlen(preg_replace('/\D/', '', $billing_document)) === 14;
+        $is_cnpj = strlen(preg_replace('/[^0-9A-Z]/', '', strtoupper($billing_document))) === 14;
 
         if (!$is_cnpj) {
             $order->update_meta_data('_billing_ie', '');
@@ -5829,7 +5838,7 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
-        $clean_document = preg_replace( '/\D/', '', $billing_document );
+        $clean_document = preg_replace( '/[^0-9A-Z]/', '', strtoupper( $billing_document ) );
         $is_cpf = strlen( $clean_document ) === 11;
 
         if ( 'BR' !== $billing_country ) {
@@ -6780,7 +6789,7 @@ class WcBetterShippingCalculatorForBrazil
                 update_user_meta($user_id, 'billing_document', $billing_document);
                 
                 // Processar o documento unificado para campos separados
-                $clean_value = preg_replace('/\D/', '', $billing_document);
+                $clean_value = preg_replace('/[^0-9A-Z]/', '', strtoupper($billing_document));
                 
                 if (strlen($clean_value) === 11) {
                     // CPF

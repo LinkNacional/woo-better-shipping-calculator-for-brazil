@@ -147,12 +147,12 @@
     }
 
     const featureMessage1 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Preenchimento de endereço por CEP com sugestão ou preenchimento automático no checkout.'
+      '<strong>NOVO:</strong> Formato para o CNPJ alfanumérico.'
     ]);
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>RESOLVIDO:</strong> Preenchimento do campo CPF como obrigatório corrigido para funcionar corretamente no checkout.'
+      '<strong>AJUSTE:</strong> Preenchimento de número, CEP no autocomplete e classe has-error no Gutenberg.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento

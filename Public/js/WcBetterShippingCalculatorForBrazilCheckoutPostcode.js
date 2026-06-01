@@ -1,6 +1,8 @@
 jQuery(function ($) {
     // Objeto global para rastrear instâncias ativas do CepAddressFetcher
     var activeCepFetchers = {};
+    // Valor de CEP pendente de reInjeção após autocomplete do navegador
+    var activeCepPendingAutocomplete = {};
     // Flag global para controlar processamento do observer
     var isProcessingAddressUpdate = false;
 
@@ -278,15 +280,18 @@ jQuery(function ($) {
             this._isInitialLoad = true;
             // CEP que estava no campo ao criar o fetcher: usado para distinguir init de nova digitação
             this._initialCep = this.sanitizeCep(this.input.val());
+            // Flag para detectar sequência de autocomplete: deleteContentBackward seguido de jQuery trigger
+            this._prevInputTypeWasDelete = false;
             
             // Registra esta instância
             activeCepFetchers[context] = this;
-            
+
             this.init();
         }
         init() {
             if (!this.input.length) return;
             this.input.on('input.wcBetterCep', this.handleInput.bind(this));
+
             // Armazena referência ao checkbox
             this.checkboxInput = this.checkboxLabel.find('input[type="checkbox"]');
             // Adiciona evento de change para disparar AJAX
@@ -455,7 +460,19 @@ jQuery(function ($) {
                             // Chama updateAddressFields na primeira vez sem verificação
                             if (updateCount === 1) {
                                 updateAddressFields(this.context, { ...data, skipProcessingCheck: true });
-                                
+
+                                // Limpa campo de número após o re-render do WooCommerce Blocks
+                                var $numInput = $('#' + this.context + '-number');
+                                if ($numInput.length) {
+                                    var numEl = $numInput[0];
+                                    var nativeNumSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                    nativeNumSetter.call(numEl, '');
+                                    numEl.dispatchEvent(new Event('input', { bubbles: true }));
+                                    numEl.dispatchEvent(new Event('change', { bubbles: true }));
+                                    $numInput.prop('readonly', false).removeAttr('style');
+                                    $numInput.closest('.wc-block-components-text-input').removeClass('is-active');
+                                }
+
                                 // Ativa flag APÓS a primeira execução
                                 setTimeout(() => {
                                     isProcessingAddressUpdate = true;
@@ -540,16 +557,63 @@ jQuery(function ($) {
             $labelSpan.stop(true, true).css('opacity', 1).text(labelText).show();
         }
         async handleInput(event) {
+            const nativeEvt = event.originalEvent || event;
+
+            // Lê e atualiza a flag de 'delete anterior' para detectar sequência de autocomplete.
+            // Deve ser feito ANTES de qualquer return para manter o estado consistente.
+            const _prevWasDelete = this._prevInputTypeWasDelete;
+            this._prevInputTypeWasDelete = (nativeEvt.inputType === 'deleteContentBackward');
+
             this._isUserInitiated = true;
             // Evento real do usuário (isTrusted): marca fim do carregamento inicial
             if (event.isTrusted) {
                 this._isInitialLoad = false;
+                // Digitação manual real: descarta qualquer valor de autocomplete pendente
+                delete activeCepPendingAutocomplete[this.context];
             }
             // Evento sintético do WooCommerce Blocks (isTrusted === false): ignora durante carregamento inicial.
             // Nota: eventos do init() têm isTrusted === undefined, portanto não são bloqueados aqui.
             if (event.isTrusted === false && this._isInitialLoad) {
                 return;
             }
+
+            // Autopreenchimento do navegador via evento nativo (insertFromAutofill / insertReplacementText):
+            // aguarda 1s para o browser terminar de preencher os demais campos.
+            const isAutofill = nativeEvt.inputType === 'insertFromAutofill' || nativeEvt.inputType === 'insertReplacementText';
+            if (isAutofill) {
+                if (this._debounceTimer) { clearTimeout(this._debounceTimer); this._debounceTimer = null; }
+                this._debounceTimer = setTimeout(() => {
+                    this._debounceTimer = null;
+                    this.handleInput({ target: event.target });
+                }, 1000);
+                return;
+            }
+
+            if (event.isTrusted === undefined && nativeEvt.inputType === undefined && _prevWasDelete) {
+                const cepCandidate = this.sanitizeCep(event.target.value);
+                if (this.isValidCep(cepCandidate)) {
+                    const savedValue = event.target.value;
+                    const context = this.context;
+                    activeCepPendingAutocomplete[context] = savedValue;
+                    this._isInitialLoad = false;
+                    setTimeout(() => {
+                        const pending = activeCepPendingAutocomplete[context];
+                        if (!pending) return; // cancelado por digitação manual
+                        delete activeCepPendingAutocomplete[context];
+                        const fetcher = activeCepFetchers[context];
+                        if (!fetcher || !fetcher.input || !fetcher.input[0]) return;
+                        fetcher._isInitialLoad = false;
+                        // Usa o setter nativo do prototype (bypassa tanto nossa interceptação
+                        // quanto o tracker interno do React) e dispara evento 'input' nativo
+                        // para que o React processe o onChange e atualize seu state.
+                        const origSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+                        origSetter.call(fetcher.input[0], pending);
+                        fetcher.input[0].dispatchEvent(new Event('input', { bubbles: true }));
+                    }, 0);
+                    return;
+                }
+            }
+
             const cep = this.sanitizeCep(event.target.value);
             const $checkboxInput = this.checkboxLabel.find('input[type="checkbox"]');
             const $checkboxLabel = $checkboxInput.closest('label');
@@ -662,9 +726,10 @@ jQuery(function ($) {
                 
                 this.addressData = { ...address, _rawCep: currentRawCep };
 
-                // Limpa o campo de número ao preencher um novo endereço (apenas quando o usuário digita)
+                // Limpa o campo de número ao preencher um novo endereço.
+                // No modo de sugestão: NÃO limpa aqui — só limpa quando o usuário confirmar o checkbox.
                 var $numberInput = $('#' + this.context + '-number');
-                if ($numberInput.length && !this._isInitialLoad) {
+                if ($numberInput.length && !this._isInitialLoad && this._isSilentMode) {
                     var numberEl = $numberInput[0];
                     var nativeNumberSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                     nativeNumberSetter.call(numberEl, '');
@@ -921,6 +986,19 @@ jQuery(function ($) {
                             updateCount++;
                             if (updateCount === 1) {
                                 updateAddressFields(context, { ...data, skipProcessingCheck: true });
+
+                                // Limpa campo de número após o re-render do WooCommerce Blocks
+                                var $numInput = $('#' + context + '-number');
+                                if ($numInput.length) {
+                                    var numEl = $numInput[0];
+                                    var nativeNumSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                    nativeNumSetter.call(numEl, '');
+                                    numEl.dispatchEvent(new Event('input', { bubbles: true }));
+                                    numEl.dispatchEvent(new Event('change', { bubbles: true }));
+                                    $numInput.prop('readonly', false).removeAttr('style');
+                                    $numInput.closest('.wc-block-components-text-input').removeClass('is-active');
+                                }
+
                                 setTimeout(() => { isProcessingAddressUpdate = true; }, 100);
                             } else {
                                 if (isProcessingAddressUpdate) {

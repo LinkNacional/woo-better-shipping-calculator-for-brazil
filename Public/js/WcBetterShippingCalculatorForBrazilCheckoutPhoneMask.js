@@ -53,6 +53,25 @@ document.addEventListener('DOMContentLoaded', function() {
             // Campo simples sem formatação, apenas eventos básicos
             setupBasicPhoneField(customPhoneField);
         }
+
+        // Esconde os campos originais de telefone do WooCommerce Blocks
+        hideOriginalPhoneFields();
+    }
+
+    function hideOriginalPhoneFields() {
+        const isHighlightEnabled = (typeof wc_better_checkout_phone_mask_vars !== 'undefined' &&
+            wc_better_checkout_phone_mask_vars.highlightPhone === 'true');
+        if (!isHighlightEnabled) return;
+
+        ['#billing-phone', '#shipping-phone', '#billing_phone', '#shipping_phone'].forEach(function(selector) {
+            const field = document.querySelector(selector);
+            if (field && field.id !== 'custom-phone') {
+                const wrapper = field.closest('.wc-block-components-text-input');
+                if (wrapper && wrapper.id !== 'wc-custom-phone-field') {
+                    wrapper.style.display = 'none';
+                }
+            }
+        });
     }
     
     function createCustomPhoneContainer() {
@@ -1144,15 +1163,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 
                 // Se for campo custom, preenche os 3 campos com o mesmo valor
-                if (phoneField && phoneField.id && phoneField.id.includes('custom-phone')) {
+                if (phoneField && phoneField.id && typeof phoneField.id === 'string' && phoneField.id.includes('custom-phone')) {
                     data.billing_phone_formatted = phoneValue || '';
                     data.shipping_phone_formatted = phoneValue || '';
                     data.custom_phone_formatted = phoneValue || '';
                 } else {
                     // Para campos billing/shipping, identifica qual preencher
-                    if (phoneField && phoneField.id && phoneField.id.includes('billing')) {
+                    if (phoneField && phoneField.id && typeof phoneField.id === 'string' && phoneField.id.includes('billing')) {
                         data.billing_phone_formatted = phoneValue || '';
-                    } else if (phoneField && phoneField.id && phoneField.id.includes('shipping')) {
+                    } else if (phoneField && phoneField.id && typeof phoneField.id === 'string' && phoneField.id.includes('shipping')) {
                         data.shipping_phone_formatted = phoneValue || '';
                     }
                 }
@@ -1206,11 +1225,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             node.querySelectorAll('input[id*="phone"], input[type="tel"]') : [];
                         
                         if (phoneInputs.length > 0 || 
-                            (node.id && node.id.includes('phone')) ||
+                            (node.id && typeof node.id === 'string' && node.id.includes('phone')) ||
                             (node.type === 'tel')) {
                             setTimeout(() => {
                                 initPhoneInput();
                                 initExistingPhoneFields();
+                                hideOriginalPhoneFields();
                             }, 100);
                         }
                     }
@@ -2122,7 +2142,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
 
                         // SISTEMA DE DEBOUNCE PARA PHONE UPDATES
-                        const isPhoneField = (input.id && input.id.includes('phone')) || (input.name && input.name.includes('phone'));
+                        const isPhoneField = (input.id && typeof input.id === 'string' && input.id.includes('phone')) || (input.name && typeof input.name === 'string' && input.name.includes('phone'));
                         
                         if (isPhoneField) {
                             // Cancela timeout anterior se existir
@@ -2136,12 +2156,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                 pendingPhoneData.billing_phone_formatted = newValue;
                                 pendingPhoneData.shipping_phone_formatted = newValue;
                                 pendingPhoneData.custom_phone_formatted = newValue;
-                            } else if (input.id.includes('billing')) {
+                            } else if (typeof input.id === 'string' && input.id.includes('billing')) {
                                 // Campo billing: só preenche billing_phone_formatted  
                                 pendingPhoneData.billing_phone_formatted = newValue;
                                 pendingPhoneData.shipping_phone_formatted = '';
                                 pendingPhoneData.custom_phone_formatted = '';
-                            } else if (input.id.includes('shipping')) {
+                            } else if (typeof input.id === 'string' && input.id.includes('shipping')) {
                                 // Campo shipping: só preenche shipping_phone_formatted
                                 pendingPhoneData.shipping_phone_formatted = newValue;
                                 pendingPhoneData.billing_phone_formatted = '';
