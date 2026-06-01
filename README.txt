@@ -147,6 +147,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+# 4.15.0 - 01/06/26
+* New: Alphanumeric CNPJ format support (IN RFB 2.229/2024).
+* Fixed: Address number field auto-fill on first automatic lookup.
+* Fixed: has-error class on the Gutenberg number field when the field is empty.
+
 # 4.14.0 - 27/05/26
 * New: CEP address auto-fill feature.
 * Fixed: Checkbox behavior when filling the address.

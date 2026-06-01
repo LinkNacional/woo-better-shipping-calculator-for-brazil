@@ -1,3 +1,8 @@
+# 4.15.0 - 01/06/26
+* Novo: Formato para o CNPJ alfanumérico.
+* Ajuste: Preenchimento do campo de número na primeira consulta automática.
+* Ajuste: Classe has-error no campo de número do Gutenberg quando o campo tá vazio.
+
 # 4.14.0 - 27/05/26
 * Novo: Recurso de preenchimento de CEP.
 * Ajuste: Correção na checkbox ao preencher o endereço.
