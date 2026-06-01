@@ -2060,4 +2060,116 @@ document.addEventListener('DOMContentLoaded', function () {
         childList: true,
         subtree: true,
     });
+
+    // Verificação inicial: o elemento alvo pode já estar no DOM (HTML server-rendered)
+    // sem depender de uma mutação futura para iniciar o componente
+    (function checkInitialRender() {
+        const targetClass = setPosition();
+        const targetElement = document.querySelector(targetClass);
+        const oldForm = document.querySelector('.wc-block-components-shipping-calculator-address');
+        const existingContainer = document.querySelector('.woo-better-parent-container');
+
+        if (targetElement && !containerFound && !oldForm && !existingContainer) {
+            containerFound = true;
+
+            const parentContainer = createParentContainer();
+            const form = createForm();
+
+            const lastPostcode = getLastUsedPostcode();
+            let initializeData = {
+                product: {
+                    name: '*******',
+                    quantity: WooBetterData.quantity,
+                    currency_symbol: 'R$',
+                    currency_minor_unit: 2,
+                },
+                shipping_rates: [
+                    {
+                        id: '**********',
+                        label: '***********',
+                        cost: 12.34,
+                    },
+                ],
+                postcode: '123456-789',
+            };
+
+            if (lastPostcode) {
+                const cachedData = getCachedShippingData(lastPostcode, WooBetterData.product_id);
+                if (cachedData) {
+                    initializeData = {
+                        product: cachedData.product,
+                        shipping_rates: cachedData.shipping_rates || [],
+                        postcode: lastPostcode,
+                    };
+                    if (cachedData.digital === true) {
+                        initializeData.product.digital = true;
+                        initializeData.shipping_rates = [];
+                    }
+                } else {
+                    initializeData.postcode = lastPostcode;
+                }
+            }
+
+            const productInfoBlock = createInfoBlock(initializeData.product, initializeData.shipping_rates, initializeData.postcode, form);
+
+            parentContainer.appendChild(form);
+            parentContainer.appendChild(productInfoBlock);
+
+            targetElement.insertAdjacentElement('afterend', parentContainer);
+
+            fetchProductNonce(function () {
+                const lastPostcode = getLastUsedPostcode();
+
+                if (lastPostcode) {
+                    const inputPostcode = document.querySelector('.woo-better-input-current-style');
+                    if (inputPostcode) {
+                        inputPostcode.value = lastPostcode;
+
+                        if (isVariableProduct()) {
+                            form.style.display = 'block';
+                            if (!hasVariationSelected()) {
+                                setFormDisabled(true);
+                            } else {
+                                setFormDisabled(false);
+                                if (WooBetterData.enable_search === 'yes') {
+                                    const cachedData = getCachedShippingData(lastPostcode, WooBetterData.product_id);
+                                    if (cachedData) {
+                                        const infoBlock = document.querySelector('.woo-better-info-block');
+                                        processShippingRatesFromCache(cachedData, form, infoBlock, lastPostcode);
+                                    } else {
+                                        setTimeout(() => {
+                                            const submitButton = document.querySelector('.woo-better-button-current-style');
+                                            if (submitButton && !submitButton.disabled) {
+                                                submitButton.click();
+                                            }
+                                        }, 100);
+                                    }
+                                }
+                            }
+                            return;
+                        }
+
+                        if (WooBetterData.enable_search && WooBetterData.enable_search === 'yes') {
+                            const cachedData = getCachedShippingData(lastPostcode, WooBetterData.product_id);
+                            if (cachedData) {
+                                const infoBlock = document.querySelector('.woo-better-info-block');
+                                processShippingRatesFromCache(cachedData, form, infoBlock, lastPostcode);
+                            } else {
+                                form.style.display = 'block';
+                                if (WooBetterData.enable_search === 'yes') {
+                                    setTimeout(() => {
+                                        const submitButton = form.querySelector('.woo-better-button-current-style');
+                                        if (submitButton && !submitButton.disabled) {
+                                            submitButton.click();
+                                        }
+                                    }, 100);
+                                }
+                            }
+                        }
+                    }
+                }
+                observer.disconnect();
+            });
+        }
+    })();
 });
