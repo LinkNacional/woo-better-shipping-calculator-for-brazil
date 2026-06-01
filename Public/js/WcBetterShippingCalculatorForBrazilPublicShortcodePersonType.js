@@ -175,7 +175,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Só validar se o campo de documento for necessário (país BR e campo visível)
                 if (billingDocumentInput && isDocumentValidationRequired()) {
                     const documentValue = billingDocumentInput.value.trim();
-                    const cleanValue = documentValue.replace(/\D/g, '');
+                    const cleanValue = documentValue.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                     const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
                     
                     let isValid = false;
@@ -203,14 +203,14 @@ document.addEventListener("DOMContentLoaded", function () {
                             if (cleanValue.length === 14) {
                                 isValid = true;
                             } else {
-                                errorMessage = 'Por favor, insira um CNPJ válido com 14 dígitos.';
+                                errorMessage = 'Por favor, insira um CNPJ válido com 14 caracteres.';
                             }
                         } else if (personTypeConfig === 'both') {
                             // CPF ou CNPJ permitidos
                             if (cleanValue.length === 11 || cleanValue.length === 14) {
                                 isValid = true;
                             } else {
-                                errorMessage = 'Por favor, insira um CPF completo (11 dígitos) ou CNPJ completo (14 dígitos).';
+                                errorMessage = 'Por favor, insira um CPF completo (11 dígitos) ou CNPJ completo (14 caracteres).';
                             }
                         }
                     }
@@ -288,13 +288,16 @@ document.addEventListener("DOMContentLoaded", function () {
         if (personTypeConfig === 'physical') return 'cpf';
         if (personTypeConfig === 'legal') return 'cnpj';
         
+        // CPF é sempre numérico — qualquer letra indica CNPJ alfanumérico (IN RFB 2.229/2024)
+        if (/[A-Z]/.test(cleanValue)) {
+            return 'cnpj';
+        }
+        
         // Para configuração 'both', detectar baseado no comprimento
-        if (cleanValue.length >= 11 && cleanValue.length <= 11) {
+        if (cleanValue.length === 11) {
             return 'cpf'; // CPF completo tem 11 dígitos
-        } else if (cleanValue.length >= 14) {
-            return 'cnpj'; // CNPJ completo tem 14 dígitos
         } else if (cleanValue.length > 11) {
-            return 'cnpj'; // Mais de 11 dígitos indica CNPJ
+            return 'cnpj'; // Mais de 11 caracteres indica CNPJ
         }
         
         return null; // Indeterminado
@@ -318,7 +321,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (cnpjInput) cnpjInput.value = documentValue;
             
             // Exibir campo de empresa para CNPJ completo
-            const cleanValue = documentValue.replace(/\D/g, '');
+            const cleanValue = documentValue.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
             if (cleanValue.length === 14) {
                 showCompanyFieldIfDynamic();
             } else {
@@ -339,7 +342,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (cnpjInput) cnpjInput.value = documentValue;
                 
                 // Para legal, verificar se CNPJ está completo
-                const cleanValue = documentValue.replace(/\D/g, '');
+                const cleanValue = documentValue.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                 if (cleanValue.length === 14) {
                     showCompanyFieldIfDynamic();
                 } else {
@@ -347,7 +350,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             } else {
                 // Para 'both', decidir baseado no comprimento parcial
-                const cleanValue = documentValue.replace(/\D/g, '');
+                const cleanValue = documentValue.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                 if (cleanValue.length <= 11) {
                     if (cpfInput) cpfInput.value = documentValue;
                     if (cnpjInput) cnpjInput.value = '';
@@ -487,7 +490,7 @@ document.addEventListener("DOMContentLoaded", function () {
             let shouldShowCompany = false;
             
             if (documentInput && documentInput.value) {
-                const cleanValue = documentInput.value.replace(/\D/g, '');
+                const cleanValue = documentInput.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                 
                 // Se tem 14 dígitos (CNPJ completo), mostrar campo da empresa
                 if (cleanValue.length === 14) {
@@ -554,13 +557,24 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function applyCnpjMask(value) {
-        const cleanValue = value.replace(/\D/g, '');
-        return cleanValue
-            .replace(/(\d{2})(\d)/, '$1.$2')
-            .replace(/(\d{3})(\d)/, '$1.$2')
-            .replace(/(\d{3})(\d)/, '$1/$2')
-            .replace(/(\d{4})(\d{1,2})/, '$1-$2')
-            .replace(/(-\d{2})\d+?$/, '$1');
+        // Mantém apenas alfanumérico maiúsculo (suporte CNPJ alfanumérico — IN RFB 2.229/2024)
+        // Posições 1-12: alfanumérico livre | Posições 13-14 (DVs): somente dígitos
+        const rawClean = value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+        let clean = rawClean.substring(0, 12);
+        const rest = rawClean.substring(12);
+        for (let i = 0; i < rest.length && clean.length < 14; i++) {
+            if (/\d/.test(rest[i])) {
+                clean += rest[i];
+            } else {
+                break; // Letras não são permitidas nas posições dos dígitos verificadores
+            }
+        }
+        const len = clean.length;
+        if (len <= 2) return clean;
+        if (len <= 5) return clean.substring(0, 2) + '.' + clean.substring(2);
+        if (len <= 8) return clean.substring(0, 2) + '.' + clean.substring(2, 5) + '.' + clean.substring(5);
+        if (len <= 12) return clean.substring(0, 2) + '.' + clean.substring(2, 5) + '.' + clean.substring(5, 8) + '/' + clean.substring(8);
+        return clean.substring(0, 2) + '.' + clean.substring(2, 5) + '.' + clean.substring(5, 8) + '/' + clean.substring(8, 12) + '-' + clean.substring(12);
     }
 
     // Função simples para atualizar campos (sem Store API)
@@ -588,7 +602,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (documentInput && !documentInput.dataset.eventsSetup) {
             documentInput.addEventListener('input', function() {
                 const currentValue = this.value;
-                const cleanValue = currentValue.replace(/\D/g, '');
+                const cleanValue = currentValue.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
                 const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
                 
                 // Aplicar formatação apropriada baseada no tipo detectado
@@ -601,11 +615,12 @@ document.addEventListener("DOMContentLoaded", function () {
                     // Apenas CNPJ
                     formattedValue = applyCnpjMask(currentValue);
                 } else {
-                    // Ambos: detectar automaticamente
-                    if (cleanValue.length <= 11) {
-                        formattedValue = applyCpfMask(currentValue);
-                    } else {
+                    // Ambos: usar detectDocumentType para que letras sejam tratadas como CNPJ alfanumérico
+                    const detectedType = detectDocumentType(cleanValue, personTypeConfig);
+                    if (detectedType === 'cnpj') {
                         formattedValue = applyCnpjMask(currentValue);
+                    } else {
+                        formattedValue = applyCpfMask(currentValue);
                     }
                 }
                 

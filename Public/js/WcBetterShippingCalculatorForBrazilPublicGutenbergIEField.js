@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", function () {
 			return false
 		}
 
-		const cleanDocument = billingDocumentInput.value.replace(/\D/g, '')
+		const cleanDocument = billingDocumentInput.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase()
 		const currentPersonType = personTypeInput ? personTypeInput.value : ''
 		const hasCompleteCnpj = cleanDocument.length === 14
 

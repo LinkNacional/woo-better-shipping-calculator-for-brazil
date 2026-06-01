@@ -191,7 +191,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var documentInput = document.getElementById('billing_document');
         var documentValue = documentInput ? documentInput.value : '';
-        var cleanValue = documentValue.replace(/\D/g, '');
+        var cleanValue = documentValue.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
 
         var personTypeInput = document.getElementById('billing_persontype');
         var currentPersonType = personTypeInput ? personTypeInput.value : '';
