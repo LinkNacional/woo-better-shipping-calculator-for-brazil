@@ -255,11 +255,10 @@ class WcBetterShippingCalculatorForBrazil
 
                     <div style="margin-top: 10px;">
                         <p style="font-size: 14px; margin-top: 8px;">
-                            ✨ <strong>Novo:</strong> Preenchimento de endereço por CEP com sugestão ou preenchimento automático no checkout. Configure em <strong>Campos Brasileiros</strong> → <strong>Destaque do Campo CEP</strong> —
-                            <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout#destaque-do-campo-cep">Configurar agora</a>.
+                            ✨ <strong>Novo:</strong> Formato para o CNPJ alfanumérico (IN RFB 2.229/2024).
                         </p>
                         <p style="font-size: 14px; margin-top: 6px;">
-                            🔧 Correção na checkbox ao preencher o endereço e ajuste no posicionamento dos campos nos dados do pedido com remoção do código do país.
+                            🔧 <strong>Ajuste:</strong> Preenchimento do campo de número na primeira consulta automática, classe has-error no campo de número do Gutenberg e preenchimento do CEP no autocomplete.
                         </p>
                     </div>
 
