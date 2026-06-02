@@ -171,6 +171,9 @@ class WcBetterShippingCalculatorForBrazil
         
         // Hook para sincronizar campo empresa quando meta de post é atualizada
         $this->loader->add_action('updated_post_meta', $this, 'sync_company_field_on_meta_update', 10, 4);
+
+        // Hook para adicionar campos customizados na resposta AJAX de detalhes do cliente (admin)
+        $this->loader->add_filter('woocommerce_ajax_get_customer_details', $this, 'add_custom_fields_to_customer_details', 10, 3);
     }
 
     public function lkn_show_admin_notice()
@@ -6919,5 +6922,64 @@ class WcBetterShippingCalculatorForBrazil
         }
         
         return $address;
+    }
+
+    /**
+     * Adiciona campos customizados brasileiros na resposta AJAX de detalhes do cliente.
+     *
+     * Disparado ao clicar em "Carregar endereço de cobrança/entrega" na edição de pedido no admin.
+     *
+     * @param array      $data     Dados do cliente já montados pelo WooCommerce.
+     * @param WC_Customer $customer Objeto do cliente.
+     * @param int        $user_id  ID do usuário.
+     * @return array
+     */
+    public function add_custom_fields_to_customer_details($data, $customer, $user_id)
+    {
+        if (!$user_id) {
+            return $data;
+        }
+
+        $person_type        = get_option('woo_better_calc_person_type_select', 'none');
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        $number_enabled     = get_option('woo_better_calc_number_required', 'no');
+        $birthdate_enabled  = get_option('woo_better_calc_enable_birthdate_field', 'no');
+        $gender_enabled     = get_option('woo_better_calc_enable_gender_field', 'no');
+        $ie_field_enabled   = get_option('woo_better_calc_enable_ie_field', 'no');
+
+        // ── Billing ──────────────────────────────────────────────────────────
+        if ($person_type !== 'none') {
+            $billing_persontype = get_user_meta($user_id, 'billing_persontype', true);
+            $billing_cpf        = get_user_meta($user_id, 'billing_cpf', true);
+            $billing_cnpj       = get_user_meta($user_id, 'billing_cnpj', true);
+
+            $data['billing']['persontype'] = $billing_persontype;
+            $data['billing']['cpf']        = $billing_cpf;
+            $data['billing']['cnpj']       = $billing_cnpj;
+
+            if ($ie_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+                $data['billing']['ie'] = get_user_meta($user_id, 'billing_ie', true);
+            }
+        }
+
+        if ($neighborhood_enabled === 'yes') {
+            $data['billing']['neighborhood']  = get_user_meta($user_id, 'billing_neighborhood', true);
+            $data['shipping']['neighborhood'] = get_user_meta($user_id, 'shipping_neighborhood', true);
+        }
+
+        if ($number_enabled === 'yes') {
+            $data['billing']['number']  = get_user_meta($user_id, 'billing_number', true);
+            $data['shipping']['number'] = get_user_meta($user_id, 'shipping_number', true);
+        }
+
+        if ($birthdate_enabled === 'yes') {
+            $data['billing']['birthdate'] = get_user_meta($user_id, 'billing_birthdate', true);
+        }
+
+        if ($gender_enabled === 'yes') {
+            $data['billing']['gender'] = get_user_meta($user_id, 'billing_gender', true);
+        }
+
+        return $data;
     }
 }
