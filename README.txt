@@ -153,6 +153,7 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * Fixed: has-error class on the Gutenberg number field when the field is empty.
 * Fixed: CEP autofill on autocomplete.
 * Fixed: Nonce for the contact number field.
+* Fixed: Address auto-fill on the order edit page.
 
 # 4.14.0 - 27/05/26
 * New: CEP address auto-fill feature.
