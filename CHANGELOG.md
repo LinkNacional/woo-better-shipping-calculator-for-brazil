@@ -4,6 +4,7 @@
 * Ajuste: Classe has-error no campo de número do Gutenberg quando o campo tá vazio.
 * Ajuste: Preenchimento do CEP no autocomplete.
 * Ajuste: Nonce do campo de número de contato.
+* Ajuste: autopreenchimento de endereço na página do pedido.
 
 # 4.14.0 - 27/05/26
 * Novo: Recurso de preenchimento de CEP.
