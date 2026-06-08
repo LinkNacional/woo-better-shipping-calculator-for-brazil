@@ -147,6 +147,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+# 4.15.1 - 08/06/26
+* Fix: Click event to dismiss the update notice.
+
 # 4.15.0 - 01/06/26
 * New: Alphanumeric CNPJ format support (IN RFB 2.229/2024).
 * Fixed: Address number field auto-fill on first automatic lookup.
