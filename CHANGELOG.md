@@ -1,3 +1,6 @@
+# 4.15.1 - 08/06/26
+* Ajuste: evento de clique para fechar a notificação de atualização.
+
 # 4.15.0 - 01/06/26
 * Novo: Formato para o CNPJ alfanumérico.
 * Ajuste: Preenchimento do campo de número na primeira consulta automática.

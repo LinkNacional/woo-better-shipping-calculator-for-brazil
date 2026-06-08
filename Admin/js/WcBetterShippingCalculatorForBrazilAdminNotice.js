@@ -2,9 +2,11 @@
 	'use strict';
 
 	jQuery(document).ready(function ($) {
-
-		$('[data-dismissible="woo-better-calc-notice"] .notice-dismiss').on('click', function (e) {
+		$(document).on('click.wooBetterCalcNotice', '[data-dismissible="woo-better-calc-notice"] .notice-dismiss', function (e) {
 			e.preventDefault();
+			e.stopImmediatePropagation();
+
+			var $notice = $(this).closest('[data-dismissible="woo-better-calc-notice"]');
 
 			$.ajax({
 				url: ajaxurl,
@@ -14,9 +16,10 @@
 					nonce: wooBetterNotice.nonce
 				},
 				success: function (response) {
-					$('[data-dismissible="woo-better-calc-notice"]').fadeOut();
+					$notice.fadeOut();
 				},
 				error: function () {
+					$notice.fadeOut();
 					console.error('Erro ao dispensar o notice');
 				}
 			});
