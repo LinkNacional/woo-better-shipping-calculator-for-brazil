@@ -651,11 +651,21 @@ jQuery(function ($) {
         var customCheckboxId = field === 'billing' ? 'lkn_billing_checkbox' : (field === 'shipping' ? 'lkn_shipping_checkbox' : null);
         if (customNumberId && $("#" + customNumberId).length) {
             var $customNumber = $("#" + customNumberId);
+            var customNumberEl = $customNumber[0];
             $customNumber.val('').prop('readonly', false).trigger('change');
+            // Remove estilos inline de desabilitação do próprio input
+            customNumberEl.style.opacity = '';
+            customNumberEl.style.cursor = '';
+            customNumberEl.style.pointerEvents = '';
+            // Remove classe de readonly-disabled
+            customNumberEl.classList.remove('wc-better-readonly-disabled');
             // Remove opacidade do campo pai
             $customNumber.closest('.form-row').removeAttr('style').css('opacity', '');
             if (customCheckboxId && $("#" + customCheckboxId).length) {
-                $("#" + customCheckboxId).prop('checked', false).trigger('change');
+                var customCheckboxEl = $("#" + customCheckboxId)[0];
+                customCheckboxEl.checked = false;
+                // Dispara evento change nativo para o listener vanilla do PublicShortNumberField.js capturar
+                customCheckboxEl.dispatchEvent(new Event('change', { bubbles: true }));
             }
         }
     }
