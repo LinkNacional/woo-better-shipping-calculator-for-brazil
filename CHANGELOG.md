@@ -1,3 +1,6 @@
+# 4.15.2 - 09/06/26
+* Ajuste: formato de envio do CEP para a API.
+
 # 4.15.1 - 08/06/26
 * Ajuste: evento de clique para fechar a notificação de atualização.
 

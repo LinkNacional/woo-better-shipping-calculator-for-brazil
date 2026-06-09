@@ -91,7 +91,6 @@ document.addEventListener("DOMContentLoaded", function () {
             'margin: 0 !important; ' +
             'padding: 0 !important; ' +
             'width: auto !important; ' +
-            'height: auto !important; ' +
             'cursor: pointer !important; ' +
             'flex-shrink: 0 !important; ' +
             'vertical-align: middle !important;' +

@@ -152,7 +152,7 @@
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>AJUSTE:</strong> Preenchimento de número, CEP no autocomplete e classe has-error no Gutenberg.'
+      '<strong>AJUSTE:</strong> Evento de clique para fechar notificação e formato de envio do CEP para a API.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento

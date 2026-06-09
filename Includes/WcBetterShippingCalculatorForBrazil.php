@@ -85,7 +85,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.15.1';
+            $this->version = '4.15.2';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -212,7 +212,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '4.15.0', '4.14.0', '4.13.0', '4.12.5', '4.12.4', '4.12.3', '4.12.2', '4.12.1' );
+            $old_versions   = array( '4.15.1', '4.15.0', '4.14.0', '4.13.0', '4.12.5', '4.12.4', '4.12.3', '4.12.2', '4.12.1' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -261,7 +261,7 @@ class WcBetterShippingCalculatorForBrazil
                             ✨ <strong>Novo:</strong> Formato para o CNPJ alfanumérico (IN RFB 2.229/2024).
                         </p>
                         <p style="font-size: 14px; margin-top: 6px;">
-                            🔧 <strong>Ajuste:</strong> Preenchimento do campo de número na primeira consulta automática, classe has-error no campo de número do Gutenberg e preenchimento do CEP no autocomplete.
+                            🔧 <strong>Ajuste:</strong> Evento de clique para fechar notificação e formato de envio do CEP para a API.
                         </p>
                     </div>
 
@@ -849,17 +849,18 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
 
-        // Se o formato for XXXXXXXX (sem o hífen), adiciona o hífen no formato XXXXX-XXX
-        if (preg_match('/^\d{8}$/', $cep)) {
-            $cep = substr($cep, 0, 5) . '-' . substr($cep, 5);
+        // Se o formato for XXXXX-XXX (com hífen), remove o hífen para obter apenas os dígitos
+        if (preg_match('/^\d{5}-\d{3}$/', $cep)) {
+            $cep = str_replace('-', '', $cep);
         }
 
         // Realiza a requisição à BrasilAPI
         $response = wp_remote_get("https://brasilapi.com.br/api/cep/v2/{$cep}");
+        $http_code = wp_remote_retrieve_response_code($response);
         $data = [];
 
         // Verifica se houve erro na requisição
-        if (is_wp_error($response)) {
+        if (is_wp_error($response) || $http_code !== 200) {
             $ws_response = wp_remote_get("https://viacep.com.br/ws/{$cep}/json/");
 
             $ws_response_body = wp_remote_retrieve_body($ws_response);
