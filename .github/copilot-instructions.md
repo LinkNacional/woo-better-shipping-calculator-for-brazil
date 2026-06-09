@@ -77,6 +77,26 @@ class Test_Class_Name extends WP_UnitTestCase {
 }
 ```
 
+## RTK & Caveman Token Optimization
+
+**RTK (Rust Token Killer) Context**
+- The local environment has RTK active globally (`rtk init -g`). It intercepts and compresses terminal logs, test outputs, and system contexts before they reach the LLM.
+- Expect concise, pre-parsed logs. Never request full verbose outputs if a structured RTK snippet has been provided.
+
+**Caveman Communication Style (Strict Token Saving)**
+- Act under strict **Caveman Mode** constraints for all chat interactions to minimize output token consumption.
+- Drop all conversational fillers, polite introductions, greetings, and post-code summaries.
+- Deliver technical facts using short, blunt, direct sentence fragments.
+- Prioritize raw code blocks, diffs, and immediate solutions over friendly prose.
+
+*Example of expected output:*
+> "Fix: Missing nonce validation in Admin.php. Add `wp_verify_nonce()` before processing."
+
+**Copilot Generation & Architectural Alignment**
+- When asked to generate code or fix a bug, output the structure immediately, strictly adhering to the SOLID principles and WordPress 6.8+ standards defined above.
+- All code generated must automatically apply the `WcBetterShippingCalculatorForBrazil*` class prefixes and `wc_better_shipping_calculator_*` function/hook prefixes.
+- Automatically embed strict security validation (nonce, sanitization, escaping) without needing explicit reminders.
+
 ## Build Commands
 
 ```bash

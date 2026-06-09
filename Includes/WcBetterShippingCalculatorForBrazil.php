@@ -849,17 +849,18 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
 
-        // Se o formato for XXXXXXXX (sem o hífen), adiciona o hífen no formato XXXXX-XXX
-        if (preg_match('/^\d{8}$/', $cep)) {
-            $cep = substr($cep, 0, 5) . '-' . substr($cep, 5);
+        // Se o formato for XXXXX-XXX (com hífen), remove o hífen para obter apenas os dígitos
+        if (preg_match('/^\d{5}-\d{3}$/', $cep)) {
+            $cep = str_replace('-', '', $cep);
         }
 
         // Realiza a requisição à BrasilAPI
         $response = wp_remote_get("https://brasilapi.com.br/api/cep/v2/{$cep}");
+        $http_code = wp_remote_retrieve_response_code($response);
         $data = [];
 
         // Verifica se houve erro na requisição
-        if (is_wp_error($response)) {
+        if (is_wp_error($response) || $http_code !== 200) {
             $ws_response = wp_remote_get("https://viacep.com.br/ws/{$cep}/json/");
 
             $ws_response_body = wp_remote_retrieve_body($ws_response);

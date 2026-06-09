@@ -744,8 +744,8 @@ jQuery(function ($) {
                         const phoneInputs = node.querySelectorAll ? 
                             node.querySelectorAll('input[id*="phone"], input[type="tel"]') : [];
                         
-                        if (phoneInputs.length > 0 || 
-                            (node.id && node.id.includes('phone')) ||
+                        if (phoneInputs.length > 0 ||
+                            (node.id && typeof node.id === 'string' && node.id.includes('phone')) ||
                             (node.type === 'tel')) {
                             setTimeout(initPhoneInput, 100);
                         }
