@@ -261,7 +261,7 @@ class WcBetterShippingCalculatorForBrazil
                             ✨ <strong>Novo:</strong> Formato para o CNPJ alfanumérico (IN RFB 2.229/2024).
                         </p>
                         <p style="font-size: 14px; margin-top: 6px;">
-                            🔧 <strong>Ajuste:</strong> Preenchimento do campo de número na primeira consulta automática, classe has-error no campo de número do Gutenberg e preenchimento do CEP no autocomplete.
+                            🔧 <strong>Ajuste:</strong> Evento de clique para fechar notificação e formato de envio do CEP para a API.
                         </p>
                     </div>
 
