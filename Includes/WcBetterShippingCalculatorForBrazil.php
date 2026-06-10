@@ -174,6 +174,13 @@ class WcBetterShippingCalculatorForBrazil
 
         // Hook para adicionar campos customizados na resposta AJAX de detalhes do cliente (admin)
         $this->loader->add_filter('woocommerce_ajax_get_customer_details', $this, 'add_custom_fields_to_customer_details', 10, 3);
+
+        // Hook para adicionar checkbox de frete grátis na aba de entrega do produto
+        $enable_free_shipping_by_product = get_option('woo_better_enable_free_shipping_by_product', 'no');
+        if ($enable_free_shipping_by_product === 'yes') {
+            $this->loader->add_action('woocommerce_product_options_shipping', $this, 'lkn_add_free_shipping_product_checkbox');
+            $this->loader->add_action('woocommerce_process_product_meta', $this, 'lkn_save_free_shipping_product_checkbox');
+        }
     }
 
     public function lkn_show_admin_notice()
@@ -345,8 +352,41 @@ class WcBetterShippingCalculatorForBrazil
         }
     }
 
+    /**
+     * Adiciona checkbox de frete grátis na aba de entrega do produto (admin).
+     *
+     * @return void
+     */
+    public function lkn_add_free_shipping_product_checkbox()
+    {
+        woocommerce_wp_checkbox(array(
+            'id'            => '_wc_better_free_shipping',
+            'label'         => __('Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
+            'description'   => __('Marque para habilitar frete grátis para este produto.', 'woo-better-shipping-calculator-for-brazil'),
+            'desc_tip'      => true,
+        ));
+    }
+
+    /**
+     * Salva o valor do checkbox de frete grátis por produto.
+     *
+     * @param int $post_id ID do produto.
+     * @return void
+     */
+    public function lkn_save_free_shipping_product_checkbox($post_id)
+    {
+        $enable_free_shipping_by_product = get_option('woo_better_enable_free_shipping_by_product', 'no');
+        if ($enable_free_shipping_by_product !== 'yes') {
+            return;
+        }
+
+        $free_shipping = isset($_POST['_wc_better_free_shipping']) ? 'yes' : 'no';
+        update_post_meta($post_id, '_wc_better_free_shipping', $free_shipping);
+    }
+
     public function lkn_woo_better_control_rates($rates, $package)
     {
+        $enable_free_shipping_by_product = get_option('woo_better_enable_free_shipping_by_product', 'no');
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
         $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
         $only_free_shipping = get_option('woo_better_only_free_shipping', 'yes');
@@ -365,41 +405,81 @@ class WcBetterShippingCalculatorForBrazil
             $rates['simulado_playground'] = $rate;
         }
 
-        // Só aplica se estiver habilitado e valor for maior que zero
-        if ($enable_min === 'yes') {
+        // Verifica se já existe um frete grátis vindo do WooCommerce nativamente
+        $has_free_shipping = false;
+        if ($avoid_free_shipping_duplication === 'yes') {
+            foreach ($rates as $rate) {
+                if (isset($rate) && method_exists($rate, 'get_cost') && floatval($rate->get_cost()) == 0) {
+                    $has_free_shipping = true;
+                    break;
+                }
+            }
+        }
+
+        // ── PRIORIDADE 1: Frete Grátis por Valor Mínimo do Carrinho ─────────
+        // Tem prioridade sobre o frete por produto quando o valor mínimo é atingido
+        if ($enable_min === 'yes' && ! $has_free_shipping) {
             $cart_total = WC()->cart->get_displayed_subtotal();
             if ($cart_total >= $min_value) {
-                $has_free_shipping = false;
-                if ($avoid_free_shipping_duplication === 'yes') {
-                    foreach ($rates as $rate) {
-                        if (isset($rate) && method_exists($rate, 'get_cost') && floatval($rate->get_cost()) == 0) {
-                            $has_free_shipping = true;
-                            break;
+                $has_free_shipping = true; // Marca que já temos frete grátis (evita que o frete por produto seja adicionado)
+                $free_shipping_rate = new \WC_Shipping_Rate(
+                    'free_shipping_min',
+                    __('Frete Gratuito (Valor mínimo)', 'woo-better-shipping-calculator-for-brazil'),
+                    0,
+                    array(),
+                    'free_shipping'
+                );
+                if ($only_free_shipping === 'yes') {
+                    $rates = array('free_shipping_min' => $free_shipping_rate);
+                    return $rates;
+                } else {
+                    $new_rates = array('free_shipping_min' => $free_shipping_rate);
+                    foreach ($rates as $key => $rate) {
+                        if ($key !== 'free_shipping_min') {
+                            $new_rates[$key] = $rate;
                         }
+                    }
+                    $rates = $new_rates;
+                }
+            }
+        }
+
+        // ── PRIORIDADE 2: Frete Grátis por Produto ──────────────────────────
+        // Só aplica se não houver frete grátis nativo ou por valor mínimo (quando evitar duplicação ativo)
+        if ($enable_free_shipping_by_product === 'yes' && ! $has_free_shipping) {
+            $all_products_free_shipping = true;
+            if ($this->is_valid_woocommerce_context() && isset(WC()->cart)) {
+                foreach (WC()->cart->get_cart() as $cart_item) {
+                    $product_id = $cart_item['product_id'];
+                    $product_free_shipping = get_post_meta($product_id, '_wc_better_free_shipping', true);
+                    if ($product_free_shipping !== 'yes') {
+                        $all_products_free_shipping = false;
+                        break;
                     }
                 }
-                // Só adiciona se não houver frete grátis existente
-                if (! $has_free_shipping) {
-                    $free_shipping_rate = new \WC_Shipping_Rate(
-                        'free_shipping_min',
-                        __('Frete Gratuito', 'woo-better-shipping-calculator-for-brazil'),
-                        0,
-                        array(),
-                        'free_shipping'
-                    );
-                    if ($only_free_shipping === 'yes') {
-                        // Remove todas as opções de frete e exibe apenas o frete grátis
-                        $rates = array('free_shipping_min' => $free_shipping_rate);
-                    } else {
-                        // Insere o frete grátis na primeira posição do array de métodos
-                        $new_rates = array('free_shipping_min' => $free_shipping_rate);
-                        foreach ($rates as $key => $rate) {
-                            if ($key !== 'free_shipping_min') {
-                                $new_rates[$key] = $rate;
-                            }
+            } else {
+                $all_products_free_shipping = false;
+            }
+
+            if ($all_products_free_shipping) {
+                $free_shipping_rate = new \WC_Shipping_Rate(
+                    'free_shipping_product',
+                    __('Frete Grátis (Produto)', 'woo-better-shipping-calculator-for-brazil'),
+                    0,
+                    array(),
+                    'free_shipping'
+                );
+                if ($only_free_shipping === 'yes') {
+                    $rates = array('free_shipping_product' => $free_shipping_rate);
+                    return $rates;
+                } else {
+                    $new_rates = array('free_shipping_product' => $free_shipping_rate);
+                    foreach ($rates as $key => $rate) {
+                        if ($key !== 'free_shipping_product') {
+                            $new_rates[$key] = $rate;
                         }
-                        $rates = $new_rates;
                     }
+                    $rates = $new_rates;
                 }
             }
         }
@@ -4702,6 +4782,7 @@ class WcBetterShippingCalculatorForBrazil
         // Dados básicos do carrinho
         $cart_total = $cart->get_displayed_subtotal();
         $has_free_shipping = false;
+        $is_free_shipping_by_product_rate = false;
         
         // Verifica se há métodos de envio disponíveis e se algum é gratuito
         if ($customer && method_exists($customer, 'get_shipping_postcode') && !empty($customer->get_shipping_postcode())) {
@@ -4717,19 +4798,24 @@ class WcBetterShippingCalculatorForBrazil
                 
                 if (!empty($stored_rates['rates'])) {
                     foreach ($stored_rates['rates'] as $rate_id => $rate) {
-                        // ✅ NOVA LÓGICA: Verifica se existe frete grátis DISPONÍVEL (não precisa estar selecionado)
+                        // Verifica se existe frete grátis DISPONÍVEL (não precisa estar selecionado)
                         if (floatval($rate->cost) === 0.0) {
                             $has_free_shipping = true;
+                            // Verifica se o label da rate contém "Frete Grátis (Produto)" (criado pelo nosso plugin)
+                            if (method_exists($rate, 'get_label') && strpos($rate->get_label(), 'Frete Grátis (Produto)') !== false) {
+                                $is_free_shipping_by_product_rate = true;
+                            }
                             break 2; // Sai dos dois loops - encontrou frete grátis disponível
                         }
                     }
                 }
             }
         }
-        
+
         wp_send_json_success([
             'freeShipping' => $has_free_shipping,
-            'cartTotal' => $cart_total
+            'cartTotal' => $cart_total,
+            'freeShippingByProduct' => $is_free_shipping_by_product_rate
         ]);
     }
 
