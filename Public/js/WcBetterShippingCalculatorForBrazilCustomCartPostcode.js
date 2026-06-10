@@ -675,7 +675,7 @@ document.addEventListener('DOMContentLoaded', function () {
         form.style.padding = '0px';
 
         const lastPostcode = getLastUsedPostcode();
-        if (lastPostcode && WooBetterData.enable_search === 'yes') {
+        if (lastPostcode && (WooBetterData.enable_search === 'yes' || hasUserMadeQuery)) {
             form.style.display = 'none';
         }
 
