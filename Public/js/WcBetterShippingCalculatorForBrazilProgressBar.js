@@ -9,6 +9,7 @@
 	let lastValidMessage = '';
 	let cartUpdateTimeout = null; // Para debounce das atualizações do carrinho
 	let currentFreeShippingStatus = false; // Status atual do frete gratuito
+	let currentFreeShippingByProduct = false; // Status do frete grátis por produto
 	let observerInitialized = false; // Evita múltiplas inicializações
 	let hasApiError = false; // Flag para indicar erro na API
 
@@ -76,11 +77,14 @@
 					// Atualiza o total do carrinho  
 					currentCartTotal = parseFloat(responseData.cartTotal) || 0;
 					
-					// ✅ ATUALIZA STATUS DO FRETE GRATUITO baseado na resposta
-					currentFreeShippingStatus = responseData.freeShipping || false;
-					
-					// Remove flag de erro se sucesso
-					hasApiError = false;
+				// ✅ ATUALIZA STATUS DO FRETE GRATUITO baseado na resposta
+				currentFreeShippingStatus = responseData.freeShipping || false;
+				
+				// ✅ ATUALIZA STATUS DO FRETE GRÁTIS POR PRODUTO
+				currentFreeShippingByProduct = responseData.freeShippingByProduct || false;
+				
+				// Remove flag de erro se sucesso
+				hasApiError = false;
 					
 					// Para o loading e atualiza a barra
 					stopLoadingState();
@@ -88,6 +92,7 @@
 					// Erro na API - ativa flag de erro
 					hasApiError = true;
 					currentFreeShippingStatus = false;
+					currentFreeShippingByProduct = false;
 					stopLoadingState();
 				}
 			})
@@ -95,6 +100,7 @@
 				// Erro na API - ativa flag de erro
 				hasApiError = true;
 				currentFreeShippingStatus = false;
+				currentFreeShippingByProduct = false;
 				stopLoadingState();
 			});
 		}, 300); // Debounce de 300ms
@@ -240,6 +246,10 @@
 		const enableFreeShippingDetection = progressConfig.enable_free_shipping_detection !== 'no'; // padrão é true
 		let progressMessage = progressConfig.min_free_shipping_message || '';
 		
+		// Configurações de frete grátis por produto
+		const freeShippingByProductEnabled = progressConfig.free_shipping_by_product_enabled || false;
+		const freeShippingByProductMessage = progressConfig.free_shipping_by_product_message || 'Frete grátis disponível por produto.';
+		
 		// Verifica se carrinho tem apenas produtos digitais
 		const onlyDigitalProducts = progressConfig.only_digital_products || false;
 
@@ -268,11 +278,17 @@
 			message = successMessage; // Sem fallback - respeita se usuário deixou vazio
 			barText = enableProgressBarValue ? (successMessage ? 'Frete Grátis!' : '') : '';
 		} else if (enableFreeShippingDetection && currentFreeShippingStatus && (minValue <= 0 || cartTotal < minValue)) {
-			// ✅ FRETE GRÁTIS DO WOOCOMMERCE: Detectado via configurações nativas (não do plugin) - só se detecção estiver habilitada
+			// ✅ FRETE GRÁTIS DO WOOCOMMERCE / POR PRODUTO: Detectado via configurações nativas ou produto - só se detecção estiver habilitada
 			percent = 100;
 			barColor = '#2196f3'; // Azul para diferenciar do frete grátis do plugin
-			message = 'Frete grátis disponível através da região de entrega.'; // Mensagem para frete grátis do WooCommerce
-			barText = enableProgressBarValue ? 'Frete Grátis (WC)' : '';
+			// Se a opção de frete por produto está habilitada E o frete atual é por produto, usa o texto personalizado
+			if (freeShippingByProductEnabled && currentFreeShippingByProduct) {
+				message = freeShippingByProductMessage;
+				barText = enableProgressBarValue ? 'Frete Grátis (Produto)' : '';
+			} else {
+				message = 'Frete grátis disponível através da região de entrega.';
+				barText = enableProgressBarValue ? 'Frete Grátis (WC)' : '';
+			}
 		} else {
 			// Calcula valores normais baseados no valor mínimo
 			if (minValue <= 0) {
@@ -530,6 +546,16 @@
 			setTimeout(() => {
 				getCartShippingData(); // Faz requisição para obter dados atualizados
 			}, 100); // Pequeno delay para garantir que eventos anteriores terminaram
+		});
+
+		// ✅ Escuta o evento customizado disparado pelo CustomCartPostcode.js
+		// quando a requisição register_cart_address é iniciada
+		$(document).on('woo-better-cart-update-start', function () {
+			startLoadingState();
+
+			setTimeout(() => {
+				getCartShippingData();
+			}, 100);
 		});
 	}
 

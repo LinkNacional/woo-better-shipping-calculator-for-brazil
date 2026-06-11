@@ -1,3 +1,6 @@
+# 4.16.0 - 11/06/26
+* Novo: Sistema de frete por produto.
+
 # 4.15.2 - 09/06/26
 * Ajuste: formato de envio do CEP para a API.
 

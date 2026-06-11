@@ -382,7 +382,9 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'enable_free_shipping_detection' => get_option('woo_better_enable_free_shipping_detection', 'yes'),
                     'has_cart_block' => has_block('woocommerce/cart'),
                     'only_digital_products' => $only_digital_products,
-                    'ajax_url' => admin_url('admin-ajax.php')
+                    'ajax_url' => admin_url('admin-ajax.php'),
+                    'free_shipping_by_product_enabled' => get_option('woo_better_enable_free_shipping_by_product', 'no') === 'yes',
+                    'free_shipping_by_product_message' => __('Frete grátis disponível por produto.', 'woo-better-shipping-calculator-for-brazil'),
                 )
             );
         }

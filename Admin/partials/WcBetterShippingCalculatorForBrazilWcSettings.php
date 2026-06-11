@@ -58,6 +58,69 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Controle a exibição do simulador de frete personalizado para produtos digitais.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'font_source' => array(
+                'title'    => __('Fonte para Busca de CEP', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_calc_font_source',
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Fonte Poppins (recomendada)', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Fonte do Site', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-subtitle' => __('Fonte Padrão', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Selecione a fonte a ser aplicada no campo de busca do CEP (Código de Endereçamento Postal).', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Escolha a fonte que melhor se adapta ao design da sua página.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Configura a fonte para o componente de busca de CEP.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'enable_settings_link' => array(
+                'title'    => __('Link Rápido de Configuração', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_calc_enable_settings_link',
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-subtitle' => __('Exibir Link de Configuração', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Exibe um atalho para as configurações do plugin nas páginas de Carrinho e de Produto quando o utilizador for um administrador.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite esta opção para exibir o link de configuração nas páginas frontend (visíveis ao público) para os utilizadores administradores.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Exibir o link de configuração somente para utilizadores administradores.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'enable_order_details' => array(
+                'title'    => __('Exibir Detalhes do Pedido', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_calc_enable_order_details',
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Exibe informações detalhadas dos pedidos para melhor acompanhamento e controle.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para mostrar detalhes adicionais dos pedidos, incluindo informações de entrega e dados complementares.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ative a exibição de detalhes completos dos pedidos.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'geral_section_end' => array(
+                'type' => 'sectionend',
+                'id'   => 'woo_better_calc_geral'
+            )
+        );
+
+        $freteSettings = array(
+            // TAB 2: Frete Grátis
+            'frete_section' => array(
+                'title' => __('Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'title',
+                'id'    => 'woo_better_calc_title_frete'
+            ),
             'enable_min_free_shipping' => array(
                 'title'    => __('Opções de Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,
@@ -122,22 +185,6 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Exibe apenas uma opção de frete grátis por vez, caso já exista uma disponível.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
-            'enable_free_shipping_detection' => array(
-                'title'    => __('Detecção de Frete Gratuito', 'woo-better-shipping-calculator-for-brazil'),
-                'id'       => 'woo_better_enable_free_shipping_detection',
-                'desc_tip' => false,
-                'default'  => 'yes',
-                'type'     => 'radio',
-                'options'  => array(
-                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
-                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
-                ),
-                'custom_attributes' => array(
-                    'data-desc-tip' => __('Detecção automática de frete gratuito nas configurações.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Se habilitado, o sistema detectará automaticamente quando o frete gratuito está disponível.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Controla se a detecção de frete gratuito deve ser exibida na barra de frete gratuito.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
             'min_free_shipping_message' => array(
                 'title'    => __('Mensagens para o Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_min_free_shipping_message',
@@ -179,44 +226,10 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Mostra o valor restante para obter frete grátis.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
-            'font_source' => array(
-                'title'    => __('Fonte para Busca de CEP', 'woo-better-shipping-calculator-for-brazil'),
+            'enable_free_shipping_by_product' => array(
+                'title'    => __('Frete Grátis por Produto', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_enable_free_shipping_by_product',
                 'desc_tip' => false,
-                'id'       => 'woo_better_calc_font_source',
-                'default'  => 'yes',
-                'type'     => 'radio',
-                'options'  => array(
-                    'yes' => __('Fonte Poppins (recomendada)', 'woo-better-shipping-calculator-for-brazil'),
-                    'no'  => __('Fonte do Site', 'woo-better-shipping-calculator-for-brazil')
-                ),
-                'custom_attributes' => array(
-                    'data-subtitle' => __('Fonte Padrão', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-desc-tip' => __('Selecione a fonte a ser aplicada no campo de busca do CEP (Código de Endereçamento Postal).', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Escolha a fonte que melhor se adapta ao design da sua página.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Configura a fonte para o componente de busca de CEP.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-            'enable_settings_link' => array(
-                'title'    => __('Link Rápido de Configuração', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => false,
-                'id'       => 'woo_better_calc_enable_settings_link',
-                'default'  => 'no',
-                'type'     => 'radio',
-                'options'  => array(
-                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
-                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
-                ),
-                'custom_attributes' => array(
-                    'data-subtitle' => __('Exibir Link de Configuração', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-desc-tip' => __('Exibe um atalho para as configurações do plugin nas páginas de Carrinho e de Produto quando o utilizador for um administrador.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Habilite esta opção para exibir o link de configuração nas páginas frontend (visíveis ao público) para os utilizadores administradores.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Exibir o link de configuração somente para utilizadores administradores.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-            'enable_order_details' => array(
-                'title'    => __('Exibir Detalhes do Pedido', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => false,
-                'id'       => 'woo_better_calc_enable_order_details',
                 'default'  => 'yes',
                 'type'     => 'radio',
                 'options'  => array(
@@ -224,14 +237,33 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-desc-tip' => __('Exibe informações detalhadas dos pedidos para melhor acompanhamento e controle.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Habilite para mostrar detalhes adicionais dos pedidos, incluindo informações de entrega e dados complementares.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Ative a exibição de detalhes completos dos pedidos.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-desc-tip' => __('Ativa a caixa de seleção de frete grátis na edição do produto.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => sprintf(
+                        __('Ao habilitar, uma opção de "Frete Grátis" será exibida na aba "Entrega" dentro de cada produto. <a href="%s" target="_blank" style="font-weight: bold; text-decoration: underline;">Clique aqui para ver todos os produtos</a> e configurar.', 'woo-better-shipping-calculator-for-brazil'),
+                        admin_url('edit.php?post_type=product')
+                    ),
+                    'data-title-description' => __('Exibe um checkbox de frete grátis na aba de entrega dos produtos.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
-            'geral_section_end' => array(
+            'enable_free_shipping_detection' => array(
+                'title'    => __('Detecção Inteligente de Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_enable_free_shipping_detection',
+                'desc_tip' => false,
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Preenche automaticamente a barra de frete quando o benefício for alcançado.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Ao habilitar, o plugin detecta se o carrinho do cliente já se qualifica para frete grátis e preenche a barra de progresso automaticamente, informando ao cliente que ele já ganhou o benefício.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Torna a barra de frete dinâmica e integrada com as regras de frete grátis.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'frete_section_end' => array(
                 'type' => 'sectionend',
-                'id'   => 'woo_better_calc_geral'
+                'id'   => 'woo_better_calc_frete'
             )
         );
 
@@ -905,7 +937,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             )
         );
 
-        $settings = array_merge($settings, $generalSettings, $shortcodeSettings, $productSettings, $cartSettings, $cacheSettings);
+        $settings = array_merge($settings, $generalSettings, $freteSettings, $shortcodeSettings, $productSettings, $cartSettings, $cacheSettings);
 
         return apply_filters('woocommerce_get_settings_' . $this->id, $settings);
     }

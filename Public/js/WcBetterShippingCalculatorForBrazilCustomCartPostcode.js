@@ -675,7 +675,7 @@ document.addEventListener('DOMContentLoaded', function () {
         form.style.padding = '0px';
 
         const lastPostcode = getLastUsedPostcode();
-        if (lastPostcode && WooBetterData.enable_search === 'yes') {
+        if (lastPostcode && (WooBetterData.enable_search === 'yes' || hasUserMadeQuery)) {
             form.style.display = 'none';
         }
 
@@ -1033,12 +1033,31 @@ document.addEventListener('DOMContentLoaded', function () {
         updateTimeout = setTimeout(() => {
             updateTimeout = null;
             
-            // Invalida o cache
-            invalidateCache();
-            
             const lastPostcode = getLastUsedPostcode();
             const infoBlock = document.querySelector('.woo-better-info-block');
             const form = document.querySelector('#custom-postcode-form');
+
+            // Se a consulta automática está desabilitada mas o usuário já fez uma consulta (hasUserMadeQuery),
+            // NÃO invalida o cache para preservar os dados e poder exibir o infoBlock diretamente
+            if (WooBetterData.enable_search !== 'yes' && hasUserMadeQuery) {
+                // Tenta obter dados do cache diretamente (sem invalidar)
+                const cache = getCartCache();
+                const cachedData = cache[lastPostcode] || null;
+                
+                if (lastPostcode && cachedData && infoBlock && form) {
+                    // Exibe o infoBlock com os dados em cache
+                    processShippingRatesFromCache(cachedData, form, infoBlock, lastPostcode);
+                    // Reseta a flag para não ficar sempre em cache
+                    hasUserMadeQuery = false;
+                    return;
+                }
+                
+                // Se não tem cache válido, reseta a flag e segue fluxo normal
+                hasUserMadeQuery = false;
+            }
+            
+            // Invalida o cache (apenas quando não entrou no branch acima)
+            invalidateCache();
 
             if (lastPostcode && infoBlock && form) {
                 // IMPORTANTE: Verifica se estava expandido ANTES de modificar o display
@@ -1304,6 +1323,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     formData.append('shipping[state]', stateData);
                     formData.append('shipping[postcode]', postcodeValue);
                     formData.append('shipping[country]', 'BR');
+
+                    // ✅ Dispara evento para o ProgressBar iniciar loading
+                    document.dispatchEvent(new CustomEvent('woo-better-cart-update-start'));
 
                     fetch(addressAPIUrl, {
                         method: 'POST',
@@ -2446,7 +2468,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (inputPostcode) {
                         inputPostcode.value = lastPostcode;
 
-                        if (WooBetterData.enable_search && WooBetterData.enable_search === 'yes') {
+                        // Se a consulta automática está habilitada OU o usuário já fez uma consulta anterior
+                        const shouldRestoreFromCache = (WooBetterData.enable_search && WooBetterData.enable_search === 'yes') || hasUserMadeQuery;
+
+                        if (shouldRestoreFromCache) {
                             const cachedData = getCachedCartShippingData(lastPostcode);
 
                             if (cachedData) {
@@ -2493,8 +2518,14 @@ document.addEventListener('DOMContentLoaded', function () {
                                         currentPostcodeText.innerHTML = `<strong>CEP</strong>: ${lastPostcode}`;
                                     }
                                 }
+
+                                // Reseta a flag após restaurar do cache para não ficar sempre em cache
+                                hasUserMadeQuery = false;
                             } else {
                                 // Não há dados em cache, simula clique no botão para consulta natural
+                                // Reseta a flag também neste caso, já que não tem cache para restaurar
+                                hasUserMadeQuery = false;
+
                                 form.style.display = 'block';
                                 
                                 const input = form.querySelector('.woo-better-input-current-style');
