@@ -1324,6 +1324,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     formData.append('shipping[postcode]', postcodeValue);
                     formData.append('shipping[country]', 'BR');
 
+                    // ✅ Dispara evento para o ProgressBar iniciar loading
+                    document.dispatchEvent(new CustomEvent('woo-better-cart-update-start'));
+
                     fetch(addressAPIUrl, {
                         method: 'POST',
                         headers: {

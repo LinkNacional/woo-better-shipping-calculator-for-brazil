@@ -547,6 +547,16 @@
 				getCartShippingData(); // Faz requisição para obter dados atualizados
 			}, 100); // Pequeno delay para garantir que eventos anteriores terminaram
 		});
+
+		// ✅ Escuta o evento customizado disparado pelo CustomCartPostcode.js
+		// quando a requisição register_cart_address é iniciada
+		$(document).on('woo-better-cart-update-start', function () {
+			startLoadingState();
+
+			setTimeout(() => {
+				getCartShippingData();
+			}, 100);
+		});
 	}
 
 	// Inicializa quando o DOM estiver pronto
