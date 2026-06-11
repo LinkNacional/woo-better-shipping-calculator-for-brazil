@@ -146,6 +146,9 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('template_redirect', $this, 'lkn_set_country_brasil', 999);
 
+        // Filtra produtos com frete grátis dos pacotes de cálculo de frete
+        $this->loader->add_filter('woocommerce_cart_shipping_packages', $this, 'lkn_filter_free_shipping_products_from_packages', 999, 1);
+
         if ($disabled_shipping === 'all' || $disabled_shipping === 'digital') {
             $this->loader->add_action('woocommerce_get_country_locale', $this, 'lkn_woo_better_shipping_calculator_locale', 10, 1);
         }
@@ -382,6 +385,73 @@ class WcBetterShippingCalculatorForBrazil
 
         $free_shipping = isset($_POST['_wc_better_free_shipping']) ? 'yes' : 'no';
         update_post_meta($post_id, '_wc_better_free_shipping', $free_shipping);
+    }
+
+    /**
+     * Filtra produtos com frete grátis (_wc_better_free_shipping) dos pacotes de cálculo de frete.
+     *
+     * Quando um produto tem a flag _wc_better_free_shipping = 'yes', ele é removido do pacote
+     * de cálculo para que os plugins de frete (Correios, Melhor Envio, etc.) não o considerem
+     * no cálculo do valor de envio. Apenas os produtos SEM frete grátis terão frete calculado.
+     *
+     * Caso TODOS os produtos do carrinho tenham frete grátis, mantém o pacote intacto para que
+     * o WooCommerce possa aplicar a lógica de frete grátis total posteriormente.
+     *
+     * @param array $packages Pacotes de envio a serem calculados.
+     * @return array Pacotes de envio modificados, sem os produtos com frete grátis.
+     * @since 4.16.0
+     */
+    public function lkn_filter_free_shipping_products_from_packages($packages)
+    {
+        $enable_free_shipping_by_product = get_option('woo_better_enable_free_shipping_by_product', 'no');
+
+        // Só aplica o filtro se a funcionalidade de frete grátis por produto estiver habilitada
+        if ($enable_free_shipping_by_product !== 'yes') {
+            return $packages;
+        }
+
+        // Verifica se o contexto do WooCommerce é válido
+        if (!$this->is_valid_woocommerce_context() || !isset(WC()->cart)) {
+            return $packages;
+        }
+
+        foreach ($packages as $package_key => $package) {
+            if (!isset($package['contents']) || !is_array($package['contents'])) {
+                continue;
+            }
+
+            $free_shipping_items = array();
+            $paid_shipping_items = array();
+
+            // Separa os itens entre frete grátis e frete pago
+            foreach ($package['contents'] as $item_key => $item) {
+                $product_id = isset($item['product_id']) ? $item['product_id'] : 0;
+                $product_free_shipping = get_post_meta($product_id, '_wc_better_free_shipping', true);
+
+                if ($product_free_shipping === 'yes') {
+                    $free_shipping_items[$item_key] = $item;
+                } else {
+                    $paid_shipping_items[$item_key] = $item;
+                }
+            }
+
+            // Se há itens com frete grátis E itens com frete pago, remove os itens com frete grátis
+            // para que os plugins de frete calculem apenas com base nos itens com frete pago
+            if (!empty($free_shipping_items) && !empty($paid_shipping_items)) {
+                $packages[$package_key]['contents'] = $paid_shipping_items;
+
+                // Recalcula o custo do conteúdo do pacote apenas com os itens pagos
+                $new_contents_cost = 0;
+                foreach ($paid_shipping_items as $item) {
+                    $new_contents_cost += floatval(isset($item['line_total']) ? $item['line_total'] : $item['line_subtotal']);
+                }
+                $packages[$package_key]['contents_cost'] = $new_contents_cost;
+            }
+            // Se todos os itens têm frete grátis, mantém o pacote intacto
+            // (a lógica de frete grátis total é tratada em lkn_woo_better_control_rates)
+        }
+
+        return $packages;
     }
 
     public function lkn_woo_better_control_rates($rates, $package)
