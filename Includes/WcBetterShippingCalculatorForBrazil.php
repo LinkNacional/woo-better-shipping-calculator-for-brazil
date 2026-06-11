@@ -72,6 +72,18 @@ class WcBetterShippingCalculatorForBrazil
     protected $version;
 
     /**
+     * Flag que indica se o filtro lkn_woo_better_control_rates está sendo chamado
+     * a partir do cálculo de frete de produto único (lkn_register_product_address).
+     * Quando true, o valor mínimo para frete grátis usa o contents_cost do pacote.
+     * Quando false (carrinho/checkout), usa o subtotal total do carrinho.
+     *
+     * @since    4.16.0
+     * @access   private
+     * @var      bool
+     */
+    private $is_product_address_calculation = false;
+
+    /**
      * Define the core functionality of the plugin.
      *
      * Set the plugin name and the plugin version that can be used throughout the plugin.
@@ -489,7 +501,15 @@ class WcBetterShippingCalculatorForBrazil
         // ── PRIORIDADE 1: Frete Grátis por Valor Mínimo do Carrinho ─────────
         // Tem prioridade sobre o frete por produto quando o valor mínimo é atingido
         if ($enable_min === 'yes' && ! $has_free_shipping) {
-            $cart_total = WC()->cart->get_displayed_subtotal();
+            // No cálculo de produto único (lkn_register_product_address), o carrinho é
+            // temporariamente substituído por um item simulado. Nesse caso, usamos o
+            // contents_cost do pacote, que contém o valor correto do produto único.
+            // No carrinho/checkout, usamos o subtotal total do carrinho normalmente.
+            if ($this->is_product_address_calculation) {
+                $cart_total = isset($package['contents_cost']) ? floatval($package['contents_cost']) : 0;
+            } else {
+                $cart_total = WC()->cart->get_displayed_subtotal();
+            }
             if ($cart_total >= $min_value) {
                 $has_free_shipping = true; // Marca que já temos frete grátis (evita que o frete por produto seja adicionado)
                 $free_shipping_rate = new \WC_Shipping_Rate(
@@ -5080,9 +5100,13 @@ class WcBetterShippingCalculatorForBrazil
         );
 
         // 5. Calcula o frete para este pacote
+        // Define a flag para que lkn_woo_better_control_rates saiba que está no contexto
+        // de produto único e use o contents_cost do pacote em vez do subtotal do carrinho.
+        $this->is_product_address_calculation = true;
         $shipping = WC()->shipping();
         $shipping->load_shipping_methods();
         $calculated_package = $shipping->calculate_shipping_for_package( $package, 0 );
+        $this->is_product_address_calculation = false;
 
         // 6. RESTAURA O CARRINHO ORIGINAL DO USUÁRIO IMEDIATAMENTE!
         // Como não usamos o set_session(), o banco de dados do cliente não é tocado.
