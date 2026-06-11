@@ -361,8 +361,8 @@ class WcBetterShippingCalculatorForBrazil
     {
         woocommerce_wp_checkbox(array(
             'id'            => '_wc_better_free_shipping',
-            'label'         => __('Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
-            'description'   => __('Marque para habilitar frete grátis para este produto. OBS: Lembrando que esta opção só funcionará se existirem apenas produtos com esta opção habilitada.', 'woo-better-shipping-calculator-for-brazil'),
+            'label'         => __('Frete Grátis para este Produto', 'woo-better-shipping-calculator-for-brazil'),
+            'description'   => __('Ativa o frete grátis exclusivamente para este item. Se o cliente adicionar este produto junto com outros que possuem frete pago no carrinho, o cálculo do frete ignorará este item e cobrará apenas o valor de envio dos demais produtos.', 'woo-better-shipping-calculator-for-brazil'),
             'desc_tip'      => true,
         ));
     }
