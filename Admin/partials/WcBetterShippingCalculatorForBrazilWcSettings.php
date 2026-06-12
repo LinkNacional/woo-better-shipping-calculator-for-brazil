@@ -289,6 +289,23 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Torna a barra de frete dinâmica e integrada com as regras de frete grátis.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'keep_other_methods_with_free_shipping' => array(
+                'title'    => __('Exibir outros fretes com Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_keep_other_methods_with_free_shipping',
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-subtitle' => __('Exibir todos os métodos de envio', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Controla se outros métodos de frete são exibidos quando há frete grátis disponível.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Se habilitado, exibe todos os métodos de envio (pagos e gratuitos) mesmo quando o cliente se qualifica para frete grátis. Se desabilitado, exibe apenas as opções de frete grátis, ocultando os demais métodos de envio como PAC, SEDEX e fretes de plugins de terceiros.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Define se os métodos de envio pagos são exibidos quando o frete grátis estiver disponível.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'frete_section_end' => array(
                 'type' => 'sectionend',
                 'id'   => 'woo_better_calc_frete'

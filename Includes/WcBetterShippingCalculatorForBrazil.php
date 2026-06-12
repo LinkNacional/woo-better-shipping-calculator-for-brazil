@@ -573,6 +573,7 @@ class WcBetterShippingCalculatorForBrazil
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
         $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
         $only_free_shipping = get_option('woo_better_only_free_shipping', 'yes');
+        $keep_other_methods = get_option('woo_better_keep_other_methods_with_free_shipping', 'yes');
         $avoid_free_shipping_duplication = get_option('woo_better_avoid_free_shipping_duplication', 'no');
 
 
@@ -626,8 +627,15 @@ class WcBetterShippingCalculatorForBrazil
                     array(),
                     'free_shipping'
                 );
-                if ($only_free_shipping === 'yes') {
-                    $rates = array('free_shipping_min' => $free_shipping_rate);
+                if ($keep_other_methods === 'no') {
+                    // Mantém apenas fretes gratuitos (cost == 0) e adiciona o nosso
+                    $new_rates = array('free_shipping_min' => $free_shipping_rate);
+                    foreach ($rates as $key => $rate) {
+                        if ($key !== 'free_shipping_min' && method_exists($rate, 'get_cost') && floatval($rate->get_cost()) == 0) {
+                            $new_rates[$key] = $rate;
+                        }
+                    }
+                    $rates = $new_rates;
                     return $rates;
                 } else {
                     $new_rates = array('free_shipping_min' => $free_shipping_rate);
@@ -672,8 +680,15 @@ class WcBetterShippingCalculatorForBrazil
                     array(),
                     'free_shipping'
                 );
-                if ($only_free_shipping === 'yes') {
-                    $rates = array('free_shipping_product' => $free_shipping_rate);
+                if ($keep_other_methods === 'no') {
+                    // Mantém apenas fretes gratuitos (cost == 0) e adiciona o nosso
+                    $new_rates = array('free_shipping_product' => $free_shipping_rate);
+                    foreach ($rates as $key => $rate) {
+                        if ($key !== 'free_shipping_product' && method_exists($rate, 'get_cost') && floatval($rate->get_cost()) == 0) {
+                            $new_rates[$key] = $rate;
+                        }
+                    }
+                    $rates = $new_rates;
                     return $rates;
                 } else {
                     $new_rates = array('free_shipping_product' => $free_shipping_rate);

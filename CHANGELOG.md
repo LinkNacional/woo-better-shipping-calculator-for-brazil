@@ -1,5 +1,9 @@
 # 4.16.0 - 11/06/26
 * Novo: Sistema de frete por produto.
+* Novo: Sistema de label para definir os dias úteis para entrega nos fretes gratís.
+* Novo: Sistema de comportamento ao detectar frete gratís.
+* Ajuste: Detecção da barra de frete gratis ao executar o componente da calculadora do plugin.
+* Ajuste: Campo de checkbox do campo de número no Gutenberg.
 
 # 4.15.2 - 09/06/26
 * Ajuste: formato de envio do CEP para a API.
