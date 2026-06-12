@@ -177,10 +177,10 @@ class WcBetterShippingCalculatorForBrazil
         // Filtra produtos com frete grátis do retorno de WC()->cart->get_cart() durante o cálculo de frete.
         // Isso resolve a incompatibilidade com plugins como o Melhor Envio, que leem o carrinho
         // diretamente via CartWooCommerceService::getProducts() em vez de usar os pacotes filtrados.
-        $this->loader->add_filter('woocommerce_cart_get_cart', $this, 'lkn_filter_free_shipping_from_cart', 999, 1);
+        $this->loader->add_filter('woocommerce_get_cart_contents', $this, 'lkn_filter_free_shipping_from_cart', 999, 1);
 
         // Ativa a flag is_shipping_calculation_active ANTES do cálculo dos totais do carrinho,
-        // para que o filtro woocommerce_cart_get_cart possa remover produtos com frete grátis.
+        // para que o filtro woocommerce_get_cart_contents possa remover produtos com frete grátis.
         $this->loader->add_action('woocommerce_before_calculate_totals', $this, 'lkn_set_shipping_calculation_flag', 10, 1);
 
         // Reseta a flag is_shipping_calculation_active após o cálculo dos totais do carrinho.
