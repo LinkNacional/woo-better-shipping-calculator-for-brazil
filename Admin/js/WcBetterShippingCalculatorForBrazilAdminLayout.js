@@ -152,7 +152,7 @@
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>AJUSTE:</strong> Evento de clique para fechar notificação e formato de envio do CEP para a API.'
+      '<strong>AJUSTE:</strong> Novo sistema de frete por produto, prazos e comportamentos para frete grátis, além de ajustes na calculadora e no campo de número do Gutenberg.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento
