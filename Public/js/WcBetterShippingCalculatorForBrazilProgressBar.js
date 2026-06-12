@@ -249,6 +249,10 @@
 		// Configurações de frete grátis por produto
 		const freeShippingByProductEnabled = progressConfig.free_shipping_by_product_enabled || false;
 		const freeShippingByProductMessage = progressConfig.free_shipping_by_product_message || 'Frete grátis disponível por produto.';
+
+		// Configurações de tempo de entrega
+		const minFreeShippingDeliveryTime = progressConfig.min_free_shipping_delivery_time || '';
+		const freeShippingByProductDeliveryTime = progressConfig.free_shipping_by_product_delivery_time || '';
 		
 		// Verifica se carrinho tem apenas produtos digitais
 		const onlyDigitalProducts = progressConfig.only_digital_products || false;
@@ -276,7 +280,14 @@
 			percent = 100;
 			barColor = '#4caf50';
 			message = successMessage; // Sem fallback - respeita se usuário deixou vazio
+			// Concatena o tempo de entrega se definido
+			if (minFreeShippingDeliveryTime) {
+				message = message ? message + ' (' + minFreeShippingDeliveryTime + ')' : minFreeShippingDeliveryTime;
+			}
 			barText = enableProgressBarValue ? (successMessage ? 'Frete Grátis!' : '') : '';
+			if (minFreeShippingDeliveryTime) {
+				barText = enableProgressBarValue ? 'Frete Grátis! (' + minFreeShippingDeliveryTime + ')' : '';
+			}
 		} else if (enableFreeShippingDetection && currentFreeShippingStatus && (minValue <= 0 || cartTotal < minValue)) {
 			// ✅ FRETE GRÁTIS DO WOOCOMMERCE / POR PRODUTO: Detectado via configurações nativas ou produto - só se detecção estiver habilitada
 			percent = 100;
@@ -284,7 +295,14 @@
 			// Se a opção de frete por produto está habilitada E o frete atual é por produto, usa o texto personalizado
 			if (freeShippingByProductEnabled && currentFreeShippingByProduct) {
 				message = freeShippingByProductMessage;
+				// Concatena o tempo de entrega se definido
+				if (freeShippingByProductDeliveryTime) {
+					message = message + ' (' + freeShippingByProductDeliveryTime + ')';
+				}
 				barText = enableProgressBarValue ? 'Frete Grátis (Produto)' : '';
+				if (freeShippingByProductDeliveryTime) {
+					barText = enableProgressBarValue ? 'Frete Grátis (Produto) (' + freeShippingByProductDeliveryTime + ')' : '';
+				}
 			} else {
 				message = 'Frete grátis disponível através da região de entrega.';
 				barText = enableProgressBarValue ? 'Frete Grátis (WC)' : '';

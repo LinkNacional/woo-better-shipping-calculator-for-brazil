@@ -612,10 +612,16 @@ class WcBetterShippingCalculatorForBrazil
                 $cart_total = WC()->cart->get_displayed_subtotal();
             }
             if ($cart_total >= $min_value) {
+                $min_free_shipping_label = __('Frete Gratuito (Valor mínimo)', 'woo-better-shipping-calculator-for-brazil');
+                $min_delivery_time = get_option('woo_better_min_free_shipping_delivery_time', '');
+                if (!empty($min_delivery_time)) {
+                    $min_free_shipping_label .= ' (' . $min_delivery_time . ')';
+                }
+
                 $has_free_shipping = true; // Marca que já temos frete grátis (evita que o frete por produto seja adicionado)
                 $free_shipping_rate = new \WC_Shipping_Rate(
                     'free_shipping_min',
-                    __('Frete Gratuito (Valor mínimo)', 'woo-better-shipping-calculator-for-brazil'),
+                    $min_free_shipping_label,
                     0,
                     array(),
                     'free_shipping'
@@ -653,9 +659,15 @@ class WcBetterShippingCalculatorForBrazil
             }
 
             if ($all_products_free_shipping) {
+                $product_free_shipping_label = __('Frete Grátis (Produto)', 'woo-better-shipping-calculator-for-brazil');
+                $product_delivery_time = get_option('woo_better_free_shipping_by_product_delivery_time', '');
+                if (!empty($product_delivery_time)) {
+                    $product_free_shipping_label .= ' (' . $product_delivery_time . ')';
+                }
+
                 $free_shipping_rate = new \WC_Shipping_Rate(
                     'free_shipping_product',
-                    __('Frete Grátis (Produto)', 'woo-better-shipping-calculator-for-brazil'),
+                    $product_free_shipping_label,
                     0,
                     array(),
                     'free_shipping'

@@ -385,6 +385,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'ajax_url' => admin_url('admin-ajax.php'),
                     'free_shipping_by_product_enabled' => get_option('woo_better_enable_free_shipping_by_product', 'no') === 'yes',
                     'free_shipping_by_product_message' => __('Frete grátis disponível por produto.', 'woo-better-shipping-calculator-for-brazil'),
+                    'min_free_shipping_delivery_time' => get_option('woo_better_min_free_shipping_delivery_time', ''),
+                    'free_shipping_by_product_delivery_time' => get_option('woo_better_free_shipping_by_product_delivery_time', ''),
                 )
             );
         }

@@ -877,6 +877,8 @@
               'woo_better_avoid_free_shipping_duplication': 'woo_better_enable_min_free_shipping',
               'woo_better_min_free_shipping_success_message': 'woo_better_min_free_shipping_message',
               'woo_better_enable_progress_bar_value': 'woo_better_min_free_shipping_message',
+              'woo_better_min_free_shipping_delivery_time': 'woo_better_enable_min_free_shipping',
+              'woo_better_free_shipping_by_product_delivery_time': 'woo_better_enable_free_shipping_by_product',
 
               //Cart
               'woo_better_calc_cart_input_border_width': 'woo_better_calc_cart_input_background_color_field',
@@ -1527,6 +1529,63 @@
       });
     }
 
+    function handleDeliveryTimeReadOnly() {
+      // Relação: woo_better_enable_min_free_shipping -> woo_better_min_free_shipping_delivery_time
+      const minFreeShippingRadios = document.querySelectorAll('input[name="woo_better_enable_min_free_shipping"]');
+      const minDeliveryTimeInput = document.querySelector('input[name="woo_better_min_free_shipping_delivery_time"]');
+
+      // Relação: woo_better_enable_free_shipping_by_product -> woo_better_free_shipping_by_product_delivery_time
+      const freeShippingByProductRadios = document.querySelectorAll('input[name="woo_better_enable_free_shipping_by_product"]');
+      const productDeliveryTimeInput = document.querySelector('input[name="woo_better_free_shipping_by_product_delivery_time"]');
+
+      function updateMinDeliveryTime() {
+        if (!minDeliveryTimeInput) return;
+        const checkedValue = document.querySelector('input[name="woo_better_enable_min_free_shipping"]:checked')?.value;
+        if (checkedValue === 'no') {
+          minDeliveryTimeInput.value = '';
+          minDeliveryTimeInput.readOnly = true;
+          minDeliveryTimeInput.style.opacity = '0.5';
+          minDeliveryTimeInput.style.cursor = 'not-allowed';
+        } else {
+          minDeliveryTimeInput.readOnly = false;
+          minDeliveryTimeInput.style.opacity = '1';
+          minDeliveryTimeInput.style.cursor = '';
+        }
+      }
+
+      function updateProductDeliveryTime() {
+        if (!productDeliveryTimeInput) return;
+        const checkedValue = document.querySelector('input[name="woo_better_enable_free_shipping_by_product"]:checked')?.value;
+        if (checkedValue === 'no') {
+          productDeliveryTimeInput.value = '';
+          productDeliveryTimeInput.readOnly = true;
+          productDeliveryTimeInput.style.opacity = '0.5';
+          productDeliveryTimeInput.style.cursor = 'not-allowed';
+        } else {
+          productDeliveryTimeInput.readOnly = false;
+          productDeliveryTimeInput.style.opacity = '1';
+          productDeliveryTimeInput.style.cursor = '';
+        }
+      }
+
+      // Estado inicial
+      updateMinDeliveryTime();
+      updateProductDeliveryTime();
+
+      // Event listeners
+      if (minFreeShippingRadios.length > 0) {
+        minFreeShippingRadios.forEach(radio => {
+          radio.addEventListener('change', updateMinDeliveryTime);
+        });
+      }
+
+      if (freeShippingByProductRadios.length > 0) {
+        freeShippingByProductRadios.forEach(radio => {
+          radio.addEventListener('change', updateProductDeliveryTime);
+        });
+      }
+    }
+
     startEvenst('cart');
     startEvenst('product');
 
@@ -1536,6 +1595,7 @@
     handleClearCacheButton();
     handleAddressFillMutualExclusion();
     addProgressBarPreview();
+    handleDeliveryTimeReadOnly();
 
     if (WCBetterCalcWooVersion.status === 'invalid') {
       // Seleciona todos os inputs e selects com o padrão de name que contenham "cart" ou "product"
