@@ -84,6 +84,19 @@ class WcBetterShippingCalculatorForBrazil
     private $is_product_address_calculation = false;
 
     /**
+     * Flag que indica que o cálculo de frete está em andamento e que o filtro
+     * woocommerce_cart_get_cart deve remover produtos com frete grátis do array
+     * retornado por WC()->cart->get_cart(). Isso resolve a incompatibilidade com
+     * plugins como o Melhor Envio que leem o carrinho diretamente em vez de usar
+     * os pacotes filtrados via woocommerce_cart_shipping_packages.
+     *
+     * @since    4.16.0
+     * @access   private
+     * @var      bool
+     */
+    private $is_shipping_calculation_active = false;
+
+    /**
      * Define the core functionality of the plugin.
      *
      * Set the plugin name and the plugin version that can be used throughout the plugin.
@@ -161,6 +174,18 @@ class WcBetterShippingCalculatorForBrazil
         // Filtra produtos com frete grátis dos pacotes de cálculo de frete
         $this->loader->add_filter('woocommerce_cart_shipping_packages', $this, 'lkn_filter_free_shipping_products_from_packages', 999, 1);
 
+        // Filtra produtos com frete grátis do retorno de WC()->cart->get_cart() durante o cálculo de frete.
+        // Isso resolve a incompatibilidade com plugins como o Melhor Envio, que leem o carrinho
+        // diretamente via CartWooCommerceService::getProducts() em vez de usar os pacotes filtrados.
+        $this->loader->add_filter('woocommerce_cart_get_cart', $this, 'lkn_filter_free_shipping_from_cart', 999, 1);
+
+        // Ativa a flag is_shipping_calculation_active ANTES do cálculo dos totais do carrinho,
+        // para que o filtro woocommerce_cart_get_cart possa remover produtos com frete grátis.
+        $this->loader->add_action('woocommerce_before_calculate_totals', $this, 'lkn_set_shipping_calculation_flag', 10, 1);
+
+        // Reseta a flag is_shipping_calculation_active após o cálculo dos totais do carrinho.
+        $this->loader->add_action('woocommerce_after_calculate_totals', $this, 'lkn_reset_shipping_calculation_flag', 10, 1);
+
         if ($disabled_shipping === 'all' || $disabled_shipping === 'digital') {
             $this->loader->add_action('woocommerce_get_country_locale', $this, 'lkn_woo_better_shipping_calculator_locale', 10, 1);
         }
@@ -234,7 +259,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '4.15.1', '4.15.0', '4.14.0', '4.13.0', '4.12.5', '4.12.4', '4.12.3', '4.12.2', '4.12.1' );
+            $old_versions   = array( '4.15.2', '4.15.1', '4.15.0', '4.14.0', '4.13.0', '4.12.5', '4.12.4', '4.12.3', '4.12.2', '4.12.1' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -283,7 +308,7 @@ class WcBetterShippingCalculatorForBrazil
                             ✨ <strong>Novo:</strong> Formato para o CNPJ alfanumérico (IN RFB 2.229/2024).
                         </p>
                         <p style="font-size: 14px; margin-top: 6px;">
-                            🔧 <strong>Ajuste:</strong> Evento de clique para fechar notificação e formato de envio do CEP para a API.
+                            🔧 <strong>Ajuste:</strong> Novo sistema de frete por produto, prazos e comportamentos para frete grátis, além de ajustes na calculadora e no campo de número do Gutenberg.
                         </p>
                     </div>
 
@@ -466,12 +491,89 @@ class WcBetterShippingCalculatorForBrazil
         return $packages;
     }
 
+    /**
+     * Filtra produtos com frete grátis do retorno de WC()->cart->get_cart().
+     *
+     * Devido ao comportamento do plugin do Melhor Envio, que obtém os produtos
+     * diretamente do carrinho via CartWooCommerceService::getProducts() (que chama
+     * $woocommerce->cart->get_cart()), ignorando os pacotes já filtrados pelo hook
+     * woocommerce_cart_shipping_packages, este filtro remove os produtos com frete
+     * grátis da resposta de get_cart() quando um cálculo de frete está em andamento.
+     *
+     * @param array $cart_contents Conteúdo do carrinho.
+     * @return array Conteúdo do carrinho sem produtos com frete grátis (quando aplicável).
+     * @since 4.16.0
+     */
+    public function lkn_filter_free_shipping_from_cart($cart_contents)
+    {
+        $enable_free_shipping_by_product = get_option('woo_better_enable_free_shipping_by_product', 'no');
+
+        if ($enable_free_shipping_by_product !== 'yes') {
+            return $cart_contents;
+        }
+
+        if (!$this->is_shipping_calculation_active) {
+            return $cart_contents;
+        }
+
+        if (!$this->is_valid_woocommerce_context() || !isset(WC()->cart)) {
+            return $cart_contents;
+        }
+
+        $free_shipping_items = array();
+        $paid_shipping_items = array();
+
+        foreach ($cart_contents as $item_key => $item) {
+            $product_id = isset($item['product_id']) ? $item['product_id'] : 0;
+            $product_free_shipping = get_post_meta($product_id, '_wc_better_free_shipping', true);
+
+            if ($product_free_shipping === 'yes') {
+                $free_shipping_items[$item_key] = $item;
+            } else {
+                $paid_shipping_items[$item_key] = $item;
+            }
+        }
+
+        // Se há itens com frete grátis E itens com frete pago, retorna apenas os pagos
+        // Se todos são frete grátis ou todos são pagos, retorna o carrinho intacto
+        if (!empty($free_shipping_items) && !empty($paid_shipping_items)) {
+            return $paid_shipping_items;
+        }
+
+        return $cart_contents;
+    }
+
+    /**
+     * Ativa a flag is_shipping_calculation_active antes do cálculo dos totais.
+     *
+     * @param WC_Cart $cart O carrinho do WooCommerce.
+     * @return void
+     * @since 4.16.0
+     */
+    public function lkn_set_shipping_calculation_flag($cart)
+    {
+        $this->is_shipping_calculation_active = true;
+    }
+
+    /**
+     * Reseta a flag is_shipping_calculation_active após o cálculo dos totais.
+     *
+     * @param WC_Cart $cart O carrinho do WooCommerce.
+     * @return void
+     * @since 4.16.0
+     */
+    public function lkn_reset_shipping_calculation_flag($cart)
+    {
+        $this->is_shipping_calculation_active = false;
+    }
+
     public function lkn_woo_better_control_rates($rates, $package)
     {
         $enable_free_shipping_by_product = get_option('woo_better_enable_free_shipping_by_product', 'no');
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
         $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
         $only_free_shipping = get_option('woo_better_only_free_shipping', 'yes');
+        $keep_other_methods = get_option('woo_better_keep_other_methods_with_free_shipping', 'yes');
         $avoid_free_shipping_duplication = get_option('woo_better_avoid_free_shipping_duplication', 'no');
 
 
@@ -511,16 +613,29 @@ class WcBetterShippingCalculatorForBrazil
                 $cart_total = WC()->cart->get_displayed_subtotal();
             }
             if ($cart_total >= $min_value) {
+                $min_free_shipping_label = __('Frete Gratuito (Valor mínimo)', 'woo-better-shipping-calculator-for-brazil');
+                $min_delivery_time = get_option('woo_better_min_free_shipping_delivery_time', '');
+                if (!empty($min_delivery_time)) {
+                    $min_free_shipping_label .= ' (' . $min_delivery_time . ')';
+                }
+
                 $has_free_shipping = true; // Marca que já temos frete grátis (evita que o frete por produto seja adicionado)
                 $free_shipping_rate = new \WC_Shipping_Rate(
                     'free_shipping_min',
-                    __('Frete Gratuito (Valor mínimo)', 'woo-better-shipping-calculator-for-brazil'),
+                    $min_free_shipping_label,
                     0,
                     array(),
                     'free_shipping'
                 );
-                if ($only_free_shipping === 'yes') {
-                    $rates = array('free_shipping_min' => $free_shipping_rate);
+                if ($keep_other_methods === 'no') {
+                    // Mantém apenas fretes gratuitos (cost == 0) e adiciona o nosso
+                    $new_rates = array('free_shipping_min' => $free_shipping_rate);
+                    foreach ($rates as $key => $rate) {
+                        if ($key !== 'free_shipping_min' && method_exists($rate, 'get_cost') && floatval($rate->get_cost()) == 0) {
+                            $new_rates[$key] = $rate;
+                        }
+                    }
+                    $rates = $new_rates;
                     return $rates;
                 } else {
                     $new_rates = array('free_shipping_min' => $free_shipping_rate);
@@ -552,15 +667,28 @@ class WcBetterShippingCalculatorForBrazil
             }
 
             if ($all_products_free_shipping) {
+                $product_free_shipping_label = __('Frete Grátis (Produto)', 'woo-better-shipping-calculator-for-brazil');
+                $product_delivery_time = get_option('woo_better_free_shipping_by_product_delivery_time', '');
+                if (!empty($product_delivery_time)) {
+                    $product_free_shipping_label .= ' (' . $product_delivery_time . ')';
+                }
+
                 $free_shipping_rate = new \WC_Shipping_Rate(
                     'free_shipping_product',
-                    __('Frete Grátis (Produto)', 'woo-better-shipping-calculator-for-brazil'),
+                    $product_free_shipping_label,
                     0,
                     array(),
                     'free_shipping'
                 );
-                if ($only_free_shipping === 'yes') {
-                    $rates = array('free_shipping_product' => $free_shipping_rate);
+                if ($keep_other_methods === 'no') {
+                    // Mantém apenas fretes gratuitos (cost == 0) e adiciona o nosso
+                    $new_rates = array('free_shipping_product' => $free_shipping_rate);
+                    foreach ($rates as $key => $rate) {
+                        if ($key !== 'free_shipping_product' && method_exists($rate, 'get_cost') && floatval($rate->get_cost()) == 0) {
+                            $new_rates[$key] = $rate;
+                        }
+                    }
+                    $rates = $new_rates;
                     return $rates;
                 } else {
                     $new_rates = array('free_shipping_product' => $free_shipping_rate);

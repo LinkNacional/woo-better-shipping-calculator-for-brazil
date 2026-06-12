@@ -185,6 +185,20 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Exibe apenas uma opção de frete grátis por vez, caso já exista uma disponível.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'min_free_shipping_delivery_time' => array(
+                'title'    => __('Prazo de Entrega (Frete Grátis por Valor Mínimo)', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_min_free_shipping_delivery_time',
+                'type'     => 'text',
+                'default'  => '',
+                'placeholder'            => __('Ex: 9 dias úteis, 3 a 5 dias, etc.', 'woo-better-shipping-calculator-for-brazil'),
+                'desc'     => __('Adicione um prazo estimado que aparecerá ao lado do frete grátis por valor. Se deixado em branco, será exibido apenas "Frete Grátis".', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'custom_attributes' => array(
+                    'data-desc-tip'          => __('Insira o texto do prazo. Ele será exibido entre parênteses.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description'       => __('Exemplo de exibição no carrinho: Frete Grátis (Valor mínimo) (9 dias úteis).', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Formato de exibição do prazo', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'min_free_shipping_message' => array(
                 'title'    => __('Mensagens para o Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_min_free_shipping_message',
@@ -245,6 +259,20 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Exibe um checkbox de frete grátis na aba de entrega dos produtos.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'free_shipping_by_product_delivery_time' => array(
+                'title'    => __('Prazo de Entrega (Frete Grátis por Produto)', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_free_shipping_by_product_delivery_time',
+                'type'     => 'text',
+                'default'  => '',
+                'placeholder'            => __('Ex: 9 dias úteis, 2 semanas, etc.', 'woo-better-shipping-calculator-for-brazil'),
+                'desc'     => __('Adicione um prazo estimado que aparecerá ao lado do nome do frete. Se deixado em branco, será exibido apenas "Frete Grátis (Produto)".', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'custom_attributes' => array(
+                    'data-desc-tip'          => __('Insira o texto do prazo. Ele será exibido entre parênteses.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description'       => __('Exemplo de exibição no carrinho: Frete Grátis (Produto) (9 dias úteis).', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Formato de exibição do prazo', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'enable_free_shipping_detection' => array(
                 'title'    => __('Detecção Inteligente de Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
                 'id'       => 'woo_better_enable_free_shipping_detection',
@@ -259,6 +287,23 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-desc-tip' => __('Preenche automaticamente a barra de frete quando o benefício for alcançado.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Ao habilitar, o plugin detecta se o carrinho do cliente já se qualifica para frete grátis e preenche a barra de progresso automaticamente, informando ao cliente que ele já ganhou o benefício.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Torna a barra de frete dinâmica e integrada com as regras de frete grátis.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'keep_other_methods_with_free_shipping' => array(
+                'title'    => __('Exibir outros fretes com Frete Grátis', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_keep_other_methods_with_free_shipping',
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-subtitle' => __('Exibir todos os métodos de envio', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Controla se outros métodos de frete são exibidos quando há frete grátis disponível.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Se habilitado, exibe todos os métodos de envio (pagos e gratuitos) mesmo quando o cliente se qualifica para frete grátis. Se desabilitado, exibe apenas as opções de frete grátis, ocultando os demais métodos de envio como PAC, SEDEX e fretes de plugins de terceiros.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Define se os métodos de envio pagos são exibidos quando o frete grátis estiver disponível.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'frete_section_end' => array(

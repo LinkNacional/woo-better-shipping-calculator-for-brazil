@@ -148,7 +148,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 # 4.16.0 - 11/06/26
-* New: Per-product shipping system.
+* New: Product-based shipping system.
+* New: Label system to define delivery business days for free shipping methods.
+* New: Behavior system triggered upon detecting free shipping.
+* Fix: Free shipping bar detection when running the plugin's calculator component.
+* Fix: Address number checkbox field in Gutenberg.
 
 # 4.15.2 - 09/06/26
 * Fixed: CEP format sent to the API.

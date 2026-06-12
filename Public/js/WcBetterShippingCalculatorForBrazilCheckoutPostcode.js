@@ -819,21 +819,32 @@ jQuery(function ($) {
                 } else {
                     this.updateCheckboxLabel(address);
                     
-                    $checkboxInput.prop('disabled', false);
-                    $checkboxInput.removeClass('wc-better-readonly-disabled');
-                    $checkboxLabel.removeClass('wc-better-checkbox-disabled-label');
-                    
-                    // Garante que a inserção automática ocorra se o endereço mudou OU o CEP digitado mudou
-                    const shouldAutoInsert = (
-                        !previousAddress ||
-                        JSON.stringify(previousAddress) !== JSON.stringify(address) ||
-                        previousCep !== currentRawCep
-                    );
-                    
-                    // Não dispara auto-insert no carregamento inicial (remount do Blocks)
-                    // para evitar que edições manuais do usuário sejam revertidas
-                    if (shouldAutoInsert && $checkboxInput.prop('checked') && !this._isInitialLoad) {
-                        this.handleCheckboxChange({ target: $checkboxInput[0] });
+                    // Durante o carregamento inicial (_isInitialLoad), o checkbox de endereço
+                    // permanece desabilitado — apenas exibe a sugestão na label.
+                    // Isso evita que o WC Blocks restaure o estado checked via re-render
+                    // do React enquanto o auto-insert está bloqueado.
+                    if (this._isInitialLoad) {
+                        // Mantém desabilitado, apenas exibe a sugestão de endereço na label
+                        $checkboxInput.prop('disabled', true)
+                            .addClass('wc-better-readonly-disabled');
+                        $checkboxLabel.addClass('wc-better-checkbox-disabled-label');
+                        $checkboxInput.prop('checked', false);
+                    } else {
+                        // Interação real do usuário: habilita o checkbox para confirmação
+                        $checkboxInput.prop('disabled', false);
+                        $checkboxInput.removeClass('wc-better-readonly-disabled');
+                        $checkboxLabel.removeClass('wc-better-checkbox-disabled-label');
+                        
+                        // Garante que a inserção automática ocorra se o endereço mudou OU o CEP digitado mudou
+                        const shouldAutoInsert = (
+                            !previousAddress ||
+                            JSON.stringify(previousAddress) !== JSON.stringify(address) ||
+                            previousCep !== currentRawCep
+                        );
+                        
+                        if (shouldAutoInsert && $checkboxInput.prop('checked')) {
+                            this.handleCheckboxChange({ target: $checkboxInput[0] });
+                        }
                     }
                     this._isInitialLoad = false;
                 }
@@ -1061,6 +1072,11 @@ jQuery(function ($) {
                 numEl.dispatchEvent(new Event('change', { bubbles: true }));
                 $numInput.prop('readonly', false).removeAttr('style');
                 $numInput.closest('.wc-block-components-text-input').removeClass('is-active');
+                // Desmarca o checkbox S/N que fica dentro do campo de número (Gutenberg)
+                var $betterCheckbox = $('#wc-' + context + '-better-checkbox');
+                if ($betterCheckbox.length) {
+                    $betterCheckbox.prop('checked', false).trigger('change');
+                }
             }
         }
 
