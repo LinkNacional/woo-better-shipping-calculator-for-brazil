@@ -1,3 +1,7 @@
+# 4.17.0 - 16/06/26
+* Novo: Campo de prazo de entrega.
+* Novo: Pop-up para validação do CEP.
+  
 # 4.16.0 - 11/06/26
 * Novo: Sistema de frete por produto.
 * Novo: Sistema de label para definir os dias úteis para entrega nos fretes grátis.
