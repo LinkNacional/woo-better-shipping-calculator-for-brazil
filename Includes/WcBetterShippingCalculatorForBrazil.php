@@ -212,6 +212,9 @@ class WcBetterShippingCalculatorForBrazil
         
         // Hook para atualizar billing_document quando perfil do usuário é atualizado
         $this->loader->add_action('profile_update', $this, 'update_billing_document_on_profile_update', 10, 1);
+
+        // Hook para salvar billing_delivery_datetime no perfil do admin (profile.php)
+        $this->loader->add_action('profile_update', $this, 'save_delivery_datetime_on_profile_update', 10, 1);
         
         // Hook para sincronizar campo empresa quando meta de post é atualizada
         $this->loader->add_action('updated_post_meta', $this, 'sync_company_field_on_meta_update', 10, 4);
@@ -1969,6 +1972,16 @@ class WcBetterShippingCalculatorForBrazil
                 'show'  => false
             );
         }
+
+        // Campo de data/hora de entrega
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        if ($delivery_schedule_enabled === 'yes') {
+            $fields['delivery_datetime'] = array(
+                'label' => __('Data e Hora de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'text',
+                'show'  => false
+            );
+        }
         
         // Adicionar qualquer campo restante não processado
         foreach ($original_fields as $key => $field) {
@@ -2497,9 +2510,10 @@ class WcBetterShippingCalculatorForBrazil
         
         // Prepare display data
         $display_data = $this->prepare_billing_display_data($order, $person_type, $phone_mask_enabled, $billing_persontype, $billing_cpf, $billing_cnpj, $billing_phone_country_code);
+        $delivery_data = $this->prepare_delivery_display_data($order);
         
         // Only show section if there's data to display
-        if (!empty($display_data)) {
+        if (!empty($display_data) || !empty($delivery_data)) {
             // Include the billing data view
             include dirname(__FILE__) . '/../Admin/partials/WcBetterShippingCalculatorForBrazilOrderBillingData.php';
         }
@@ -2547,17 +2561,8 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
-        // 1b. Data e Hora de Entrega
-        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
-        if ($delivery_schedule_enabled === 'yes') {
-            $billing_delivery_datetime = $order->get_meta('_billing_delivery_datetime');
-            if (!empty($billing_delivery_datetime)) {
-                $display_data['delivery_datetime'] = [
-                    'label' => __('Data e Hora de Entrega', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => esc_html($billing_delivery_datetime)
-                ];
-            }
-        }
+        // 1b. Data e Hora de Entrega — movido para seção separada "Prazo de Entrega"
+        // (removido do display_data principal)
 
         // 2-5. Tipo de Pessoa / CPF ou CNPJ / Empresa / IE
         if ($person_type !== 'none') {
@@ -2668,6 +2673,65 @@ class WcBetterShippingCalculatorForBrazil
         }
         
         return $display_data;
+    }
+
+    /**
+     * Prepara dados de "Prazo de Entrega" para exibição no admin do pedido.
+     *
+     * @param WC_Order $order
+     * @return array
+     */
+    private function prepare_delivery_display_data($order)
+    {
+        $delivery_data = array();
+
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        if ($delivery_schedule_enabled !== 'yes') {
+            return $delivery_data;
+        }
+
+        $billing_delivery_datetime = $order->get_meta('_billing_delivery_datetime');
+        if (empty($billing_delivery_datetime)) {
+            return $delivery_data;
+        }
+
+        // Tenta parsear a data no formato dd/mm/YYYY HH:MM
+        $delivery_dt = \DateTime::createFromFormat('d/m/Y H:i', $billing_delivery_datetime);
+        if (!$delivery_dt) {
+            // Fallback: só data no formato dd/mm/YYYY
+            $delivery_dt = \DateTime::createFromFormat('d/m/Y', $billing_delivery_datetime);
+        }
+
+        $now = new \DateTime('now', $delivery_dt ? $delivery_dt->getTimezone() : null);
+
+        $delivery_data['raw_value'] = $billing_delivery_datetime;
+
+        if ($delivery_dt) {
+            $interval = $now->diff($delivery_dt);
+
+            // Só mostra o tempo restante se for no futuro e maior que zero
+            if ($delivery_dt > $now) {
+                $parts = array();
+                if ($interval->days > 0) {
+                    $parts[] = sprintf(
+                        _n('%d dia', '%d dias', $interval->days, 'woo-better-shipping-calculator-for-brazil'),
+                        $interval->days
+                    );
+                }
+                if ($interval->h > 0 || $interval->i > 0) {
+                    $parts[] = sprintf('%02d:%02d', $interval->h, $interval->i);
+                }
+                if (!empty($parts)) {
+                    $delivery_data['remaining'] = implode(' e ', $parts);
+                }
+            }
+
+            $delivery_data['formatted'] = $delivery_dt->format('d/m/Y H:i');
+        } else {
+            $delivery_data['formatted'] = $billing_delivery_datetime;
+        }
+
+        return $delivery_data;
     }
     
     /**
@@ -3405,6 +3469,25 @@ class WcBetterShippingCalculatorForBrazil
         // Atualizar billing_document no user meta se há documento para salvar
         if (!empty($billing_document)) {
             update_user_meta($user_id, 'billing_document', $billing_document);
+        }
+    }
+
+    /**
+     * Salva billing_delivery_datetime quando o perfil é atualizado no admin (profile.php).
+     *
+     * @param int $user_id
+     * @since 4.17.0
+     */
+    public function save_delivery_datetime_on_profile_update($user_id)
+    {
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        if ($delivery_schedule_enabled !== 'yes') {
+            return;
+        }
+
+        if (isset($_POST['billing_delivery_datetime'])) {
+            $delivery_datetime = sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime']));
+            update_user_meta($user_id, 'billing_delivery_datetime', $delivery_datetime);
         }
     }
 
