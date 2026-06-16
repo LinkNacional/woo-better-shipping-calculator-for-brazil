@@ -208,6 +208,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (child.tagName === 'INPUT' && child.type === 'hidden') continue;
             if (child.classList.contains('wc-block-checkout__use-address-for-shipping')) continue;
             if (child.classList.contains('wc-block-checkout__use-address-for-billing')) continue;
+            // Pula campos do próprio plugin para evitar auto-referência
+            if (child.classList.contains('wc-block-components-address-form__birthdate')) continue;
+            if (child.classList.contains('wc-block-components-address-form__gender')) continue;
+            if (child.classList.contains('wc-block-components-address-form__delivery-datetime')) continue;
             // É um campo visível
             return child;
         }

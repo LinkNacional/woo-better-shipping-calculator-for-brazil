@@ -1168,7 +1168,7 @@ class WcBetterShippingCalculatorForBrazil
             $fields['billing']['billing_birthdate'] = array(
                 'label'       => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
                 'placeholder' => __('dd/mm/aaaa', 'woo-better-shipping-calculator-for-brazil'),
-                'type'        => 'date',
+                'type'        => 'text',
                 'required'    => true,
                 'class'       => array('form-row-wide'),
                 'priority'    => 25,
@@ -7479,7 +7479,7 @@ class WcBetterShippingCalculatorForBrazil
                 'required'    => true,
                 'class'       => array('form-row-wide'),
                 'priority'    => 25,
-                'type'        => 'date'
+                'type'        => 'text'
             );
         }
         
