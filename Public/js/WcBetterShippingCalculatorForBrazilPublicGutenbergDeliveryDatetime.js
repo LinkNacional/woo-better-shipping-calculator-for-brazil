@@ -387,6 +387,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 updateActiveState();
             },
             onOpen: function (selectedDates, dateStr, instance) {
+                // Se focus veio do erro de validação (place order), fecha sem disparar onClose
+                if (input._blockOpen) {
+                    instance.close();
+                    // Não reseta _blockOpen — onClose vai usá-lo para pular hideError
+                    return;
+                }
                 if (!input._confirmBtn) {
                     var cal = instance.calendarContainer;
                     if (cal && !cal.querySelector('.wc-better-flatpickr-confirm')) {
@@ -406,6 +412,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             },
             onClose: function (selectedDates, dateStr) {
+                if (input._blockOpen) {
+                    input._blockOpen = false;
+                    // Não esconde o erro — foi disparado pelo place order
+                    updateActiveState();
+                    return;
+                }
                 hideError();
                 updateActiveState();
             },
@@ -465,8 +477,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 e.stopPropagation();
                 e.preventDefault();
                 showError();
+                deliveryInput._blockOpen = true; // bloqueia abertura do calendário nesse focus
                 deliveryInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(function () { deliveryInput.focus(); }, 250);
+                setTimeout(function () {
+                    deliveryInput.focus();
+                    // Adiciona has-error para destacar visualmente o campo
+                    var c = getDeliveryContainer();
+                    if (c) c.classList.add('has-error');
+                }, 250);
             }
         });
         placeOrderBound = true;

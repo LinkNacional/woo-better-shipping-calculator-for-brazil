@@ -5434,30 +5434,34 @@ class WcBetterShippingCalculatorForBrazil
      */
     private function lkn_set_customer_address_from_cep($postcode, $city, $state, $address, $neighborhood = '')
     {
-        $full_address = $address . ' - ' . $city . '/' . $state;
+        $formatted_postcode = substr($postcode, 0, 5) . '-' . substr($postcode, 5);
 
         // Shipping
-        WC()->customer->set_shipping_postcode($postcode);
+        WC()->customer->set_shipping_postcode($formatted_postcode);
         WC()->customer->set_shipping_city($city);
         WC()->customer->set_shipping_state($state);
-        WC()->customer->set_shipping_address($full_address);
+        WC()->customer->set_shipping_address($address);
+        WC()->customer->set_shipping_country('BR');
 
         // Billing
-        WC()->customer->set_billing_postcode($postcode);
+        WC()->customer->set_billing_postcode($formatted_postcode);
         WC()->customer->set_billing_city($city);
         WC()->customer->set_billing_state($state);
-        WC()->customer->set_billing_address($full_address);
+        WC()->customer->set_billing_address($address);
+        WC()->customer->set_billing_country('BR');
 
         // Sessão
-        WC()->session->set('shipping_postcode', $postcode);
+        WC()->session->set('shipping_postcode', $formatted_postcode);
         WC()->session->set('shipping_city', $city);
         WC()->session->set('shipping_state', $state);
-        WC()->session->set('shipping_address', $full_address);
+        WC()->session->set('shipping_address', $address);
+        WC()->session->set('shipping_country', 'BR');
 
-        WC()->session->set('billing_postcode', $postcode);
+        WC()->session->set('billing_postcode', $formatted_postcode);
         WC()->session->set('billing_city', $city);
         WC()->session->set('billing_state', $state);
-        WC()->session->set('billing_address', $full_address);
+        WC()->session->set('billing_address', $address);
+        WC()->session->set('billing_country', 'BR');
 
         // Bairro (se habilitado e disponível)
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
@@ -5469,15 +5473,17 @@ class WcBetterShippingCalculatorForBrazil
         // User meta (se logado)
         if (is_user_logged_in()) {
             $user_id = get_current_user_id();
-            update_user_meta($user_id, 'shipping_postcode', $postcode);
+            update_user_meta($user_id, 'shipping_postcode', $formatted_postcode);
             update_user_meta($user_id, 'shipping_city', $city);
             update_user_meta($user_id, 'shipping_state', $state);
             update_user_meta($user_id, 'shipping_address_1', $address);
+            update_user_meta($user_id, 'shipping_country', 'BR');
 
-            update_user_meta($user_id, 'billing_postcode', $postcode);
+            update_user_meta($user_id, 'billing_postcode', $formatted_postcode);
             update_user_meta($user_id, 'billing_city', $city);
             update_user_meta($user_id, 'billing_state', $state);
             update_user_meta($user_id, 'billing_address_1', $address);
+            update_user_meta($user_id, 'billing_country', 'BR');
 
             if ($neighborhood_enabled === 'yes' && !empty($neighborhood)) {
                 update_user_meta($user_id, 'shipping_neighborhood', $neighborhood);
