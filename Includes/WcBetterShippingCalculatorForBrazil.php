@@ -77,7 +77,7 @@ class WcBetterShippingCalculatorForBrazil
      * Quando true, o valor mínimo para frete grátis usa o contents_cost do pacote.
      * Quando false (carrinho/checkout), usa o subtotal total do carrinho.
      *
-     * @since    4.16.0
+     * @since    4.17.0
      * @access   private
      * @var      bool
      */
@@ -90,7 +90,7 @@ class WcBetterShippingCalculatorForBrazil
      * plugins como o Melhor Envio que leem o carrinho diretamente em vez de usar
      * os pacotes filtrados via woocommerce_cart_shipping_packages.
      *
-     * @since    4.16.0
+     * @since    4.17.0
      * @access   private
      * @var      bool
      */
@@ -110,7 +110,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.16.0';
+            $this->version = '4.17.0';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -443,7 +443,7 @@ class WcBetterShippingCalculatorForBrazil
      *
      * @param array $packages Pacotes de envio a serem calculados.
      * @return array Pacotes de envio modificados, sem os produtos com frete grátis.
-     * @since 4.16.0
+     * @since 4.17.0
      */
     public function lkn_filter_free_shipping_products_from_packages($packages)
     {
@@ -509,7 +509,7 @@ class WcBetterShippingCalculatorForBrazil
      *
      * @param array $cart_contents Conteúdo do carrinho.
      * @return array Conteúdo do carrinho sem produtos com frete grátis (quando aplicável).
-     * @since 4.16.0
+     * @since 4.17.0
      */
     public function lkn_filter_free_shipping_from_cart($cart_contents)
     {
@@ -555,7 +555,7 @@ class WcBetterShippingCalculatorForBrazil
      *
      * @param WC_Cart $cart O carrinho do WooCommerce.
      * @return void
-     * @since 4.16.0
+     * @since 4.17.0
      */
     public function lkn_set_shipping_calculation_flag($cart)
     {
@@ -567,7 +567,7 @@ class WcBetterShippingCalculatorForBrazil
      *
      * @param WC_Cart $cart O carrinho do WooCommerce.
      * @return void
-     * @since 4.16.0
+     * @since 4.17.0
      */
     public function lkn_reset_shipping_calculation_flag($cart)
     {
