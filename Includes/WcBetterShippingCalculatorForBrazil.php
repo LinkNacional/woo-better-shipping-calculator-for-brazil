@@ -1178,7 +1178,6 @@ class WcBetterShippingCalculatorForBrazil
                 'type'        => 'text',
                 'required'    => true,
                 'class'       => array('form-row-wide'),
-                'priority'    => 27,
             );
         }
 
@@ -3462,6 +3461,9 @@ class WcBetterShippingCalculatorForBrazil
         
         // Processa dados de data de nascimento
         $this->process_birthdate_from_request($order, $request);
+
+        // Processa dados de data/hora de entrega
+        $this->process_delivery_datetime_from_request($order, $request);
         
         // Processa dados de gênero
         $this->process_gender_from_request($order, $request);
@@ -4084,6 +4086,28 @@ class WcBetterShippingCalculatorForBrazil
                 },
             ]);
 
+            // Registra campos para data/hora de entrega
+            $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+            if ($delivery_schedule_enabled === 'yes') {
+                woocommerce_store_api_register_endpoint_data( [
+                    'endpoint'        => 'checkout',
+                    'namespace'       => 'woo_better_delivery_datetime',
+                    'schema_callback' => function() {
+                        return [
+                            'billing_delivery_datetime' => [
+                                'type'     => 'string',
+                                'readonly' => true,
+                            ],
+                        ];
+                    },
+                    'data_callback' => function() {
+                        return [
+                            'billing_delivery_datetime'  => '',
+                        ];
+                    },
+                ]);
+            }
+
             // Registra campos para telefone formatado
             woocommerce_store_api_register_endpoint_data( [
                 'endpoint'        => 'checkout',
@@ -4175,6 +4199,15 @@ class WcBetterShippingCalculatorForBrazil
                 'namespace' => 'woo_better_ie_field',
                 'callback'  => [ $this, 'handle_ie_update' ],
             ]);
+
+            // Callback para data/hora de entrega
+            $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+            if ($delivery_schedule_enabled === 'yes') {
+                woocommerce_store_api_register_update_callback([
+                    'namespace' => 'woo_better_delivery_datetime',
+                    'callback'  => [ $this, 'handle_delivery_datetime_update' ],
+                ]);
+            }
 
             // Callback para telefone formatado
             woocommerce_store_api_register_update_callback([
@@ -4442,6 +4475,23 @@ class WcBetterShippingCalculatorForBrazil
         WC()->session->set( 'billing_gender', $billing_gender );
         if (is_user_logged_in()) {
             update_user_meta( get_current_user_id(), 'billing_gender', $billing_gender );
+        }
+    }
+
+    public function handle_delivery_datetime_update( $data ) {
+        if (! function_exists('WC') || ! WC()->session ) {
+            return;
+        }
+
+        $billing_delivery_datetime = '';
+
+        if ( isset( $data['billing_delivery_datetime'] ) ) {
+            $billing_delivery_datetime = sanitize_text_field( (string) $data['billing_delivery_datetime'] );
+        }
+
+        WC()->session->set( 'billing_delivery_datetime', $billing_delivery_datetime );
+        if (is_user_logged_in()) {
+            update_user_meta( get_current_user_id(), 'billing_delivery_datetime', $billing_delivery_datetime );
         }
     }
 
@@ -6053,6 +6103,40 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Processa os dados de data/hora de entrega no checkout de blocos
+     *
+     * @param WC_Order $order
+     * @param WP_REST_Request $request
+     * @return void
+     */
+    private function process_delivery_datetime_from_request($order, $request)
+    {
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        
+        if ($delivery_schedule_enabled === 'yes') {
+            $extensions = $request->get_param('extensions') ?? [];
+
+            $billing_delivery_datetime = '';
+            
+            if (isset($extensions['woo_better_delivery_datetime'])) {
+                $delivery_data = $extensions['woo_better_delivery_datetime'];
+                
+                if (isset($delivery_data['billing_delivery_datetime'])) {
+                    $billing_delivery_datetime = sanitize_text_field($delivery_data['billing_delivery_datetime']);
+                }
+            }
+            
+            if (empty($billing_delivery_datetime) && isset($_POST['billing_delivery_datetime'])) {
+                $billing_delivery_datetime = sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime']));
+            }
+
+            if (!empty($billing_delivery_datetime)) {
+                $order->update_meta_data('_billing_delivery_datetime', $billing_delivery_datetime);
+            }
+        }
+    }
+
+    /**
      * Processa os dados de data de nascimento no checkout de blocos
      *
      * @param WC_Order $order
@@ -7156,7 +7240,6 @@ class WcBetterShippingCalculatorForBrazil
                 'placeholder' => __('Selecione a data e hora', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
                 'class'       => array('form-row-wide'),
-                'priority'    => 27,
                 'type'        => 'text'
             );
         }

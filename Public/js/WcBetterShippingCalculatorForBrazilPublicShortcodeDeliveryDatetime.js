@@ -284,7 +284,8 @@ document.addEventListener('DOMContentLoaded', function () {
             locale: Portuguese,
             minTime: globalMinTime,
             maxTime: globalMaxTime,
-            allowInput: true,
+            // Sem allowInput — o valor só é definido via calendário/relógio,
+            // evitando crash do parseDate com texto inválido.
             disable: [
                 function (date) {
                     return isDateDisabled(date);
