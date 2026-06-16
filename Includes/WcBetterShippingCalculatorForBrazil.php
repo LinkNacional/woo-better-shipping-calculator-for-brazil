@@ -2722,15 +2722,18 @@ class WcBetterShippingCalculatorForBrazil
                 $parts = array();
                 if ($interval->days > 0) {
                     $parts[] = sprintf(
-                        _n('%d dia', '%d dias', $interval->days, 'woo-better-shipping-calculator-for-brazil'),
+                        _n('%dd', '%dd', $interval->days, 'woo-better-shipping-calculator-for-brazil'),
                         $interval->days
                     );
                 }
-                if ($interval->h > 0 || $interval->i > 0) {
-                    $parts[] = sprintf('%02d:%02d', $interval->h, $interval->i);
+                if ($interval->h > 0) {
+                    $parts[] = sprintf('%dh', $interval->h);
+                }
+                if ($interval->i > 0) {
+                    $parts[] = sprintf('%dm', $interval->i);
                 }
                 if (!empty($parts)) {
-                    $delivery_data['remaining'] = implode(' e ', $parts);
+                    $delivery_data['remaining'] = implode(' ', $parts);
                 }
             }
 
