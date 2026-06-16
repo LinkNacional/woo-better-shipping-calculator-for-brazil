@@ -44,6 +44,7 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
+    "flatpickr": "^4.6.13",
     "intl-tel-input": "^25.12.5"
   }
 }

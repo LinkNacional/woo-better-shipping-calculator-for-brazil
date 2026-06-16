@@ -958,6 +958,70 @@ class WcBetterShippingCalculatorForBrazilPublic
                     )
                 );
             }
+
+            // Registrar script para campo de data/hora de entrega no checkout clássico
+            $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+
+            if ($delivery_schedule_enabled === 'yes') {
+                // Obter dados da sessão para o campo
+                $billing_delivery_datetime = '';
+
+                if (function_exists('WC') && WC()->session) {
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_delivery_datetime = get_user_meta($user_id, 'billing_delivery_datetime', true);
+                    }
+
+                    if (empty($billing_delivery_datetime)) {
+                        $billing_delivery_datetime = WC()->session->get('billing_delivery_datetime', '');
+                    }
+                }
+
+                // Dados do schedule
+                $schedule_json = get_option('woo_better_delivery_schedule', '{}');
+                $schedule = json_decode($schedule_json, true);
+                if (!is_array($schedule)) {
+                    $schedule = array();
+                }
+
+                // Dados dos feriados
+                $holidays_path = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_DIR . 'Includes/assets/data/holidays.json';
+                $holidays = array();
+                if (file_exists($holidays_path)) {
+                    $holidays_json = file_get_contents($holidays_path);
+                    $holidays = json_decode($holidays_json, true);
+                    if (!is_array($holidays)) {
+                        $holidays = array();
+                    }
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-delivery-datetime',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeDeliveryDatetime.COMPILED.js',
+                    array(),
+                    $this->version,
+                    true
+                );
+
+                wp_enqueue_style(
+                    $this->plugin_name . '-delivery-datetime',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeDeliveryDatetime.COMPILED.css',
+                    array(),
+                    $this->version
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-delivery-datetime',
+                    'WooBetterDeliverySchedule',
+                    $schedule
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-delivery-datetime',
+                    'WooBetterDeliveryHolidays',
+                    $holidays
+                );
+            }
         }
 
         // Verifica se deve esconder calculador para produtos digitais
@@ -1582,6 +1646,64 @@ class WcBetterShippingCalculatorForBrazilPublic
                     array(
                         'billing_gender' => $billing_gender
                     )
+                );
+            }
+
+            // Scripts para campo de data/hora de entrega
+            $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+
+            if ($delivery_schedule_enabled === 'yes') {
+                // Obter dados do usuário
+                $billing_delivery_datetime = '';
+
+                if (is_user_logged_in()) {
+                    $user_id = get_current_user_id();
+                    $billing_delivery_datetime = get_user_meta($user_id, 'billing_delivery_datetime', true);
+                }
+
+                // Dados do schedule
+                $schedule_json = get_option('woo_better_delivery_schedule', '{}');
+                $schedule = json_decode($schedule_json, true);
+                if (!is_array($schedule)) {
+                    $schedule = array();
+                }
+
+                // Dados dos feriados
+                $holidays_path = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_DIR . 'Includes/assets/data/holidays.json';
+                $holidays = array();
+                if (file_exists($holidays_path)) {
+                    $holidays_json = file_get_contents($holidays_path);
+                    $holidays = json_decode($holidays_json, true);
+                    if (!is_array($holidays)) {
+                        $holidays = array();
+                    }
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-edit-address-delivery-datetime',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeDeliveryDatetime.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    true
+                );
+
+                wp_enqueue_style(
+                    $this->plugin_name . '-edit-address-delivery-datetime',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeDeliveryDatetime.COMPILED.css',
+                    array(),
+                    $this->version
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-delivery-datetime',
+                    'WooBetterDeliverySchedule',
+                    $schedule
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-delivery-datetime',
+                    'WooBetterDeliveryHolidays',
+                    $holidays
                 );
             }
 

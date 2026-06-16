@@ -1169,6 +1169,19 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
 
+        // Adiciona campo de data/hora de entrega
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        if ($delivery_schedule_enabled === 'yes') {
+            $fields['billing']['billing_delivery_datetime'] = array(
+                'label'       => __('Data e Hora de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Selecione a data e hora', 'woo-better-shipping-calculator-for-brazil'),
+                'type'        => 'text',
+                'required'    => true,
+                'class'       => array('form-row-wide'),
+                'priority'    => 27,
+            );
+        }
+
         // Adiciona campo de gênero
         $gender_field = get_option('woo_better_calc_enable_gender_field', 'no');
         if ($gender_field === 'yes') {
@@ -1440,6 +1453,7 @@ class WcBetterShippingCalculatorForBrazil
         
         // Hook para validação de data de nascimento no checkout
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_birthdate_value');
+        $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_delivery_datetime_value');
 
         // Hook para validação de Inscrição Estadual (IE) no checkout clássico
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_ie_field_value_classic');
@@ -2534,6 +2548,18 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
+        // 1b. Data e Hora de Entrega
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        if ($delivery_schedule_enabled === 'yes') {
+            $billing_delivery_datetime = $order->get_meta('_billing_delivery_datetime');
+            if (!empty($billing_delivery_datetime)) {
+                $display_data['delivery_datetime'] = [
+                    'label' => __('Data e Hora de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                    'value' => esc_html($billing_delivery_datetime)
+                ];
+            }
+        }
+
         // 2-5. Tipo de Pessoa / CPF ou CNPJ / Empresa / IE
         if ($person_type !== 'none') {
             // 2. Tipo de Pessoa (apenas quando 'both')
@@ -3003,6 +3029,51 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Valida campo de data/hora de entrega no checkout clássico.
+     *
+     * @return void
+     */
+    public function validate_delivery_datetime_value() {
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        if ($delivery_schedule_enabled !== 'yes') {
+            return;
+        }
+
+        $billing_delivery_datetime = isset($_POST['billing_delivery_datetime']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime'])) : '';
+
+        if (empty($billing_delivery_datetime)) {
+            wc_add_notice(__('Por favor, selecione uma data e hora de entrega.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+            return;
+        }
+
+        // Valida formato dd/mm/aaaa hh:mm
+        if (!preg_match('/^(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}):(\d{2})$/', $billing_delivery_datetime, $matches)) {
+            wc_add_notice(__('Formato de data e hora de entrega inválido. Use dd/mm/aaaa hh:mm.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+            return;
+        }
+
+        $day = (int) $matches[1];
+        $month = (int) $matches[2];
+        $year = (int) $matches[3];
+        $hour = (int) $matches[4];
+        $minute = (int) $matches[5];
+
+        if (!checkdate($month, $day, $year)) {
+            wc_add_notice(__('Data de entrega inválida.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+            return;
+        }
+
+        $delivery_date = new \DateTime("$year-$month-$day $hour:$minute:00");
+        $now = new \DateTime('now', $delivery_date->getTimezone());
+
+        // Não pode ser no passado (com margem de 1h)
+        if ($delivery_date < $now->modify('-1 hour')) {
+            wc_add_notice(__('A data e hora de entrega não pode estar no passado.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+            return;
+        }
+    }
+
+    /**
      * Valida campo de Inscrição Estadual (IE) no checkout clássico.
      *
      * Quando o recurso está habilitado, exige o preenchimento da IE em todos os
@@ -3249,6 +3320,9 @@ class WcBetterShippingCalculatorForBrazil
         
         // Processa dados de data de nascimento
         $this->process_birthdate_from_data($order, $data);
+        
+        // Processa dados de data/hora de entrega
+        $this->process_delivery_datetime_from_data($order, $data);
         
         // Processa dados de gênero
         $this->process_gender_from_data($order, $data);
@@ -5959,6 +6033,26 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Processa os dados de data/hora de entrega no checkout tradicional
+     *
+     * @param WC_Order $order
+     * @param array $data
+     * @return void
+     */
+    private function process_delivery_datetime_from_data($order, $data)
+    {
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        
+        if ($delivery_schedule_enabled === 'yes') {
+            $billing_delivery_datetime = isset($_POST['billing_delivery_datetime']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime'])) : '';
+
+            if (!empty($billing_delivery_datetime)) {
+                $order->update_meta_data('_billing_delivery_datetime', $billing_delivery_datetime);
+            }
+        }
+    }
+
+    /**
      * Processa os dados de data de nascimento no checkout de blocos
      *
      * @param WC_Order $order
@@ -6399,6 +6493,7 @@ class WcBetterShippingCalculatorForBrazil
         $order_data['billing_address']['neighborhood'] = $order->get_meta('_billing_neighborhood');
         $order_data['billing_address']['birthdate']    = $order->get_meta('_billing_birthdate');
         $order_data['billing_address']['gender']       = $order->get_meta('_billing_gender');
+        $order_data['billing_address']['delivery_datetime'] = $order->get_meta('_billing_delivery_datetime');
 
         // Shipping fields
         $order_data['shipping_address']['number']       = $order->get_meta('_shipping_number');
@@ -6414,6 +6509,7 @@ class WcBetterShippingCalculatorForBrazil
             $order_data['customer']['billing_address']['neighborhood'] = $order->get_meta('_billing_neighborhood');
             $order_data['customer']['billing_address']['birthdate']    = $order->get_meta('_billing_birthdate');
             $order_data['customer']['billing_address']['gender']       = $order->get_meta('_billing_gender');
+            $order_data['customer']['billing_address']['delivery_datetime'] = $order->get_meta('_billing_delivery_datetime');
 
             $order_data['customer']['shipping_address']['number']       = $order->get_meta('_shipping_number');
             $order_data['customer']['shipping_address']['neighborhood'] = $order->get_meta('_shipping_neighborhood');
@@ -6442,6 +6538,7 @@ class WcBetterShippingCalculatorForBrazil
         $customer_data['billing_address']['neighborhood'] = $customer->get_meta('billing_neighborhood');
         $customer_data['billing_address']['birthdate']    = $customer->get_meta('billing_birthdate');
         $customer_data['billing_address']['gender']       = $customer->get_meta('billing_gender');
+        $customer_data['billing_address']['delivery_datetime'] = $customer->get_meta('billing_delivery_datetime');
 
         // Shipping fields
         $customer_data['shipping_address']['number']       = $customer->get_meta('shipping_number');
@@ -6512,6 +6609,7 @@ class WcBetterShippingCalculatorForBrazil
         $response->data['billing']['neighborhood'] = $order->get_meta('_billing_neighborhood');
         $response->data['billing']['birthdate']    = $order->get_meta('_billing_birthdate');
         $response->data['billing']['gender']       = $order->get_meta('_billing_gender');
+        $response->data['billing']['delivery_datetime'] = $order->get_meta('_billing_delivery_datetime');
 
         // Recupera o CPF armazenado pelo plugin Pagar.me no meta '_wc_billing/address/document'
         $cpf_pagarme = $order->get_meta('_wc_billing/address/document', true);
@@ -6698,9 +6796,10 @@ class WcBetterShippingCalculatorForBrazil
         $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
         $birthdate_field = get_option('woo_better_calc_enable_birthdate_field', 'no');
         $gender_field = get_option('woo_better_calc_enable_gender_field', 'no');
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
         
         // Se nenhum campo está habilitado, não adiciona nada
-        if ($person_type === 'none' && $number_field === 'no' && $neighborhood_field === 'no' && $ie_field_enabled === 'no' && $birthdate_field === 'no' && $gender_field === 'no') {
+        if ($person_type === 'none' && $number_field === 'no' && $neighborhood_field === 'no' && $ie_field_enabled === 'no' && $birthdate_field === 'no' && $gender_field === 'no' && $delivery_schedule_enabled === 'no') {
             return $fields;
         }
         
@@ -6778,6 +6877,15 @@ class WcBetterShippingCalculatorForBrazil
                                 __('Outro', 'woo-better-shipping-calculator-for-brazil')          => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
                                 __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
                             ),
+                            'description' => '',
+                        );
+                    }
+                    
+                    // Adiciona campo de data/hora de entrega se habilitado
+                    if ($delivery_schedule_enabled === 'yes') {
+                        $new_billing_fields['billing_delivery_datetime'] = array(
+                            'label'       => __('Data e Hora de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                            'type'        => 'text',
                             'description' => '',
                         );
                     }
@@ -6898,6 +7006,7 @@ class WcBetterShippingCalculatorForBrazil
         $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
         $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
         $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
         
         // Aplicar prioridades de campos conforme configurações
         if($email_highlight_shortcode === 'yes') {
@@ -7037,6 +7146,18 @@ class WcBetterShippingCalculatorForBrazil
                     __('Outro', 'woo-better-shipping-calculator-for-brazil')          => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
                     __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
                 )
+            );
+        }
+        
+        // Campo de data/hora de entrega
+        if ($delivery_schedule_enabled === 'yes') {
+            $fields['billing_delivery_datetime'] = array(
+                'label'       => __('Data e Hora de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Selecione a data e hora', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => true,
+                'class'       => array('form-row-wide'),
+                'priority'    => 27,
+                'type'        => 'text'
             );
         }
         
@@ -7320,6 +7441,13 @@ class WcBetterShippingCalculatorForBrazil
                 $birthdate = sanitize_text_field(wp_unslash($_POST['billing_birthdate']));
                 update_user_meta($user_id, 'billing_birthdate', $birthdate);
             }
+
+            // Salvar data/hora de entrega
+            $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+            if ($delivery_schedule_enabled === 'yes' && isset($_POST['billing_delivery_datetime'])) {
+                $delivery_datetime = sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime']));
+                update_user_meta($user_id, 'billing_delivery_datetime', $delivery_datetime);
+            }
             
             // CORREÇÃO: Sempre salva gênero quando habilitado para sobrescrever valores antigos "Masculino"
             if ($gender_enabled === 'yes') {
@@ -7399,6 +7527,7 @@ class WcBetterShippingCalculatorForBrazil
         $number_enabled     = get_option('woo_better_calc_number_required', 'no');
         $birthdate_enabled  = get_option('woo_better_calc_enable_birthdate_field', 'no');
         $gender_enabled     = get_option('woo_better_calc_enable_gender_field', 'no');
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
         $ie_field_enabled   = get_option('woo_better_calc_enable_ie_field', 'no');
 
         // ── Billing ──────────────────────────────────────────────────────────
@@ -7432,6 +7561,10 @@ class WcBetterShippingCalculatorForBrazil
 
         if ($gender_enabled === 'yes') {
             $data['billing']['gender'] = get_user_meta($user_id, 'billing_gender', true);
+        }
+
+        if ($delivery_schedule_enabled === 'yes') {
+            $data['billing']['delivery_datetime'] = get_user_meta($user_id, 'billing_delivery_datetime', true);
         }
 
         return $data;
