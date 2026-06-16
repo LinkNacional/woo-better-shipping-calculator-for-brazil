@@ -264,6 +264,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 c.classList.add('is-active');
             }
         });
+        // Limpa erro no momento em que o usuário começa a digitar
+        birthdateInput.addEventListener('input', function () {
+            hideError();
+        });
     }
 
     // ── Flatpickr ────────────────────────────────────────────────────────

@@ -313,9 +313,17 @@ document.addEventListener('DOMContentLoaded', function () {
         errP.appendChild(errSpan);
         errDiv.appendChild(errP);
 
-        container.appendChild(input);
-        container.appendChild(label);
-        container.appendChild(iconWrap);
+        // Wrapper principal: input + label + ícone. Mesmo padrão do campo IE
+        // (wc-better-ie-main-wrapper) e birthdate (wc-better-birthdate-main-wrapper).
+        // Mantém o ícone absolute alinhado ao input, sem descer quando o erro aparece abaixo.
+        var fieldMain = document.createElement('div');
+        fieldMain.className = 'wc-better-delivery-datetime-main-wrapper';
+        fieldMain.style.position = 'relative';
+        fieldMain.appendChild(input);
+        fieldMain.appendChild(label);
+        fieldMain.appendChild(iconWrap);
+
+        container.appendChild(fieldMain);
         container.appendChild(errDiv);
 
         referenceElement.insertAdjacentElement('afterend', container);
@@ -338,9 +346,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         deliveryInput.addEventListener('blur', function () {
             var c = getDeliveryContainer();
-            // Só remove is-active se estiver vazio; se tiver valor mantém o label no topo
-            if (c && !deliveryInput.value.trim()) c.classList.remove('is-active');
-            else if (c && deliveryInput.value.trim()) c.classList.add('is-active');
+            if (c && !deliveryInput.value.trim()) {
+                c.classList.remove('is-active');
+                showError('Selecione uma data e hora de entrega.');
+            } else if (c && deliveryInput.value.trim()) {
+                c.classList.add('is-active');
+            }
         });
     }
 
