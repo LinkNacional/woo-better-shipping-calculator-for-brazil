@@ -163,6 +163,10 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_get_settings_pages', $this, 'lkn_add_woo_better_settings_page');
         $this->loader->add_filter('woocommerce_get_settings_pages', $this, 'lkn_add_woo_better_checkout_settings_page');
 
+        // Hooks para o campo personalizado de prazo de entrega (dias + horários)
+        $this->loader->add_action('woocommerce_admin_field_delivery_schedule', $this, 'lkn_render_delivery_schedule_field');
+        $this->loader->add_filter('woocommerce_admin_settings_sanitize_option_woo_better_delivery_schedule', $this, 'lkn_sanitize_delivery_schedule_field', 10, 3);
+
         $this->loader->add_action('admin_footer', $this, 'lkn_woo_better_footer_page');
 
         $this->loader->add_filter('plugin_action_links_' . WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_BASENAME, $this, 'lkn_add_settings_link', 10, 2);
@@ -970,6 +974,147 @@ class WcBetterShippingCalculatorForBrazil
     {
         $settings[] = new WcBetterShippingCalculatorForBrazilCheckoutSettings();
         return $settings;
+    }
+
+    /**
+     * Renderiza o campo personalizado de dias da semana + horários (delivery_schedule).
+     *
+     * @param array $value Configuração do campo.
+     */
+    public function lkn_render_delivery_schedule_field($value)
+    {
+        $option_value = get_option($value['id'], '{}');
+        $schedule = json_decode($option_value, true);
+        if (!is_array($schedule)) {
+            $schedule = array();
+        }
+
+        $days = array(
+            'sunday'    => __('Domingo', 'woo-better-shipping-calculator-for-brazil'),
+            'monday'    => __('Segunda-feira', 'woo-better-shipping-calculator-for-brazil'),
+            'tuesday'   => __('Terça-feira', 'woo-better-shipping-calculator-for-brazil'),
+            'wednesday' => __('Quarta-feira', 'woo-better-shipping-calculator-for-brazil'),
+            'thursday'  => __('Quinta-feira', 'woo-better-shipping-calculator-for-brazil'),
+            'friday'    => __('Sexta-feira', 'woo-better-shipping-calculator-for-brazil'),
+            'saturday'  => __('Sábado', 'woo-better-shipping-calculator-for-brazil'),
+        );
+
+        ?>
+        <tr valign="top">
+            <th scope="row" class="titledesc">
+                <label for="<?php echo esc_attr($value['id']); ?>"><?php echo esc_html($value['title']); ?></label>
+            </th>
+            <td class="forminp forminp-delivery-schedule">
+                <fieldset>
+                    <legend class="screen-reader-text"><span><?php echo esc_html($value['title']); ?></span></legend>
+                    <table class="wc-better-delivery-schedule-table" style="border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding: 8px 10px;"><?php esc_html_e('Dia', 'woo-better-shipping-calculator-for-brazil'); ?></th>
+                                <th style="text-align: left; padding: 8px 10px;"><?php esc_html_e('Ativo', 'woo-better-shipping-calculator-for-brazil'); ?></th>
+                                <th style="text-align: left; padding: 8px 10px;"><?php esc_html_e('Horário Inicial', 'woo-better-shipping-calculator-for-brazil'); ?></th>
+                                <th style="text-align: left; padding: 8px 10px;"><?php esc_html_e('Horário Final', 'woo-better-shipping-calculator-for-brazil'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            $first = true;
+                            foreach ($days as $day_key => $day_label) : 
+                                $is_checked = isset($schedule[$day_key]['active']) && $schedule[$day_key]['active'];
+                                $start_time = isset($schedule[$day_key]['start']) ? $schedule[$day_key]['start'] : '08:00';
+                                $end_time   = isset($schedule[$day_key]['end'])   ? $schedule[$day_key]['end']   : '18:00';
+                                $disabled_attr = $is_checked ? '' : 'disabled';
+
+                                // Extrai atributos customizados para injetar no primeiro checkbox
+                                $extra_attrs = '';
+                                if ($first) {
+                                    $first = false;
+                                    $desc_tip = isset($value['custom_attributes']['data-desc-tip']) ? esc_attr($value['custom_attributes']['data-desc-tip']) : '';
+                                    $subtitle = isset($value['custom_attributes']['data-subtitle']) ? esc_attr($value['custom_attributes']['data-subtitle']) : '';
+                                    $title_desc = isset($value['custom_attributes']['data-title-description']) ? esc_attr($value['custom_attributes']['data-title-description']) : '';
+                                    $description = isset($value['custom_attributes']['data-description']) ? esc_attr($value['custom_attributes']['data-description']) : '';
+                                    if ($desc_tip) $extra_attrs .= ' data-desc-tip="' . $desc_tip . '"';
+                                    if ($subtitle) $extra_attrs .= ' data-subtitle="' . $subtitle . '"';
+                                    if ($title_desc) $extra_attrs .= ' data-title-description="' . $title_desc . '"';
+                                    if ($description) $extra_attrs .= ' data-description="' . $description . '"';
+                                }
+                            ?>
+                                <tr class="wc-better-delivery-day-row" data-day="<?php echo esc_attr($day_key); ?>">
+                                    <td style="padding: 8px 10px;">
+                                        <strong><?php echo esc_html($day_label); ?></strong>
+                                    </td>
+                                    <td style="padding: 8px 10px;">
+                                        <input 
+                                            type="checkbox" 
+                                            class="wc-better-delivery-day-checkbox" 
+                                            name="woo_better_delivery_schedule[<?php echo esc_attr($day_key); ?>][active]" 
+                                            value="1" 
+                                            <?php checked($is_checked); ?>
+                                            <?php echo $extra_attrs; ?>
+                                        >
+                                    </td>
+                                    <td style="padding: 8px 10px;">
+                                        <input 
+                                            type="time" 
+                                            class="wc-better-delivery-time-start" 
+                                            name="woo_better_delivery_schedule[<?php echo esc_attr($day_key); ?>][start]" 
+                                            value="<?php echo esc_attr($start_time); ?>" 
+                                            <?php echo esc_attr($disabled_attr); ?>
+                                        >
+                                    </td>
+                                    <td style="padding: 8px 10px;">
+                                        <input 
+                                            type="time" 
+                                            class="wc-better-delivery-time-end" 
+                                            name="woo_better_delivery_schedule[<?php echo esc_attr($day_key); ?>][end]" 
+                                            value="<?php echo esc_attr($end_time); ?>" 
+                                            <?php echo esc_attr($disabled_attr); ?>
+                                        >
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </fieldset>
+            </td>
+        </tr>
+        <?php
+    }
+
+    /**
+     * Sanitiza e salva o campo delivery_schedule como JSON.
+     *
+     * @param mixed  $value   Valor a ser salvo.
+     * @param array  $option  Configuração da opção.
+     * @param mixed  $raw_value Valor bruto do POST.
+     * @return string JSON codificado.
+     */
+    public function lkn_sanitize_delivery_schedule_field($value, $option, $raw_value)
+    {
+        $schedule = array();
+        $days = array('sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday');
+
+        foreach ($days as $day) {
+            $active = isset($raw_value[$day]['active']) && $raw_value[$day]['active'] === '1';
+            $start  = isset($raw_value[$day]['start']) ? sanitize_text_field($raw_value[$day]['start']) : '08:00';
+            $end    = isset($raw_value[$day]['end'])   ? sanitize_text_field($raw_value[$day]['end'])   : '18:00';
+
+            // Validar formato de hora (HH:MM)
+            if (!preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $start)) {
+                $start = '08:00';
+            }
+            if (!preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $end)) {
+                $end = '18:00';
+            }
+
+            $schedule[$day] = array(
+                'active' => $active,
+                'start'  => $start,
+                'end'    => $end,
+            );
+        }
+
+        return wp_json_encode($schedule);
     }
 
     public function lkn_add_custom_checkout_field($fields)

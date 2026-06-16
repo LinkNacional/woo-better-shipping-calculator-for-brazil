@@ -911,6 +911,47 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             )
         );
 
+        $deliveryScheduleSettings = array(
+            // TAB 5: Prazo de Entrega
+            'delivery_schedule_section' => array(
+                'title' => __('Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'title',
+                'id'    => 'woo_better_calc_title_prazo_entrega'
+            ),
+            'enable_delivery_schedule' => array(
+                'title'    => __('Habilitar Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_enable_delivery_schedule',
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-subtitle' => __('Ativar cálculo de prazo de entrega', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Ative esta opção para habilitar o cálculo de prazo de entrega com base nos dias e horários de funcionamento.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para configurar os dias e horários de funcionamento que serão usados no cálculo do prazo de entrega dos fretes.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ative ou desative o recurso de prazo de entrega.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'delivery_schedule' => array(
+                'title'    => __('Dias e Horários de Funcionamento', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_delivery_schedule',
+                'type'     => 'delivery_schedule',
+                'default'  => '{}',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Selecione os dias da semana e defina o horário de funcionamento para cálculo do prazo de entrega.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Marque os dias em que há expediente e defina o horário de início e fim. Estes dados serão usados para calcular o prazo de entrega dos fretes.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Configure os dias e horários ativos para o prazo de entrega.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'delivery_schedule_section_end' => array(
+                'type' => 'sectionend',
+                'id'   => 'woo_better_calc_prazo_entrega'
+            )
+        );
+
         $cacheSettings = array(
             // TAB 6: Cache
             'cache_section' => array(
@@ -982,7 +1023,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             )
         );
 
-        $settings = array_merge($settings, $generalSettings, $freteSettings, $shortcodeSettings, $productSettings, $cartSettings, $cacheSettings);
+        $settings = array_merge($settings, $generalSettings, $freteSettings, $shortcodeSettings, $productSettings, $cartSettings, $deliveryScheduleSettings, $cacheSettings);
 
         return apply_filters('woocommerce_get_settings_' . $this->id, $settings);
     }

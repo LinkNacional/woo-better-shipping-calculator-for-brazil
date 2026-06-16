@@ -1,0 +1,156 @@
+[
+  {
+    "date": "2026-01-01",
+    "name": "Confraternização Universal",
+    "type": "national_holiday",
+    "weekday": "Thursday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-01-25",
+    "name": "Aniversário da Cidade de São Paulo",
+    "type": "municipal_holiday",
+    "weekday": "Sunday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-02-16",
+    "name": "Carnaval",
+    "type": "optional_holiday",
+    "weekday": "Monday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-02-17",
+    "name": "Carnaval",
+    "type": "optional_holiday",
+    "weekday": "Tuesday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-02-18",
+    "name": "Quarta-feira de Cinzas",
+    "type": "optional_holiday",
+    "weekday": "Wednesday",
+    "limit_hours": 12
+  },
+  {
+    "date": "2026-04-03",
+    "name": "Paixão de Cristo",
+    "type": "national_holiday",
+    "weekday": "Friday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-04-20",
+    "name": "Suspensão de Expediente (Emenda)",
+    "type": "suspended_expedient",
+    "weekday": "Monday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-04-21",
+    "name": "Tiradentes",
+    "type": "national_holiday",
+    "weekday": "Tuesday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-05-01",
+    "name": "Dia Mundial do Trabalho",
+    "type": "national_holiday",
+    "weekday": "Friday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-06-04",
+    "name": "Corpus Christi",
+    "type": "national_holiday",
+    "weekday": "Thursday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-06-05",
+    "name": "Suspensão de Expediente (Emenda)",
+    "type": "suspended_expedient",
+    "weekday": "Friday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-07-09",
+    "name": "Data Magna do Estado de São Paulo",
+    "type": "state_holiday",
+    "weekday": "Thursday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-07-10",
+    "name": "Suspensão de Expediente (Emenda)",
+    "type": "suspended_expedient",
+    "weekday": "Friday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-09-07",
+    "name": "Independência do Brasil",
+    "type": "national_holiday",
+    "weekday": "Monday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-10-12",
+    "name": "Nossa Senhora Aparecida",
+    "type": "national_holiday",
+    "weekday": "Monday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-10-30",
+    "name": "Comemoração do Dia do Servidor Público",
+    "type": "optional_holiday",
+    "weekday": "Friday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-11-02",
+    "name": "Finados",
+    "type": "national_holiday",
+    "weekday": "Monday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-11-15",
+    "name": "Proclamação da República",
+    "type": "national_holiday",
+    "weekday": "Sunday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-11-20",
+    "name": "Dia Nacional de Zumbi e da Consciência Negra",
+    "type": "national_holiday",
+    "weekday": "Friday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-12-24",
+    "name": "Véspera de Natal",
+    "type": "optional_holiday",
+    "weekday": "Thursday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-12-25",
+    "name": "Natal",
+    "type": "national_holiday",
+    "weekday": "Friday",
+    "limit_hours": 24
+  },
+  {
+    "date": "2026-12-31",
+    "name": "Véspera de Ano Novo",
+    "type": "optional_holiday",
+    "weekday": "Thursday",
+    "limit_hours": 24
+  }
+]

@@ -116,6 +116,48 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
+        // Controle do rádio de Habilitar/Desabilitar Prazo de Entrega
+        const enableDeliveryScheduleRadios = document.querySelectorAll('input[name="woo_better_enable_delivery_schedule"]');
+        if (enableDeliveryScheduleRadios.length > 0) {
+            function updateDeliveryScheduleState() {
+                const selectedOption = Array.from(enableDeliveryScheduleRadios).find(radio => radio.checked)?.value;
+                const deliveryScheduleTable = document.querySelector('.wc-better-delivery-schedule-table');
+                if (!deliveryScheduleTable) return;
+
+                const timeInputs = deliveryScheduleTable.querySelectorAll('input[type="time"]');
+                const checkboxes = deliveryScheduleTable.querySelectorAll('.wc-better-delivery-day-checkbox');
+
+                if (selectedOption === 'yes') {
+                    deliveryScheduleTable.style.opacity = '1';
+                    deliveryScheduleTable.style.pointerEvents = 'auto';
+                    checkboxes.forEach(cb => {
+                        cb.disabled = false;
+                        cb.style.cursor = 'pointer';
+                        // Reavalia estado individual dos time inputs conforme checkbox
+                        cb.dispatchEvent(new Event('change', { bubbles: true }));
+                    });
+                } else if (selectedOption === 'no') {
+                    deliveryScheduleTable.style.opacity = '0.5';
+                    deliveryScheduleTable.style.pointerEvents = 'none';
+                    checkboxes.forEach(cb => {
+                        cb.disabled = true;
+                        cb.style.cursor = 'not-allowed';
+                    });
+                    timeInputs.forEach(input => {
+                        input.disabled = true;
+                        input.style.backgroundColor = '#f1f1f1';
+                        input.style.cursor = 'not-allowed';
+                    });
+                }
+            }
+
+            updateDeliveryScheduleState();
+
+            enableDeliveryScheduleRadios.forEach(radio => {
+                radio.addEventListener('change', updateDeliveryScheduleState);
+            });
+        }
+
         function handleDisableShippingChange() {
             if (disableShipping.value === 'all') {
                 if (numberField) {
@@ -261,4 +303,51 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     
     linkObserver.observe(document.body, { childList: true, subtree: true });
+
+    // --- Controle dos checkboxes de dias + horários (Prazo de Entrega) ---
+    function initDeliverySchedule() {
+        const dayCheckboxes = document.querySelectorAll('.wc-better-delivery-day-checkbox');
+        if (dayCheckboxes.length === 0) return;
+
+        dayCheckboxes.forEach(function (checkbox) {
+            // Já processou este checkbox?
+            if (checkbox.dataset.deliveryInit === '1') return;
+            checkbox.dataset.deliveryInit = '1';
+
+            const row = checkbox.closest('.wc-better-delivery-day-row');
+            if (!row) return;
+
+            const timeStart = row.querySelector('.wc-better-delivery-time-start');
+            const timeEnd   = row.querySelector('.wc-better-delivery-time-end');
+
+            function toggleTimeInputs() {
+                const isChecked = checkbox.checked;
+                if (timeStart) {
+                    timeStart.disabled = !isChecked;
+                    timeStart.style.backgroundColor = isChecked ? '' : '#f1f1f1';
+                    timeStart.style.cursor = isChecked ? '' : 'not-allowed';
+                }
+                if (timeEnd) {
+                    timeEnd.disabled = !isChecked;
+                    timeEnd.style.backgroundColor = isChecked ? '' : '#f1f1f1';
+                    timeEnd.style.cursor = isChecked ? '' : 'not-allowed';
+                }
+            }
+
+            // Estado inicial
+            toggleTimeInputs();
+
+            // Listener
+            checkbox.addEventListener('change', toggleTimeInputs);
+        });
+    }
+
+    // Inicializa imediatamente
+    initDeliverySchedule();
+
+    // Também observa mudanças no DOM (tabs dinâmicas)
+    const deliveryObserver = new MutationObserver(function () {
+        initDeliverySchedule();
+    });
+    deliveryObserver.observe(document.body, { childList: true, subtree: true });
 });
