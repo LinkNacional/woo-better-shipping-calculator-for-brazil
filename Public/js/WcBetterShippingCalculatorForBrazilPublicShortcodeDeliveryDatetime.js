@@ -261,8 +261,8 @@ document.addEventListener('DOMContentLoaded', function () {
         confirmBtn.className = 'wc-better-flatpickr-confirm';
         confirmBtn.textContent = 'Confirmar';
         confirmBtn.setAttribute('style',
-            'display: block; width: 100%; margin: 8px 0 4px; padding: 8px 0; ' +
-            'border: none; border-radius: 4px; background: #2271b1; color: #fff; ' +
+            'display: block; width: 100%; padding: 10px 0; ' +
+            'border: none; border-radius: 0 0 4px 4px; background: #2271b1; color: #fff; ' +
             'font-size: 14px; font-weight: 600; cursor: pointer;'
         );
 
