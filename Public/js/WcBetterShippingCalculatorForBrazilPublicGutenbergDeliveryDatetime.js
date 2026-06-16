@@ -256,14 +256,14 @@ document.addEventListener('DOMContentLoaded', function () {
         input.type = 'text';
         input.id = 'billing-delivery-datetime';
         input.name = 'billing_delivery_datetime';
-        input.setAttribute('aria-label', 'Data e Hora de Entrega');
+        input.setAttribute('aria-label', 'Prazo de Entrega');
         input.setAttribute('aria-invalid', 'false');
         input.setAttribute('autocomplete', 'off');
         input.style.paddingRight = '36px';
 
         var label = document.createElement('label');
         label.setAttribute('for', 'billing-delivery-datetime');
-        label.textContent = 'Data e Hora de Entrega';
+        label.textContent = 'Prazo de Entrega';
 
         // Ícone de calendário
         var iconWrap = document.createElement('span');

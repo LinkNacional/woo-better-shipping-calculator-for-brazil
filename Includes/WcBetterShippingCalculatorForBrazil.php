@@ -1179,7 +1179,7 @@ class WcBetterShippingCalculatorForBrazil
         $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
         if ($delivery_schedule_enabled === 'yes') {
             $fields['billing']['billing_delivery_datetime'] = array(
-                'label'       => __('Data e Hora de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'label'       => __('Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
                 'placeholder' => __('Selecione a data e hora', 'woo-better-shipping-calculator-for-brazil'),
                 'type'        => 'text',
                 'required'    => true,
@@ -1988,7 +1988,7 @@ class WcBetterShippingCalculatorForBrazil
         $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
         if ($delivery_schedule_enabled === 'yes') {
             $fields['delivery_datetime'] = array(
-                'label' => __('Data e Hora de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'label' => __('Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
                 'type'  => 'text',
                 'show'  => false
             );
@@ -2571,9 +2571,6 @@ class WcBetterShippingCalculatorForBrazil
                 ];
             }
         }
-
-        // 1b. Data e Hora de Entrega — movido para seção separada "Prazo de Entrega"
-        // (removido do display_data principal)
 
         // 2-5. Tipo de Pessoa / CPF ou CNPJ / Empresa / IE
         if ($person_type !== 'none') {
@@ -7240,7 +7237,7 @@ class WcBetterShippingCalculatorForBrazil
                     // Adiciona campo de data/hora de entrega se habilitado
                     if ($delivery_schedule_enabled === 'yes') {
                         $new_billing_fields['billing_delivery_datetime'] = array(
-                            'label'       => __('Data e Hora de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                            'label'       => __('Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
                             'type'        => 'text',
                             'description' => '',
                         );
@@ -7508,7 +7505,7 @@ class WcBetterShippingCalculatorForBrazil
         // Campo de data/hora de entrega
         if ($delivery_schedule_enabled === 'yes') {
             $fields['billing_delivery_datetime'] = array(
-                'label'       => __('Data e Hora de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'label'       => __('Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
                 'placeholder' => __('Selecione a data e hora', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
                 'class'       => array('form-row-wide'),
