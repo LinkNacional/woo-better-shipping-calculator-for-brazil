@@ -103,9 +103,13 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-desc-tip' => __('Exibe informações detalhadas dos pedidos para melhor acompanhamento e controle.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Habilite para mostrar detalhes adicionais dos pedidos, incluindo informações de entrega e dados complementares.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Ative a exibição de detalhes completos dos pedidos.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-desc-tip' => __('Adiciona os dados de CPF/CNPJ, IE, data de nascimento, gênero e prazo de entrega nos detalhes do pedido.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => sprintf(
+                        /* translators: %s: URL para a listagem de pedidos */
+                        __('Exibe as informações complementares do cliente (documentos, data de nascimento, prazo de entrega) na página de edição do pedido. Veja em <a href="%s">todos os pedidos</a>.', 'woo-better-shipping-calculator-for-brazil'),
+                        esc_url(admin_url('admin.php?page=wc-orders'))
+                    ),
+                    'data-title-description' => __('Exibe dados complementares nos detalhes do pedido.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'enable_cep_popup' => array(

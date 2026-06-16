@@ -266,7 +266,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '4.15.2', '4.15.1', '4.15.0', '4.14.0', '4.13.0', '4.12.5', '4.12.4', '4.12.3', '4.12.2', '4.12.1' );
+            $old_versions   = array( '4.16.0', '4.15.2', '4.15.1', '4.15.0', '4.14.0', '4.13.0', '4.12.5', '4.12.4', '4.12.3', '4.12.2');
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -312,10 +312,13 @@ class WcBetterShippingCalculatorForBrazil
 
                     <div style="margin-top: 10px;">
                         <p style="font-size: 14px; margin-top: 8px;">
-                            ✨ <strong>Novo:</strong> Formato para o CNPJ alfanumérico (IN RFB 2.229/2024).
+                            🆕 <strong>Novo:</strong> Formato para o CNPJ alfanumérico (IN RFB 2.229/2024).
                         </p>
                         <p style="font-size: 14px; margin-top: 6px;">
                             🔧 <strong>Ajuste:</strong> Novo sistema de frete por produto, prazos e comportamentos para frete grátis, além de ajustes na calculadora e no campo de número do Gutenberg.
+                        </p>
+                        <p style="font-size: 14px; margin-top: 6px;">
+                            🆕 <strong>Novo:</strong> Prazo de Entrega e Pop-up de Validação de CEP para o cliente escolher a data de entrega e verificar se o frete está disponível na região.
                         </p>
                     </div>
 
