@@ -1331,7 +1331,8 @@ class WcBetterShippingCalculatorForBrazil
                     'city' => $ws_response_data['localidade'],
                     'state_sigla' => $ws_response_data['uf'],
                     'state' => $ws_response_data['estado'],
-                    'street' => $ws_response_data['logradouro']
+                    'street' => $ws_response_data['logradouro'],
+                    'neighborhood' => $ws_response_data['bairro'] ?? ''
                 ];
             } else {
                 return new \WP_REST_Response(
@@ -1359,7 +1360,8 @@ class WcBetterShippingCalculatorForBrazil
                     'city' => $data['city'],
                     'state_sigla' => $data['state'],
                     'state' => $state,
-                    'address' => $data['street']
+                    'address' => $data['street'],
+                    'neighborhood' => $data['neighborhood'] ?? ''
                 ),
                 200
             );
@@ -1420,6 +1422,10 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('wp_ajax_wc_better_get_user_postcode', $this, 'wc_better_get_user_postcode');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_get_user_postcode', $this, 'wc_better_get_user_postcode');
+
+        // Endpoint para validação de CEP no pop-up
+        $this->loader->add_action('wp_ajax_wc_better_cep_popup_validate', $this, 'wc_better_cep_popup_validate');
+        $this->loader->add_action('wp_ajax_nopriv_wc_better_cep_popup_validate', $this, 'wc_better_cep_popup_validate');
 
         $this->loader->add_action('woocommerce_get_country_locale', $this, 'wc_better_calc_phone_number', 10, 1);
         $this->loader->add_filter('woocommerce_get_country_locale', $this, 'lkn_checkout_fields_locale_priority', 11, 1);
@@ -1745,7 +1751,8 @@ class WcBetterShippingCalculatorForBrazil
                     'city' => $data['city'],
                     'state_sigla' => $data['state'],
                     'state' => $state,
-                    'address' => $data['street']
+                    'address' => $data['street'],
+                    'neighborhood' => $data['neighborhood'] ?? ''
                 ];
             } elseif ($response_code === 404) {
                 $last_error = 'CEP não encontrado';
@@ -1775,7 +1782,8 @@ class WcBetterShippingCalculatorForBrazil
                     'city' => $ws_response_data['localidade'],
                     'state_sigla' => $ws_response_data['uf'],
                     'state' => $ws_response_data['estado'],
-                    'address' => $ws_response_data['logradouro']
+                    'address' => $ws_response_data['logradouro'],
+                    'neighborhood' => $ws_response_data['bairro'] ?? ''
                 ];
             } elseif (isset($ws_response_data['erro'])) {
                 $last_error = 'CEP não encontrado no ViaCEP';
@@ -5300,6 +5308,181 @@ class WcBetterShippingCalculatorForBrazil
      * @access public
      * @return void JSON com o CEP do usuário
      */
+    /**
+     * AJAX endpoint para validar CEP no pop-up — consulta endereço e verifica frete.
+     *
+     * @since 4.17.0
+     */
+    public function wc_better_cep_popup_validate()
+    {
+        // Verifica nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wc_better_cep_popup')) {
+            wp_send_json_error(array('message' => 'Falha na verificação de segurança.'), 403);
+        }
+
+        if (!function_exists('WC')) {
+            wp_send_json_error(array('message' => 'WooCommerce não está disponível.'), 400);
+        }
+
+        $postcode = isset($_POST['postcode']) ? sanitize_text_field(wp_unslash($_POST['postcode'])) : '';
+        $postcode = preg_replace('/[^0-9]/', '', $postcode);
+
+        if (strlen($postcode) !== 8) {
+            wp_send_json_error(array('message' => __('CEP inválido. Digite 8 dígitos.', 'woo-better-shipping-calculator-for-brazil')), 400);
+        }
+
+        // 1. Consulta endereço via API externa
+        $cep_data = $this->get_cep_data_for_shipping($postcode);
+
+        if (!$cep_data['status']) {
+            wp_send_json_error(array('message' => __('CEP não encontrado.', 'woo-better-shipping-calculator-for-brazil')), 404);
+        }
+
+        // 2. Simula cálculo de frete para verificar disponibilidade
+        $address      = $cep_data['address'] ?? '';
+        $city         = $cep_data['city'] ?? '';
+        $state        = $cep_data['state_sigla'] ?? '';
+        $neighborhood = $cep_data['neighborhood'] ?? '';
+
+        // Se carrinho está vazio, adiciona um produto dummy temporário para simular cálculo
+        $cart_was_empty = WC()->cart->is_empty();
+        $dummy_product_id = null;
+
+        if ($cart_was_empty) {
+            $products = wc_get_products(array(
+                'limit'  => 1,
+                'status' => 'publish',
+                'virtual' => false,
+                'downloadable' => false,
+            ));
+            if (!empty($products)) {
+                $dummy_product_id = $products[0]->get_id();
+                WC()->cart->add_to_cart($dummy_product_id, 1);
+            }
+        }
+
+        // Calcula frete usando calculate_shipping_for_package (mais confiável que get_packages)
+        $has_shipping  = false;
+        $shipping_html = '';
+
+        $packages = WC()->cart->get_shipping_packages();
+        if (!empty($packages)) {
+            foreach ($packages as $package) {
+                $package['destination'] = array(
+                    'country'  => 'BR',
+                    'state'    => $state,
+                    'postcode' => $postcode,
+                    'city'     => $city,
+                    'address'  => $address,
+                );
+
+                $shipping_rates = WC()->shipping()->calculate_shipping_for_package($package);
+
+                if (!empty($shipping_rates['rates'])) {
+                    $has_shipping = true;
+                    ob_start();
+                    foreach ($shipping_rates['rates'] as $rate) {
+                        echo '<div class="wc-better-cep-popup-rate">';
+                        echo '<span class="wc-better-cep-popup-rate-label">' . esc_html($rate->get_label()) . '</span>';
+                        echo '</div>';
+                    }
+                    $shipping_html = ob_get_clean();
+                    break;
+                }
+            }
+        }
+
+        // Remove produto dummy se foi adicionado
+        if ($dummy_product_id) {
+            foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) {
+                if ($cart_item['product_id'] === $dummy_product_id) {
+                    WC()->cart->remove_cart_item($cart_item_key);
+                    break;
+                }
+            }
+        }
+
+        // Sucesso: preenche SEMPRE ambos billing e shipping com o CEP consultado
+        if ($has_shipping) {
+            $this->lkn_set_customer_address_from_cep($postcode, $city, $state, $address, $neighborhood);
+        }
+
+        wp_send_json_success(array(
+            'postcode'      => $postcode,
+            'address'       => $address,
+            'city'          => $city,
+            'state'         => $state,
+            'neighborhood'  => $neighborhood,
+            'has_shipping'  => $has_shipping,
+            'shipping_html' => $shipping_html,
+        ));
+    }
+
+    /**
+     * Preenche ambos billing e shipping do WC()->customer + sessão + user_meta
+     * com os dados de endereço vindos da consulta de CEP.
+     *
+     * @param string $postcode     CEP (8 dígitos)
+     * @param string $city         Cidade
+     * @param string $state        Sigla do estado
+     * @param string $address      Logradouro
+     * @param string $neighborhood Bairro (opcional)
+     * @since 4.17.0
+     */
+    private function lkn_set_customer_address_from_cep($postcode, $city, $state, $address, $neighborhood = '')
+    {
+        $full_address = $address . ' - ' . $city . '/' . $state;
+
+        // Shipping
+        WC()->customer->set_shipping_postcode($postcode);
+        WC()->customer->set_shipping_city($city);
+        WC()->customer->set_shipping_state($state);
+        WC()->customer->set_shipping_address($full_address);
+
+        // Billing
+        WC()->customer->set_billing_postcode($postcode);
+        WC()->customer->set_billing_city($city);
+        WC()->customer->set_billing_state($state);
+        WC()->customer->set_billing_address($full_address);
+
+        // Sessão
+        WC()->session->set('shipping_postcode', $postcode);
+        WC()->session->set('shipping_city', $city);
+        WC()->session->set('shipping_state', $state);
+        WC()->session->set('shipping_address', $full_address);
+
+        WC()->session->set('billing_postcode', $postcode);
+        WC()->session->set('billing_city', $city);
+        WC()->session->set('billing_state', $state);
+        WC()->session->set('billing_address', $full_address);
+
+        // Bairro (se habilitado e disponível)
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+        if ($neighborhood_enabled === 'yes' && !empty($neighborhood)) {
+            WC()->session->set('shipping_neighborhood', $neighborhood);
+            WC()->session->set('billing_neighborhood', $neighborhood);
+        }
+
+        // User meta (se logado)
+        if (is_user_logged_in()) {
+            $user_id = get_current_user_id();
+            update_user_meta($user_id, 'shipping_postcode', $postcode);
+            update_user_meta($user_id, 'shipping_city', $city);
+            update_user_meta($user_id, 'shipping_state', $state);
+            update_user_meta($user_id, 'shipping_address_1', $address);
+
+            update_user_meta($user_id, 'billing_postcode', $postcode);
+            update_user_meta($user_id, 'billing_city', $city);
+            update_user_meta($user_id, 'billing_state', $state);
+            update_user_meta($user_id, 'billing_address_1', $address);
+
+            if ($neighborhood_enabled === 'yes' && !empty($neighborhood)) {
+                update_user_meta($user_id, 'shipping_neighborhood', $neighborhood);
+                update_user_meta($user_id, 'billing_neighborhood', $neighborhood);
+            }
+        }
+    }
+
     public function wc_better_get_user_postcode() {
         // Verifica nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wc_better_get_user_postcode')) {

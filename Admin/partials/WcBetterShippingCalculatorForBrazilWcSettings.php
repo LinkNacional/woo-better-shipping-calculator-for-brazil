@@ -108,6 +108,23 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Ative a exibição de detalhes completos dos pedidos.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'enable_cep_popup' => array(
+                'title'    => __('Pop-up de Validação de CEP', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_calc_enable_cep_popup',
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-subtitle' => __('Exibir pop-up para validação de CEP', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Exibe um pop-up ao entrar no site para que o cliente informe seu CEP e verifique se há entregas disponíveis para sua região.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Ao habilitar, um pop-up será exibido para os visitantes validarem se há frete disponível para o CEP informado. Se o cliente fechar ou preencher, não será exibido novamente por 7 dias.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ative o pop-up de consulta de CEP para visitantes.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'geral_section_end' => array(
                 'type' => 'sectionend',
                 'id'   => 'woo_better_calc_geral'

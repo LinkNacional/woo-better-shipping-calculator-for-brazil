@@ -1,0 +1,318 @@
+/* CEP Pop-up — Overlay e Modal com Flip 3D */
+.wc-better-cep-popup-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 999998;
+}
+
+.wc-better-cep-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: transparent;
+    z-index: 999999;
+    width: 90%;
+    max-width: 440px;
+    perspective: 1000px;
+}
+
+.wc-better-cep-popup-close {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: none;
+    color: #999;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    z-index: 20;
+    transition: opacity 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.wc-better-cep-popup-close.wc-better-cep-close-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+.wc-better-cep-popup-close:hover {
+    color: #333;
+}
+
+/* ── Flip Card ──────────────────────────────────────────────────────── */
+
+.wc-better-cep-flip-card {
+    width: 100%;
+    min-height: 280px;
+    transition: min-height 0.3s ease;
+    position: relative;
+}
+
+.wc-better-cep-flipped .wc-better-cep-flip-card {
+    /* permite que o card cresça para o conteúdo do verso */
+    min-height: auto;
+}
+
+.wc-better-cep-flip-inner {
+    position: relative;
+    width: 100%;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), min-height 0.35s ease;
+    transform-style: preserve-3d;
+    will-change: transform, min-height;
+}
+
+.wc-better-cep-flipped .wc-better-cep-flip-inner {
+    transform: rotateY(180deg);
+}
+
+/* Faces */
+.wc-better-cep-flip-front,
+.wc-better-cep-flip-back {
+    width: 100%;
+    background: #fff;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+.wc-better-cep-flip-front {
+    padding: 32px 24px 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.wc-better-cep-flip-back {
+    position: absolute;
+    inset: 0;
+    transform: rotateY(180deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 0;
+}
+
+/* ── Front content ──────────────────────────────────────────────────── */
+
+.wc-better-cep-popup-content {
+    text-align: center;
+}
+
+.wc-better-cep-popup-icon {
+    margin-bottom: 12px;
+}
+
+.wc-better-cep-popup-title {
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e1e1e;
+}
+
+.wc-better-cep-popup-subtitle {
+    margin: 0 0 20px;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.wc-better-cep-popup-form {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.wc-better-cep-popup-input {
+    flex: 1;
+    max-width: 200px;
+    padding: 10px 14px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: 1px;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+.wc-better-cep-popup-input:focus {
+    border-color: #2271b1;
+}
+
+.wc-better-cep-popup-btn {
+    padding: 10px 20px;
+    background: #2271b1;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+    font-family: inherit;
+}
+.wc-better-cep-popup-btn:hover { background: #135e96; }
+.wc-better-cep-popup-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Back content ───────────────────────────────────────────────────── */
+
+.wc-better-cep-popup-back-content {
+    text-align: center;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+.wc-better-cep-popup-back-result {
+    width: 100%;
+    height: 100%;
+}
+
+/* Success */
+.wc-better-cep-back-success {
+    background: #e8f5e9;
+    padding: 32px 24px 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+}
+
+.wc-better-cep-back-success svg {
+    margin-bottom: 4px;
+    flex-shrink: 0;
+}
+
+.wc-better-cep-back-address {
+    font-size: 13px;
+    color: #555;
+    margin: 0;
+    word-break: break-word;
+}
+
+.wc-better-cep-back-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #2e7d32;
+    margin: 0;
+}
+
+.wc-better-cep-back-msg {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #555;
+}
+
+/* Error */
+.wc-better-cep-back-error {
+    background: #fce4ec;
+    padding: 32px 24px 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+}
+
+.wc-better-cep-back-error svg {
+    margin-bottom: 4px;
+    flex-shrink: 0;
+}
+
+.wc-better-cep-back-title-err {
+    font-size: 16px;
+    font-weight: 700;
+    color: #c62828;
+    margin: 0;
+}
+
+/* Rates (reutilizado nas duas faces) */
+.wc-better-cep-popup-rates {
+    margin: 4px 0;
+    width: 100%;
+}
+
+.wc-better-cep-popup-rate {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 8px;
+    background: rgba(255,255,255,0.7);
+    border-radius: 4px;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.wc-better-cep-popup-rate-label { color: #333; }
+
+.wc-better-cep-popup-rate-cost {
+    font-weight: 700;
+    color: #1e1e1e;
+}
+
+/* Back button — dentro do cartão colorido */
+.wc-better-cep-popup-back-btn {
+    padding: 8px 24px;
+    background: rgba(255,255,255,0.85);
+    color: #333;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.wc-better-cep-popup-back-btn:hover {
+    background: #fff;
+    color: #000;
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+    .wc-better-cep-popup {
+        width: 92%;
+    }
+    .wc-better-cep-flip-front {
+        padding: 24px 16px 20px;
+    }
+    .wc-better-cep-popup-title {
+        font-size: 18px;
+    }
+    .wc-better-cep-popup-form {
+        flex-direction: column;
+        align-items: center;
+    }
+    .wc-better-cep-popup-input {
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .wc-better-cep-popup-btn {
+        width: 100%;
+    }
+}

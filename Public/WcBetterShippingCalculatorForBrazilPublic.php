@@ -1831,5 +1831,59 @@ class WcBetterShippingCalculatorForBrazilPublic
             );
         }
 
+        // Pop-up de validação de CEP — carregado em todas as páginas públicas,
+        // mas NÃO exibe se o usuário já tem CEP preenchido (sessão ou user_meta).
+        $cep_popup_enabled = get_option('woo_better_calc_enable_cep_popup', 'no');
+        if ($cep_popup_enabled === 'yes') {
+            $has_postcode = false;
+
+            if (function_exists('WC') && WC()->session) {
+                $shipping_postcode = WC()->session->get('shipping_postcode');
+                $billing_postcode  = WC()->session->get('billing_postcode');
+                if (!empty($shipping_postcode) || !empty($billing_postcode)) {
+                    $has_postcode = true;
+                }
+            }
+
+            if (!$has_postcode && is_user_logged_in()) {
+                $user_id = get_current_user_id();
+                $shipping_postcode = get_user_meta($user_id, 'shipping_postcode', true);
+                $billing_postcode  = get_user_meta($user_id, 'billing_postcode', true);
+                if (!empty($shipping_postcode) || !empty($billing_postcode)) {
+                    $has_postcode = true;
+                }
+            }
+
+            if (!$has_postcode) {
+                wp_enqueue_script(
+                    $this->plugin_name . '-cep-popup',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicCepPopup.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    true
+                );
+
+                wp_enqueue_style(
+                    $this->plugin_name . '-cep-popup',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCepPopup.COMPILED.css',
+                    array(),
+                    $this->version
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-cep-popup',
+                    'WooBetterCepPopup',
+                    array(
+                        'enabled'    => true,
+                        'ajaxurl'    => $this->get_admin_ajax_url(),
+                        'nonce'      => wp_create_nonce('wc_better_cep_popup'),
+                        'title'      => __('Consulte seu CEP', 'woo-better-shipping-calculator-for-brazil'),
+                        'subtitle'   => __('Verifique se há entregas disponíveis para sua região.', 'woo-better-shipping-calculator-for-brazil'),
+                        'successMsg' => __('Você já pode continuar suas compras!', 'woo-better-shipping-calculator-for-brazil'),
+                    )
+                );
+            }
+        }
+
     }
 }
