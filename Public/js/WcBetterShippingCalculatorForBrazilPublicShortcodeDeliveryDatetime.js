@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var scheduleData = window.WooBetterDeliverySchedule || {};
     var holidaysData = window.WooBetterDeliveryHolidays || [];
     var slotsData    = window.WooBetterDeliverySlots || [];
+    var minPrepHours = (typeof window.WooBetterMinPrepHours !== 'undefined') ? parseInt(window.WooBetterMinPrepHours, 10) || 0 : 0;
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -109,6 +110,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 else ds = p.endMin;
             }
         }
+
+        // Se é hoje, aplica tempo mínimo de preparo (incluindo agora com 0h)
+        var todayKey = formatDateKey(new Date());
+        if (dateKey === todayKey && minPrepHours >= 0) {
+            var nowMin = new Date().getHours() * 60 + new Date().getMinutes() + minPrepHours * 60;
+            if (nowMin > ds) ds = nowMin;
+        }
+
         if (ds >= de) return [];
         return slotsData.filter(function (s) {
             var a = timeToMinutes(s[0]), b = timeToMinutes(s[1]);
@@ -155,11 +164,15 @@ document.addEventListener('DOMContentLoaded', function () {
         while (slotSelect.options.length > 1) slotSelect.remove(1);
 
         if (!slots.length) {
-            if (slotField) slotField.style.display = 'none';
+            if (slotField) slotField.style.display = 'block';
             slotSelect.value = '';
+            slotSelect.options[0].textContent = 'Nenhum horário disponível...';
             sync(input.value.trim(), '');
             return;
         }
+
+        // Restaura texto original
+        slotSelect.options[0].textContent = 'Selecione o horário...';
 
         slots.forEach(function (s) {
             var o = document.createElement('option');

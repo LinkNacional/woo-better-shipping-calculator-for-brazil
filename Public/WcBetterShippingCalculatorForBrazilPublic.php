@@ -798,6 +798,13 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'WooBetterDeliverySlots',
                     $slots
                 );
+
+                // Tempo mínimo de preparo
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-delivery-datetime',
+                    'WooBetterMinPrepHours',
+                    (int) get_option('woo_better_min_preparation_hours', 0)
+                );
             }
         }
 
@@ -1116,6 +1123,13 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-delivery-datetime',
                     'WooBetterDeliverySlots',
                     $slots
+                );
+
+                // Tempo mínimo de preparo
+                wp_localize_script(
+                    $this->plugin_name . '-delivery-datetime',
+                    'WooBetterMinPrepHours',
+                    (int) get_option('woo_better_min_preparation_hours', 0)
                 );
             }
         }
@@ -1810,6 +1824,13 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-edit-address-delivery-datetime',
                     'WooBetterDeliverySlots',
                     $slots
+                );
+
+                // Tempo mínimo de preparo
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-delivery-datetime',
+                    'WooBetterMinPrepHours',
+                    (int) get_option('woo_better_min_preparation_hours', 0)
                 );
             }
 
