@@ -1,16 +1,12 @@
 /**
- * Delivery Date & Time Picker for Classic/Shortcode Checkout
+ * Delivery Date + Slot Picker for Classic/Shortcode Checkout
  *
- * Uses flatpickr (npm) to provide a date+time picker that:
- * - Only allows selecting days marked as active in the delivery schedule
- * - Disables holidays (from holidays.json), with partial support:
- *   - Holidays with start_hour=0 + end_hour=24 → full day blocked
- *   - Holidays with partial range (ex: 0-12 or 12-24) → only that range is
- *     blocked; the rest of the day follows the normal schedule
- * - Only allows future dates
- * - Injects a calendar icon inside the input wrapper
+ * Flatpickr on the existing billing_delivery_datetime text input.
+ * The time-slot <select> is rendered by PHP via hook (billing_delivery_time_slot_visible).
+ * JS only shows/hides it and populates options filtered by the chosen date.
  *
  * @since 4.17.0
+ * @since 5.x  Date + slot split into two meta fields.
  */
 import flatpickr from 'flatpickr';
 import { Portuguese } from 'flatpickr/dist/l10n/pt';
@@ -19,320 +15,310 @@ import 'flatpickr/dist/flatpickr.min.css';
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
-    const deliveryInput = document.getElementById('billing_delivery_datetime');
-    if (!deliveryInput) return;
+    var input = document.getElementById('billing_delivery_datetime');
+    if (!input) return;
 
-    const scheduleData = window.WooBetterDeliverySchedule || {};
-    const holidaysData = window.WooBetterDeliveryHolidays || [];
+    var slotSelect = document.getElementById('billing_delivery_time_slot_visible');
+    if (!slotSelect) return;
+
+    // Apply padding to slot select
+    slotSelect.style.padding = '8px 12.8px';
+
+    var slotField = slotSelect.closest('.wc-better-slot-field') || slotSelect.closest('.form-row');
+    var defaultOption = slotSelect.querySelector('option[value=""]');
+
+    var scheduleData = window.WooBetterDeliverySchedule || {};
+    var holidaysData = window.WooBetterDeliveryHolidays || [];
+    var slotsData    = window.WooBetterDeliverySlots || [];
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
     function timeToMinutes(timeStr) {
-        const parts = timeStr.split(':');
-        return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+        var p = timeStr.split(':');
+        return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
     }
-
-    function minutesToTime(minutes) {
-        const h = Math.floor(minutes / 60);
-        const m = minutes % 60;
-        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-    }
-
     function formatDateKey(date) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return y + '-' + m + '-' + d;
+        return date.getFullYear() + '-' +
+            String(date.getMonth() + 1).padStart(2, '0') + '-' +
+            String(date.getDate()).padStart(2, '0');
     }
 
-    // ── Processa feriados ────────────────────────────────────────────────
+    // ── Mask (dd/mm/aaaa) ────────────────────────────────────────────────
 
-    const fullDayHolidays = new Set();
-    const partialHolidays = {}; // dateStr → { startMin, endMin }
+    function applyMask(el) {
+        var v = el.value.replace(/\D/g, '').substring(0, 8);
+        if (v.length > 4) v = v.substring(0, 2) + '/' + v.substring(2, 4) + '/' + v.substring(4);
+        else if (v.length > 2) v = v.substring(0, 2) + '/' + v.substring(2);
+        el.value = v;
+    }
+    function isComplete(str) { return /^\d{2}\/\d{2}\/\d{4}$/.test(str); }
+    function parseParts(str) {
+        var m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(str);
+        return m ? { day: +m[1], month: +m[2], year: +m[3] } : null;
+    }
 
+    // ── Feriados ─────────────────────────────────────────────────────────
+
+    var fullHolidays = new Set();
+    var partialHolidays = {};
     holidaysData.forEach(function (h) {
         if (!h.date) return;
-
-        const startH = typeof h.start_hour === 'number' ? h.start_hour : 0;
-        const endH = typeof h.end_hour === 'number' ? h.end_hour : 24;
-
-        if (endH - startH >= 24 || (startH === 0 && endH === 0)) {
-            fullDayHolidays.add(h.date);
-        } else {
-            partialHolidays[h.date] = {
-                startMin: startH * 60,
-                endMin: endH * 60,
-            };
-        }
+        var s = typeof h.start_hour === 'number' ? h.start_hour : 0;
+        var e = typeof h.end_hour   === 'number' ? h.end_hour   : 24;
+        if (e - s >= 24 || (s === 0 && e === 0)) fullHolidays.add(h.date);
+        else partialHolidays[h.date] = { startMin: s * 60, endMin: e * 60 };
     });
 
-    // ── Processa schedule ────────────────────────────────────────────────
+    // ── Schedule ─────────────────────────────────────────────────────────
 
-    const dayIndexMap = {
-        'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
-        'thursday': 4, 'friday': 5, 'saturday': 6,
-    };
-
-    const enabledDays = [];
-    const daySchedule = {};
-
-    Object.keys(scheduleData).forEach(function (key) {
-        const day = scheduleData[key];
-        if (day && day.active) {
-            const idx = dayIndexMap[key];
+    var dayMap = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+    var enabledDays = [];
+    var daySchedule = {};
+    Object.keys(scheduleData).forEach(function (k) {
+        var d = scheduleData[k];
+        if (d && d.active) {
+            var idx = dayMap[k];
             if (idx !== undefined) {
                 enabledDays.push(idx);
-                daySchedule[idx] = {
-                    startMin: timeToMinutes(day.start || '08:00'),
-                    endMin: timeToMinutes(day.end || '18:00'),
-                };
+                daySchedule[idx] = { startMin: timeToMinutes(d.start || '08:00'), endMin: timeToMinutes(d.end || '18:00') };
             }
         }
     });
+    if (!enabledDays.length) for (var i = 0; i < 7; i++) enabledDays.push(i);
 
-    if (enabledDays.length === 0) {
-        for (let i = 0; i < 7; i++) enabledDays.push(i);
+    function isDisabled(date) {
+        var ds = formatDateKey(date);
+        if (fullHolidays.has(ds)) return true;
+        return enabledDays.indexOf(date.getDay()) === -1;
     }
 
-    let globalMinTime = '00:00';
-    let globalMaxTime = '23:59';
-    const timesArr = Object.values(daySchedule);
-    if (timesArr.length > 0) {
-        let globalStartMin = Infinity;
-        let globalEndMin = -Infinity;
-        timesArr.forEach(function (t) {
-            if (t.startMin < globalStartMin) globalStartMin = t.startMin;
-            if (t.endMin > globalEndMin) globalEndMin = t.endMin;
+    // ── Slots ────────────────────────────────────────────────────────────
+
+    function slotLabel(slot) { return slot[0] + ' às ' + slot[1]; }
+
+    function getSlotsForDay(weekday, dateKey) {
+        var sched = daySchedule[weekday];
+        if (!sched || !slotsData.length) return [];
+        var ds = sched.startMin, de = sched.endMin;
+        var p = partialHolidays[dateKey];
+        if (p) {
+            if (p.startMin <= ds && p.endMin > ds) ds = p.endMin;
+            else if (p.endMin >= de && p.startMin < de) de = p.startMin;
+            else if (p.startMin > ds && p.endMin < de) {
+                if (p.startMin - ds >= de - p.endMin) de = p.startMin;
+                else ds = p.endMin;
+            }
+        }
+        if (ds >= de) return [];
+        return slotsData.filter(function (s) {
+            var a = timeToMinutes(s[0]), b = timeToMinutes(s[1]);
+            return a >= ds && b <= de;
         });
-        globalMinTime = minutesToTime(globalStartMin);
-        globalMaxTime = minutesToTime(globalEndMin);
     }
 
-    // ── Função disable ───────────────────────────────────────────────────
+    // ── Hidden fields ────────────────────────────────────────────────────
 
-    function isDateDisabled(date) {
-        const dateStr = formatDateKey(date);
-        if (fullDayHolidays.has(dateStr)) return true;
+    var hiddenDate = null, hiddenSlot = null;
 
-        const weekday = date.getDay();
-        if (enabledDays.indexOf(weekday) === -1) return true;
-
-        return false;
+    function ensureHidden() {
+        if (!hiddenDate) {
+            hiddenDate = document.createElement('input');
+            hiddenDate.type = 'hidden';
+            hiddenDate.name = 'billing_delivery_date';
+            input.parentNode.insertBefore(hiddenDate, input);
+        }
+        if (!hiddenSlot) {
+            hiddenSlot = document.createElement('input');
+            hiddenSlot.type = 'hidden';
+            hiddenSlot.name = 'billing_delivery_time_slot';
+            input.parentNode.insertBefore(hiddenSlot, input);
+        }
     }
 
-    /**
-     * Corrige o horário da data selecionada se ele cair dentro de um bloqueio
-     * (feriado parcial ou fora do schedule). Retorna true se houve correção.
-     */
-    function correctTimeIfNeeded(selDate) {
-        const dateKey = formatDateKey(selDate);
-        const selMinutes = selDate.getHours() * 60 + selDate.getMinutes();
-        let corrected = false;
+    function sync(dateStr, slotStr) {
+        if (hiddenDate) hiddenDate.value = dateStr || '';
+        if (hiddenSlot) hiddenSlot.value = slotStr || '';
+        if (typeof jQuery !== 'undefined') jQuery('body').trigger('update_checkout');
+    }
 
-        // 1. Feriado parcial
-        const partial = partialHolidays[dateKey];
-        if (partial) {
-            // Bloqueio: (startMin, endMin) — o minuto startMin em si é válido
-            if (selMinutes > partial.startMin && selMinutes < partial.endMin) {
-                let targetMin;
+    // ── Populate slot select ─────────────────────────────────────────────
 
-                if (partial.startMin === 0) {
-                    // Bloqueio de manhã: empurra para depois do feriado
-                    targetMin = partial.endMin;
-                } else if (partial.endMin >= 1440) {
-                    // Bloqueio de tarde: empurra para o último minuto antes do feriado
-                    // Ex: feriado 12:00-24:00 → último horário válido = 12:00 (inclusive)
-                    // O usuário pode selecionar até o minuto exato em que o feriado começa
-                    targetMin = partial.startMin;
-                } else {
-                    // Bloqueio no meio do dia: escolhe o lado mais próximo
-                    const distToStart = selMinutes - partial.startMin;
-                    const distToEnd = partial.endMin - selMinutes;
-                    targetMin = distToStart <= distToEnd
-                        ? partial.startMin
-                        : partial.endMin;
+    function populateSlots(date) {
+        var wd = date.getDay();
+        var dk = formatDateKey(date);
+        var slots = getSlotsForDay(wd, dk);
+
+        // Save current selection before clearing
+        var prevValue = slotSelect.value;
+
+        // Remove all options except the default
+        while (slotSelect.options.length > 1) slotSelect.remove(1);
+
+        if (!slots.length) {
+            if (slotField) slotField.style.display = 'none';
+            slotSelect.value = '';
+            sync(input.value.trim(), '');
+            return;
+        }
+
+        slots.forEach(function (s) {
+            var o = document.createElement('option');
+            o.value = slotLabel(s); o.textContent = slotLabel(s);
+            slotSelect.appendChild(o);
+        });
+
+        if (slotField) slotField.style.display = 'block';
+
+        // Determine which slot to select:
+        // 1. Cached slot for this exact date (page reload)
+        // 2. Previous selection if it still exists in the new options (user changed date)
+        var target = '';
+        if (input._slotCache && input._slotCache.dateKey === dk) {
+            target = input._slotCache.value;
+        } else if (prevValue) {
+            // Keep previous selection if it still exists
+            for (var i = 0; i < slotSelect.options.length; i++) {
+                if (slotSelect.options[i].value === prevValue) {
+                    target = prevValue;
+                    break;
                 }
-
-                if (targetMin < 0) targetMin = 0;
-                if (targetMin >= 1440) targetMin = 1439;
-
-                selDate.setHours(Math.floor(targetMin / 60));
-                selDate.setMinutes(targetMin % 60);
-                corrected = true;
             }
         }
 
-        // 2. Schedule do dia (só verifica se não foi corrigido pelo feriado
-        //    ou se a correção do feriado já deixou em horário válido)
-        const weekday = selDate.getDay();
-        const sched = daySchedule[weekday];
-        if (sched) {
-            const mins = selDate.getHours() * 60 + selDate.getMinutes();
-            if (mins < sched.startMin) {
-                selDate.setHours(Math.floor(sched.startMin / 60));
-                selDate.setMinutes(sched.startMin % 60);
-                corrected = true;
-            } else if (mins > sched.endMin) {
-                selDate.setHours(Math.floor(sched.endMin / 60));
-                selDate.setMinutes(sched.endMin % 60);
-                corrected = true;
-            }
-        }
-
-        return corrected;
+        slotSelect.value = target;
+        sync(input.value.trim(), target);
     }
 
-    // ── Ícone de calendário ──────────────────────────────────────────────
+    function populateSlotsFromStr(str) {
+        var p = parseParts(str);
+        if (!p) return;
+        var d = new Date(p.year, p.month - 1, p.day);
+        if (isNaN(d.getTime())) return;
+        populateSlots(d);
+    }
 
-    function injectCalendarIcon(input) {
-        const fieldWrapper = document.getElementById('billing_delivery_datetime_field');
-        if (!fieldWrapper) return;
+    // ── Calendar icon (RIGHT side) ───────────────────────────────────────
+
+    function injectIcon() {
+        var fw = document.getElementById('billing_delivery_datetime_field');
+        if (!fw) return;
+        var iw = fw.querySelector('.woocommerce-input-wrapper');
+        if (!iw) return;
         if (document.getElementById('woo_better_delivery_calendar_icon')) return;
 
-        const inputWrapper = fieldWrapper.querySelector('.woocommerce-input-wrapper');
-        if (!inputWrapper) return;
+        iw.style.position = 'relative';
 
-        inputWrapper.style.position = 'relative';
-
-        const iconWrapper = document.createElement('span');
-        iconWrapper.id = 'woo_better_delivery_calendar_icon';
-        iconWrapper.setAttribute(
-            'style',
-            'display: flex !important; ' +
-            'align-items: center !important; ' +
-            'justify-content: center !important; ' +
-            'position: absolute !important; ' +
-            'right: 8px !important; ' +
-            'top: 50% !important; ' +
-            'transform: translateY(-50%) !important; ' +
-            'width: 24px !important; ' +
-            'height: 24px !important; ' +
-            'cursor: pointer !important; ' +
-            'z-index: 2 !important; ' +
-            'pointer-events: auto !important;'
+        var icon = document.createElement('span');
+        icon.id = 'woo_better_delivery_calendar_icon';
+        icon.setAttribute('style',
+            'display:flex;align-items:center;justify-content:center;position:absolute;right:8px;top:50%;' +
+            'transform:translateY(-50%);width:24px;height:24px;cursor:pointer;z-index:2;pointer-events:auto;'
         );
-        iconWrapper.setAttribute('aria-label', 'Abrir calendário');
-        iconWrapper.setAttribute('tabindex', '0');
-        iconWrapper.setAttribute('role', 'button');
+        icon.setAttribute('aria-label', 'Abrir calendário');
+        icon.tabIndex = 0;
+        icon.setAttribute('role', 'button');
+        icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
 
-        iconWrapper.innerHTML =
-            '<svg xmlns="http://www.w3.org/2000/svg" ' +
-            'width="18" height="18" ' +
-            'viewBox="0 0 24 24" ' +
-            'fill="none" ' +
-            'stroke="#6b7280" ' +
-            'stroke-width="2" ' +
-            'stroke-linecap="round" ' +
-            'stroke-linejoin="round">' +
-            '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>' +
-            '<line x1="16" y1="2" x2="16" y2="6"></line>' +
-            '<line x1="8" y1="2" x2="8" y2="6"></line>' +
-            '<line x1="3" y1="10" x2="21" y2="10"></line>' +
-            '</svg>';
-
-        iconWrapper.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            input.focus();
+        icon.addEventListener('click', function (e) {
+            e.preventDefault(); e.stopPropagation();
+            if (input._flatpickr) input._flatpickr.open();
         });
 
         input.style.paddingRight = '36px';
-        inputWrapper.appendChild(iconWrapper);
+        iw.appendChild(icon);
     }
 
-    // ── Inicializa flatpickr ─────────────────────────────────────────────
+    // ── Flatpickr ────────────────────────────────────────────────────────
 
-    /**
-     * Flag para evitar recursão no onChange.
-     * Quando estamos corrigindo via setDate(), ignoramos o próximo onChange.
-     */
-    let isCorrecting = false;
-
-    /**
-     * Injeta botão "Confirmar" e estilo no calendário flatpickr.
-     * Impede fechamento automático — só fecha no blur ou ao clicar em Confirmar.
-     */
-    function injectConfirmButton(instance) {
-        const calendar = instance.calendarContainer;
-        if (!calendar || calendar.querySelector('.wc-better-flatpickr-confirm')) return;
-
-        const confirmBtn = document.createElement('button');
-        confirmBtn.type = 'button';
-        confirmBtn.className = 'wc-better-flatpickr-confirm';
-        confirmBtn.textContent = 'Confirmar';
-        confirmBtn.setAttribute('style',
-            'display: block; width: 100%; padding: 10px 0; ' +
-            'border: none; border-radius: 0 0 4px 4px; background: #2271b1; color: #fff; ' +
-            'font-size: 14px; font-weight: 600; cursor: pointer;'
-        );
-
-        confirmBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            instance.close();
-        });
-
-        calendar.appendChild(confirmBtn);
-    }
-
-    function initPicker(input) {
-        const fp = flatpickr(input, {
-            enableTime: true,
-            dateFormat: 'd/m/Y H:i',
+    function initPicker() {
+        input._flatpickr = flatpickr(input, {
+            enableTime: false,
+            dateFormat: 'd/m/Y',
             minDate: 'today',
-            time_24hr: true,
             locale: Portuguese,
-            minTime: globalMinTime,
-            maxTime: globalMaxTime,
-            // Sem allowInput — o valor só é definido via calendário/relógio,
-            // evitando crash do parseDate com texto inválido.
-            disable: [
-                function (date) {
-                    return isDateDisabled(date);
-                },
-            ],
-            onChange: function (selectedDates, dateStr, instance) {
-                if (isCorrecting) return;
-                if (selectedDates.length === 0) return;
-
-                const selDate = new Date(selectedDates[0].getTime());
-                const needsCorrection = correctTimeIfNeeded(selDate);
-
-                if (needsCorrection) {
-                    isCorrecting = true;
-                    instance.setDate(selDate, false);
-                    isCorrecting = false;
-                }
-
-                // Não disparamos update_checkout aqui — o WooCommerce faria
-                // AJAX e destruiria o DOM, fechando o picker. Só disparamos
-                // no onClose, quando o usuário termina de escolher.
+            clickOpens: false,
+            allowInput: true,
+            disable: [isDisabled],
+            onChange: function (sel) {
+                if (sel.length && isComplete(input.value.trim())) populateSlots(sel[0]);
+                else if (slotField) slotField.style.display = 'none';
             },
-            onOpen: function (selectedDates, dateStr, instance) {
-                injectConfirmButton(instance);
+            onClose: function () {
+                var v = input.value.trim();
+                if (v && isComplete(v)) populateSlotsFromStr(v);
+                if (typeof jQuery !== 'undefined') jQuery('body').trigger('update_checkout');
             },
-            onClose: function (selectedDates, dateStr, instance) {
-                if (typeof jQuery !== 'undefined') {
-                    jQuery('body').trigger('update_checkout');
-                }
+            onKeyDown: function (_, __, ___, e) {
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
+                if (/^(Backspace|Delete|Tab|Arrow|Home|End|Enter|Escape)$/.test(e.key)) return;
+                if (!/^\d$/.test(e.key)) { e.preventDefault(); return; }
+                setTimeout(function () { applyMask(input); }, 0);
             },
         });
-
-        input.dataset.flatpickrBound = '1';
-        injectCalendarIcon(input);
-        return fp;
+        injectIcon();
     }
 
-    // ── Bootstrap ────────────────────────────────────────────────────────
+    // ── Events ───────────────────────────────────────────────────────────
 
-    initPicker(deliveryInput);
-
-    const observer = new MutationObserver(function () {
-        const input = document.getElementById('billing_delivery_datetime');
-        if (input && !input.dataset.flatpickrBound) {
-            initPicker(input);
-        }
+    input.addEventListener('input', function () { applyMask(input); });
+    input.addEventListener('blur', function () {
+        var v = input.value.trim();
+        if (v && isComplete(v)) populateSlotsFromStr(v);
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    slotSelect.addEventListener('change', function () {
+        var d = input.value.trim();
+        if (isComplete(d)) sync(d, slotSelect.value);
+    });
+
+    // ── Init ─────────────────────────────────────────────────────────────
+
+    ensureHidden();
+
+    // Hide slot field initially (JS controls visibility)
+    if (slotField) slotField.style.display = 'none';
+
+    initPicker();
+
+    // Pre-fill from saved value (PHP already set select value + input value)
+    var saved = (input.value || '').trim();
+    var selVal = slotSelect.value;
+
+    // Capture slot from PHP-rendered select (may be lost during flatpickr init)
+    if (selVal) {
+        input._slotCache = { dateKey: null, value: selVal };
+    }
+
+    if (saved && saved.length >= 10) {
+        var dp = saved.split(' ')[0];
+        var sp = saved.substring(dp.length + 1);
+        // Prefer slot from select over combined value
+        if (!input._slotCache || !input._slotCache.value) {
+            if (sp) input._slotCache = { dateKey: null, value: sp };
+        }
+        if (dp && dp.length === 10) {
+            var pp = parseParts(dp);
+            if (pp) {
+                // Update dateKey in cache
+                if (input._slotCache) {
+                    input._slotCache.dateKey = formatDateKey(new Date(pp.year, pp.month - 1, pp.day));
+                }
+                input._flatpickr.setDate(dp, true);
+            }
+        }
+    }
+
+    // Re-init on WooCommerce checkout update
+    var obs = new MutationObserver(function () {
+        var el = document.getElementById('billing_delivery_datetime');
+        if (el && !el._flatpickr) {
+            initPicker();
+            input.addEventListener('input', function () { applyMask(input); });
+            input.addEventListener('blur', function () {
+                var v = input.value.trim();
+                if (v && isComplete(v)) populateSlotsFromStr(v);
+            });
+        }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
 });

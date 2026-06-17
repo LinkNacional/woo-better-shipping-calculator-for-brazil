@@ -967,6 +967,17 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Configure os dias e horários ativos para o prazo de entrega.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'delivery_slots' => array(
+                'title'    => __('Faixas de Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_delivery_slots',
+                'type'     => 'delivery_slots',
+                'default'  => '[]',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Defina as faixas de horário que o cliente poderá escolher.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Adicione faixas de horário de entrega. O sistema filtrará automaticamente as faixas que cabem dentro do horário de funcionamento de cada dia.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Cadastre as faixas de horário disponíveis para entrega.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'delivery_schedule_section_end' => array(
                 'type' => 'sectionend',
                 'id'   => 'woo_better_calc_prazo_entrega'

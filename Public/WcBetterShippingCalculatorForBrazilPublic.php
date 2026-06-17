@@ -719,14 +719,24 @@ class WcBetterShippingCalculatorForBrazilPublic
 
             if ($delivery_schedule_enabled === 'yes') {
                 $billing_delivery_datetime = '';
+                $billing_delivery_date = '';
+                $billing_delivery_time_slot = '';
 
                 if (function_exists('WC') && WC()->session) {
                     if (is_user_logged_in()) {
                         $user_id = get_current_user_id();
                         $billing_delivery_datetime = get_user_meta($user_id, 'billing_delivery_datetime', true);
+                        $billing_delivery_date = get_user_meta($user_id, 'billing_delivery_date', true);
+                        $billing_delivery_time_slot = get_user_meta($user_id, 'billing_delivery_time_slot', true);
                     }
                     if (empty($billing_delivery_datetime)) {
                         $billing_delivery_datetime = WC()->session->get('billing_delivery_datetime', '');
+                    }
+                    if (empty($billing_delivery_date)) {
+                        $billing_delivery_date = WC()->session->get('billing_delivery_date', '');
+                    }
+                    if (empty($billing_delivery_time_slot)) {
+                        $billing_delivery_time_slot = WC()->session->get('billing_delivery_time_slot', '');
                     }
                 }
 
@@ -773,8 +783,20 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-gutenberg-delivery-datetime',
                     'WooBetterDeliveryData',
                     array(
-                        'billing_delivery_datetime' => $billing_delivery_datetime
+                        'billing_delivery_datetime' => $billing_delivery_datetime,
+                        'billing_delivery_date'     => $billing_delivery_date,
+                        'billing_delivery_time_slot' => $billing_delivery_time_slot,
                     )
+                );
+
+                // Slots de entrega
+                $slots_json = get_option('woo_better_delivery_slots', '[]');
+                $slots = json_decode($slots_json, true);
+                if (!is_array($slots)) { $slots = array(); }
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-delivery-datetime',
+                    'WooBetterDeliverySlots',
+                    $slots
                 );
             }
         }
@@ -1084,6 +1106,16 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-delivery-datetime',
                     'WooBetterDeliveryHolidays',
                     $holidays
+                );
+
+                // Slots de entrega
+                $slots_json = get_option('woo_better_delivery_slots', '[]');
+                $slots = json_decode($slots_json, true);
+                if (!is_array($slots)) { $slots = array(); }
+                wp_localize_script(
+                    $this->plugin_name . '-delivery-datetime',
+                    'WooBetterDeliverySlots',
+                    $slots
                 );
             }
         }
@@ -1768,6 +1800,16 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-edit-address-delivery-datetime',
                     'WooBetterDeliveryHolidays',
                     $holidays
+                );
+
+                // Slots de entrega
+                $slots_json = get_option('woo_better_delivery_slots', '[]');
+                $slots = json_decode($slots_json, true);
+                if (!is_array($slots)) { $slots = array(); }
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-delivery-datetime',
+                    'WooBetterDeliverySlots',
+                    $slots
                 );
             }
 

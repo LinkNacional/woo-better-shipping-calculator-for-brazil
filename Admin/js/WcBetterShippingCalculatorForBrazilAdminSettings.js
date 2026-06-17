@@ -136,6 +136,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Reavalia estado individual dos time inputs conforme checkbox
                         cb.dispatchEvent(new Event('change', { bubbles: true }));
                     });
+                    // Habilita container de slots
+                    const slotsContainer = document.querySelector('.wc-better-delivery-slots-container');
+                    if (slotsContainer) {
+                        slotsContainer.style.opacity = '1';
+                        slotsContainer.style.pointerEvents = 'auto';
+                    }
                 } else if (selectedOption === 'no') {
                     deliveryScheduleTable.style.opacity = '0.5';
                     deliveryScheduleTable.style.pointerEvents = 'none';
@@ -148,6 +154,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         input.style.backgroundColor = '#f1f1f1';
                         input.style.cursor = 'not-allowed';
                     });
+                    // Desabilita container de slots
+                    const slotsContainer = document.querySelector('.wc-better-delivery-slots-container');
+                    if (slotsContainer) {
+                        slotsContainer.style.opacity = '0.5';
+                        slotsContainer.style.pointerEvents = 'none';
+                    }
                 }
             }
 
@@ -342,12 +354,128 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // --- Controle de add/remove de faixas de horário (Slots de Entrega) ---
+    let slotTemplateHtml = '';
+
+    function getSlotTemplate() {
+        if (slotTemplateHtml) return slotTemplateHtml;
+        const container = document.querySelector('.wc-better-delivery-slots-container');
+        if (!container) return null;
+
+        // Cria um template a partir de uma row existente ou gera novo
+        const existingRow = container.querySelector('.wc-better-delivery-slot-row');
+        if (existingRow) {
+            // Clona a primeira row como template
+            slotTemplateHtml = existingRow.cloneNode(true);
+            // Não salva o outerHTML direto — usamos uma função de clone
+            return 'TEMPLATE_ROW';
+        }
+        return null;
+    }
+
+    function initDeliverySlots() {
+        const container = document.querySelector('.wc-better-delivery-slots-container');
+        if (!container) return;
+        if (container.dataset.slotsInit === '1') return;
+        container.dataset.slotsInit = '1';
+
+        const slotsList = container.querySelector('.wc-better-delivery-slots-list');
+        const addBtn = container.querySelector('.wc-better-delivery-slot-add');
+
+        if (!slotsList || !addBtn) return;
+
+        // Guarda o template da primeira row se existir
+        const firstRow = slotsList.querySelector('.wc-better-delivery-slot-row');
+        if (firstRow && !firstRow.dataset.template) {
+            firstRow.dataset.template = '1';
+        }
+
+        function createRow(startVal, endVal) {
+            const div = document.createElement('div');
+            div.className = 'wc-better-delivery-slot-row';
+            div.setAttribute('style', 'display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px;');
+
+            const idx = slotsList.querySelectorAll('.wc-better-delivery-slot-row').length;
+
+            const startInput = document.createElement('input');
+            startInput.type = 'time';
+            startInput.className = 'wc-better-delivery-slot-start';
+            startInput.name = 'woo_better_delivery_slots[' + idx + '][start]';
+            startInput.value = startVal || '09:00';
+            startInput.setAttribute('style', 'width: 130px;');
+
+            const span = document.createElement('span');
+            span.setAttribute('style', 'white-space: nowrap;');
+            span.textContent = 'às';
+
+            const endInput = document.createElement('input');
+            endInput.type = 'time';
+            endInput.className = 'wc-better-delivery-slot-end';
+            endInput.name = 'woo_better_delivery_slots[' + idx + '][end]';
+            endInput.value = endVal || '11:00';
+            endInput.setAttribute('style', 'width: 130px;');
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'button wc-better-delivery-slot-remove';
+            removeBtn.title = 'Remover faixa';
+            removeBtn.setAttribute('style', 'color: #b32d2e;');
+            removeBtn.innerHTML = '&times;';
+            removeBtn.addEventListener('click', function () {
+                div.remove();
+                reindexSlots();
+            });
+
+            div.appendChild(startInput);
+            div.appendChild(span);
+            div.appendChild(endInput);
+            div.appendChild(removeBtn);
+
+            return div;
+        }
+
+        function reindexSlots() {
+            const rows = slotsList.querySelectorAll('.wc-better-delivery-slot-row');
+            rows.forEach(function (row, i) {
+                const start = row.querySelector('.wc-better-delivery-slot-start');
+                const end   = row.querySelector('.wc-better-delivery-slot-end');
+                if (start) start.name = 'woo_better_delivery_slots[' + i + '][start]';
+                if (end)   end.name   = 'woo_better_delivery_slots[' + i + '][end]';
+            });
+        }
+
+        // Bind remove nos botões existentes
+        function bindExistingRemoves() {
+            const removeBtns = slotsList.querySelectorAll('.wc-better-delivery-slot-remove');
+            removeBtns.forEach(function (btn) {
+                if (btn.dataset.bound === '1') return;
+                btn.dataset.bound = '1';
+                btn.addEventListener('click', function () {
+                    btn.closest('.wc-better-delivery-slot-row').remove();
+                    reindexSlots();
+                });
+            });
+        }
+        bindExistingRemoves();
+
+        // Botão Adicionar
+        addBtn.addEventListener('click', function () {
+            const newRow = createRow('09:00', '11:00');
+            slotsList.appendChild(newRow);
+            reindexSlots();
+        });
+    }
+
+    // Inicializa slots
+    initDeliverySlots();
+
     // Inicializa imediatamente
     initDeliverySchedule();
 
     // Também observa mudanças no DOM (tabs dinâmicas)
     const deliveryObserver = new MutationObserver(function () {
         initDeliverySchedule();
+        initDeliverySlots();
     });
     deliveryObserver.observe(document.body, { childList: true, subtree: true });
 });

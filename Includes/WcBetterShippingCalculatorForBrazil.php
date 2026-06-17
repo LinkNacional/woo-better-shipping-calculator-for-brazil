@@ -167,6 +167,10 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('woocommerce_admin_field_delivery_schedule', $this, 'lkn_render_delivery_schedule_field');
         $this->loader->add_filter('woocommerce_admin_settings_sanitize_option_woo_better_delivery_schedule', $this, 'lkn_sanitize_delivery_schedule_field', 10, 3);
 
+        // Hooks para o campo personalizado de faixas de horário de entrega (slots)
+        $this->loader->add_action('woocommerce_admin_field_delivery_slots', $this, 'lkn_render_delivery_slots_field');
+        $this->loader->add_filter('woocommerce_admin_settings_sanitize_option_woo_better_delivery_slots', $this, 'lkn_sanitize_delivery_slots_field', 10, 3);
+
         $this->loader->add_action('admin_footer', $this, 'lkn_woo_better_footer_page');
 
         $this->loader->add_filter('plugin_action_links_' . WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_BASENAME, $this, 'lkn_add_settings_link', 10, 2);
@@ -1123,6 +1127,147 @@ class WcBetterShippingCalculatorForBrazil
         return wp_json_encode($schedule);
     }
 
+    /**
+     * Renderiza o campo delivery_slots: faixas de horário de entrega com add/remove.
+     *
+     * @param array $value Configuração do campo.
+     */
+    public function lkn_render_delivery_slots_field($value)
+    {
+        $option_value = get_option($value['id'], '[]');
+        $slots = json_decode($option_value, true);
+        if (!is_array($slots)) {
+            $slots = array();
+        }
+
+        // Extrai atributos customizados para injetar no primeiro input
+        $extra_attrs = '';
+        $desc_tip = isset($value['custom_attributes']['data-desc-tip']) ? esc_attr($value['custom_attributes']['data-desc-tip']) : '';
+        $subtitle = isset($value['custom_attributes']['data-subtitle']) ? esc_attr($value['custom_attributes']['data-subtitle']) : '';
+        $title_desc = isset($value['custom_attributes']['data-title-description']) ? esc_attr($value['custom_attributes']['data-title-description']) : '';
+        $description = isset($value['custom_attributes']['data-description']) ? esc_attr($value['custom_attributes']['data-description']) : '';
+        if ($desc_tip) $extra_attrs .= ' data-desc-tip="' . $desc_tip . '"';
+        if ($subtitle) $extra_attrs .= ' data-subtitle="' . $subtitle . '"';
+        if ($title_desc) $extra_attrs .= ' data-title-description="' . $title_desc . '"';
+        if ($description) $extra_attrs .= ' data-description="' . $description . '"';
+
+        $first_slot = true;
+        ?>
+        <tr valign="top">
+            <th scope="row" class="titledesc">
+                <label><?php echo esc_html($value['title']); ?></label>
+            </th>
+            <td class="forminp forminp-delivery-slots">
+                <input type="hidden" class="wc-better-delivery-slots-anchor" <?php echo $extra_attrs; ?>>
+                <fieldset>
+                    <legend class="screen-reader-text"><span><?php echo esc_html($value['title']); ?></span></legend>
+                    <div class="wc-better-delivery-slots-container" style="max-width: 500px;">
+                        <div class="wc-better-delivery-slots-list">
+                            <?php if (!empty($slots)) : ?>
+                                <?php foreach ($slots as $index => $slot) : 
+                                    $start = isset($slot[0]) ? esc_attr($slot[0]) : '';
+                                    $end   = isset($slot[1]) ? esc_attr($slot[1]) : '';
+                                ?>
+                                    <div class="wc-better-delivery-slot-row" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                        <input 
+                                            type="time" 
+                                            class="wc-better-delivery-slot-start" 
+                                            name="woo_better_delivery_slots[<?php echo (int) $index; ?>][start]" 
+                                            value="<?php echo $start; ?>"
+                                            style="width: 130px;"
+                                            <?php if ($first_slot) { echo $extra_attrs; $first_slot = false; } ?>
+                                        >
+                                        <span style="white-space: nowrap;"><?php esc_html_e('às', 'woo-better-shipping-calculator-for-brazil'); ?></span>
+                                        <input 
+                                            type="time" 
+                                            class="wc-better-delivery-slot-end" 
+                                            name="woo_better_delivery_slots[<?php echo (int) $index; ?>][end]" 
+                                            value="<?php echo $end; ?>"
+                                            style="width: 130px;"
+                                        >
+                                        <button 
+                                            type="button" 
+                                            class="button wc-better-delivery-slot-remove" 
+                                            title="<?php esc_attr_e('Remover faixa', 'woo-better-shipping-calculator-for-brazil'); ?>"
+                                            style="color: #b32d2e;"
+                                        >&times;</button>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                        <button 
+                            type="button" 
+                            class="button wc-better-delivery-slot-add" 
+                            style="margin-top: 4px;"
+                        ><?php esc_html_e('+ Adicionar faixa', 'woo-better-shipping-calculator-for-brazil'); ?></button>
+                    </div>
+                    <p class="description" style="margin-top: 8px;">
+                        <?php esc_html_e('As faixas que não couberem no horário de funcionamento de um dia serão automaticamente ocultadas para aquele dia.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                    </p>
+                </fieldset>
+            </td>
+        </tr>
+        <?php
+    }
+
+    /**
+     * Sanitiza e salva o campo delivery_slots como JSON.
+     *
+     * @param mixed $value     Valor a ser salvo.
+     * @param array $option    Configuração da opção.
+     * @param mixed $raw_value Valor bruto do POST.
+     * @return string JSON codificado.
+     */
+    public function lkn_sanitize_delivery_slots_field($value, $option, $raw_value)
+    {
+        $slots = array();
+
+        if (is_array($raw_value)) {
+            foreach ($raw_value as $slot) {
+                if (!isset($slot['start']) || !isset($slot['end'])) {
+                    continue;
+                }
+
+                $start = sanitize_text_field($slot['start']);
+                $end   = sanitize_text_field($slot['end']);
+
+                // Validar formato HH:MM e que início < fim
+                if (!preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $start)) {
+                    continue;
+                }
+                if (!preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $end)) {
+                    continue;
+                }
+
+                $startMin = (int) substr($start, 0, 2) * 60 + (int) substr($start, 3, 2);
+                $endMin   = (int) substr($end, 0, 2) * 60 + (int) substr($end, 3, 2);
+
+                if ($startMin >= $endMin) {
+                    continue; // início deve ser estritamente menor que fim
+                }
+
+                // Remove duplicatas
+                $found = false;
+                foreach ($slots as $existing) {
+                    if ($existing[0] === $start && $existing[1] === $end) {
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    $slots[] = array($start, $end);
+                }
+            }
+        }
+
+        // Ordenar por horário de início
+        usort($slots, function ($a, $b) {
+            return strcmp($a[0], $b[0]);
+        });
+
+        return wp_json_encode($slots);
+    }
+
     public function lkn_add_custom_checkout_field($fields)
     {
         $number_field = get_option('woo_better_calc_number_required', 'no');
@@ -1178,12 +1323,46 @@ class WcBetterShippingCalculatorForBrazil
         // Adiciona campo de data/hora de entrega
         $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
         if ($delivery_schedule_enabled === 'yes') {
+            // Lê valores salvos da sessão para pré-preenchimento
+            $saved_date = '';
+            $saved_slot = '';
+            if (function_exists('WC') && WC()->session) {
+                $saved_date = WC()->session->get('billing_delivery_date', '');
+                $saved_slot = WC()->session->get('billing_delivery_time_slot', '');
+            }
+            if (empty($saved_date) && is_user_logged_in()) {
+                $user_id = get_current_user_id();
+                $saved_date = get_user_meta($user_id, 'billing_delivery_date', true);
+                $saved_slot = get_user_meta($user_id, 'billing_delivery_time_slot', true);
+            }
+
             $fields['billing']['billing_delivery_datetime'] = array(
-                'label'       => __('Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
-                'placeholder' => __('Selecione a data e hora', 'woo-better-shipping-calculator-for-brazil'),
+                'label'       => __('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Selecione a data', 'woo-better-shipping-calculator-for-brazil'),
                 'type'        => 'text',
                 'required'    => true,
                 'class'       => array('form-row-wide'),
+                'priority'    => 200,
+                'default'     => $saved_date,
+            );
+
+            // Select de horário de entrega (via hook, logo abaixo da data)
+            $slots_json = get_option('woo_better_delivery_slots', '[]');
+            $slots = json_decode($slots_json, true);
+            if (!is_array($slots)) { $slots = array(); }
+            $slot_options = array('' => __('Selecione o horário...', 'woo-better-shipping-calculator-for-brazil'));
+            foreach ($slots as $slot) {
+                $label = $slot[0] . ' às ' . $slot[1];
+                $slot_options[$label] = $label;
+            }
+            $fields['billing']['billing_delivery_time_slot_visible'] = array(
+                'label'       => __('Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'type'        => 'select',
+                'options'     => $slot_options,
+                'required'    => true,
+                'class'       => array('form-row-wide', 'wc-better-slot-field'),
+                'priority'    => 210,
+                'default'     => $saved_slot,
             );
         }
 
@@ -1988,9 +2167,25 @@ class WcBetterShippingCalculatorForBrazil
         $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
         if ($delivery_schedule_enabled === 'yes') {
             $fields['delivery_datetime'] = array(
-                'label' => __('Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'label' => __('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'),
                 'type'  => 'text',
                 'show'  => false
+            );
+
+            // Select de horário de entrega
+            $slots_json = get_option('woo_better_delivery_slots', '[]');
+            $slots = json_decode($slots_json, true);
+            if (!is_array($slots)) { $slots = array(); }
+            $slot_options = array('' => __('Selecione o horário...', 'woo-better-shipping-calculator-for-brazil'));
+            foreach ($slots as $slot) {
+                $label = $slot[0] . ' às ' . $slot[1];
+                $slot_options[$label] = $label;
+            }
+            $fields['delivery_time_slot'] = array(
+                'label'   => __('Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'type'    => 'select',
+                'options' => $slot_options,
+                'show'    => false,
             );
         }
         
@@ -2185,6 +2380,17 @@ class WcBetterShippingCalculatorForBrazil
 
         if (isset($_POST['_billing_gender'])) {
             $order->update_meta_data('_billing_gender', sanitize_text_field(wp_unslash($_POST['_billing_gender'])));
+        }
+        
+        // Salvar campo de data/horário de entrega (admin order)
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        if ($delivery_schedule_enabled === 'yes') {
+            if (isset($_POST['_billing_delivery_datetime'])) {
+                $order->update_meta_data('_billing_delivery_date', sanitize_text_field(wp_unslash($_POST['_billing_delivery_datetime'])));
+            }
+            if (isset($_POST['_billing_delivery_time_slot'])) {
+                $order->update_meta_data('_billing_delivery_time_slot', sanitize_text_field(wp_unslash($_POST['_billing_delivery_time_slot'])));
+            }
         }
         
         // Salvar campos de entrega
@@ -2698,21 +2904,45 @@ class WcBetterShippingCalculatorForBrazil
             return $delivery_data;
         }
 
-        $billing_delivery_datetime = $order->get_meta('_billing_delivery_datetime');
-        if (empty($billing_delivery_datetime)) {
+        // Tenta ler os campos separados (novo formato)
+        $billing_delivery_date     = $order->get_meta('_billing_delivery_date');
+        $billing_delivery_time_slot = $order->get_meta('_billing_delivery_time_slot');
+
+        // Fallback: campo combinado
+        if (empty($billing_delivery_date)) {
+            $combined = $order->get_meta('_billing_delivery_datetime');
+            if (!empty($combined) && preg_match('/^(\d{2}\/\d{2}\/\d{4})\s(.+)$/', $combined, $m)) {
+                $billing_delivery_date     = $m[1];
+                $billing_delivery_time_slot = $m[2];
+            } elseif (!empty($combined)) {
+                $billing_delivery_date = $combined; // só a data mesmo
+            }
+        }
+
+        if (empty($billing_delivery_date)) {
             return $delivery_data;
         }
 
-        // Tenta parsear a data no formato dd/mm/YYYY HH:MM
-        $delivery_dt = \DateTime::createFromFormat('d/m/Y H:i', $billing_delivery_datetime);
+        // Converte dd/mm/aaaa para DateTime
+        $delivery_dt = \DateTime::createFromFormat('d/m/Y', $billing_delivery_date);
         if (!$delivery_dt) {
-            // Fallback: só data no formato dd/mm/YYYY
-            $delivery_dt = \DateTime::createFromFormat('d/m/Y', $billing_delivery_datetime);
+            // Fallback: formato combinado antigo "d/m/Y H:i"
+            $delivery_dt = \DateTime::createFromFormat('d/m/Y H:i', $billing_delivery_date);
+        }
+
+        // Se tem slot, ajusta a hora para o fim do slot (ex: "09:00 às 11:00" → 11:00)
+        if ($delivery_dt && !empty($billing_delivery_time_slot)) {
+            if (preg_match('/às\s(\d{2}):(\d{2})$/', $billing_delivery_time_slot, $tm)) {
+                $delivery_dt->setTime((int) $tm[1], (int) $tm[2]);
+            }
         }
 
         $now = new \DateTime('now', $delivery_dt ? $delivery_dt->getTimezone() : null);
 
-        $delivery_data['raw_value'] = $billing_delivery_datetime;
+        $delivery_data['raw_value'] = $billing_delivery_date;
+        if (!empty($billing_delivery_time_slot)) {
+            $delivery_data['time_slot'] = $billing_delivery_time_slot;
+        }
 
         if ($delivery_dt) {
             $interval = $now->diff($delivery_dt);
@@ -2737,9 +2967,15 @@ class WcBetterShippingCalculatorForBrazil
                 }
             }
 
-            $delivery_data['formatted'] = $delivery_dt->format('d/m/Y H:i');
+            $delivery_data['formatted'] = $delivery_dt->format('d/m/Y');
+            if (!empty($billing_delivery_time_slot)) {
+                $delivery_data['formatted'] .= ' (' . $billing_delivery_time_slot . ')';
+            }
         } else {
-            $delivery_data['formatted'] = $billing_delivery_datetime;
+            $delivery_data['formatted'] = $billing_delivery_date;
+            if (!empty($billing_delivery_time_slot)) {
+                $delivery_data['formatted'] .= ' (' . $billing_delivery_time_slot . ')';
+            }
         }
 
         return $delivery_data;
@@ -3113,34 +3349,61 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        $billing_delivery_datetime = isset($_POST['billing_delivery_datetime']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime'])) : '';
+        // Tenta ler os campos separados primeiro (novo formato)
+        $billing_delivery_date     = isset($_POST['billing_delivery_date']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_date'])) : '';
+        $billing_delivery_time_slot = isset($_POST['billing_delivery_time_slot']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_time_slot'])) : '';
 
-        if (empty($billing_delivery_datetime)) {
-            wc_add_notice(__('Por favor, selecione uma data e hora de entrega.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+        // Fallback: campo combinado (legado)
+        if (empty($billing_delivery_date) || empty($billing_delivery_time_slot)) {
+            $combined = isset($_POST['billing_delivery_datetime']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime'])) : '';
+            if (!empty($combined)) {
+                // Tenta extrair: "dd/mm/aaaa HH:MM às HH:MM" ou "dd/mm/aaaa HH:MM"
+                if (preg_match('/^(\d{2}\/\d{2}\/\d{4})\s(.+)$/', $combined, $m)) {
+                    $billing_delivery_date     = $m[1];
+                    $billing_delivery_time_slot = $m[2];
+                } elseif (preg_match('/^(\d{2}\/\d{2}\/\d{4})$/', $combined, $m)) {
+                    $billing_delivery_date = $m[1];
+                }
+            }
+        }
+
+        if (empty($billing_delivery_date)) {
+            wc_add_notice(__('Por favor, selecione uma data de entrega.', 'woo-better-shipping-calculator-for-brazil'), 'error');
             return;
         }
 
-        // Valida formato dd/mm/aaaa hh:mm
-        if (!preg_match('/^(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}):(\d{2})$/', $billing_delivery_datetime, $matches)) {
-            wc_add_notice(__('Formato de data e hora de entrega inválido. Use dd/mm/aaaa hh:mm.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+        if (empty($billing_delivery_time_slot)) {
+            wc_add_notice(__('Por favor, selecione um horário de entrega.', 'woo-better-shipping-calculator-for-brazil'), 'error');
             return;
         }
 
-        $day = (int) $matches[1];
+        // Valida formato dd/mm/aaaa
+        if (!preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $billing_delivery_date, $matches)) {
+            wc_add_notice(__('Formato de data de entrega inválido. Use dd/mm/aaaa.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+            return;
+        }
+
+        $day   = (int) $matches[1];
         $month = (int) $matches[2];
-        $year = (int) $matches[3];
-        $hour = (int) $matches[4];
-        $minute = (int) $matches[5];
+        $year  = (int) $matches[3];
 
         if (!checkdate($month, $day, $year)) {
             wc_add_notice(__('Data de entrega inválida.', 'woo-better-shipping-calculator-for-brazil'), 'error');
             return;
         }
 
-        $delivery_date = new \DateTime("$year-$month-$day $hour:$minute:00");
+        // Extrai horário inicial do slot para validação de passado
+        $slot_match = array();
+        $slot_start_hour = 0;
+        $slot_start_min  = 0;
+        if (preg_match('/^(\d{2}):(\d{2})\sàs\s/', $billing_delivery_time_slot, $slot_match)) {
+            $slot_start_hour = (int) $slot_match[1];
+            $slot_start_min  = (int) $slot_match[2];
+        }
+
+        $delivery_date = new \DateTime("$year-$month-$day $slot_start_hour:$slot_start_min:00");
         $now = new \DateTime('now', $delivery_date->getTimezone());
 
-        // Não pode ser no passado (com margem de 1h)
         if ($delivery_date < $now->modify('-1 hour')) {
             wc_add_notice(__('A data e hora de entrega não pode estar no passado.', 'woo-better-shipping-calculator-for-brazil'), 'error');
             return;
@@ -3496,9 +3759,28 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        if (isset($_POST['billing_delivery_datetime'])) {
-            $delivery_datetime = sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime']));
-            update_user_meta($user_id, 'billing_delivery_datetime', $delivery_datetime);
+        $delivery_date     = isset($_POST['billing_delivery_date']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_date'])) : '';
+        $delivery_time_slot = isset($_POST['billing_delivery_time_slot']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_time_slot'])) : '';
+
+        // Fallback: campo de data combinado (profile.php usa billing_delivery_datetime)
+        if (empty($delivery_date) && isset($_POST['billing_delivery_datetime'])) {
+            $combined = sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime']));
+            if (!empty($combined)) {
+                if (preg_match('/^(\d{2}\/\d{2}\/\d{4})\s(.+)$/', $combined, $m)) {
+                    $delivery_date     = $m[1];
+                    // Só sobrescreve time_slot se não veio do select
+                    if (empty($delivery_time_slot)) {
+                        $delivery_time_slot = $m[2];
+                    }
+                } elseif (preg_match('/^(\d{2}\/\d{2}\/\d{4})$/', $combined, $m)) {
+                    $delivery_date = $m[1];
+                }
+            }
+        }
+
+        if (!empty($delivery_date)) {
+            update_user_meta($user_id, 'billing_delivery_date', $delivery_date);
+            update_user_meta($user_id, 'billing_delivery_time_slot', $delivery_time_slot);
         }
     }
 
@@ -4188,7 +4470,11 @@ class WcBetterShippingCalculatorForBrazil
                     'namespace'       => 'woo_better_delivery_datetime',
                     'schema_callback' => function() {
                         return [
-                            'billing_delivery_datetime' => [
+                            'billing_delivery_date' => [
+                                'type'     => 'string',
+                                'readonly' => true,
+                            ],
+                            'billing_delivery_time_slot' => [
                                 'type'     => 'string',
                                 'readonly' => true,
                             ],
@@ -4196,7 +4482,8 @@ class WcBetterShippingCalculatorForBrazil
                     },
                     'data_callback' => function() {
                         return [
-                            'billing_delivery_datetime'  => '',
+                            'billing_delivery_date'      => '',
+                            'billing_delivery_time_slot' => '',
                         ];
                     },
                 ]);
@@ -4577,15 +4864,33 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        $billing_delivery_datetime = '';
+        $billing_delivery_date = '';
+        $billing_delivery_time_slot = '';
 
-        if ( isset( $data['billing_delivery_datetime'] ) ) {
-            $billing_delivery_datetime = sanitize_text_field( (string) $data['billing_delivery_datetime'] );
+        // Novos campos separados
+        if ( isset( $data['billing_delivery_date'] ) ) {
+            $billing_delivery_date = sanitize_text_field( (string) $data['billing_delivery_date'] );
+        }
+        if ( isset( $data['billing_delivery_time_slot'] ) ) {
+            $billing_delivery_time_slot = sanitize_text_field( (string) $data['billing_delivery_time_slot'] );
         }
 
-        WC()->session->set( 'billing_delivery_datetime', $billing_delivery_datetime );
-        if (is_user_logged_in()) {
-            update_user_meta( get_current_user_id(), 'billing_delivery_datetime', $billing_delivery_datetime );
+        // Fallback: campo combinado
+        if ( empty( $billing_delivery_date ) && isset( $data['billing_delivery_datetime'] ) ) {
+            $combined = sanitize_text_field( (string) $data['billing_delivery_datetime'] );
+            if ( ! empty( $combined ) && preg_match( '/^(\d{2}\/\d{2}\/\d{4})\s(.+)$/', $combined, $m ) ) {
+                $billing_delivery_date     = $m[1];
+                $billing_delivery_time_slot = $m[2];
+            }
+        }
+
+        // Guarda na sessão e no perfil
+        WC()->session->set( 'billing_delivery_date', $billing_delivery_date );
+        WC()->session->set( 'billing_delivery_time_slot', $billing_delivery_time_slot );
+
+        if ( is_user_logged_in() ) {
+            update_user_meta( get_current_user_id(), 'billing_delivery_date', $billing_delivery_date );
+            update_user_meta( get_current_user_id(), 'billing_delivery_time_slot', $billing_delivery_time_slot );
         }
     }
 
@@ -6369,10 +6674,24 @@ class WcBetterShippingCalculatorForBrazil
         $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
         
         if ($delivery_schedule_enabled === 'yes') {
-            $billing_delivery_datetime = isset($_POST['billing_delivery_datetime']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime'])) : '';
+            // Lê os campos separados (novo formato)
+            $billing_delivery_date     = isset($_POST['billing_delivery_date']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_date'])) : '';
+            $billing_delivery_time_slot = isset($_POST['billing_delivery_time_slot']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_time_slot'])) : '';
 
-            if (!empty($billing_delivery_datetime)) {
-                $order->update_meta_data('_billing_delivery_datetime', $billing_delivery_datetime);
+            // Fallback: campo combinado
+            if (empty($billing_delivery_date)) {
+                $combined = isset($_POST['billing_delivery_datetime']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime'])) : '';
+                if (!empty($combined)) {
+                    if (preg_match('/^(\d{2}\/\d{2}\/\d{4})\s(.+)$/', $combined, $m)) {
+                        $billing_delivery_date     = $m[1];
+                        $billing_delivery_time_slot = $m[2];
+                    }
+                }
+            }
+
+            if (!empty($billing_delivery_date)) {
+                $order->update_meta_data('_billing_delivery_date', $billing_delivery_date);
+                $order->update_meta_data('_billing_delivery_time_slot', $billing_delivery_time_slot);
             }
         }
     }
@@ -6391,22 +6710,40 @@ class WcBetterShippingCalculatorForBrazil
         if ($delivery_schedule_enabled === 'yes') {
             $extensions = $request->get_param('extensions') ?? [];
 
-            $billing_delivery_datetime = '';
+            $billing_delivery_date = '';
+            $billing_delivery_time_slot = '';
             
             if (isset($extensions['woo_better_delivery_datetime'])) {
                 $delivery_data = $extensions['woo_better_delivery_datetime'];
                 
-                if (isset($delivery_data['billing_delivery_datetime'])) {
-                    $billing_delivery_datetime = sanitize_text_field($delivery_data['billing_delivery_datetime']);
+                // Novos campos separados
+                if (isset($delivery_data['billing_delivery_date'])) {
+                    $billing_delivery_date = sanitize_text_field($delivery_data['billing_delivery_date']);
+                }
+                if (isset($delivery_data['billing_delivery_time_slot'])) {
+                    $billing_delivery_time_slot = sanitize_text_field($delivery_data['billing_delivery_time_slot']);
+                }
+                // Fallback: campo combinado
+                if (empty($billing_delivery_date) && isset($delivery_data['billing_delivery_datetime'])) {
+                    $combined = sanitize_text_field($delivery_data['billing_delivery_datetime']);
+                    if (!empty($combined) && preg_match('/^(\d{2}\/\d{2}\/\d{4})\s(.+)$/', $combined, $m)) {
+                        $billing_delivery_date     = $m[1];
+                        $billing_delivery_time_slot = $m[2];
+                    }
                 }
             }
             
-            if (empty($billing_delivery_datetime) && isset($_POST['billing_delivery_datetime'])) {
-                $billing_delivery_datetime = sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime']));
+            // Fallback: POST direto
+            if (empty($billing_delivery_date) && isset($_POST['billing_delivery_date'])) {
+                $billing_delivery_date = sanitize_text_field(wp_unslash($_POST['billing_delivery_date']));
+            }
+            if (empty($billing_delivery_time_slot) && isset($_POST['billing_delivery_time_slot'])) {
+                $billing_delivery_time_slot = sanitize_text_field(wp_unslash($_POST['billing_delivery_time_slot']));
             }
 
-            if (!empty($billing_delivery_datetime)) {
-                $order->update_meta_data('_billing_delivery_datetime', $billing_delivery_datetime);
+            if (!empty($billing_delivery_date)) {
+                $order->update_meta_data('_billing_delivery_date', $billing_delivery_date);
+                $order->update_meta_data('_billing_delivery_time_slot', $billing_delivery_time_slot);
             }
         }
     }
@@ -6853,6 +7190,8 @@ class WcBetterShippingCalculatorForBrazil
         $order_data['billing_address']['birthdate']    = $order->get_meta('_billing_birthdate');
         $order_data['billing_address']['gender']       = $order->get_meta('_billing_gender');
         $order_data['billing_address']['delivery_datetime'] = $order->get_meta('_billing_delivery_datetime');
+        $order_data['billing_address']['delivery_date']      = $order->get_meta('_billing_delivery_date');
+        $order_data['billing_address']['delivery_time_slot'] = $order->get_meta('_billing_delivery_time_slot');
 
         // Shipping fields
         $order_data['shipping_address']['number']       = $order->get_meta('_shipping_number');
@@ -7243,8 +7582,24 @@ class WcBetterShippingCalculatorForBrazil
                     // Adiciona campo de data/hora de entrega se habilitado
                     if ($delivery_schedule_enabled === 'yes') {
                         $new_billing_fields['billing_delivery_datetime'] = array(
-                            'label'       => __('Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                            'label'       => __('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'),
                             'type'        => 'text',
+                            'description' => '',
+                        );
+
+                        // Select de horário de entrega
+                        $slots_json = get_option('woo_better_delivery_slots', '[]');
+                        $slots = json_decode($slots_json, true);
+                        if (!is_array($slots)) { $slots = array(); }
+                        $slot_options = array('' => __('Selecione o horário...', 'woo-better-shipping-calculator-for-brazil'));
+                        foreach ($slots as $slot) {
+                            $label = $slot[0] . ' às ' . $slot[1];
+                            $slot_options[$label] = $label;
+                        }
+                        $new_billing_fields['billing_delivery_time_slot'] = array(
+                            'label'       => __('Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                            'type'        => 'select',
+                            'options'     => $slot_options,
                             'description' => '',
                         );
                     }
@@ -7510,12 +7865,36 @@ class WcBetterShippingCalculatorForBrazil
         
         // Campo de data/hora de entrega
         if ($delivery_schedule_enabled === 'yes') {
+            $saved_date = get_user_meta(get_current_user_id(), 'billing_delivery_date', true);
+            $saved_slot = get_user_meta(get_current_user_id(), 'billing_delivery_time_slot', true);
+
             $fields['billing_delivery_datetime'] = array(
-                'label'       => __('Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
-                'placeholder' => __('Selecione a data e hora', 'woo-better-shipping-calculator-for-brazil'),
+                'label'       => __('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Selecione a data', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
                 'class'       => array('form-row-wide'),
-                'type'        => 'text'
+                'type'        => 'text',
+                'priority'    => 200,
+                'value'       => $saved_date ? $saved_date : '',
+            );
+
+            // Select de horário de entrega
+            $slots_json = get_option('woo_better_delivery_slots', '[]');
+            $slots = json_decode($slots_json, true);
+            if (!is_array($slots)) { $slots = array(); }
+            $slot_options = array('' => __('Selecione o horário...', 'woo-better-shipping-calculator-for-brazil'));
+            foreach ($slots as $slot) {
+                $label = $slot[0] . ' às ' . $slot[1];
+                $slot_options[$label] = $label;
+            }
+            $fields['billing_delivery_time_slot_visible'] = array(
+                'label'       => __('Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'type'        => 'select',
+                'options'     => $slot_options,
+                'required'    => true,
+                'class'       => array('form-row-wide', 'wc-better-slot-field'),
+                'priority'    => 210,
+                'value'       => $saved_slot ? $saved_slot : '',
             );
         }
         
@@ -7802,9 +8181,23 @@ class WcBetterShippingCalculatorForBrazil
 
             // Salvar data/hora de entrega
             $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
-            if ($delivery_schedule_enabled === 'yes' && isset($_POST['billing_delivery_datetime'])) {
-                $delivery_datetime = sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime']));
-                update_user_meta($user_id, 'billing_delivery_datetime', $delivery_datetime);
+            if ($delivery_schedule_enabled === 'yes') {
+                $delivery_date     = isset($_POST['billing_delivery_date']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_date'])) : '';
+                $delivery_time_slot = isset($_POST['billing_delivery_time_slot']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_time_slot'])) : '';
+
+                // Fallback: campo combinado
+                if (empty($delivery_date) && isset($_POST['billing_delivery_datetime'])) {
+                    $combined = sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime']));
+                    if (!empty($combined) && preg_match('/^(\d{2}\/\d{2}\/\d{4})\s(.+)$/', $combined, $m)) {
+                        $delivery_date     = $m[1];
+                        $delivery_time_slot = $m[2];
+                    }
+                }
+
+                if (!empty($delivery_date)) {
+                    update_user_meta($user_id, 'billing_delivery_date', $delivery_date);
+                    update_user_meta($user_id, 'billing_delivery_time_slot', $delivery_time_slot);
+                }
             }
             
             // CORREÇÃO: Sempre salva gênero quando habilitado para sobrescrever valores antigos "Masculino"
@@ -7922,7 +8315,9 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         if ($delivery_schedule_enabled === 'yes') {
-            $data['billing']['delivery_datetime'] = get_user_meta($user_id, 'billing_delivery_datetime', true);
+            // delivery_datetime → _billing_delivery_datetime (campo de data no admin)
+            $data['billing']['delivery_datetime']  = get_user_meta($user_id, 'billing_delivery_date', true);
+            $data['billing']['delivery_time_slot'] = get_user_meta($user_id, 'billing_delivery_time_slot', true);
         }
 
         return $data;

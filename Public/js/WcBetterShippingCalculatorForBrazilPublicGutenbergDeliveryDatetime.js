@@ -1,11 +1,12 @@
 /**
- * Delivery Date & Time Picker for Gutenberg/Block Checkout
+ * Delivery Date + Slot Picker for Gutenberg/Block Checkout
  *
- * Uses flatpickr (npm) to provide a date+time picker.
- * Injects field at the end of the billing address form.
- * Saves via wp.data Store API namespace 'woo_better_delivery_datetime'.
+ * Follows the same pattern as birthdate: text input with mask + flatpickr via
+ * calendar icon. A time-slot <select> with WC Blocks styling appears below
+ * the input after a date is chosen. Saves via Store API.
  *
  * @since 4.17.0
+ * @since 5.x  Replaced time picker with slot <select> + manual date input.
  */
 import flatpickr from 'flatpickr';
 import { Portuguese } from 'flatpickr/dist/l10n/pt';
@@ -15,24 +16,19 @@ document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
     const scheduleData = window.WooBetterDeliverySchedule || {};
-    const holidaysData = window.WooBetterDeliveryHolidays || {};
-    const savedData = window.WooBetterDeliveryData || {};
+    const holidaysData = window.WooBetterDeliveryHolidays || [];
+    const savedData    = window.WooBetterDeliveryData || {};
+    const slotsData    = window.WooBetterDeliverySlots || [];
 
     let deliveryInput = null;
     let fieldContainerType = null;
-    let isCorrecting = false;
+    let slotSelectEl = null;
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
     function timeToMinutes(timeStr) {
         const parts = timeStr.split(':');
         return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-    }
-
-    function minutesToTime(minutes) {
-        const h = Math.floor(minutes / 60);
-        const m = minutes % 60;
-        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
     }
 
     function formatDateKey(date) {
@@ -42,6 +38,28 @@ document.addEventListener('DOMContentLoaded', function () {
         return y + '-' + m + '-' + d;
     }
 
+    // ── Mask (dd/mm/aaaa) ────────────────────────────────────────────────
+
+    function applyDateMask(input) {
+        var val = input.value.replace(/\D/g, '').substring(0, 8);
+        if (val.length > 4) {
+            val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4);
+        } else if (val.length > 2) {
+            val = val.substring(0, 2) + '/' + val.substring(2);
+        }
+        input.value = val;
+    }
+
+    function isDateComplete(dateStr) {
+        return /^\d{2}\/\d{2}\/\d{4}$/.test(dateStr);
+    }
+
+    function parseDateParts(dateStr) {
+        var m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dateStr);
+        if (!m) return null;
+        return { day: parseInt(m[1], 10), month: parseInt(m[2], 10), year: parseInt(m[3], 10) };
+    }
+
     // ── Processa feriados ────────────────────────────────────────────────
 
     const fullDayHolidays = new Set();
@@ -49,8 +67,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     holidaysData.forEach(function (h) {
         if (!h.date) return;
-        const startH = typeof h.start_hour === 'number' ? h.start_hour : 0;
-        const endH = typeof h.end_hour === 'number' ? h.end_hour : 24;
+        var startH = typeof h.start_hour === 'number' ? h.start_hour : 0;
+        var endH   = typeof h.end_hour   === 'number' ? h.end_hour   : 24;
         if (endH - startH >= 24 || (startH === 0 && endH === 0)) {
             fullDayHolidays.add(h.date);
         } else {
@@ -68,86 +86,254 @@ document.addEventListener('DOMContentLoaded', function () {
     const daySchedule = {};
 
     Object.keys(scheduleData).forEach(function (key) {
-        const day = scheduleData[key];
+        var day = scheduleData[key];
         if (day && day.active) {
-            const idx = dayIndexMap[key];
+            var idx = dayIndexMap[key];
             if (idx !== undefined) {
                 enabledDays.push(idx);
                 daySchedule[idx] = {
                     startMin: timeToMinutes(day.start || '08:00'),
-                    endMin: timeToMinutes(day.end || '18:00'),
+                    endMin:   timeToMinutes(day.end   || '18:00'),
                 };
             }
         }
     });
     if (enabledDays.length === 0) {
-        for (let i = 0; i < 7; i++) enabledDays.push(i);
+        for (var i = 0; i < 7; i++) enabledDays.push(i);
     }
 
-    let globalMinTime = '00:00';
-    let globalMaxTime = '23:59';
-    const timesArr = Object.values(daySchedule);
-    if (timesArr.length > 0) {
-        let gs = Infinity, ge = -Infinity;
-        timesArr.forEach(function (t) {
-            if (t.startMin < gs) gs = t.startMin;
-            if (t.endMin > ge) ge = t.endMin;
-        });
-        globalMinTime = minutesToTime(gs);
-        globalMaxTime = minutesToTime(ge);
-    }
-
-    // ── disable / correct ────────────────────────────────────────────────
+    // ── Flatpickr disable ────────────────────────────────────────────────
 
     function isDateDisabled(date) {
-        const dateStr = formatDateKey(date);
+        var dateStr = formatDateKey(date);
         if (fullDayHolidays.has(dateStr)) return true;
         if (enabledDays.indexOf(date.getDay()) === -1) return true;
         return false;
     }
 
-    function correctTimeIfNeeded(selDate) {
-        const dateKey = formatDateKey(selDate);
-        var mins = selDate.getHours() * 60 + selDate.getMinutes();
-        var corrected = false;
-        const partial = partialHolidays[dateKey];
+    // ── Slot filtering ───────────────────────────────────────────────────
+
+    function slotLabel(slot) {
+        return slot[0] + ' às ' + slot[1];
+    }
+
+    function getSlotsForDay(weekday, dateKey) {
+        var sched = daySchedule[weekday];
+        if (!sched || slotsData.length === 0) return [];
+
+        // Começa com o horário do dia
+        var dayStart = sched.startMin;
+        var dayEnd   = sched.endMin;
+
+        // Se a data tem feriado parcial, restringe ainda mais o intervalo
+        var partial = partialHolidays[dateKey];
         if (partial) {
-            if (mins > partial.startMin && mins < partial.endMin) {
-                var target;
-                if (partial.startMin === 0) {
-                    target = partial.endMin;
-                } else if (partial.endMin >= 1440) {
-                    target = partial.startMin;
+            // Feriado parcial do tipo 0h às 12h: bloqueia das 0h às 12h.
+            // O que sobra é: [partial.endMin, dayEnd]
+            // Feriado parcial do tipo 12h às 24h: bloqueia das 12h às 24h.
+            // O que sobra é: [dayStart, partial.startMin]
+            if (partial.startMin <= dayStart && partial.endMin > dayStart) {
+                // Bloqueio começa no início do dia → empurra o início
+                dayStart = partial.endMin;
+            } else if (partial.endMin >= dayEnd && partial.startMin < dayEnd) {
+                // Bloqueio vai até o fim do dia → puxa o fim
+                dayEnd = partial.startMin;
+            } else if (partial.startMin > dayStart && partial.endMin < dayEnd) {
+                // Bloqueio no meio do dia: escolhe o lado com mais slots
+                var beforeLen = partial.startMin - dayStart;
+                var afterLen  = dayEnd - partial.endMin;
+                if (beforeLen >= afterLen) {
+                    dayEnd = partial.startMin;  // usa a manhã
                 } else {
-                    target = (mins - partial.startMin) <= (partial.endMin - mins) ? partial.startMin : partial.endMin;
+                    dayStart = partial.endMin;   // usa a tarde
                 }
-                if (target < 0) target = 0;
-                if (target >= 1440) target = 1439;
-                selDate.setHours(Math.floor(target / 60));
-                selDate.setMinutes(target % 60);
-                corrected = true;
+            }
+            // Se o bloqueio cobre o dia inteiro, dayStart >= dayEnd → sem slots
+        }
+
+        if (dayStart >= dayEnd) return [];
+
+        return slotsData.filter(function (slot) {
+            var s = timeToMinutes(slot[0]);
+            var e = timeToMinutes(slot[1]);
+            return s >= dayStart && e <= dayEnd;
+        });
+    }
+
+    // ── Slot <select> (WC Blocks style) ──────────────────────────────────
+
+    function createSlotSelect(input) {
+        if (slotSelectEl) return slotSelectEl;
+
+        // Outer wrapper matching WC Blocks select component
+        var wrapper = document.createElement('div');
+        wrapper.className = 'wc-blocks-components-select wc-better-delivery-slot-wrapper';
+        wrapper.setAttribute('style', 'margin-top: 8px; display: none;');
+
+        // Inner container
+        var container = document.createElement('div');
+        container.className = 'wc-blocks-components-select__container';
+
+        // Label
+        var label = document.createElement('label');
+        label.className = 'wc-blocks-components-select__label';
+        label.setAttribute('for', 'wc-better-delivery-slot');
+        label.textContent = 'Horário';
+
+        // Select
+        var select = document.createElement('select');
+        select.id = 'wc-better-delivery-slot';
+        select.className = 'wc-blocks-components-select__select';
+        select.setAttribute('size', '1');
+        select.setAttribute('aria-invalid', 'false');
+        select.style.padding = '8px 12.8px';
+
+        var defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = 'Selecione o horário...';
+        defaultOpt.disabled = true;
+        select.appendChild(defaultOpt);
+
+        // Expand icon (same SVG as WC Blocks)
+        var expandSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        expandSvg.setAttribute('viewBox', '0 0 24 24');
+        expandSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        expandSvg.setAttribute('width', '24');
+        expandSvg.setAttribute('height', '24');
+        expandSvg.setAttribute('class', 'wc-blocks-components-select__expand');
+        expandSvg.setAttribute('aria-hidden', 'true');
+        expandSvg.setAttribute('focusable', 'false');
+        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M17.5 11.6L12 16l-5.5-4.4.9-1.2L12 14l4.5-3.6 1 1.2z');
+        expandSvg.appendChild(path);
+
+        container.appendChild(label);
+        container.appendChild(select);
+        container.appendChild(expandSvg);
+        wrapper.appendChild(container);
+
+        // Insert after the main-wrapper inside the delivery container
+        var deliveryContainer = input.closest('.wc-better-billing-delivery-datetime');
+        if (deliveryContainer) {
+            deliveryContainer.appendChild(wrapper);
+        } else {
+            input.parentNode.parentNode.appendChild(wrapper);
+        }
+
+        slotSelectEl = select;
+
+        select.addEventListener('change', function () {
+            var slotVal = select.value;
+            var dateStr = input.value.trim();
+            if (isDateComplete(dateStr) && slotVal) {
+                saveToStore(dateStr, slotVal);
+                hideError();
+                updateActiveState();
+                // Re-sync input in case flatpickr reverted it
+                if (input.value.trim() !== dateStr) {
+                    input._flatpickr && input._flatpickr.setDate(dateStr, false);
+                }
+            }
+        });
+
+        return select;
+    }
+
+    function populateSlotSelect(input) {
+        var dateStr = input.value.trim();
+        var parts = parseDateParts(dateStr);
+        if (!parts) {
+            hideSlotSelect();
+            return;
+        }
+
+        var date = new Date(parts.year, parts.month - 1, parts.day);
+        if (isNaN(date.getTime())) {
+            hideSlotSelect();
+            return;
+        }
+
+        var weekday = date.getDay();
+        var dateKey = formatDateKey(date);
+        var slots = getSlotsForDay(weekday, dateKey);
+
+        var select = createSlotSelect(input);
+        // Clear options except default
+        while (select.options.length > 1) select.remove(1);
+
+        var wrapper = select.closest('.wc-better-delivery-slot-wrapper');
+
+        if (slots.length === 0) {
+            if (wrapper) wrapper.style.display = 'none';
+            return;
+        }
+
+        slots.forEach(function (slot) {
+            var opt = document.createElement('option');
+            opt.value = slotLabel(slot);
+            opt.textContent = slotLabel(slot);
+            select.appendChild(opt);
+        });
+
+        if (wrapper) wrapper.style.display = 'block';
+        select.value = '';
+
+        // Restore cached slot if re-selecting same date
+        var dateKey = formatDateKey(date);
+        if (input._slotCache && input._slotCache.dateKey === dateKey) {
+            var cached = input._slotCache.value;
+            for (var i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === cached) {
+                    select.value = cached;
+                    saveToStore(dateStr, cached);
+                    hideError();
+                    updateActiveState();
+                    break;
+                }
             }
         }
-        const sched = daySchedule[selDate.getDay()];
-        if (sched) {
-            mins = selDate.getHours() * 60 + selDate.getMinutes();
-            if (mins < sched.startMin) { selDate.setHours(Math.floor(sched.startMin / 60)); selDate.setMinutes(sched.startMin % 60); corrected = true; }
-            else if (mins > sched.endMin) { selDate.setHours(Math.floor(sched.endMin / 60)); selDate.setMinutes(sched.endMin % 60); corrected = true; }
+    }
+
+    function hideSlotSelect() {
+        if (slotSelectEl) {
+            var wrapper = slotSelectEl.closest('.wc-better-delivery-slot-wrapper');
+            if (wrapper) wrapper.style.display = 'none';
+            slotSelectEl.value = '';
         }
-        return corrected;
     }
 
     // ── Store API ────────────────────────────────────────────────────────
 
-    function saveToStore(value) {
-        const payload = { billing_delivery_datetime: (value || '').trim() };
+    function saveToStore(dateStr, slotStr) {
+        var payload = {
+            billing_delivery_date: dateStr || '',
+            billing_delivery_time_slot: slotStr || '',
+        };
         if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
             try {
-                const checkoutDispatch = wp.data.dispatch('wc/store/checkout');
+                var checkoutDispatch = wp.data.dispatch('wc/store/checkout');
                 if (checkoutDispatch && checkoutDispatch.setExtensionData) {
                     checkoutDispatch.setExtensionData('woo_better_delivery_datetime', payload);
                 }
             } catch (e) { /* silencioso */ }
+        }
+        if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+            window.wc.blocksCheckout.extensionCartUpdate({ namespace: 'woo_better_delivery_datetime', data: payload });
+        }
+    }
+
+    function clearStoreData() {
+        var payload = {
+            billing_delivery_date: '',
+            billing_delivery_time_slot: '',
+        };
+        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+            try {
+                var checkoutDispatch = wp.data.dispatch('wc/store/checkout');
+                if (checkoutDispatch && checkoutDispatch.setExtensionData) {
+                    checkoutDispatch.setExtensionData('woo_better_delivery_datetime', payload);
+                }
+            } catch (e) {}
         }
         if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
             window.wc.blocksCheckout.extensionCartUpdate({ namespace: 'woo_better_delivery_datetime', data: payload });
@@ -166,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function showError(msg) {
         var err = getDeliveryErrorContainer();
-        if (err) { err.style.display = 'block'; var s = err.querySelector('span'); if (s) s.textContent = msg || 'Selecione uma data e hora de entrega.'; }
+        if (err) { err.style.display = 'block'; var s = err.querySelector('span'); if (s) s.textContent = msg || 'Selecione uma data e horário de entrega.'; }
         var c = getDeliveryContainer(); if (c) c.classList.add('has-error');
         if (deliveryInput) deliveryInput.setAttribute('aria-invalid', 'true');
     }
@@ -196,23 +382,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function getReferenceElement(container) {
-        // Pega TODOS os campos filhos diretos (text-input, state-input, select-input etc),
-        // não apenas .wc-block-components-text-input. Isso garante que o campo
-        // fique depois de state, city, postcode etc — no final do formulário.
         var children = container.children;
         if (children.length === 0) return null;
 
-        // Ignora hidden inputs e checkboxes (ficam no meio do form)
         for (var i = children.length - 1; i >= 0; i--) {
             var child = children[i];
             if (child.tagName === 'INPUT' && child.type === 'hidden') continue;
             if (child.classList.contains('wc-block-checkout__use-address-for-shipping')) continue;
             if (child.classList.contains('wc-block-checkout__use-address-for-billing')) continue;
-            // Pula campos do próprio plugin para evitar auto-referência
             if (child.classList.contains('wc-block-components-address-form__birthdate')) continue;
             if (child.classList.contains('wc-block-components-address-form__gender')) continue;
             if (child.classList.contains('wc-block-components-address-form__delivery-datetime')) continue;
-            // É um campo visível
             return child;
         }
         return null;
@@ -227,25 +407,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Remove + clear ───────────────────────────────────────────────────
 
-    function clearStoreData() {
-        var payload = { billing_delivery_datetime: '' };
-        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
-            try {
-                var checkoutDispatch = wp.data.dispatch('wc/store/checkout');
-                if (checkoutDispatch && checkoutDispatch.setExtensionData) {
-                    checkoutDispatch.setExtensionData('woo_better_delivery_datetime', payload);
-                }
-            } catch (e) {}
-        }
-        if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-            window.wc.blocksCheckout.extensionCartUpdate({ namespace: 'woo_better_delivery_datetime', data: payload });
-        }
-    }
-
     function removeField() {
         var container = getDeliveryContainer();
         if (container) container.remove();
         deliveryInput = null;
+        slotSelectEl = null;
         fieldContainerType = null;
         clearStoreData();
     }
@@ -260,16 +426,17 @@ document.addEventListener('DOMContentLoaded', function () {
         input.type = 'text';
         input.id = 'billing-delivery-datetime';
         input.name = 'billing_delivery_datetime';
-        input.setAttribute('aria-label', 'Prazo de Entrega');
+        input.setAttribute('aria-label', 'Data de Entrega');
         input.setAttribute('aria-invalid', 'false');
         input.setAttribute('autocomplete', 'off');
+        input.setAttribute('inputmode', 'numeric');
         input.style.paddingRight = '36px';
 
         var label = document.createElement('label');
         label.setAttribute('for', 'billing-delivery-datetime');
-        label.textContent = 'Prazo de Entrega';
+        label.textContent = 'Data de Entrega';
 
-        // Ícone de calendário
+        // Ícone de calendário (mesmo pattern do birthdate)
         var iconWrap = document.createElement('span');
         iconWrap.id = 'woo_better_gutenberg_delivery_calendar_icon';
         iconWrap.setAttribute('style',
@@ -288,7 +455,11 @@ document.addEventListener('DOMContentLoaded', function () {
             '<line x1="3" y1="10" x2="21" y2="10"></line>' +
             '</svg>';
 
-        iconWrap.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); input.focus(); });
+        iconWrap.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (input._flatpickr) input._flatpickr.open();
+        });
 
         // Error div
         var errDiv = document.createElement('div');
@@ -309,13 +480,11 @@ document.addEventListener('DOMContentLoaded', function () {
         svgEl.appendChild(pathEl);
         errP.appendChild(svgEl);
         var errSpan = document.createElement('span');
-        errSpan.textContent = 'Selecione uma data e hora de entrega.';
+        errSpan.textContent = 'Selecione uma data e horário de entrega.';
         errP.appendChild(errSpan);
         errDiv.appendChild(errP);
 
-        // Wrapper principal: input + label + ícone. Mesmo padrão do campo IE
-        // (wc-better-ie-main-wrapper) e birthdate (wc-better-birthdate-main-wrapper).
-        // Mantém o ícone absolute alinhado ao input, sem descer quando o erro aparece abaixo.
+        // Main wrapper: input + label + icon (same pattern as birthdate)
         var fieldMain = document.createElement('div');
         fieldMain.className = 'wc-better-delivery-datetime-main-wrapper';
         fieldMain.style.position = 'relative';
@@ -348,10 +517,20 @@ document.addEventListener('DOMContentLoaded', function () {
             var c = getDeliveryContainer();
             if (c && !deliveryInput.value.trim()) {
                 c.classList.remove('is-active');
-                showError('Selecione uma data e hora de entrega.');
+                showError('Selecione uma data e horário de entrega.');
             } else if (c && deliveryInput.value.trim()) {
+                hideError();
                 c.classList.add('is-active');
+                // Se completou a data digitando, mostra os slots
+                if (isDateComplete(deliveryInput.value.trim())) {
+                    populateSlotSelect(deliveryInput);
+                }
             }
+        });
+        deliveryInput.addEventListener('input', function () {
+            hideError();
+            // Máscara conforme digita
+            applyDateMask(deliveryInput);
         });
     }
 
@@ -369,66 +548,73 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function initPicker(input) {
         var fp = flatpickr(input, {
-            enableTime: true,
-            dateFormat: 'd/m/Y H:i',
+            enableTime: false,
+            dateFormat: 'd/m/Y',
             minDate: 'today',
-            time_24hr: true,
             locale: Portuguese,
-            minTime: globalMinTime,
-            maxTime: globalMaxTime,
+            clickOpens: false,   // só abre via ícone
+            allowInput: true,    // permite digitar
             disable: [function (date) { return isDateDisabled(date); }],
             onChange: function (selectedDates, dateStr, instance) {
-                if (isCorrecting) return;
-                if (selectedDates.length === 0) return;
-                var d = new Date(selectedDates[0].getTime());
-                if (correctTimeIfNeeded(d)) { isCorrecting = true; instance.setDate(d, false); isCorrecting = false; }
-                saveToStore(dateStr);
-                hideError();
+                if (dateStr && isDateComplete(dateStr)) {
+                    hideError();
+                    populateSlotSelect(input);
+                } else {
+                    hideSlotSelect();
+                }
                 updateActiveState();
-            },
-            onOpen: function (selectedDates, dateStr, instance) {
-                // Se focus veio do erro de validação (place order), fecha sem disparar onClose
-                if (input._blockOpen) {
-                    instance.close();
-                    // Não reseta _blockOpen — onClose vai usá-lo para pular hideError
-                    return;
-                }
-                if (!input._confirmBtn) {
-                    var cal = instance.calendarContainer;
-                    if (cal && !cal.querySelector('.wc-better-flatpickr-confirm')) {
-                        var btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'wc-better-flatpickr-confirm';
-                        btn.textContent = 'Confirmar';
-                        btn.setAttribute('style',
-                            'display:block;width:100%;padding:10px 0;' +
-                            'border:none;border-radius:0 0 4px 4px;background:#2271b1;color:#fff;' +
-                            'font-size:14px;font-weight:600;cursor:pointer;'
-                        );
-                        btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); instance.close(); });
-                        cal.appendChild(btn);
-                        input._confirmBtn = btn;
-                    }
-                }
             },
             onClose: function (selectedDates, dateStr) {
-                if (input._blockOpen) {
-                    input._blockOpen = false;
-                    // Não esconde o erro — foi disparado pelo place order
-                    updateActiveState();
+                var val = input.value.trim();
+                if (val && isDateComplete(val)) {
+                    hideError();
+                    populateSlotSelect(input);
+                }
+                updateActiveState();
+            },
+            onKeyDown: function (selectedDates, dateStr, instance, e) {
+                // Permite teclas de controle
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
+                if (e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Tab' ||
+                    e.key === 'ArrowLeft' || e.key === 'ArrowRight' ||
+                    e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
+                    e.key === 'Home' || e.key === 'End' ||
+                    e.key === 'Enter' || e.key === 'Escape') return;
+                // Bloqueia letras
+                if (!/^\d$/.test(e.key)) {
+                    e.preventDefault();
                     return;
                 }
-                hideError();
-                updateActiveState();
+                // Aplica máscara dd/mm/aaaa
+                setTimeout(function () { applyDateMask(input); }, 0);
             },
         });
         input._flatpickr = fp;
 
-        // Preenche valor salvo da sessão/user_meta (via wp_localize_script)
-        var savedValue = (savedData.billing_delivery_datetime || '').trim();
-        if (savedValue) {
-            fp.setDate(savedValue, false);
-            updateActiveState();
+        // Preenche valor salvo da sessão/user_meta
+        var savedDate = (savedData.billing_delivery_date || '').trim();
+        var savedSlot = (savedData.billing_delivery_time_slot || '').trim();
+
+        // Fallback: combined value
+        if (!savedDate) {
+            var savedCombined = (savedData.billing_delivery_datetime || '').trim();
+            if (savedCombined && savedCombined.length >= 10) {
+                savedDate = savedCombined.split(' ')[0];
+                savedSlot = savedCombined.substring(savedDate.length + 1);
+            }
+        }
+
+        if (savedDate && savedDate.length === 10) {
+            var parts = parseDateParts(savedDate);
+            if (parts) {
+                var savedDateObj = new Date(parts.year, parts.month - 1, parts.day);
+                input._slotCache = {
+                    dateKey: formatDateKey(savedDateObj),
+                    value: savedSlot || '',
+                };
+                fp.setDate(savedDate, true);
+                updateActiveState();
+            }
         }
 
         return fp;
@@ -442,13 +628,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!ensureAddressEditorOpen(ctx.containerType)) return;
 
         var current = getDeliveryContainer();
-        // Se o container mudou (checkbox toggle), remove e recria no novo local
         if (current && fieldContainerType && fieldContainerType !== ctx.containerType) {
             removeField();
             current = null;
         }
 
-        if (current) return; // já existe, não recria
+        if (current) return;
 
         var ref = getReferenceElement(ctx.container);
         if (!ref) return;
@@ -473,18 +658,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
         btn.addEventListener('click', function (e) {
             if (!deliveryInput) return;
-            if (!deliveryInput.value.trim()) {
+            var dateOk = isDateComplete(deliveryInput.value.trim());
+            var slotOk = slotSelectEl && slotSelectEl.value;
+            if (!dateOk || !slotOk) {
                 e.stopPropagation();
                 e.preventDefault();
-                showError();
-                deliveryInput._blockOpen = true; // bloqueia abertura do calendário nesse focus
+                if (!dateOk) {
+                    showError('Selecione uma data de entrega.');
+                } else {
+                    showError('Selecione um horário de entrega.');
+                }
                 deliveryInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(function () {
-                    deliveryInput.focus();
-                    // Adiciona has-error para destacar visualmente o campo
-                    var c = getDeliveryContainer();
-                    if (c) c.classList.add('has-error');
-                }, 250);
+                setTimeout(function () { deliveryInput.focus(); }, 250);
             }
         });
         placeOrderBound = true;
@@ -497,19 +682,16 @@ document.addEventListener('DOMContentLoaded', function () {
     var observer = new MutationObserver(function () {
         var ctx = getTargetContext();
 
-        // Detecta quando o bloco de checkout aparece pela primeira vez
         if (ctx.container && !checkoutBlockFound) {
             checkoutBlockFound = true;
             setTimeout(function () { ensureField(); }, 200);
         }
 
-        // Se campo sumiu (ex: toggle checkbox), recria
         var existing = getDeliveryContainer();
         if (!existing && checkoutBlockFound && ctx.container) {
             setTimeout(function () { ensureField(); }, 300);
         }
 
-        // Listener no checkbox de "usar mesmo endereço"
         var sameAddressCheckbox = document.querySelector('.wc-block-checkout__use-address-for-billing input[type="checkbox"]');
         if (sameAddressCheckbox && !sameAddressCheckbox.dataset.deliveryListener) {
             sameAddressCheckbox.addEventListener('change', function () {

@@ -628,6 +628,12 @@
               } else {
                 bodyComponent.appendChild(inputField);
               }
+            } else if (forminp.classList.contains('forminp-delivery-slots')) {
+              // Campo customizado de faixas de entrega: move o container inteiro
+              const slotsContainer = forminp.querySelector('.wc-better-delivery-slots-container');
+              if (slotsContainer) {
+                bodyComponent.appendChild(slotsContainer);
+              }
             } else {
               bodyComponent.appendChild(inputField);
             }
