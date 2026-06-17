@@ -144,12 +144,80 @@
     opacity: 0.6;
 }
 
-/* .forminp-delivery-orders fieldset {
-    overflow: auto;
-    max-height: 600px !important;
-    max-width: stretch !important;
-} */
+.form-table tbody, .form-table .widefat tbody tr td {
+    width: auto !important;
+}
 
 .widefat thead tr th {
     padding: 10px !important;
+}
+
+/* ==========================================================================
+   Delivery Orders Table - Client-side styles
+   ========================================================================== */
+
+.wc-better-delivery-orders-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.wc-better-delivery-orders-table-wrap table {
+    table-layout: auto;
+    max-width: 100%;
+    margin-bottom: 0;
+}
+
+/* Paginação */
+#delivery-orders-pagination {
+    margin-top: 10px;
+}
+
+#delivery-orders-pagination .tablenav-pages {
+    float: right;
+    margin: 0;
+}
+
+#delivery-orders-pagination .displaying-num {
+    margin-right: 10px;
+    color: #50575e;
+}
+
+#delivery-orders-pagination .pagination-links a,
+#delivery-orders-pagination .pagination-links span {
+    display: inline-block;
+    min-width: 30px;
+    text-align: center;
+    margin: 0 1px;
+}
+
+#delivery-orders-pagination .pagination-links a.button {
+    cursor: pointer;
+}
+
+#delivery-orders-pagination .pagination-links span.button.disabled {
+    color: #a7aaad !important;
+    border-color: #dcdcde !important;
+    background: #f6f7f7 !important;
+    cursor: default;
+}
+
+/* Barra de busca */
+#delivery-orders-search {
+    max-width: 300px;
+}
+
+/* Link de ordenação */
+#delivery-orders-sort-link {
+    text-decoration: none;
+}
+
+#delivery-orders-sort-link:hover {
+    text-decoration: none;
+}
+
+/* Estado sem pedidos */
+.delivery-orders-no-results {
+    color: #888;
+    margin: 0;
+    padding: 10px 0;
 }
