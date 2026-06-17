@@ -5,7 +5,7 @@
  * - Front: CEP input + consult button
  * - Back: result (success/error) + back button
  * Border-tracing "cobrinha" spinner on the front face during loading.
- * Saves close state to localStorage for 7 days.
+ * Saves close state to localStorage for 2 days.
  *
  * @since 4.17.0
  */
@@ -13,7 +13,7 @@
     'use strict';
 
     var POPUP_STORAGE_KEY = 'woo_better_cep_popup_closed';
-    var POPUP_EXPIRY_DAYS = 7;
+    var POPUP_EXPIRY_DAYS = 2;
 
     function shouldShowPopup() {
         var stored = localStorage.getItem(POPUP_STORAGE_KEY);
