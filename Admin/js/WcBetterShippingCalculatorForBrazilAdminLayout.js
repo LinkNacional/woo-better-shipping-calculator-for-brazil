@@ -634,6 +634,12 @@
               if (slotsContainer) {
                 bodyComponent.appendChild(slotsContainer);
               }
+            } else if (forminp.classList.contains('forminp-delivery-orders')) {
+              // Campo customizado de lista de pedidos: move o fieldset inteiro
+              const fieldset = forminp.querySelector('fieldset');
+              if (fieldset) {
+                bodyComponent.appendChild(fieldset);
+              }
             } else {
               bodyComponent.appendChild(inputField);
             }

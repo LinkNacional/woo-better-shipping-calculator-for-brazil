@@ -171,6 +171,12 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('woocommerce_admin_field_delivery_slots', $this, 'lkn_render_delivery_slots_field');
         $this->loader->add_filter('woocommerce_admin_settings_sanitize_option_woo_better_delivery_slots', $this, 'lkn_sanitize_delivery_slots_field', 10, 3);
 
+        // Hook para campo de lista de pedidos com prazo de entrega
+        $this->loader->add_action('woocommerce_admin_field_delivery_orders_list', $this, 'lkn_render_delivery_orders_list_field');
+
+        // Hook para remover pedido da lista ao concluir
+        $this->loader->add_action('woocommerce_order_status_completed', $this, 'lkn_remove_completed_order_from_delivery_list');
+
         $this->loader->add_action('admin_footer', $this, 'lkn_woo_better_footer_page');
 
         $this->loader->add_filter('plugin_action_links_' . WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_BASENAME, $this, 'lkn_add_settings_link', 10, 2);
@@ -2390,6 +2396,12 @@ class WcBetterShippingCalculatorForBrazil
             }
             if (isset($_POST['_billing_delivery_time_slot'])) {
                 $order->update_meta_data('_billing_delivery_time_slot', sanitize_text_field(wp_unslash($_POST['_billing_delivery_time_slot'])));
+            }
+            // Atualiza a lista de prazos se ambos os campos foram enviados
+            if (isset($_POST['_billing_delivery_date']) && !empty($_POST['_billing_delivery_date'])) {
+                $date = sanitize_text_field(wp_unslash($_POST['_billing_delivery_date']));
+                $slot = isset($_POST['_billing_delivery_time_slot']) ? sanitize_text_field(wp_unslash($_POST['_billing_delivery_time_slot'])) : '';
+                $this->lkn_add_order_to_delivery_list($order, $date, $slot);
             }
         }
         
@@ -6692,12 +6704,237 @@ class WcBetterShippingCalculatorForBrazil
             if (!empty($billing_delivery_date)) {
                 $order->update_meta_data('_billing_delivery_date', $billing_delivery_date);
                 $order->update_meta_data('_billing_delivery_time_slot', $billing_delivery_time_slot);
+                $this->lkn_add_order_to_delivery_list($order, $billing_delivery_date, $billing_delivery_time_slot);
             }
         }
     }
 
     /**
-     * Processa os dados de data/hora de entrega no checkout de blocos
+     * Adiciona pedido à lista de prazos de entrega pendentes.
+     *
+     * @param WC_Order $order
+     * @param string   $date Data no formato dd/mm/aaaa.
+     * @param string   $slot Faixa de horário.
+     */
+    private function lkn_add_order_to_delivery_list($order, $date, $slot)
+    {
+        $orders = get_option('woo_better_delivery_orders', array());
+        if (!is_array($orders)) {
+            $orders = array();
+        }
+
+        $order_id         = $order->get_id();
+        $customer_name    = $order->get_billing_first_name() . ' ' . $order->get_billing_last_name();
+        $customer_name    = trim($customer_name) ?: __('Cliente', 'woo-better-shipping-calculator-for-brazil');
+
+        // Remove entry if order already in list (update)
+        $orders = array_filter($orders, function ($entry) use ($order_id) {
+            return (int) $entry['order_id'] !== (int) $order_id;
+        });
+
+        $orders[] = array(
+            'order_id'          => (int) $order_id,
+            'customer_name'     => $customer_name,
+            'delivery_date'     => $date,
+            'delivery_time_slot' => $slot,
+        );
+
+        // Re-index
+        $orders = array_values($orders);
+        update_option('woo_better_delivery_orders', $orders);
+    }
+
+    /**
+     * Remove pedido da lista de prazos quando marcado como concluído.
+     *
+     * @param int $order_id
+     */
+    public function lkn_remove_completed_order_from_delivery_list($order_id)
+    {
+        $orders = get_option('woo_better_delivery_orders', array());
+        if (!is_array($orders) || empty($orders)) {
+            return;
+        }
+
+        $orders = array_filter($orders, function ($entry) use ($order_id) {
+            return (int) $entry['order_id'] !== (int) $order_id;
+        });
+
+        $orders = array_values($orders);
+        update_option('woo_better_delivery_orders', $orders);
+    }
+
+    /**
+     * Renderiza a lista de pedidos com prazo de entrega na aba de configurações.
+     *
+     * @param array $value Configuração do campo.
+     */
+    public function lkn_render_delivery_orders_list_field($value)
+    {
+        $orders = get_option('woo_better_delivery_orders', array());
+        if (!is_array($orders)) {
+            $orders = array();
+        }
+
+        // Ordenação: default por data mais próxima
+        $sort = isset($_GET['delivery_orders_sort']) ? sanitize_text_field(wp_unslash($_GET['delivery_orders_sort'])) : 'asc';
+        usort($orders, function ($a, $b) {
+            $da = \DateTime::createFromFormat('d/m/Y', $a['delivery_date']);
+            $db = \DateTime::createFromFormat('d/m/Y', $b['delivery_date']);
+            $ta = $da ? $da->getTimestamp() : 0;
+            $tb = $db ? $db->getTimestamp() : 0;
+            return $ta - $tb;
+        });
+        if ($sort === 'desc') {
+            $orders = array_reverse($orders);
+        }
+
+        // Filtro por busca (nome do cliente ou ID do pedido)
+        $search = isset($_GET['delivery_orders_search']) ? sanitize_text_field(wp_unslash($_GET['delivery_orders_search'])) : '';
+        if (!empty($search)) {
+            $orders = array_filter($orders, function ($entry) use ($search) {
+                $name  = mb_strtolower($entry['customer_name'], 'UTF-8');
+                $s     = mb_strtolower($search, 'UTF-8');
+                return strpos($name, $s) !== false || strpos((string) $entry['order_id'], $s) !== false;
+            });
+            $orders = array_values($orders);
+        }
+
+        $now = new \DateTime('now', new \DateTimeZone(wp_timezone_string()));
+        $next_sort = ($sort === 'asc') ? 'desc' : 'asc';
+        $count = count($orders);
+        $has_orders = $count > 0;
+
+        // custom_attributes
+        $desc_tip   = isset($value['custom_attributes']['data-desc-tip']) ? esc_attr($value['custom_attributes']['data-desc-tip']) : '';
+        $subtitle   = isset($value['custom_attributes']['data-subtitle']) ? esc_attr($value['custom_attributes']['data-subtitle']) : '';
+        $title_desc = isset($value['custom_attributes']['data-title-description']) ? esc_attr($value['custom_attributes']['data-title-description']) : '';
+        $descr      = isset($value['custom_attributes']['data-description']) ? esc_attr($value['custom_attributes']['data-description']) : '';
+
+        // Hidden anchor pro AdminLayout capturar os data-*
+        $hidden_attrs = '';
+        if ($desc_tip) $hidden_attrs .= ' data-desc-tip="' . $desc_tip . '"';
+        if ($subtitle) $hidden_attrs .= ' data-subtitle="' . $subtitle . '"';
+        if ($title_desc) $hidden_attrs .= ' data-title-description="' . $title_desc . '"';
+        if ($descr) $hidden_attrs .= ' data-description="' . $descr . '"';
+        ?>
+        <tr valign="top">
+            <th scope="row" class="titledesc">
+                <label><?php echo esc_html($value['title']); ?></label>
+            </th>
+            <td class="forminp forminp-delivery-orders">
+                <input type="hidden" class="wc-better-delivery-orders-anchor" <?php echo $hidden_attrs; ?>>
+                <fieldset style="border: 1px solid #c3c4c7; border-radius: 4px; padding: 12px 16px; background: #fff; max-width: 940px;">
+                    <legend class="screen-reader-text"><span><?php echo esc_html($value['title']); ?></span></legend>
+
+                    <!-- Barra de busca + ordenação (sempre visível) -->
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+                        <input 
+                            type="text" 
+                            id="delivery_orders_search" 
+                            name="delivery_orders_search" 
+                            value="<?php echo esc_attr($search); ?>"
+                            placeholder="<?php esc_attr_e('Buscar por cliente ou nº do pedido...', 'woo-better-shipping-calculator-for-brazil'); ?>"
+                            style="width: 280px; padding: 5px 10px;"
+                            <?php echo $has_orders ? '' : 'disabled'; ?>
+                        >
+                        <button 
+                            type="submit" 
+                            name="delivery_orders_search_btn" 
+                            class="button"
+                            <?php echo $has_orders ? '' : 'disabled'; ?>
+                        ><?php esc_html_e('Buscar', 'woo-better-shipping-calculator-for-brazil'); ?></button>
+                        <?php if (!empty($search)) : ?>
+                            <a href="<?php echo esc_url(remove_query_arg(array('delivery_orders_search', 'delivery_orders_search_btn'))); ?>" class="button" style="color: #b32d2e;">
+                                <?php esc_html_e('Limpar', 'woo-better-shipping-calculator-for-brazil'); ?>
+                            </a>
+                        <?php endif; ?>
+                        <a href="<?php echo esc_url(add_query_arg('delivery_orders_sort', $next_sort)); ?>" 
+                           class="button" 
+                           style="margin-left: auto; <?php echo $has_orders ? '' : 'pointer-events: none; opacity: 0.5;'; ?>"
+                           <?php echo $has_orders ? '' : 'tabindex="-1" aria-disabled="true"'; ?>
+                        >
+                            <?php echo ($sort === 'asc') ? '▲ ' . esc_html__('Mais próximos', 'woo-better-shipping-calculator-for-brazil') : '▼ ' . esc_html__('Mais distantes', 'woo-better-shipping-calculator-for-brazil'); ?>
+                        </a>
+                    </div>
+
+                    <?php if (!$has_orders) : ?>
+                        <div class="wc-better-delivery-orders-table-wrap">
+                            <p style="color: #888; margin: 0;">
+                                <?php echo !empty($search) 
+                                    ? esc_html__('Nenhum pedido encontrado para esta busca.', 'woo-better-shipping-calculator-for-brazil')
+                                    : esc_html__('Nenhum pedido com prazo de entrega pendente.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                            </p>
+                        </div>
+                    <?php else : ?>
+                        <div class="wc-better-delivery-orders-table-wrap">
+                            <p style="margin-bottom: 10px; font-weight: 600;">
+                                <?php echo esc_html(sprintf(__('%d pedido(s) pendente(s).', 'woo-better-shipping-calculator-for-brazil'), $count)); ?>
+                            </p>
+                            <table class="widefat fixed striped" style="max-width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e('Pedido', 'woo-better-shipping-calculator-for-brazil'); ?></th>
+                                    <th><?php esc_html_e('Cliente', 'woo-better-shipping-calculator-for-brazil'); ?></th>
+                                    <th><?php esc_html_e('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'); ?></th>
+                                    <th><?php esc_html_e('Horário', 'woo-better-shipping-calculator-for-brazil'); ?></th>
+                                    <th><?php esc_html_e('Prazo', 'woo-better-shipping-calculator-for-brazil'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($orders as $entry) : 
+                                    $delivery_dt = \DateTime::createFromFormat('d/m/Y', $entry['delivery_date']);
+                                    if ($delivery_dt && !empty($entry['delivery_time_slot'])) {
+                                        if (preg_match('/às\s(\d{2}):(\d{2})$/', $entry['delivery_time_slot'], $tm)) {
+                                            $delivery_dt->setTime((int) $tm[1], (int) $tm[2]);
+                                        }
+                                    }
+                                    $diff_seconds = $delivery_dt ? $delivery_dt->getTimestamp() - $now->getTimestamp() : 0;
+                                    $diff_hours   = $diff_seconds / 3600;
+
+                                    if ($diff_seconds < 0) {
+                                        $color = '#b32d2e';
+                                        $label = __('Vencido', 'woo-better-shipping-calculator-for-brazil');
+                                    } elseif ($diff_hours <= 2) {
+                                        $color = '#d97706';
+                                        $label = sprintf(__('%dh %dm', 'woo-better-shipping-calculator-for-brazil'), floor($diff_hours), ($diff_seconds % 3600) / 60);
+                                    } elseif ($diff_hours <= 24) {
+                                        $color = '#ca8a04';
+                                        $label = sprintf(__('%dh %dm', 'woo-better-shipping-calculator-for-brazil'), floor($diff_hours), ($diff_seconds % 3600) / 60);
+                                    } else {
+                                        $color = '#16a34a';
+                                        $days = floor($diff_hours / 24);
+                                        $label = sprintf(_n('%dd', '%dd', $days, 'woo-better-shipping-calculator-for-brazil'), $days);
+                                    }
+
+                                    $order_url = admin_url('admin.php?page=wc-orders&action=edit&id=' . (int) $entry['order_id']);
+                                ?>
+                                    <tr>
+                                        <td>
+                                            <a href="<?php echo esc_url($order_url); ?>" target="_blank">
+                                                #<?php echo (int) $entry['order_id']; ?>
+                                            </a>
+                                        </td>
+                                        <td><?php echo esc_html($entry['customer_name']); ?></td>
+                                        <td><?php echo esc_html($entry['delivery_date']); ?></td>
+                                        <td><?php echo esc_html($entry['delivery_time_slot']); ?></td>
+                                        <td style="color: <?php echo esc_attr($color); ?>; font-weight: 600;">
+                                            <?php echo esc_html($label); ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        </div>
+                    <?php endif; ?>
+                </fieldset>
+            </td>
+        </tr>
+        <?php
+    }
+
+    /**
+     * Processa cliente + dados fiscais na finalização do checkout clássico.
      *
      * @param WC_Order $order
      * @param WP_REST_Request $request
@@ -6744,6 +6981,7 @@ class WcBetterShippingCalculatorForBrazil
             if (!empty($billing_delivery_date)) {
                 $order->update_meta_data('_billing_delivery_date', $billing_delivery_date);
                 $order->update_meta_data('_billing_delivery_time_slot', $billing_delivery_time_slot);
+                $this->lkn_add_order_to_delivery_list($order, $billing_delivery_date, $billing_delivery_time_slot);
             }
         }
     }

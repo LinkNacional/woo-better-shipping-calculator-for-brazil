@@ -950,10 +950,23 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-subtitle' => __('Ativar cálculo de prazo de entrega', 'woo-better-shipping-calculator-for-brazil'),
                     'data-desc-tip' => __('Ative esta opção para habilitar o cálculo de prazo de entrega com base nos dias e horários de funcionamento.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Habilite para configurar os dias e horários de funcionamento que serão usados no cálculo do prazo de entrega dos fretes.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Ative ou desative o recurso de prazo de entrega.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'min_preparation_hours' => array(
+                'title'    => __('Tempo Mínimo de Preparo (Horas)', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_min_preparation_hours',
+                'desc_tip' => false,
+                'default'  => '0',
+                'type'     => 'number',
+                'custom_attributes' => array(
+                    'min'  => 0,
+                    'step' => '1',
+                    'data-desc-tip' => __('Defina a antecedência mínima em horas para entregas no mesmo dia.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Insira o número de horas necessárias para o preparo. Isso impedirá que o cliente selecione horários de entrega no dia atual que estejam dentro dessa janela de tempo.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ex: 2 (para exigir 2 horas de antecedência)', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'delivery_schedule' => array(
@@ -981,6 +994,30 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             'delivery_schedule_section_end' => array(
                 'type' => 'sectionend',
                 'id'   => 'woo_better_calc_prazo_entrega'
+            )
+        );
+
+        $deliveryOrdersSettings = array(
+            // TAB 6: Pedidos com Prazo de Entrega
+            'delivery_orders_section' => array(
+                'title' => __('Pedidos com Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'title',
+                'id'    => 'woo_better_calc_title_pedidos_prazo'
+            ),
+            'delivery_orders_list' => array(
+                'title'   => __('Pedidos Pendentes', 'woo-better-shipping-calculator-for-brazil'),
+                'id'      => 'woo_better_delivery_orders_list',
+                'type'    => 'delivery_orders_list',
+                'default' => '[]',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Acompanhe os pedidos com prazo de entrega pendente.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Lista de pedidos que ainda não foram concluídos e possuem prazo de entrega definido. O status é atualizado automaticamente conforme o pedido é concluído.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Visualize e gerencie os prazos de entrega dos pedidos.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'delivery_orders_section_end' => array(
+                'type' => 'sectionend',
+                'id'   => 'woo_better_calc_pedidos_prazo'
             )
         );
 
@@ -1055,7 +1092,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             )
         );
 
-        $settings = array_merge($settings, $generalSettings, $freteSettings, $shortcodeSettings, $productSettings, $cartSettings, $deliveryScheduleSettings, $cacheSettings);
+        $settings = array_merge($settings, $generalSettings, $freteSettings, $shortcodeSettings, $productSettings, $cartSettings, $deliveryScheduleSettings, $deliveryOrdersSettings, $cacheSettings);
 
         return apply_filters('woocommerce_get_settings_' . $this->id, $settings);
     }
