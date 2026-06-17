@@ -1,8 +1,8 @@
 /**
  * Delivery Date + Slot Picker for Classic/Shortcode Checkout
  *
- * Flatpickr on the existing billing_delivery_datetime text input.
- * The time-slot <select> is rendered by PHP via hook (billing_delivery_time_slot_visible).
+ * Flatpickr on the existing billing_delivery_date text input.
+ * The time-slot <select> is rendered by PHP via hook (billing_delivery_time_slot).
  * JS only shows/hides it and populates options filtered by the chosen date.
  *
  * @since 4.17.0
@@ -15,10 +15,10 @@ import 'flatpickr/dist/flatpickr.min.css';
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
-    var input = document.getElementById('billing_delivery_datetime');
+    var input = document.getElementById('billing_delivery_date');
     if (!input) return;
 
-    var slotSelect = document.getElementById('billing_delivery_time_slot_visible');
+    var slotSelect = document.getElementById('billing_delivery_time_slot');
     if (!slotSelect) return;
 
     // Apply padding to slot select
@@ -200,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Calendar icon (RIGHT side) ───────────────────────────────────────
 
     function injectIcon() {
-        var fw = document.getElementById('billing_delivery_datetime_field');
+        var fw = document.getElementById('billing_delivery_date_field');
         if (!fw) return;
         var iw = fw.querySelector('.woocommerce-input-wrapper');
         if (!iw) return;
@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Re-init on WooCommerce checkout update
     var obs = new MutationObserver(function () {
-        var el = document.getElementById('billing_delivery_datetime');
+        var el = document.getElementById('billing_delivery_date');
         if (el && !el._flatpickr) {
             initPicker();
             input.addEventListener('input', function () { applyMask(input); });

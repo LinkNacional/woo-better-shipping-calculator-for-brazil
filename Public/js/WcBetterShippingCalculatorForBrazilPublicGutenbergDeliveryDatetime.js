@@ -177,16 +177,15 @@ document.addEventListener('DOMContentLoaded', function () {
         // Label
         var label = document.createElement('label');
         label.className = 'wc-blocks-components-select__label';
-        label.setAttribute('for', 'wc-better-delivery-slot');
+        label.setAttribute('for', 'billing_delivery_time_slot');
         label.textContent = 'Horário';
 
         // Select
         var select = document.createElement('select');
-        select.id = 'wc-better-delivery-slot';
+        select.id = 'billing_delivery_time_slot';
         select.className = 'wc-blocks-components-select__select';
         select.setAttribute('size', '1');
         select.setAttribute('aria-invalid', 'false');
-        select.style.padding = '8px 12.8px';
 
         var defaultOpt = document.createElement('option');
         defaultOpt.value = '';
@@ -424,8 +423,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var input = document.createElement('input');
         input.type = 'text';
-        input.id = 'billing-delivery-datetime';
-        input.name = 'billing_delivery_datetime';
+        input.id = 'billing-delivery-date';
+        input.name = 'billing_delivery_date';
         input.setAttribute('aria-label', 'Data de Entrega');
         input.setAttribute('aria-invalid', 'false');
         input.setAttribute('autocomplete', 'off');
@@ -433,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function () {
         input.style.paddingRight = '36px';
 
         var label = document.createElement('label');
-        label.setAttribute('for', 'billing-delivery-datetime');
+        label.setAttribute('for', 'billing-delivery-date');
         label.textContent = 'Data de Entrega';
 
         // Ícone de calendário (mesmo pattern do birthdate)
@@ -521,9 +520,11 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (c && deliveryInput.value.trim()) {
                 hideError();
                 c.classList.add('is-active');
-                // Se completou a data digitando, mostra os slots
+                // Se completou a data digitando, mostra slots e salva
                 if (isDateComplete(deliveryInput.value.trim())) {
                     populateSlotSelect(deliveryInput);
+                    var sVal = slotSelectEl ? slotSelectEl.value : '';
+                    saveToStore(deliveryInput.value.trim(), sVal);
                 }
             }
         });
@@ -559,6 +560,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (dateStr && isDateComplete(dateStr)) {
                     hideError();
                     populateSlotSelect(input);
+                    // Save date (slot comes from select change event or cache)
+                    var sVal = slotSelectEl ? slotSelectEl.value : '';
+                    saveToStore(dateStr, sVal);
                 } else {
                     hideSlotSelect();
                 }
@@ -569,6 +573,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (val && isDateComplete(val)) {
                     hideError();
                     populateSlotSelect(input);
+                    var sVal = slotSelectEl ? slotSelectEl.value : '';
+                    saveToStore(val, sVal);
                 }
                 updateActiveState();
             },

@@ -1336,7 +1336,7 @@ class WcBetterShippingCalculatorForBrazil
                 $saved_slot = get_user_meta($user_id, 'billing_delivery_time_slot', true);
             }
 
-            $fields['billing']['billing_delivery_datetime'] = array(
+            $fields['billing']['billing_delivery_date'] = array(
                 'label'       => __('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'),
                 'placeholder' => __('Selecione a data', 'woo-better-shipping-calculator-for-brazil'),
                 'type'        => 'text',
@@ -1355,7 +1355,7 @@ class WcBetterShippingCalculatorForBrazil
                 $label = $slot[0] . ' às ' . $slot[1];
                 $slot_options[$label] = $label;
             }
-            $fields['billing']['billing_delivery_time_slot_visible'] = array(
+            $fields['billing']['billing_delivery_time_slot'] = array(
                 'label'       => __('Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
                 'type'        => 'select',
                 'options'     => $slot_options,
@@ -2166,7 +2166,7 @@ class WcBetterShippingCalculatorForBrazil
         // Campo de data/hora de entrega
         $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
         if ($delivery_schedule_enabled === 'yes') {
-            $fields['delivery_datetime'] = array(
+            $fields['delivery_date'] = array(
                 'label' => __('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'),
                 'type'  => 'text',
                 'show'  => false
@@ -2385,8 +2385,8 @@ class WcBetterShippingCalculatorForBrazil
         // Salvar campo de data/horário de entrega (admin order)
         $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
         if ($delivery_schedule_enabled === 'yes') {
-            if (isset($_POST['_billing_delivery_datetime'])) {
-                $order->update_meta_data('_billing_delivery_date', sanitize_text_field(wp_unslash($_POST['_billing_delivery_datetime'])));
+            if (isset($_POST['_billing_delivery_date'])) {
+                $order->update_meta_data('_billing_delivery_date', sanitize_text_field(wp_unslash($_POST['_billing_delivery_date'])));
             }
             if (isset($_POST['_billing_delivery_time_slot'])) {
                 $order->update_meta_data('_billing_delivery_time_slot', sanitize_text_field(wp_unslash($_POST['_billing_delivery_time_slot'])));
@@ -7581,7 +7581,7 @@ class WcBetterShippingCalculatorForBrazil
                     
                     // Adiciona campo de data/hora de entrega se habilitado
                     if ($delivery_schedule_enabled === 'yes') {
-                        $new_billing_fields['billing_delivery_datetime'] = array(
+                        $new_billing_fields['billing_delivery_date'] = array(
                             'label'       => __('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'),
                             'type'        => 'text',
                             'description' => '',
@@ -7868,7 +7868,7 @@ class WcBetterShippingCalculatorForBrazil
             $saved_date = get_user_meta(get_current_user_id(), 'billing_delivery_date', true);
             $saved_slot = get_user_meta(get_current_user_id(), 'billing_delivery_time_slot', true);
 
-            $fields['billing_delivery_datetime'] = array(
+            $fields['billing_delivery_date'] = array(
                 'label'       => __('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'),
                 'placeholder' => __('Selecione a data', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => true,
@@ -7887,7 +7887,7 @@ class WcBetterShippingCalculatorForBrazil
                 $label = $slot[0] . ' às ' . $slot[1];
                 $slot_options[$label] = $label;
             }
-            $fields['billing_delivery_time_slot_visible'] = array(
+            $fields['billing_delivery_time_slot'] = array(
                 'label'       => __('Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
                 'type'        => 'select',
                 'options'     => $slot_options,
@@ -8315,8 +8315,8 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         if ($delivery_schedule_enabled === 'yes') {
-            // delivery_datetime → _billing_delivery_datetime (campo de data no admin)
-            $data['billing']['delivery_datetime']  = get_user_meta($user_id, 'billing_delivery_date', true);
+            // delivery_date → _billing_delivery_date (campo de data no admin)
+            $data['billing']['delivery_date']      = get_user_meta($user_id, 'billing_delivery_date', true);
             $data['billing']['delivery_time_slot'] = get_user_meta($user_id, 'billing_delivery_time_slot', true);
         }
 
