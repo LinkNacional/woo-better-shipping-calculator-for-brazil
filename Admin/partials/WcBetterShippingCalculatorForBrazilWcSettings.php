@@ -125,7 +125,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'custom_attributes' => array(
                     'data-subtitle' => __('Exibir pop-up para validação de CEP', 'woo-better-shipping-calculator-for-brazil'),
                     'data-desc-tip' => __('Exibe um pop-up ao entrar no site para que o cliente informe seu CEP e verifique se há entregas disponíveis para sua região.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Ao habilitar, um pop-up será exibido para os visitantes validarem se há frete disponível para o CEP informado. Se o cliente fechar ou preencher, não será exibido novamente por 7 dias.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Ao habilitar, um pop-up será exibido para os visitantes validarem se há frete disponível para o CEP informado. Se o cliente fechar ou preencher, não será exibido novamente por 2 dias.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Ative o pop-up de consulta de CEP para visitantes.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
@@ -967,6 +967,34 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-desc-tip' => __('Defina a antecedência mínima em horas para entregas no mesmo dia.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Insira o número de horas necessárias para o preparo. Isso impedirá que o cliente selecione horários de entrega no dia atual que estejam dentro dessa janela de tempo.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Ex: 2 (para exigir 2 horas de antecedência)', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'ignore_local_pickup' => array(
+                'title'    => __('Ignorar Retirada no Local', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_ignore_local_pickup',
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Quando ativo, a Retirada no Local é removida dos resultados de frete na consulta de CEP.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Ao habilitar, qualquer frete cujo nome contenha "Retirada" ou o título configurado em pickup_location será ocultado dos resultados.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Controla se a Retirada no Local deve ser ocultada nos resultados de frete.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'whatsapp_number' => array(
+                'title'    => __('WhatsApp para Suporte', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_whatsapp_number',
+                'default'  => '',
+                'type'     => 'text',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Número de WhatsApp exibido no popup quando não há entrega para o CEP consultado.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Insira o número com DDD (ex: 11999999999). Quando preenchido, será exibido um botão de WhatsApp no resultado de CEP sem entrega, com mensagem automática contendo o CEP digitado.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Número de WhatsApp para contato quando não há entrega.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'delivery_schedule' => array(

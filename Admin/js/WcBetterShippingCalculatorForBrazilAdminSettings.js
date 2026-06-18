@@ -517,8 +517,16 @@ function initDeliveryOrdersTable() {
         var diffSeconds = deliveryTs - serverTime;
         if (diffSeconds < 0) return { color: '#b32d2e', label: txt.expired || 'Vencido' };
         var diffHours = diffSeconds / 3600;
-        if (diffHours <= 2) return { color: '#d97706', label: sprintf(txt.hours_min || '%dh %dm', Math.floor(diffHours), Math.floor((diffSeconds % 3600) / 60)) };
-        if (diffHours <= 24) return { color: '#ca8a04', label: sprintf(txt.hours_min || '%dh %dm', Math.floor(diffHours), Math.floor((diffSeconds % 3600) / 60)) };
+        var h = Math.floor(diffHours);
+        var m = Math.floor((diffSeconds % 3600) / 60);
+        var label;
+        if (h > 0) {
+            label = m > 0 ? sprintf(txt.hours_min || '%dh %dm', h, m) : sprintf(txt.hours || '%dh', h);
+        } else {
+            label = sprintf(txt.minutes || '%dm', m);
+        }
+        if (diffHours <= 2) return { color: '#d97706', label: label };
+        if (diffHours <= 24) return { color: '#ca8a04', label: label };
         var days = Math.floor(diffHours / 24);
         return { color: '#16a34a', label: sprintf(txt.days || '%dd', days) };
     }

@@ -971,6 +971,8 @@ class WcBetterShippingCalculatorForBrazil
                     'deadline_col'       => __('Prazo', 'woo-better-shipping-calculator-for-brazil'),
                     'expired'            => __('Vencido', 'woo-better-shipping-calculator-for-brazil'),
                     'hours_min'          => __('%dh %dm', 'woo-better-shipping-calculator-for-brazil'),
+                    'hours'              => __('%dh', 'woo-better-shipping-calculator-for-brazil'),
+                    'minutes'            => __('%dm', 'woo-better-shipping-calculator-for-brazil'),
                     'days'               => __('%dd', 'woo-better-shipping-calculator-for-brazil'),
                 ),
             ));
@@ -5770,6 +5772,28 @@ class WcBetterShippingCalculatorForBrazil
                 );
 
                 $shipping_rates = WC()->shipping()->calculate_shipping_for_package($package);
+
+                // Se a opção de ignorar retirada local estiver habilitada,
+                // remove qualquer frete cujo label contenha o título configurado para pickup
+                $ignore_local_pickup = get_option('woo_better_ignore_local_pickup', 'yes');
+                if ($ignore_local_pickup === 'yes' && !empty($shipping_rates['rates'])) {
+
+                    // Pega o título real do pickup_location (ex: "Retirada no local")
+                    $pickup_settings = get_option('woocommerce_pickup_location_settings', array());
+                    $pickup_title = '';
+                    if (!empty($pickup_settings['enabled']) && $pickup_settings['enabled'] === 'yes' && !empty($pickup_settings['title'])) {
+                        $pickup_title = mb_strtolower(trim($pickup_settings['title']));
+                    }
+
+                    foreach ($shipping_rates['rates'] as $rate_id => $rate) {
+                        $rate_label = mb_strtolower($rate->get_label());
+                        // Filtra se o label contém o título do pickup OU contém "retirada"
+                        if (($pickup_title !== '' && mb_strpos($rate_label, $pickup_title) !== false)
+                            || mb_strpos($rate_label, 'retirada') !== false) {
+                            unset($shipping_rates['rates'][$rate_id]);
+                        }
+                    }
+                }
 
                 if (!empty($shipping_rates['rates'])) {
                     $has_shipping = true;

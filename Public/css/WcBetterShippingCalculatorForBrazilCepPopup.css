@@ -107,22 +107,64 @@
     text-align: center;
 }
 
-.wc-better-cep-popup-icon {
-    margin-bottom: 12px;
-}
-
 .wc-better-cep-popup-title {
-    margin: 0 0 8px;
+    margin: 0 0 20px;
     font-size: 20px;
     font-weight: 700;
     color: #1e1e1e;
 }
 
-.wc-better-cep-popup-subtitle {
-    margin: 0 0 20px;
-    font-size: 14px;
-    color: #666;
+/* ── Options (lista) ────────────────────────────────────────────────── */
+
+.wc-better-cep-popup-option {
+    margin-bottom: 20px;
+}
+
+.wc-better-cep-popup-option-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.wc-better-cep-popup-option-header svg {
+    flex-shrink: 0;
+}
+
+.wc-better-cep-popup-option-body {
+    padding: 0px 20px;
+}
+
+.wc-better-cep-popup-option-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e1e1e;
+}
+
+.wc-better-cep-pickup-address {
+    margin: 0 0 10px;
+    font-size: 13px;
+    color: #555;
     line-height: 1.5;
+}
+
+.wc-better-cep-popup-pickup-continue-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    width: 100%;
+    height: 45px;
+    background: #2271b1;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: inherit;
+}
+.wc-better-cep-popup-pickup-continue-btn:hover {
+    background: #135e96;
 }
 
 .wc-better-cep-popup-form {
@@ -133,7 +175,7 @@
 
 .wc-better-cep-popup-input {
     flex: 1;
-    max-width: 200px;
+    width: 100%;
     padding: 10px 14px;
     border: 2px solid #ddd;
     border-radius: 8px;
@@ -150,6 +192,7 @@
 
 .wc-better-cep-popup-btn {
     padding: 10px 20px;
+    height: 45px;
     background: #2271b1;
     color: #fff;
     border: none;
@@ -273,6 +316,12 @@
 }
 
 /* Back button — dentro do cartão colorido */
+.wc-better-cep-popup-back-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 28px;
+}
+
 .wc-better-cep-popup-back-btn {
     padding: 8px 24px;
     background: rgba(255,255,255,0.85);
@@ -289,6 +338,43 @@
 .wc-better-cep-popup-back-btn:hover {
     background: #fff;
     color: #000;
+}
+
+.wc-better-cep-popup-continue-btn {
+    padding: 8px 24px;
+    background: #2271b1;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: inherit;
+}
+.wc-better-cep-popup-continue-btn:hover {
+    background: #135e96;
+}
+
+.wc-better-cep-popup-whatsapp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 24px;
+    background: #25d366;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: inherit;
+    text-decoration: none;
+}
+.wc-better-cep-popup-whatsapp-btn:hover {
+    background: #1ebe57;
+    color: #fff;
 }
 
 /* ── Mobile ─────────────────────────────────────────────────────────── */

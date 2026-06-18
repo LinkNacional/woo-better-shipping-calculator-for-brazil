@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var label = document.createElement('label');
         label.className = 'wc-blocks-components-select__label';
         label.setAttribute('for', 'billing_delivery_time_slot');
-        label.textContent = 'Horário';
+        label.textContent = 'Horário de Entrega';
 
         // Select
         var select = document.createElement('select');
@@ -435,6 +435,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var container = document.createElement('div');
         container.className = 'wc-block-components-text-input wc-block-components-address-form__delivery-datetime wc-better-billing-delivery-datetime';
+        container.style.flex = 'none';
+        container.style.width = '100%';
 
         var input = document.createElement('input');
         input.type = 'text';
@@ -454,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var iconWrap = document.createElement('span');
         iconWrap.id = 'woo_better_gutenberg_delivery_calendar_icon';
         iconWrap.setAttribute('style',
-            'display:flex;align-items:center;justify-content:center;position:absolute;right:8px;top:50%;' +
+            'display:flex;align-items:center;justify-content:center;position:absolute;right:12px;top:50%;' +
             'transform:translateY(-50%);width:24px;height:24px;cursor:pointer;z-index:2;pointer-events:auto;'
         );
         iconWrap.setAttribute('aria-label', 'Abrir calendário');

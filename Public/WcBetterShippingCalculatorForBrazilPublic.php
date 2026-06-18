@@ -1918,6 +1918,66 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
 
             if (!$has_postcode) {
+                // Detecta se há método de Retirada no Local disponível
+                $local_pickup_available = false;
+                $local_pickup_label = __('Retirada no Local', 'woo-better-shipping-calculator-for-brazil');
+
+                // 1) Checkout clássico (shortcode) — busca nas zonas de entrega
+                if (function_exists('WC') && class_exists('WC_Shipping_Zones')) {
+                    $shipping_zones = \WC_Shipping_Zones::get_zones();
+                    foreach ($shipping_zones as $zone) {
+                        if (!empty($zone['shipping_methods'])) {
+                            foreach ($zone['shipping_methods'] as $method) {
+                                if (is_object($method) && $method->id === 'local_pickup' && $method->is_enabled()) {
+                                    $local_pickup_available = true;
+                                    $local_pickup_label = $method->get_title();
+                                    break 2;
+                                }
+                            }
+                        }
+                    }
+                    // Zona 0 ("Locations not covered by your other zones")
+                    if (!$local_pickup_available) {
+                        $zone_0 = new \WC_Shipping_Zone(0);
+                        foreach ($zone_0->get_shipping_methods() as $method) {
+                            if (is_object($method) && $method->id === 'local_pickup' && $method->is_enabled()) {
+                                $local_pickup_available = true;
+                                $local_pickup_label = $method->get_title();
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // 2) Checkout em blocos (Gutenberg) — configuração está em option do WC
+                $pickup_address = '';
+                if (!$local_pickup_available) {
+                    $pickup_settings = get_option('woocommerce_pickup_location_settings', array());
+                    if (!empty($pickup_settings) && isset($pickup_settings['enabled']) && $pickup_settings['enabled'] === 'yes') {
+                        $local_pickup_available = true;
+                        if (!empty($pickup_settings['title'])) {
+                            $local_pickup_label = $pickup_settings['title'];
+                        }
+                        // Monta endereço da primeira localização ativa
+                        if (!empty($pickup_settings['pickup_locations']) && is_array($pickup_settings['pickup_locations'])) {
+                            foreach ($pickup_settings['pickup_locations'] as $loc) {
+                                if (!empty($loc['enabled']) && !empty($loc['address'])) {
+                                    $addr = $loc['address'];
+                                    $parts = array();
+                                    if (!empty($addr['address_1'])) $parts[] = $addr['address_1'];
+                                    if (!empty($addr['city'])) $parts[] = $addr['city'];
+                                    if (!empty($addr['state'])) {
+                                        $parts[count($parts)-1] = ($parts[count($parts)-1] ?? '') . '/' . $addr['state'];
+                                    }
+                                    if (!empty($addr['postcode'])) $parts[] = $addr['postcode'];
+                                    $pickup_address = implode(', ', $parts);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
                 wp_enqueue_script(
                     $this->plugin_name . '-cep-popup',
                     plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicCepPopup.COMPILED.js',
@@ -1940,9 +2000,13 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'enabled'    => true,
                         'ajaxurl'    => $this->get_admin_ajax_url(),
                         'nonce'      => wp_create_nonce('wc_better_cep_popup'),
-                        'title'      => __('Consulte seu CEP', 'woo-better-shipping-calculator-for-brazil'),
+                        'title'      => __('Qual a sua preferência?', 'woo-better-shipping-calculator-for-brazil'),
                         'subtitle'   => __('Verifique se há entregas disponíveis para sua região.', 'woo-better-shipping-calculator-for-brazil'),
                         'successMsg' => __('Você já pode continuar suas compras!', 'woo-better-shipping-calculator-for-brazil'),
+                        'local_pickup_available' => $local_pickup_available,
+                        'local_pickup_label'     => $local_pickup_label,
+                        'pickup_address'         => $pickup_address,
+                        'whatsapp_number'        => get_option('woo_better_whatsapp_number', ''),
                     )
                 );
             }

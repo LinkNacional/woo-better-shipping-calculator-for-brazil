@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var iconWrap = document.createElement('span');
         iconWrap.id = 'woo_better_gutenberg_birthdate_calendar_icon';
         iconWrap.setAttribute('style',
-            'display:flex;align-items:center;justify-content:center;position:absolute;right:8px;top:50%;' +
+            'display:flex;align-items:center;justify-content:center;position:absolute;right:12px;top:50%;' +
             'transform:translateY(-50%);width:24px;height:24px;cursor:pointer;z-index:2;pointer-events:auto;'
         );
         iconWrap.setAttribute('aria-label', 'Abrir calendário');
