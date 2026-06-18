@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 
+<?php if ( ! empty( $display_data ) ) : ?>
 <div class="clear"></div>
 
 <h3><?php esc_html_e( 'Dados do Cliente', 'woo-better-shipping-calculator-for-brazil' ); ?></h3>
@@ -28,4 +29,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<?php endforeach; ?>
 	</p>
 </div>
-<?php
+<?php endif; ?>
+
+<?php if ( ! empty( $delivery_data ) && ! empty( $delivery_data['formatted'] ) ) : ?>
+<h3><?php esc_html_e( 'Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil' ); ?></h3>
+<div class="woo-better-calc-address">
+	<p>
+		<strong><?php esc_html_e( 'Data de Entrega', 'woo-better-shipping-calculator-for-brazil' ); ?>: </strong>
+		<?php echo esc_html( $delivery_data['formatted'] ); ?>
+		<?php if ( ! empty( $delivery_data['remaining'] ) ) : ?>
+			(<?php echo esc_html( $delivery_data['remaining'] ); ?>)
+		<?php endif; ?>
+	</p>
+</div>
+<?php endif; ?>

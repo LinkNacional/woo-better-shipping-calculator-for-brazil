@@ -755,7 +755,21 @@ document.addEventListener("DOMContentLoaded", function () {
         const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.person_type : 'both';
         const showSelect = typeof WooBetterPersonTypeConfig !== 'undefined' ? WooBetterPersonTypeConfig.show_select : true;
 
-        let lastInsertedElement = lastNameField.parentElement; // Começar da div pai do last_name
+        // Define o ponto de inserção: após gender > birthdate > lastName.
+        // Isso garante a ordem: lastName → birthdate → gender → document → company → IE
+        let lastInsertedElement;
+        var genderContainer = container.querySelector('.wc-block-components-address-form__gender') ||
+                               container.querySelector('.wc-better-billing-gender');
+        var birthdateContainer = container.querySelector('.wc-block-components-address-form__birthdate') ||
+                                  container.querySelector('.wc-better-billing-birthdate');
+
+        if (genderContainer) {
+            lastInsertedElement = genderContainer;
+        } else if (birthdateContainer) {
+            lastInsertedElement = birthdateContainer;
+        } else {
+            lastInsertedElement = lastNameField.parentElement; // fallback: div pai do last_name
+        }
 
         // Determinar valor inicial do documento (usar dados salvos ou dados do PHP)
         initialDocument = initialDocument || savedPersonTypeData.billing_document || '';
