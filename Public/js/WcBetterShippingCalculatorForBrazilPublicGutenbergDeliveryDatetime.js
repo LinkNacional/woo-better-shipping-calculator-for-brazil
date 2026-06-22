@@ -1,12 +1,13 @@
 /**
  * Delivery Date + Slot Picker for Gutenberg/Block Checkout
  *
- * Follows the same pattern as birthdate: text input with mask + flatpickr via
- * calendar icon. A time-slot <select> with WC Blocks styling appears below
- * the input after a date is chosen. Saves via Store API.
+ * The checkout step skeleton ("Agende sua entrega") is injected by PHP via the
+ * render_block filter before the checkout-payment-block. This JS populates the
+ * step content with the date input (flatpickr + mask) and time-slot select,
+ * then saves via Store API.
  *
  * @since 4.17.0
- * @since 5.x  Replaced time picker with slot <select> + manual date input.
+ * @since 4.18.0 Step skeleton rendered by PHP; JS only creates the fields.
  */
 import flatpickr from 'flatpickr';
 import { Portuguese } from 'flatpickr/dist/l10n/pt';
@@ -188,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var label = document.createElement('label');
         label.className = 'wc-blocks-components-select__label';
         label.setAttribute('for', 'billing_delivery_time_slot');
-        label.textContent = 'Horário';
+        label.textContent = 'Horário de Entrega';
 
         // Select
         var select = document.createElement('select');
@@ -354,6 +355,34 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    /**
+     * Reset the date input and slot select visually and clear their values.
+     */
+    function resetFields() {
+        if (deliveryInput) {
+            deliveryInput.value = '';
+            if (deliveryInput._flatpickr) deliveryInput._flatpickr.clear();
+        }
+        if (slotSelectEl) {
+            slotSelectEl.value = '';
+        }
+        hideSlotSelect();
+        hideError();
+        if (deliveryInput) {
+            deliveryInput.removeAttribute('aria-invalid');
+            deliveryInput.required = false;
+        }
+        if (slotSelectEl) slotSelectEl.required = false;
+    }
+
+    /**
+     * Restore required state when delivery is visible again.
+     */
+    function restoreRequired() {
+        if (deliveryInput) deliveryInput.required = true;
+        if (slotSelectEl) slotSelectEl.required = true;
+    }
+
     // ── DOM builders ─────────────────────────────────────────────────────
 
     function getDeliveryContainer() {
@@ -378,63 +407,44 @@ document.addEventListener('DOMContentLoaded', function () {
         if (deliveryInput) deliveryInput.setAttribute('aria-invalid', 'false');
     }
 
-    // ── "Usar mesmo endereço" ──────────────────────────────────────────
+    // ── Step content target ───────────────────────────────────────────
 
-    function isUsingSameAddressForBilling() {
-        var checkbox = document.querySelector('input[type="checkbox"][id^="checkbox-control"]');
-        if (!checkbox) return false;
-        var checkboxContainer = checkbox.closest('.wc-block-checkout__use-address-for-billing');
-        if (!checkboxContainer) return false;
-        return checkbox.checked;
-    }
-
-    function getTargetContext() {
-        var useSame = isUsingSameAddressForBilling();
-        var container = useSame ? document.querySelector('#shipping') : document.querySelector('#billing');
-        var containerType = useSame ? 'shipping' : 'billing';
-        return { container: container, containerType: containerType };
-    }
-
-    function getReferenceElement(container) {
-        var children = container.children;
-        if (children.length === 0) return null;
-
-        for (var i = children.length - 1; i >= 0; i--) {
-            var child = children[i];
-            if (child.tagName === 'INPUT' && child.type === 'hidden') continue;
-            if (child.classList.contains('wc-block-checkout__use-address-for-shipping')) continue;
-            if (child.classList.contains('wc-block-checkout__use-address-for-billing')) continue;
-            if (child.classList.contains('wc-block-components-address-form__birthdate')) continue;
-            if (child.classList.contains('wc-block-components-address-form__gender')) continue;
-            if (child.classList.contains('wc-block-components-address-form__delivery-datetime')) continue;
-            return child;
-        }
-        return null;
-    }
-
-    function ensureAddressEditorOpen(containerType) {
-        var editBtn = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="' + containerType + '"]');
-        if (!editBtn) return false;
-        if (editBtn.getAttribute('aria-expanded') !== 'true') editBtn.click();
-        return editBtn.getAttribute('aria-expanded') === 'true';
+    /**
+     * The step skeleton is injected by PHP via render_block filter.
+     * We find its content container and populate it with fields.
+     */
+    function getStepContent() {
+        return document.querySelector('.wc-better-delivery-step-content');
     }
 
     // ── Remove + clear ───────────────────────────────────────────────────
 
     function removeField() {
         var container = getDeliveryContainer();
-        if (container) container.remove();
+        if (container) {
+            container.innerHTML = '';
+            container.parentNode && container.parentNode.removeChild(container);
+        }
         deliveryInput = null;
         slotSelectEl = null;
         fieldContainerType = null;
         clearStoreData();
     }
 
-    function createField(referenceElement) {
+    /**
+     * Create the date input + calendar icon + error div inside the
+     * .wc-better-delivery-step-content container injected by PHP.
+     */
+    function createField() {
+        var stepContent = getStepContent();
+        if (!stepContent) return null;
+
         if (getDeliveryContainer()) return getDeliveryContainer();
 
         var container = document.createElement('div');
         container.className = 'wc-block-components-text-input wc-block-components-address-form__delivery-datetime wc-better-billing-delivery-datetime';
+        container.style.flex = 'none';
+        container.style.width = '100%';
 
         var input = document.createElement('input');
         input.type = 'text';
@@ -454,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var iconWrap = document.createElement('span');
         iconWrap.id = 'woo_better_gutenberg_delivery_calendar_icon';
         iconWrap.setAttribute('style',
-            'display:flex;align-items:center;justify-content:center;position:absolute;right:8px;top:50%;' +
+            'display:flex;align-items:center;justify-content:center;position:absolute;right:12px;top:50%;' +
             'transform:translateY(-50%);width:24px;height:24px;cursor:pointer;z-index:2;pointer-events:auto;'
         );
         iconWrap.setAttribute('aria-label', 'Abrir calendário');
@@ -509,7 +519,8 @@ document.addEventListener('DOMContentLoaded', function () {
         container.appendChild(fieldMain);
         container.appendChild(errDiv);
 
-        referenceElement.insertAdjacentElement('afterend', container);
+        // Inject into the PHP-rendered step content area
+        stepContent.appendChild(container);
 
         deliveryInput = input;
 
@@ -644,23 +655,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Ensure field ─────────────────────────────────────────────────────
 
     function ensureField() {
-        var ctx = getTargetContext();
-        if (!ctx.container) return;
-        if (!ensureAddressEditorOpen(ctx.containerType)) return;
+        var stepContent = getStepContent();
+        if (!stepContent) return;
 
         var current = getDeliveryContainer();
-        if (current && fieldContainerType && fieldContainerType !== ctx.containerType) {
-            removeField();
-            current = null;
-        }
-
         if (current) return;
 
-        var ref = getReferenceElement(ctx.container);
-        if (!ref) return;
-
-        createField(ref);
-        fieldContainerType = ctx.containerType;
+        createField();
+        fieldContainerType = 'delivery';
 
         if (deliveryInput && !deliveryInput._flatpickr) {
             initPicker(deliveryInput);
@@ -679,6 +681,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         btn.addEventListener('click', function (e) {
             if (!deliveryInput) return;
+            var deliveryStep = getDeliveryStep();
+            // Se o step está escondido (retirada no local), pula validação
+            if (deliveryStep && deliveryStep.style.display === 'none') return;
             var dateOk = isDateComplete(deliveryInput.value.trim());
             var slotOk = slotSelectEl && slotSelectEl.value;
             if (!dateOk || !slotOk) {
@@ -698,36 +703,75 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Bootstrap ────────────────────────────────────────────────────────
 
-    var checkoutBlockFound = false;
+    // ── Local pickup toggle (Blocks) ────────────────────────────────────
+
+    /**
+     * Subscribe to wc/store/cart to detect when the user selects pickup.
+     * When a pickup method is chosen, hide the delivery step and clear
+     * any saved delivery data from the Store API.
+     */
+    function getDeliveryStep() {
+        return document.querySelector('.wc-better-delivery-step');
+    }
+
+    var previousRate = null;
+
+    if (typeof wp !== 'undefined' && wp.data && wp.data.select && wp.data.subscribe) {
+        wp.data.subscribe(function () {
+            var cart = wp.data.select('wc/store/cart');
+            if (!cart) return;
+            var rates = cart.getShippingRates();
+            if (!rates || !rates.length) return;
+
+            var currentRate = null;
+            rates.forEach(function (pkg) {
+                pkg.shipping_rates.forEach(function (rate) {
+                    if (rate.selected) currentRate = rate.rate_id;
+                });
+            });
+
+            if (currentRate === previousRate) return;
+            previousRate = currentRate;
+
+            var deliveryStep = getDeliveryStep();
+            if (!deliveryStep) return;
+
+            var isPickup = currentRate && (
+                currentRate.indexOf('pickup_location') === 0 ||
+                currentRate.indexOf('local_pickup') === 0 ||
+                currentRate.indexOf('legacy_local_pickup') === 0
+            );
+
+            if (isPickup) {
+                deliveryStep.style.display = 'none';
+                resetFields();
+                clearStoreData();
+            } else {
+                deliveryStep.style.display = '';
+                restoreRequired();
+            }
+        });
+    }
+
+    var stepFound = false;
 
     var observer = new MutationObserver(function () {
-        var ctx = getTargetContext();
+        var stepContent = getStepContent();
 
-        if (ctx.container && !checkoutBlockFound) {
-            checkoutBlockFound = true;
+        if (stepContent && !stepFound) {
+            stepFound = true;
             setTimeout(function () { ensureField(); }, 200);
         }
 
         var existing = getDeliveryContainer();
-        if (!existing && checkoutBlockFound && ctx.container) {
+        if (!existing && stepFound) {
             setTimeout(function () { ensureField(); }, 300);
-        }
-
-        var sameAddressCheckbox = document.querySelector('.wc-block-checkout__use-address-for-billing input[type="checkbox"]');
-        if (sameAddressCheckbox && !sameAddressCheckbox.dataset.deliveryListener) {
-            sameAddressCheckbox.addEventListener('change', function () {
-                setTimeout(function () {
-                    removeField();
-                    ensureField();
-                }, 300);
-            });
-            sameAddressCheckbox.dataset.deliveryListener = 'true';
         }
 
         bindPlaceOrder();
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
 
     ensureField();
     bindPlaceOrder();

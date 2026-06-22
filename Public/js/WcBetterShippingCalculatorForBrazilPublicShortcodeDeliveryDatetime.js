@@ -1,12 +1,13 @@
 /**
  * Delivery Date + Slot Picker for Classic/Shortcode Checkout
  *
- * Flatpickr on the existing billing_delivery_date text input.
- * The time-slot <select> is rendered by PHP via hook (billing_delivery_time_slot).
- * JS only shows/hides it and populates options filtered by the chosen date.
+ * The fields are rendered by PHP via woocommerce_checkout_before_order_review
+ * (render_delivery_step_shortcode) using woocommerce_form_field(), positioned
+ * above the payment section. This JS only adds flatpickr, mask, slot filtering,
+ * and triggers update_checkout on selection changes.
  *
  * @since 4.17.0
- * @since 5.x  Date + slot split into two meta fields.
+ * @since 4.18.0 Fields are now rendered by PHP above payment; JS only handles picker.
  */
 import flatpickr from 'flatpickr';
 import { Portuguese } from 'flatpickr/dist/l10n/pt';
@@ -125,28 +126,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Hidden fields ────────────────────────────────────────────────────
+    // ── Trigger update_checkout ──────────────────────────────────────────
 
-    var hiddenDate = null, hiddenSlot = null;
-
-    function ensureHidden() {
-        if (!hiddenDate) {
-            hiddenDate = document.createElement('input');
-            hiddenDate.type = 'hidden';
-            hiddenDate.name = 'billing_delivery_date';
-            input.parentNode.insertBefore(hiddenDate, input);
-        }
-        if (!hiddenSlot) {
-            hiddenSlot = document.createElement('input');
-            hiddenSlot.type = 'hidden';
-            hiddenSlot.name = 'billing_delivery_time_slot';
-            input.parentNode.insertBefore(hiddenSlot, input);
-        }
-    }
-
-    function sync(dateStr, slotStr) {
-        if (hiddenDate) hiddenDate.value = dateStr || '';
-        if (hiddenSlot) hiddenSlot.value = slotStr || '';
+    function triggerUpdate() {
         if (typeof jQuery !== 'undefined') jQuery('body').trigger('update_checkout');
     }
 
@@ -167,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (slotField) slotField.style.display = 'block';
             slotSelect.value = '';
             slotSelect.options[0].textContent = 'Nenhum horário disponível...';
-            sync(input.value.trim(), '');
+            triggerUpdate();
             return;
         }
 
@@ -190,8 +172,8 @@ document.addEventListener('DOMContentLoaded', function () {
             target = input._slotCache.value;
         } else if (prevValue) {
             // Keep previous selection if it still exists
-            for (var i = 0; i < slotSelect.options.length; i++) {
-                if (slotSelect.options[i].value === prevValue) {
+            for (var j = 0; j < slotSelect.options.length; j++) {
+                if (slotSelect.options[j].value === prevValue) {
                     target = prevValue;
                     break;
                 }
@@ -199,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         slotSelect.value = target;
-        sync(input.value.trim(), target);
+        triggerUpdate();
     }
 
     function populateSlotsFromStr(str) {
@@ -259,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function () {
             onClose: function () {
                 var v = input.value.trim();
                 if (v && isComplete(v)) populateSlotsFromStr(v);
-                if (typeof jQuery !== 'undefined') jQuery('body').trigger('update_checkout');
+                triggerUpdate();
             },
             onKeyDown: function (_, __, ___, e) {
                 if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -281,12 +263,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     slotSelect.addEventListener('change', function () {
         var d = input.value.trim();
-        if (isComplete(d)) sync(d, slotSelect.value);
+        if (isComplete(d)) triggerUpdate();
     });
 
     // ── Init ─────────────────────────────────────────────────────────────
-
-    ensureHidden();
 
     // Hide slot field initially (JS controls visibility)
     if (slotField) slotField.style.display = 'none';
@@ -321,10 +301,60 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Re-init on WooCommerce checkout update
+    // ── Local pickup toggle ────────────────────────────────────────────
+
+    var deliverySection = document.querySelector('.wc-better-delivery-shortcode-section');
+
+    function isLocalPickupSelected() {
+        // Usa o container #shipping_method (fixo no WooCommerce) para
+        // encontrar o radio selecionado, independente do name exato.
+        var container = document.getElementById('shipping_method');
+        if (!container) return false;
+        var checked = container.querySelector('input[type="radio"]:checked');
+        if (!checked) return false;
+        var val = checked.value;
+        return val.indexOf('pickup_location') === 0 || val.indexOf('local_pickup') === 0 || val.indexOf('legacy_local_pickup') === 0;
+    }
+
+    function toggleDeliverySection() {
+        if (!deliverySection && !(deliverySection = document.querySelector('.wc-better-delivery-shortcode-section'))) {
+            return;
+        }
+        if (isLocalPickupSelected()) {
+            deliverySection.style.display = 'none';
+            // Desabilita required para não bloquear o submit
+            if (input) input.required = false;
+            if (slotSelect) slotSelect.required = false;
+            // Limpa valores
+            if (input) { input.value = ''; if (input._flatpickr) input._flatpickr.clear(); }
+            if (slotSelect) { slotSelect.value = ''; }
+            if (slotField) slotField.style.display = 'none';
+        } else {
+            deliverySection.style.display = '';
+            if (input) input.required = true;
+            if (slotSelect) slotSelect.required = true;
+        }
+    }
+
+    // Executa na inicialização
+    toggleDeliverySection();
+
+    // Escuta o evento updated_checkout que o WooCommerce dispara após
+    // aplicar os fragments AJAX do update_order_review
+    if (typeof jQuery !== 'undefined') {
+        jQuery(document.body).on('updated_checkout', toggleDeliverySection);
+    }
+
+    // Re-init on WooCommerce checkout update (fallback via MutationObserver)
     var obs = new MutationObserver(function () {
         var el = document.getElementById('billing_delivery_date');
         if (el && !el._flatpickr) {
+            // Re-assign closure variables — WC may have replaced the DOM elements
+            input = el;
+            slotSelect = document.getElementById('billing_delivery_time_slot');
+            if (!slotSelect) return;
+            slotSelect.style.padding = '8px 12.8px';
+            slotField = slotSelect.closest('.wc-better-slot-field') || slotSelect.closest('.form-row');
             initPicker();
             input.addEventListener('input', function () { applyMask(input); });
             input.addEventListener('blur', function () {
