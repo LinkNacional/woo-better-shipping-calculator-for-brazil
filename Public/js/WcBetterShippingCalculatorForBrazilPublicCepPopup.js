@@ -143,7 +143,7 @@
                   // ── FRENTE ──
                   '<div class="wc-better-cep-flip-front">' +
                     '<div class="wc-better-cep-popup-content">' +
-                      '<h2 class="wc-better-cep-popup-title">' + (ajax.title || 'Disponibilidade de compra?') + '</h2>' +
+                      '<h2 class="wc-better-cep-popup-title">' + (ajax.title || 'Disponibilidade de Compra?') + '</h2>' +
                       (ajax.local_pickup_available ?
                         '<div class="wc-better-cep-popup-option">' +
                           '<div class="wc-better-cep-popup-option-body">' +

@@ -2065,7 +2065,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'enabled'    => true,
                         'ajaxurl'    => $this->get_admin_ajax_url(),
                         'nonce'      => wp_create_nonce('wc_better_cep_popup'),
-                        'title'      => __('Disponibilidade de compra?', 'woo-better-shipping-calculator-for-brazil'),
+                        'title'      => __('Disponibilidade de Compra?', 'woo-better-shipping-calculator-for-brazil'),
                         'subtitle'   => __('Verifique se há entregas disponíveis para sua região.', 'woo-better-shipping-calculator-for-brazil'),
                         'successMsg' => __('Você já pode continuar suas compras!', 'woo-better-shipping-calculator-for-brazil'),
                         'delivery_label' => __('Ou informe seu CEP', 'woo-better-shipping-calculator-for-brazil'),
