@@ -3451,6 +3451,11 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
+        // Se retirada no local está selecionada, pula validação
+        if ($this->is_local_pickup_chosen()) {
+            return;
+        }
+
         // Tenta ler os campos separados primeiro (novo formato)
         $billing_delivery_date     = isset($_POST['billing_delivery_date']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_date'])) : '';
         $billing_delivery_time_slot = isset($_POST['billing_delivery_time_slot']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_time_slot'])) : '';
@@ -3510,6 +3515,24 @@ class WcBetterShippingCalculatorForBrazil
             wc_add_notice(__('A data e hora de entrega não pode estar no passado.', 'woo-better-shipping-calculator-for-brazil'), 'error');
             return;
         }
+    }
+
+    /**
+     * Verifica se o método de envio selecionado é retirada no local.
+     *
+     * @since 4.18.0
+     * @return bool
+     */
+    private function is_local_pickup_chosen() {
+        if (!function_exists('wc_get_chosen_shipping_method_ids')) {
+            return false;
+        }
+        $chosen_ids = wc_get_chosen_shipping_method_ids();
+        if (empty($chosen_ids)) {
+            return false;
+        }
+        $local_pickup_ids = apply_filters('woocommerce_local_pickup_methods', array('legacy_local_pickup', 'local_pickup'));
+        return count(array_intersect($chosen_ids, $local_pickup_ids)) > 0;
     }
 
     /**

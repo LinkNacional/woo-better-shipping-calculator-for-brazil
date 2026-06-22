@@ -301,7 +301,51 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Re-init on WooCommerce checkout update
+    // ── Local pickup toggle ────────────────────────────────────────────
+
+    var deliverySection = document.querySelector('.wc-better-delivery-shortcode-section');
+
+    function isLocalPickupSelected() {
+        // Usa o container #shipping_method (fixo no WooCommerce) para
+        // encontrar o radio selecionado, independente do name exato.
+        var container = document.getElementById('shipping_method');
+        if (!container) return false;
+        var checked = container.querySelector('input[type="radio"]:checked');
+        if (!checked) return false;
+        var val = checked.value;
+        return val.indexOf('pickup_location') === 0 || val.indexOf('local_pickup') === 0 || val.indexOf('legacy_local_pickup') === 0;
+    }
+
+    function toggleDeliverySection() {
+        if (!deliverySection && !(deliverySection = document.querySelector('.wc-better-delivery-shortcode-section'))) {
+            return;
+        }
+        if (isLocalPickupSelected()) {
+            deliverySection.style.display = 'none';
+            // Desabilita required para não bloquear o submit
+            if (input) input.required = false;
+            if (slotSelect) slotSelect.required = false;
+            // Limpa valores
+            if (input) { input.value = ''; if (input._flatpickr) input._flatpickr.clear(); }
+            if (slotSelect) { slotSelect.value = ''; }
+            if (slotField) slotField.style.display = 'none';
+        } else {
+            deliverySection.style.display = '';
+            if (input) input.required = true;
+            if (slotSelect) slotSelect.required = true;
+        }
+    }
+
+    // Executa na inicialização
+    toggleDeliverySection();
+
+    // Escuta o evento updated_checkout que o WooCommerce dispara após
+    // aplicar os fragments AJAX do update_order_review
+    if (typeof jQuery !== 'undefined') {
+        jQuery(document.body).on('updated_checkout', toggleDeliverySection);
+    }
+
+    // Re-init on WooCommerce checkout update (fallback via MutationObserver)
     var obs = new MutationObserver(function () {
         var el = document.getElementById('billing_delivery_date');
         if (el && !el._flatpickr) {
