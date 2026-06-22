@@ -143,34 +143,35 @@
                   // ── FRENTE ──
                   '<div class="wc-better-cep-flip-front">' +
                     '<div class="wc-better-cep-popup-content">' +
-                      '<h2 class="wc-better-cep-popup-title">' + (ajax.title || 'Qual a sua preferência?') + '</h2>' +
+                      '<h2 class="wc-better-cep-popup-title">' + (ajax.title || 'Disponibilidade de compra?') + '</h2>' +
                       (ajax.local_pickup_available ?
                         '<div class="wc-better-cep-popup-option">' +
-                          '<div class="wc-better-cep-popup-option-header">' +
-                            '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2271b1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                              '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>' +
-                              '<polyline points="9 22 9 12 15 12 15 22"></polyline>' +
-                            '</svg>' +
-                            '<span class="wc-better-cep-popup-option-label">' + (ajax.local_pickup_label || 'Retirada em Loja') + '</span>' +
-                          '</div>' +
                           '<div class="wc-better-cep-popup-option-body">' +
                             (ajax.pickup_address ? '<p class="wc-better-cep-pickup-address">' + escapeHtml(ajax.pickup_address) + '</p>' : '') +
-                            '<button class="wc-better-cep-popup-pickup-continue-btn">' + (ajax.pickup_continue_label || 'CONTINUAR COMPRA') + '</button>' +
+                            '<button class="wc-better-cep-popup-pickup-continue-btn">' +
+                              '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;">' +
+                                '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>' +
+                                '<polyline points="9 22 9 12 15 12 15 22"></polyline>' +
+                              '</svg>' +
+                              (ajax.pickup_continue_label || ajax.local_pickup_label || 'Retirada no local') +
+                            '</button>' +
                           '</div>' +
                         '</div>' : ''
                       ) +
                       '<div class="wc-better-cep-popup-option">' +
                         '<div class="wc-better-cep-popup-option-header">' +
-                          '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2271b1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                            '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"></path>' +
-                            '<circle cx="12" cy="10" r="3"></circle>' +
-                          '</svg>' +
-                          '<span class="wc-better-cep-popup-option-label">' + (ajax.delivery_label || 'Entregar no Endereço') + '</span>' +
+                          '<span class="wc-better-cep-popup-option-label">' + (ajax.delivery_label || 'Ou informe seu CEP') + '</span>' +
                         '</div>' +
                         '<div class="wc-better-cep-popup-option-body">' +
                           '<div class="wc-better-cep-popup-form">' +
                             '<input type="text" class="wc-better-cep-popup-input" placeholder="00000-000" maxlength="9" inputmode="numeric">' +
-                            '<button class="wc-better-cep-popup-btn">Consultar</button>' +
+                            '<button class="wc-better-cep-popup-btn">' +
+                              '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;">' +
+                                '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"></path>' +
+                                '<circle cx="12" cy="10" r="3"></circle>' +
+                              '</svg>' +
+                              (ajax.delivery_btn || 'Entrega para Endereço') +
+                            '</button>' +
                           '</div>' +
                         '</div>' +
                       '</div>' +
