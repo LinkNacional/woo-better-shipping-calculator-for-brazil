@@ -709,66 +709,71 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Bootstrap ────────────────────────────────────────────────────────
 
-    // ── Local pickup toggle (Blocks) ────────────────────────────────────
+    // ── Local pickup & no-rates toggle (Blocks) ────────────────────────
+    // Usa wp.data.store para ler o estado real do carrinho (React/Store API).
 
-    /**
-     * Subscribe to wc/store/cart to detect when the user selects pickup.
-     * When a pickup method is chosen, hide the delivery step and clear
-     * any saved delivery data from the Store API.
-     */
     function getDeliveryStep() {
         return document.querySelector('.wc-better-delivery-step');
     }
 
-    var previousShouldHide = null;
+    // Flag: impede MutationObserver de recriar campos enquanto step escondido
+    var deliveryStepManuallyHidden = false;
+    var lastShouldHide = null;
+
+    function applyStepVisibility(shouldHide, hasRealRates) {
+        var step = getDeliveryStep();
+        if (!step) return;
+
+        if (shouldHide === lastShouldHide) return;
+        lastShouldHide = shouldHide;
+
+        if (shouldHide) {
+            deliveryStepManuallyHidden = true;
+            step.style.display = 'none';
+            if (deliveryInput || slotSelectEl) {
+                resetFields();
+                if (hasRealRates) clearStoreData();
+            }
+        } else {
+            deliveryStepManuallyHidden = false;
+            step.style.display = '';
+            if (deliveryInput || slotSelectEl) restoreRequired();
+            if (!getDeliveryContainer()) ensureField();
+        }
+    }
 
     if (typeof wp !== 'undefined' && wp.data && wp.data.select && wp.data.subscribe) {
         wp.data.subscribe(function () {
-            var cart = wp.data.select('wc/store/cart');
-            if (!cart) return;
+            try {
+                var cart = wp.data.select('wc/store/cart');
+                if (!cart) return;
 
-            var deliveryStep = getDeliveryStep();
-            if (!deliveryStep) return;
+                var rates = cart.getShippingRates() || [];
 
-            var rates = cart.getShippingRates();
-            var hasRates = rates && rates.length > 0;
-            var currentRate = null;
-
-            if (hasRates) {
-                rates.forEach(function (pkg) {
-                    pkg.shipping_rates.forEach(function (rate) {
-                        if (rate.selected) currentRate = rate.rate_id;
-                    });
+                var hasRealRates = rates.length > 0 && rates.some(function (pkg) {
+                    return pkg.shipping_rates && pkg.shipping_rates.length > 0;
                 });
-            }
 
-            var shouldHide = false;
-            if (!hasRates) {
-                shouldHide = true;
-            } else if (currentRate && (
-                currentRate.indexOf('pickup_location') === 0 ||
-                currentRate.indexOf('local_pickup') === 0 ||
-                currentRate.indexOf('legacy_local_pickup') === 0
-            )) {
-                shouldHide = true;
-            }
+                var isAllPickup = false;
+                var selectedIsPickup = false;
 
-            // Só age se o estado mudou (evita loop infinito)
-            if (shouldHide === previousShouldHide) return;
-            previousShouldHide = shouldHide;
-
-            if (shouldHide) {
-                deliveryStep.style.display = 'none';
-                if (deliveryInput || slotSelectEl) {
-                    resetFields();
+                if (hasRealRates) {
+                    isAllPickup = true;
+                    for (var i = 0; i < rates.length; i++) {
+                        var pkgRates = rates[i].shipping_rates || [];
+                        for (var j = 0; j < pkgRates.length; j++) {
+                            var r = pkgRates[j];
+                            var isPickup = r.method_id === 'pickup_location' ||
+                                           r.method_id === 'local_pickup' ||
+                                           r.method_id === 'legacy_local_pickup';
+                            if (!isPickup) isAllPickup = false;
+                            if (r.selected && isPickup) selectedIsPickup = true;
+                        }
+                    }
                 }
-                if (hasRates) clearStoreData();
-            } else {
-                deliveryStep.style.display = '';
-                if (deliveryInput || slotSelectEl) {
-                    restoreRequired();
-                }
-            }
+
+                applyStepVisibility(!hasRealRates || isAllPickup || selectedIsPickup, hasRealRates);
+            } catch (e) {}
         });
     }
 
@@ -783,7 +788,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         var existing = getDeliveryContainer();
-        if (!existing && stepFound) {
+        if (!existing && stepFound && !deliveryStepManuallyHidden) {
             setTimeout(function () { ensureField(); }, 300);
         }
 
