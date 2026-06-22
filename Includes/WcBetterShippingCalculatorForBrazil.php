@@ -1406,7 +1406,7 @@ class WcBetterShippingCalculatorForBrazil
                 'placeholder' => __('Selecione a data', 'woo-better-shipping-calculator-for-brazil'),
                 'type'        => 'text',
                 'required'    => true,
-                'class'       => array('form-row-wide'),
+                'class'       => array('form-row-wide', 'wc-better-delivery-field', 'wc-better-delivery-date-field'),
                 'priority'    => 200,
                 'default'     => $saved_date,
             );
@@ -1425,7 +1425,7 @@ class WcBetterShippingCalculatorForBrazil
                 'type'        => 'select',
                 'options'     => $slot_options,
                 'required'    => true,
-                'class'       => array('form-row-wide', 'wc-better-slot-field'),
+                'class'       => array('form-row-wide', 'wc-better-slot-field', 'wc-better-delivery-field', 'wc-better-delivery-slot-field'),
                 'priority'    => 210,
                 'default'     => $saved_slot,
             );
@@ -1709,6 +1709,21 @@ class WcBetterShippingCalculatorForBrazil
         // Hook para validação de data de nascimento no checkout
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_birthdate_value');
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_delivery_datetime_value');
+
+        // Hook para renderizar o step "Agende sua entrega" acima do pagamento no checkout clássico
+        $this->loader->add_action('woocommerce_checkout_before_order_review', $this, 'render_delivery_step_shortcode', 15);
+
+        // Hook para injetar o step "Agende sua entrega" no checkout de blocos (Gutenberg)
+        $this->loader->add_filter('render_block', $this, 'inject_delivery_step_blocks', 10, 2);
+
+        // Hooks para a página de agendamento de entrega na Minha Conta
+        $this->loader->add_action('init', $this, 'register_delivery_schedule_endpoint');
+        $this->loader->add_filter('woocommerce_account_menu_items', $this, 'add_delivery_schedule_menu_item');
+        $this->loader->add_action('woocommerce_account_delivery-schedule_endpoint', $this, 'render_delivery_schedule_endpoint');
+        $this->loader->add_action('template_redirect', $this, 'save_delivery_schedule_form');
+
+        // Hook para salvar dados de delivery na sessão durante update_checkout (shortcode)
+        $this->loader->add_action('woocommerce_checkout_update_order_review', $this, 'save_delivery_to_session');
 
         // Hook para validação de Inscrição Estadual (IE) no checkout clássico
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_ie_field_value_classic');
@@ -3495,6 +3510,384 @@ class WcBetterShippingCalculatorForBrazil
             wc_add_notice(__('A data e hora de entrega não pode estar no passado.', 'woo-better-shipping-calculator-for-brazil'), 'error');
             return;
         }
+    }
+
+    /**
+     * Renderiza o step "Agende sua entrega" acima do pagamento no checkout clássico/shortcode.
+     *
+     * Hook: woocommerce_checkout_before_order_review (prioridade 15)
+     *
+     * Renderiza um heading + container. Os campos são movidos via JS para este container
+     * (WcBetterShippingCalculatorForBrazilPublicShortcodeDeliveryDatetime.js),
+     * evitando duplicar IDs no DOM.
+     *
+     * @since 4.18.0
+     * @return void
+     */
+    public function render_delivery_step_shortcode() {
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        if ($delivery_schedule_enabled !== 'yes') {
+            return;
+        }
+
+        // Monta as definições dos campos (mesma lógica do lkn_add_custom_checkout_field)
+        $saved_date = '';
+        $saved_slot = '';
+
+        // Prioridade 1: user meta (fonte mais confiável, sincronizada pelo delivery-schedule)
+        if (is_user_logged_in()) {
+            $user_id = get_current_user_id();
+            $saved_date = get_user_meta($user_id, 'billing_delivery_date', true);
+            $saved_slot = get_user_meta($user_id, 'billing_delivery_time_slot', true);
+        }
+
+        // Prioridade 2: sessão (fallback para não-logados ou dados recém-digitados no checkout)
+        if ((empty($saved_date) || empty($saved_slot)) && function_exists('WC') && WC()->session) {
+            $session_date = WC()->session->get('billing_delivery_date', '');
+            $session_slot = WC()->session->get('billing_delivery_time_slot', '');
+            if (empty($saved_date)) $saved_date = $session_date;
+            if (empty($saved_slot)) $saved_slot = $session_slot;
+        }
+
+        $date_field = array(
+            'label'       => __('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+            'placeholder' => __('Selecione a data', 'woo-better-shipping-calculator-for-brazil'),
+            'type'        => 'text',
+            'required'    => true,
+            'class'       => array('form-row-wide', 'wc-better-delivery-field', 'wc-better-delivery-date-field'),
+            'default'     => $saved_date,
+        );
+
+        $slots_json = get_option('woo_better_delivery_slots', '[]');
+        $slots = json_decode($slots_json, true);
+        if (!is_array($slots)) { $slots = array(); }
+        $slot_options = array('' => __('Selecione o horário...', 'woo-better-shipping-calculator-for-brazil'));
+        foreach ($slots as $slot) {
+            $label = $slot[0] . ' às ' . $slot[1];
+            $slot_options[$label] = $label;
+        }
+
+        $slot_field = array(
+            'label'       => __('Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+            'type'        => 'select',
+            'options'     => $slot_options,
+            'required'    => true,
+            'class'       => array('form-row-wide', 'wc-better-slot-field', 'wc-better-delivery-field', 'wc-better-delivery-slot-field'),
+            'default'     => $saved_slot,
+        );
+
+        echo '<div class="wc-better-delivery-shortcode-section" style="margin-bottom:24px;">';
+        echo '<h3>' . esc_html__('Agende sua entrega', 'woo-better-shipping-calculator-for-brazil') . '</h3>';
+
+        // Renderiza os campos usando a função nativa do WooCommerce.
+        // Os nomes dos inputs serão billing_delivery_date e billing_delivery_time_slot,
+        // compatíveis com $_POST e com a validação existente.
+        woocommerce_form_field('billing_delivery_date', $date_field, $saved_date);
+        woocommerce_form_field('billing_delivery_time_slot', $slot_field, $saved_slot);
+
+        echo '</div>';
+    }
+
+    /**
+     * Injeta o step "Agende sua entrega" no checkout de blocos (Gutenberg),
+     * posicionado antes do bloco de pagamento (checkout-payment-block).
+     *
+     * Hook: render_block (prioridade 10)
+     *
+     * O step injetado contém o heading completo + content area.
+     * O JS (WcBetterShippingCalculatorForBrazilPublicGutenbergDeliveryDatetime.js)
+     * popula o content area com os campos de data e horário.
+     *
+     * @since 4.18.0
+     * @param string $content Conteúdo renderizado do bloco.
+     * @param array  $block   Dados do bloco.
+     * @return string
+     */
+    public function inject_delivery_step_blocks($content, $block) {
+        // Apenas para o bloco principal do checkout
+        if (empty($block['blockName']) || 'woocommerce/checkout' !== $block['blockName']) {
+            return $content;
+        }
+
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        if ($delivery_schedule_enabled !== 'yes') {
+            return $content;
+        }
+
+        // Evita injeção duplicada
+        if (false !== strpos($content, 'wc-better-delivery-step')) {
+            return $content;
+        }
+
+        $step_html = '<div class="wc-block-components-checkout-step wc-better-delivery-step" aria-label="' . esc_attr__('Agende sua entrega', 'woo-better-shipping-calculator-for-brazil') . '">';
+        $step_html .= '<div class="wc-block-components-checkout-step__heading-container">';
+        $step_html .= '<div class="wc-block-components-checkout-step__heading">';
+        $step_html .= '<span class="wc-block-components-checkout-step__heading-number" aria-hidden="true"></span>';
+        $step_html .= '<h2 class="wc-block-components-title wc-block-components-checkout-step__title">' . esc_html__('Agende sua entrega', 'woo-better-shipping-calculator-for-brazil') . '</h2>';
+        $step_html .= '</div></div>';
+        $step_html .= '<div class="wc-block-components-checkout-step__content">';
+        $step_html .= '<div class="wc-better-delivery-step-content"></div>';
+        $step_html .= '</div></div>';
+
+        // Injeta o step antes do bloco de pagamento
+        $pattern = '/(<div[^>]*data-block-name="woocommerce\/checkout-payment-block"[^>]*><\/div>)/';
+        $content  = preg_replace($pattern, $step_html . '$1', $content, 1);
+
+        return $content;
+    }
+
+    /**
+     * Salva os dados de delivery date/slot na sessão durante o update_checkout.
+     *
+     * O WooCommerce só persiste na sessão campos que estão registrados no array
+     * woocommerce_checkout_fields. Como removemos billing_delivery_date e
+     * billing_delivery_time_slot do billing (eles são renderizados via
+     * woocommerce_checkout_before_order_review), precisamos salvá-los manualmente.
+     *
+     * Hook: woocommerce_checkout_update_order_review
+     *
+     * @since 4.18.0
+     * @param string $post_data Query string com os dados do formulário.
+     * @return void
+     */
+    public function save_delivery_to_session($post_data) {
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        if ($delivery_schedule_enabled !== 'yes') {
+            return;
+        }
+
+        if (empty($post_data)) {
+            return;
+        }
+
+        parse_str($post_data, $parsed);
+
+        $delivery_date      = isset($parsed['billing_delivery_date']) ? sanitize_text_field($parsed['billing_delivery_date']) : '';
+        $delivery_time_slot  = isset($parsed['billing_delivery_time_slot']) ? sanitize_text_field($parsed['billing_delivery_time_slot']) : '';
+
+        if (function_exists('WC') && WC()->session) {
+            WC()->session->set('billing_delivery_date', $delivery_date);
+            WC()->session->set('billing_delivery_time_slot', $delivery_time_slot);
+
+            // Também persiste no user meta se logado
+            if (is_user_logged_in() && !empty($delivery_date)) {
+                update_user_meta(get_current_user_id(), 'billing_delivery_date', $delivery_date);
+                update_user_meta(get_current_user_id(), 'billing_delivery_time_slot', $delivery_time_slot);
+            }
+        }
+    }
+
+    /**
+     * Registra o endpoint 'delivery-schedule' para a página Minha Conta.
+     *
+     * Hook: init
+     *
+     * @since 4.18.0
+     * @return void
+     */
+    public function register_delivery_schedule_endpoint() {
+        add_rewrite_endpoint('delivery-schedule', EP_ROOT | EP_PAGES);
+
+        // Flush automático apenas uma vez por versão do plugin
+        if (get_option('woo_better_delivery_endpoint_flushed') !== WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION) {
+            flush_rewrite_rules();
+            update_option('woo_better_delivery_endpoint_flushed', WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION);
+        }
+    }
+
+    /**
+     * Adiciona o item "Agende sua entrega" ao menu da Minha Conta.
+     *
+     * Hook: woocommerce_account_menu_items
+     *
+     * @since 4.18.0
+     * @param array $items Itens do menu.
+     * @return array
+     */
+    public function add_delivery_schedule_menu_item($items) {
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        if ($delivery_schedule_enabled !== 'yes') {
+            return $items;
+        }
+
+        // Insere após "edit-address" (Endereços)
+        $new_items = array();
+        foreach ($items as $key => $label) {
+            $new_items[$key] = $label;
+            if ('edit-address' === $key) {
+                $new_items['delivery-schedule'] = __('Agende sua entrega', 'woo-better-shipping-calculator-for-brazil');
+            }
+        }
+        return $new_items;
+    }
+
+    /**
+     * Renderiza a página de agendamento de entrega, seguindo o mesmo padrão
+     * de edit-address: o endpoint delivery-schedule sem valor mostra o card
+     * com resumo + link "Editar"; com o valor "edit" mostra o formulário.
+     *
+     * /minha-conta/delivery-schedule/       → card com resumo
+     * /minha-conta/delivery-schedule/edit/  → formulário de edição
+     *
+     * Hook: woocommerce_account_delivery-schedule_endpoint
+     *
+     * @since 4.18.0
+     * @param string $value Valor da query var (vazio = card, 'edit' = form).
+     * @return void
+     */
+    public function render_delivery_schedule_endpoint($value = '') {
+        $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+        if ($delivery_schedule_enabled !== 'yes') {
+            return;
+        }
+
+        $user_id    = get_current_user_id();
+        $saved_date = get_user_meta($user_id, 'billing_delivery_date', true);
+        $saved_slot = get_user_meta($user_id, 'billing_delivery_time_slot', true);
+
+        if ('edit' === $value) {
+            // ── Modo formulário ──────────────────────────────────────
+            $edit_url = wc_get_endpoint_url('delivery-schedule', '', wc_get_page_permalink('myaccount'));
+
+            $date_field = array(
+                'label'       => __('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Selecione a data', 'woo-better-shipping-calculator-for-brazil'),
+                'type'        => 'text',
+                'required'    => true,
+                'class'       => array('form-row-wide', 'wc-better-delivery-field', 'wc-better-delivery-date-field'),
+            );
+
+            $slots_json = get_option('woo_better_delivery_slots', '[]');
+            $slots = json_decode($slots_json, true);
+            if (!is_array($slots)) { $slots = array(); }
+            $slot_options = array('' => __('Selecione o horário...', 'woo-better-shipping-calculator-for-brazil'));
+            foreach ($slots as $slot) {
+                $label = $slot[0] . ' às ' . $slot[1];
+                $slot_options[$label] = $label;
+            }
+
+            $slot_field = array(
+                'label'       => __('Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'type'        => 'select',
+                'options'     => $slot_options,
+                'required'    => true,
+                'class'       => array('form-row-wide', 'wc-better-slot-field', 'wc-better-delivery-field', 'wc-better-delivery-slot-field'),
+            );
+
+            $button_class = 'button' . (wc_wp_theme_get_element_class_name('button') ? ' ' . wc_wp_theme_get_element_class_name('button') : '');
+
+            echo '<form method="post" novalidate>';
+            echo '<div class="woocommerce-address-fields">';
+
+            echo '<h2>' . esc_html__('Agende sua entrega', 'woo-better-shipping-calculator-for-brazil') . '</h2>';
+
+            woocommerce_form_field('billing_delivery_date', $date_field, $saved_date);
+            woocommerce_form_field('billing_delivery_time_slot', $slot_field, $saved_slot);
+
+            echo '<p>';
+            echo '<button type="submit" class="' . esc_attr($button_class) . '" name="save_delivery_schedule" value="' . esc_attr__('Salvar', 'woo-better-shipping-calculator-for-brazil') . '">' . esc_html__('Salvar', 'woo-better-shipping-calculator-for-brazil') . '</button>';
+            wp_nonce_field('woocommerce-save_delivery_schedule', 'woocommerce-save-delivery-schedule-nonce');
+            echo '<input type="hidden" name="action" value="save_delivery_schedule" />';
+            echo '</p>';
+
+            echo '</div>';
+            echo '</form>';
+        } else {
+            // ── Modo card ────────────────────────────────────────────
+            $edit_url = wc_get_endpoint_url('delivery-schedule', 'edit', wc_get_page_permalink('myaccount'));
+
+            echo '<div class="woocommerce-Address">';
+            echo '<header class="woocommerce-Address-title title">';
+            echo '<h2>' . esc_html__('Agende sua entrega', 'woo-better-shipping-calculator-for-brazil') . '</h2>';
+            echo '<a href="' . esc_url($edit_url) . '" class="edit">';
+            echo $saved_date ? esc_html__('Editar', 'woo-better-shipping-calculator-for-brazil') : esc_html__('Adicionar', 'woo-better-shipping-calculator-for-brazil');
+            echo '</a>';
+            echo '</header>';
+            echo '<address>';
+            if ($saved_date) {
+                echo esc_html($saved_date);
+                if ($saved_slot) {
+                    echo ' (' . esc_html($saved_slot) . ')';
+                }
+            } else {
+                echo esc_html__('Você ainda não definiu seu agendamento de entrega.', 'woo-better-shipping-calculator-for-brazil');
+            }
+            echo '</address>';
+            echo '</div>';
+        }
+    }
+
+
+
+    /**
+     * Processa o salvamento do formulário de agendamento de entrega na Minha Conta.
+     *
+     * Hook: template_redirect
+     *
+     * @since 4.18.0
+     * @return void
+     */
+    public function save_delivery_schedule_form() {
+        global $wp;
+
+        if (!isset($wp->query_vars['delivery-schedule'])) {
+            return;
+        }
+
+        if (empty($_POST['action']) || 'save_delivery_schedule' !== $_POST['action']) {
+            return;
+        }
+
+        $nonce_value = isset($_POST['woocommerce-save-delivery-schedule-nonce'])
+            ? sanitize_text_field(wp_unslash($_POST['woocommerce-save-delivery-schedule-nonce']))
+            : '';
+
+        if (!wp_verify_nonce($nonce_value, 'woocommerce-save_delivery_schedule')) {
+            return;
+        }
+
+        wc_nocache_headers();
+
+        $user_id = get_current_user_id();
+        if ($user_id <= 0) {
+            return;
+        }
+
+        $delivery_date     = isset($_POST['billing_delivery_date']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_date'])) : '';
+        $delivery_time_slot = isset($_POST['billing_delivery_time_slot']) ? sanitize_text_field(wp_unslash($_POST['billing_delivery_time_slot'])) : '';
+
+        // Fallback: campo combinado
+        if (empty($delivery_date) && isset($_POST['billing_delivery_datetime'])) {
+            $combined = sanitize_text_field(wp_unslash($_POST['billing_delivery_datetime']));
+            if (!empty($combined) && preg_match('/^(\d{2}\/\d{2}\/\d{4})\s(.+)$/', $combined, $m)) {
+                $delivery_date      = $m[1];
+                $delivery_time_slot  = $m[2];
+            }
+        }
+
+        if (empty($delivery_date)) {
+            wc_add_notice(__('Por favor, selecione uma data de entrega.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+            return;
+        }
+
+        if (empty($delivery_time_slot)) {
+            wc_add_notice(__('Por favor, selecione um horário de entrega.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+            return;
+        }
+
+        update_user_meta($user_id, 'billing_delivery_date', $delivery_date);
+        update_user_meta($user_id, 'billing_delivery_time_slot', $delivery_time_slot);
+
+        // Sincroniza a sessão para o checkout imediato usar os dados frescos
+        if (function_exists('WC') && WC()->session) {
+            WC()->session->set('billing_delivery_date', $delivery_date);
+            WC()->session->set('billing_delivery_time_slot', $delivery_time_slot);
+        }
+
+        wc_add_notice(__('Agendamento de entrega atualizado com sucesso.', 'woo-better-shipping-calculator-for-brazil'));
+
+        wp_safe_redirect(wc_get_endpoint_url('delivery-schedule', '', wc_get_page_permalink('myaccount')));
+        exit;
     }
 
     /**
@@ -5398,6 +5791,16 @@ class WcBetterShippingCalculatorForBrazil
         $fields['billing'][$billing_checkbox_key] = $billing_checkbox_field;
         $fields['shipping'][$shipping_checkbox_key] = $shipping_checkbox_field;
         
+        // Remove os campos de agendamento de entrega da seção de faturamento.
+        // Eles são renderizados separadamente acima do pagamento via
+        // woocommerce_checkout_before_order_review (render_delivery_step_shortcode).
+        if (isset($fields['billing']['billing_delivery_date'])) {
+            unset($fields['billing']['billing_delivery_date']);
+        }
+        if (isset($fields['billing']['billing_delivery_time_slot'])) {
+            unset($fields['billing']['billing_delivery_time_slot']);
+        }
+
         // Corrige a exibição da label do address_2 (remove screen-reader-text)
         if (isset($fields['billing']['billing_address_2'])) {
             $fields['billing']['billing_address_2']['label_class'] = '';
@@ -7821,29 +8224,7 @@ class WcBetterShippingCalculatorForBrazil
                     }
                     
                     // Adiciona campo de data/hora de entrega se habilitado
-                    if ($delivery_schedule_enabled === 'yes') {
-                        $new_billing_fields['billing_delivery_date'] = array(
-                            'label'       => __('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'),
-                            'type'        => 'text',
-                            'description' => '',
-                        );
-
-                        // Select de horário de entrega
-                        $slots_json = get_option('woo_better_delivery_slots', '[]');
-                        $slots = json_decode($slots_json, true);
-                        if (!is_array($slots)) { $slots = array(); }
-                        $slot_options = array('' => __('Selecione o horário...', 'woo-better-shipping-calculator-for-brazil'));
-                        foreach ($slots as $slot) {
-                            $label = $slot[0] . ' às ' . $slot[1];
-                            $slot_options[$label] = $label;
-                        }
-                        $new_billing_fields['billing_delivery_time_slot'] = array(
-                            'label'       => __('Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
-                            'type'        => 'select',
-                            'options'     => $slot_options,
-                            'description' => '',
-                        );
-                    }
+                    // MOVED: agora ficam na seção "delivery" abaixo.
                 }
             }
             
@@ -7924,6 +8305,35 @@ class WcBetterShippingCalculatorForBrazil
             $fields['shipping']['fields'] = $new_shipping_fields;
         }
         
+        // ── Seção própria "Agende sua entrega" ────────────────────────
+        if ($delivery_schedule_enabled === 'yes') {
+            $slots_json = get_option('woo_better_delivery_slots', '[]');
+            $slots = json_decode($slots_json, true);
+            if (!is_array($slots)) { $slots = array(); }
+            $slot_options = array('' => __('Selecione o horário...', 'woo-better-shipping-calculator-for-brazil'));
+            foreach ($slots as $slot) {
+                $label = $slot[0] . ' às ' . $slot[1];
+                $slot_options[$label] = $label;
+            }
+
+            $fields['delivery'] = array(
+                'title'  => __('Agende sua entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'fields' => array(
+                    'billing_delivery_date' => array(
+                        'label'       => __('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                        'type'        => 'text',
+                        'description' => '',
+                    ),
+                    'billing_delivery_time_slot' => array(
+                        'label'       => __('Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                        'type'        => 'select',
+                        'options'     => $slot_options,
+                        'description' => '',
+                    ),
+                ),
+            );
+        }
+
         return $fields;
     }
 
@@ -8104,39 +8514,12 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
         
-        // Campo de data/hora de entrega
+        // Campo de data/hora de entrega — REMOVIDO desta seção.
+        // Agora são gerenciados em página própria: /minha-conta/delivery-schedule/
+        // e exibidos abaixo dos cartões de endereço em /minha-conta/edit-address/
+        // via woocommerce_after_edit_account_address_form.
         if ($delivery_schedule_enabled === 'yes') {
-            $saved_date = get_user_meta(get_current_user_id(), 'billing_delivery_date', true);
-            $saved_slot = get_user_meta(get_current_user_id(), 'billing_delivery_time_slot', true);
-
-            $fields['billing_delivery_date'] = array(
-                'label'       => __('Data de Entrega', 'woo-better-shipping-calculator-for-brazil'),
-                'placeholder' => __('Selecione a data', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => true,
-                'class'       => array('form-row-wide'),
-                'type'        => 'text',
-                'priority'    => 200,
-                'value'       => $saved_date ? $saved_date : '',
-            );
-
-            // Select de horário de entrega
-            $slots_json = get_option('woo_better_delivery_slots', '[]');
-            $slots = json_decode($slots_json, true);
-            if (!is_array($slots)) { $slots = array(); }
-            $slot_options = array('' => __('Selecione o horário...', 'woo-better-shipping-calculator-for-brazil'));
-            foreach ($slots as $slot) {
-                $label = $slot[0] . ' às ' . $slot[1];
-                $slot_options[$label] = $label;
-            }
-            $fields['billing_delivery_time_slot'] = array(
-                'label'       => __('Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
-                'type'        => 'select',
-                'options'     => $slot_options,
-                'required'    => true,
-                'class'       => array('form-row-wide', 'wc-better-slot-field'),
-                'priority'    => 210,
-                'value'       => $saved_slot ? $saved_slot : '',
-            );
+            // Não adiciona mais os campos aqui.
         }
         
         // Campo de bairro

@@ -303,6 +303,10 @@ class WcBetterShippingCalculatorForBrazilPublic
         // Página de checkout (blocos ou clássico/shortcode)
         $is_checkout_page = $is_checkout_page || $has_checkout_block;
         
+        // Detecta se estamos na página de agendamento de entrega da Minha Conta
+        global $wp;
+        $is_delivery_schedule_page = isset($wp->query_vars['delivery-schedule']);
+
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
         $cart_custom_postcode = get_option('woo_better_calc_enable_cart_page', 'yes');
@@ -1126,6 +1130,67 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
 
                 // Tempo mínimo de preparo
+                wp_localize_script(
+                    $this->plugin_name . '-delivery-datetime',
+                    'WooBetterMinPrepHours',
+                    (int) get_option('woo_better_min_preparation_hours', 0)
+                );
+            }
+        }
+
+        // Enfileira script de delivery datetime na página de agendamento da Minha Conta
+        if ($is_delivery_schedule_page) {
+            $delivery_schedule_enabled = get_option('woo_better_enable_delivery_schedule', 'no');
+
+            if ($delivery_schedule_enabled === 'yes') {
+                $schedule_json = get_option('woo_better_delivery_schedule', '{}');
+                $schedule = json_decode($schedule_json, true);
+                if (!is_array($schedule)) { $schedule = array(); }
+
+                $holidays_path = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_DIR . 'Includes/assets/data/holidays.json';
+                $holidays = array();
+                if (file_exists($holidays_path)) {
+                    $holidays_json = file_get_contents($holidays_path);
+                    $holidays = json_decode($holidays_json, true);
+                    if (!is_array($holidays)) { $holidays = array(); }
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-delivery-datetime',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeDeliveryDatetime.COMPILED.js',
+                    array(),
+                    $this->version,
+                    true
+                );
+
+                wp_enqueue_style(
+                    $this->plugin_name . '-delivery-datetime',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeDeliveryDatetime.COMPILED.css',
+                    array(),
+                    $this->version
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-delivery-datetime',
+                    'WooBetterDeliverySchedule',
+                    $schedule
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-delivery-datetime',
+                    'WooBetterDeliveryHolidays',
+                    $holidays
+                );
+
+                $slots_json = get_option('woo_better_delivery_slots', '[]');
+                $slots = json_decode($slots_json, true);
+                if (!is_array($slots)) { $slots = array(); }
+                wp_localize_script(
+                    $this->plugin_name . '-delivery-datetime',
+                    'WooBetterDeliverySlots',
+                    $slots
+                );
+
                 wp_localize_script(
                     $this->plugin_name . '-delivery-datetime',
                     'WooBetterMinPrepHours',

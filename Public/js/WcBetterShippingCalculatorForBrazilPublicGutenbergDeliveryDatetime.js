@@ -1,12 +1,13 @@
 /**
  * Delivery Date + Slot Picker for Gutenberg/Block Checkout
  *
- * Follows the same pattern as birthdate: text input with mask + flatpickr via
- * calendar icon. A time-slot <select> with WC Blocks styling appears below
- * the input after a date is chosen. Saves via Store API.
+ * The checkout step skeleton ("Agende sua entrega") is injected by PHP via the
+ * render_block filter before the checkout-payment-block. This JS populates the
+ * step content with the date input (flatpickr + mask) and time-slot select,
+ * then saves via Store API.
  *
  * @since 4.17.0
- * @since 5.x  Replaced time picker with slot <select> + manual date input.
+ * @since 4.18.0 Step skeleton rendered by PHP; JS only creates the fields.
  */
 import flatpickr from 'flatpickr';
 import { Portuguese } from 'flatpickr/dist/l10n/pt';
@@ -378,59 +379,38 @@ document.addEventListener('DOMContentLoaded', function () {
         if (deliveryInput) deliveryInput.setAttribute('aria-invalid', 'false');
     }
 
-    // ── "Usar mesmo endereço" ──────────────────────────────────────────
+    // ── Step content target ───────────────────────────────────────────
 
-    function isUsingSameAddressForBilling() {
-        var checkbox = document.querySelector('input[type="checkbox"][id^="checkbox-control"]');
-        if (!checkbox) return false;
-        var checkboxContainer = checkbox.closest('.wc-block-checkout__use-address-for-billing');
-        if (!checkboxContainer) return false;
-        return checkbox.checked;
-    }
-
-    function getTargetContext() {
-        var useSame = isUsingSameAddressForBilling();
-        var container = useSame ? document.querySelector('#shipping') : document.querySelector('#billing');
-        var containerType = useSame ? 'shipping' : 'billing';
-        return { container: container, containerType: containerType };
-    }
-
-    function getReferenceElement(container) {
-        var children = container.children;
-        if (children.length === 0) return null;
-
-        for (var i = children.length - 1; i >= 0; i--) {
-            var child = children[i];
-            if (child.tagName === 'INPUT' && child.type === 'hidden') continue;
-            if (child.classList.contains('wc-block-checkout__use-address-for-shipping')) continue;
-            if (child.classList.contains('wc-block-checkout__use-address-for-billing')) continue;
-            if (child.classList.contains('wc-block-components-address-form__birthdate')) continue;
-            if (child.classList.contains('wc-block-components-address-form__gender')) continue;
-            if (child.classList.contains('wc-block-components-address-form__delivery-datetime')) continue;
-            return child;
-        }
-        return null;
-    }
-
-    function ensureAddressEditorOpen(containerType) {
-        var editBtn = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="' + containerType + '"]');
-        if (!editBtn) return false;
-        if (editBtn.getAttribute('aria-expanded') !== 'true') editBtn.click();
-        return editBtn.getAttribute('aria-expanded') === 'true';
+    /**
+     * The step skeleton is injected by PHP via render_block filter.
+     * We find its content container and populate it with fields.
+     */
+    function getStepContent() {
+        return document.querySelector('.wc-better-delivery-step-content');
     }
 
     // ── Remove + clear ───────────────────────────────────────────────────
 
     function removeField() {
         var container = getDeliveryContainer();
-        if (container) container.remove();
+        if (container) {
+            container.innerHTML = '';
+            container.parentNode && container.parentNode.removeChild(container);
+        }
         deliveryInput = null;
         slotSelectEl = null;
         fieldContainerType = null;
         clearStoreData();
     }
 
-    function createField(referenceElement) {
+    /**
+     * Create the date input + calendar icon + error div inside the
+     * .wc-better-delivery-step-content container injected by PHP.
+     */
+    function createField() {
+        var stepContent = getStepContent();
+        if (!stepContent) return null;
+
         if (getDeliveryContainer()) return getDeliveryContainer();
 
         var container = document.createElement('div');
@@ -511,7 +491,8 @@ document.addEventListener('DOMContentLoaded', function () {
         container.appendChild(fieldMain);
         container.appendChild(errDiv);
 
-        referenceElement.insertAdjacentElement('afterend', container);
+        // Inject into the PHP-rendered step content area
+        stepContent.appendChild(container);
 
         deliveryInput = input;
 
@@ -646,23 +627,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Ensure field ─────────────────────────────────────────────────────
 
     function ensureField() {
-        var ctx = getTargetContext();
-        if (!ctx.container) return;
-        if (!ensureAddressEditorOpen(ctx.containerType)) return;
+        var stepContent = getStepContent();
+        if (!stepContent) return;
 
         var current = getDeliveryContainer();
-        if (current && fieldContainerType && fieldContainerType !== ctx.containerType) {
-            removeField();
-            current = null;
-        }
-
         if (current) return;
 
-        var ref = getReferenceElement(ctx.container);
-        if (!ref) return;
-
-        createField(ref);
-        fieldContainerType = ctx.containerType;
+        createField();
+        fieldContainerType = 'delivery';
 
         if (deliveryInput && !deliveryInput._flatpickr) {
             initPicker(deliveryInput);
@@ -700,30 +672,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Bootstrap ────────────────────────────────────────────────────────
 
-    var checkoutBlockFound = false;
+    var stepFound = false;
 
     var observer = new MutationObserver(function () {
-        var ctx = getTargetContext();
+        var stepContent = getStepContent();
 
-        if (ctx.container && !checkoutBlockFound) {
-            checkoutBlockFound = true;
+        if (stepContent && !stepFound) {
+            stepFound = true;
             setTimeout(function () { ensureField(); }, 200);
         }
 
         var existing = getDeliveryContainer();
-        if (!existing && checkoutBlockFound && ctx.container) {
+        if (!existing && stepFound) {
             setTimeout(function () { ensureField(); }, 300);
-        }
-
-        var sameAddressCheckbox = document.querySelector('.wc-block-checkout__use-address-for-billing input[type="checkbox"]');
-        if (sameAddressCheckbox && !sameAddressCheckbox.dataset.deliveryListener) {
-            sameAddressCheckbox.addEventListener('change', function () {
-                setTimeout(function () {
-                    removeField();
-                    ensureField();
-                }, 300);
-            });
-            sameAddressCheckbox.dataset.deliveryListener = 'true';
         }
 
         bindPlaceOrder();
