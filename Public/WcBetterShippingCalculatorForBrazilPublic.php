@@ -1959,10 +1959,11 @@ class WcBetterShippingCalculatorForBrazilPublic
             );
         }
 
-        // Pop-up de validação de CEP — carregado em todas as páginas públicas,
-        // mas NÃO exibe se o usuário já tem CEP preenchido (sessão ou user_meta).
+        // Pop-up de validação de CEP — NÃO carrega no carrinho nem no checkout.
         $cep_popup_enabled = get_option('woo_better_calc_enable_cep_popup', 'no');
-        if ($cep_popup_enabled === 'yes') {
+        if ($cep_popup_enabled === 'yes' &&
+            !$is_checkout_page &&
+            !(function_exists('is_cart') && is_cart())) {
             $has_postcode = false;
 
             if (function_exists('WC') && WC()->session) {
