@@ -362,7 +362,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function resetFields() {
         if (deliveryInput) {
             deliveryInput.value = '';
-            if (deliveryInput._flatpickr) deliveryInput._flatpickr.clear();
+            if (deliveryInput._flatpickr) {
+                try { deliveryInput._flatpickr.clear(); } catch(e) {}
+            }
         }
         if (slotSelectEl) {
             slotSelectEl.value = '';
@@ -374,6 +376,9 @@ document.addEventListener('DOMContentLoaded', function () {
             deliveryInput.required = false;
         }
         if (slotSelectEl) slotSelectEl.required = false;
+
+        // Reseta os caches para evitar resíduos da sessão anterior
+        if (deliveryInput) deliveryInput._slotCache = null;
     }
 
     /**
@@ -715,41 +720,54 @@ document.addEventListener('DOMContentLoaded', function () {
         return document.querySelector('.wc-better-delivery-step');
     }
 
-    var previousRate = null;
+    var previousShouldHide = null;
 
     if (typeof wp !== 'undefined' && wp.data && wp.data.select && wp.data.subscribe) {
         wp.data.subscribe(function () {
             var cart = wp.data.select('wc/store/cart');
             if (!cart) return;
-            var rates = cart.getShippingRates();
-            if (!rates || !rates.length) return;
-
-            var currentRate = null;
-            rates.forEach(function (pkg) {
-                pkg.shipping_rates.forEach(function (rate) {
-                    if (rate.selected) currentRate = rate.rate_id;
-                });
-            });
-
-            if (currentRate === previousRate) return;
-            previousRate = currentRate;
 
             var deliveryStep = getDeliveryStep();
             if (!deliveryStep) return;
 
-            var isPickup = currentRate && (
+            var rates = cart.getShippingRates();
+            var hasRates = rates && rates.length > 0;
+            var currentRate = null;
+
+            if (hasRates) {
+                rates.forEach(function (pkg) {
+                    pkg.shipping_rates.forEach(function (rate) {
+                        if (rate.selected) currentRate = rate.rate_id;
+                    });
+                });
+            }
+
+            var shouldHide = false;
+            if (!hasRates) {
+                shouldHide = true;
+            } else if (currentRate && (
                 currentRate.indexOf('pickup_location') === 0 ||
                 currentRate.indexOf('local_pickup') === 0 ||
                 currentRate.indexOf('legacy_local_pickup') === 0
-            );
+            )) {
+                shouldHide = true;
+            }
 
-            if (isPickup) {
+            // Só age se o estado mudou (evita loop infinito)
+            if (shouldHide === previousShouldHide) return;
+            previousShouldHide = shouldHide;
+
+            if (shouldHide) {
                 deliveryStep.style.display = 'none';
-                resetFields();
-                clearStoreData();
+                if (deliveryInput || slotSelectEl) {
+                    resetFields();
+                }
+                if (hasRates) clearStoreData();
             } else {
                 deliveryStep.style.display = '';
-                restoreRequired();
+                if (deliveryInput || slotSelectEl) {
+                    restoreRequired();
+                }
             }
         });
     }

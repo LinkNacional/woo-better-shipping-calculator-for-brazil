@@ -320,7 +320,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!deliverySection && !(deliverySection = document.querySelector('.wc-better-delivery-shortcode-section'))) {
             return;
         }
-        if (isLocalPickupSelected()) {
+        // Woocommerce mostra "Não há opções de entrega disponíveis..." quando
+        // não existe frete. Detecta: container sem radios = sem frete.
+        var container = document.getElementById('shipping_method');
+        var hasShippingMethod = container && container.querySelector('input[type="radio"]');
+        var hasNoShippingNotice = document.querySelector('.woocommerce-shipping-methods__no-shipping, .woocommerce-info');
+
+        if (isLocalPickupSelected() || !hasShippingMethod && (container || hasNoShippingNotice)) {
             deliverySection.style.display = 'none';
             // Desabilita required para não bloquear o submit
             if (input) input.required = false;
