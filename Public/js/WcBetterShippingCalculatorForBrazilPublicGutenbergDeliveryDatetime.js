@@ -355,6 +355,34 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    /**
+     * Reset the date input and slot select visually and clear their values.
+     */
+    function resetFields() {
+        if (deliveryInput) {
+            deliveryInput.value = '';
+            if (deliveryInput._flatpickr) deliveryInput._flatpickr.clear();
+        }
+        if (slotSelectEl) {
+            slotSelectEl.value = '';
+        }
+        hideSlotSelect();
+        hideError();
+        if (deliveryInput) {
+            deliveryInput.removeAttribute('aria-invalid');
+            deliveryInput.required = false;
+        }
+        if (slotSelectEl) slotSelectEl.required = false;
+    }
+
+    /**
+     * Restore required state when delivery is visible again.
+     */
+    function restoreRequired() {
+        if (deliveryInput) deliveryInput.required = true;
+        if (slotSelectEl) slotSelectEl.required = true;
+    }
+
     // ── DOM builders ─────────────────────────────────────────────────────
 
     function getDeliveryContainer() {
@@ -653,6 +681,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         btn.addEventListener('click', function (e) {
             if (!deliveryInput) return;
+            var deliveryStep = getDeliveryStep();
+            // Se o step está escondido (retirada no local), pula validação
+            if (deliveryStep && deliveryStep.style.display === 'none') return;
             var dateOk = isDateComplete(deliveryInput.value.trim());
             var slotOk = slotSelectEl && slotSelectEl.value;
             if (!dateOk || !slotOk) {
@@ -672,6 +703,56 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Bootstrap ────────────────────────────────────────────────────────
 
+    // ── Local pickup toggle (Blocks) ────────────────────────────────────
+
+    /**
+     * Subscribe to wc/store/cart to detect when the user selects pickup.
+     * When a pickup method is chosen, hide the delivery step and clear
+     * any saved delivery data from the Store API.
+     */
+    function getDeliveryStep() {
+        return document.querySelector('.wc-better-delivery-step');
+    }
+
+    var previousRate = null;
+
+    if (typeof wp !== 'undefined' && wp.data && wp.data.select && wp.data.subscribe) {
+        wp.data.subscribe(function () {
+            var cart = wp.data.select('wc/store/cart');
+            if (!cart) return;
+            var rates = cart.getShippingRates();
+            if (!rates || !rates.length) return;
+
+            var currentRate = null;
+            rates.forEach(function (pkg) {
+                pkg.shipping_rates.forEach(function (rate) {
+                    if (rate.selected) currentRate = rate.rate_id;
+                });
+            });
+
+            if (currentRate === previousRate) return;
+            previousRate = currentRate;
+
+            var deliveryStep = getDeliveryStep();
+            if (!deliveryStep) return;
+
+            var isPickup = currentRate && (
+                currentRate.indexOf('pickup_location') === 0 ||
+                currentRate.indexOf('local_pickup') === 0 ||
+                currentRate.indexOf('legacy_local_pickup') === 0
+            );
+
+            if (isPickup) {
+                deliveryStep.style.display = 'none';
+                resetFields();
+                clearStoreData();
+            } else {
+                deliveryStep.style.display = '';
+                restoreRequired();
+            }
+        });
+    }
+
     var stepFound = false;
 
     var observer = new MutationObserver(function () {
@@ -690,7 +771,7 @@ document.addEventListener('DOMContentLoaded', function () {
         bindPlaceOrder();
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
 
     ensureField();
     bindPlaceOrder();
