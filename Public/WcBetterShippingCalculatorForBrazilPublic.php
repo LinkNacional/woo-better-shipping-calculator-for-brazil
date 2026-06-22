@@ -2074,6 +2074,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'local_pickup_label'     => $local_pickup_label,
                         'pickup_address'         => $pickup_address,
                         'whatsapp_number'        => get_option('woo_better_whatsapp_number', ''),
+                        'fail_message'           => get_option('woo_better_cep_popup_fail_message', __('Entre em contato conosco para organizar sua entrega.', 'woo-better-shipping-calculator-for-brazil')),
                     )
                 );
             }

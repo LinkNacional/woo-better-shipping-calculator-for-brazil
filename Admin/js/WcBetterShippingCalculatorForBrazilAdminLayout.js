@@ -898,6 +898,8 @@
               'woo_better_enable_progress_bar_value': 'woo_better_min_free_shipping_message',
               'woo_better_min_free_shipping_delivery_time': 'woo_better_enable_min_free_shipping',
               'woo_better_free_shipping_by_product_delivery_time': 'woo_better_enable_free_shipping_by_product',
+              'woo_better_cep_popup_fail_message': 'woo_better_calc_enable_cep_popup',
+              'woo_better_whatsapp_number' : 'woo_better_calc_enable_cep_popup',
 
               //Cart
               'woo_better_calc_cart_input_border_width': 'woo_better_calc_cart_input_background_color_field',

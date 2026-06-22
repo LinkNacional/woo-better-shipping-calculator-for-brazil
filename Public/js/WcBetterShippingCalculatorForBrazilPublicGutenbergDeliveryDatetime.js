@@ -197,6 +197,7 @@ document.addEventListener('DOMContentLoaded', function () {
         select.className = 'wc-blocks-components-select__select';
         select.setAttribute('size', '1');
         select.setAttribute('aria-invalid', 'false');
+        select.style.setProperty('outline', 'none', 'important');
 
         var defaultOpt = document.createElement('option');
         defaultOpt.value = '';
