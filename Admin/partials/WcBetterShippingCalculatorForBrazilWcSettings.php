@@ -129,6 +129,30 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Ative o pop-up de consulta de CEP para visitantes.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'cep_popup_fail_message' => array(
+                'title'    => __('Mensagem de falha no pop-up', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_cep_popup_fail_message',
+                'default'  => __('Entre em contato conosco para organizar sua entrega.', 'woo-better-shipping-calculator-for-brazil'),
+                'type'     => 'text',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Texto exibido no pop-up quando o CEP não tem entrega disponível.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Personalize a mensagem exibida no pop-up de validação quando não há entrega para o CEP do cliente. Se deixar em branco, nenhuma mensagem será exibida.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Mensagem quando não há entrega disponível no CEP.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'whatsapp_number' => array(
+                'title'    => __('Número do WhatsApp', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_whatsapp_number',
+                'default'  => '',
+                'type'     => 'text',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Número de WhatsApp exibido no popup quando não há entrega para o CEP consultado.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Insira o número com DDD (ex: 11999999999 ou +5511999999999). Quando preenchido, será exibido um botão de WhatsApp no resultado de CEP sem entrega. Se deixar em branco, o botão não será exibido.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Número de WhatsApp para contato quando não há entrega.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'geral_section_end' => array(
                 'type' => 'sectionend',
                 'id'   => 'woo_better_calc_geral'
@@ -983,18 +1007,6 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-desc-tip' => __('Quando ativo, a Retirada no Local é removida dos resultados de frete na consulta de CEP.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => __('Ao habilitar, qualquer frete cujo nome contenha "Retirada" ou o título configurado em pickup_location será ocultado dos resultados.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-title-description' => __('Controla se a Retirada no Local deve ser ocultada nos resultados de frete.', 'woo-better-shipping-calculator-for-brazil')
-                )
-            ),
-            'whatsapp_number' => array(
-                'title'    => __('WhatsApp para Suporte', 'woo-better-shipping-calculator-for-brazil'),
-                'desc_tip' => false,
-                'id'       => 'woo_better_whatsapp_number',
-                'default'  => '',
-                'type'     => 'text',
-                'custom_attributes' => array(
-                    'data-desc-tip' => __('Número de WhatsApp exibido no popup quando não há entrega para o CEP consultado.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Insira o número com DDD (ex: 11999999999). Quando preenchido, será exibido um botão de WhatsApp no resultado de CEP sem entrega, com mensagem automática contendo o CEP digitado.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Número de WhatsApp para contato quando não há entrega.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'delivery_schedule' => array(
