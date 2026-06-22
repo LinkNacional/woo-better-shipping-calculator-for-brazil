@@ -180,9 +180,10 @@
 .wc-better-cep-popup-input {
     flex: 1;
     width: 100%;
-    padding: 10px 14px;
+    height: 45px !important;
+    padding: 10px 14px !important;
     border: 2px solid #ddd;
-    border-radius: 8px;
+    border-radius: 8px !important;
     font-size: 18px;
     text-align: center;
     letter-spacing: 1px;

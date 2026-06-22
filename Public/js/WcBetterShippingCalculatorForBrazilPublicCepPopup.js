@@ -164,7 +164,7 @@
                         '</div>' +
                         '<div class="wc-better-cep-popup-option-body">' +
                           '<div class="wc-better-cep-popup-form">' +
-                            '<input type="text" class="wc-better-cep-popup-input" placeholder="00000-000" maxlength="9" inputmode="numeric">' +
+                            '<input type="text" id="wc-better-cep-popup-input" class="wc-better-cep-popup-input" placeholder="00000-000" maxlength="9" inputmode="numeric">' +
                             '<button class="wc-better-cep-popup-btn">' +
                               '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;">' +
                                 '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"></path>' +
@@ -268,6 +268,16 @@
         var $frontFace = $popup.find('.wc-better-cep-flip-front');
         var $input     = $popup.find('.wc-better-cep-popup-input');
         var $btn       = $popup.find('.wc-better-cep-popup-btn');
+
+        // Força scroll para o popup no mobile quando o input ganha foco
+        $input.on('focus', function () {
+            setTimeout(function () {
+                var popupEl = $popup[0];
+                if (popupEl && popupEl.scrollIntoView) {
+                    popupEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 300);
+        });
         var $back      = $popup.find('.wc-better-cep-popup-back-result');
         var $closeBtn  = $popup.find('.wc-better-cep-popup-close');
         var isLoading  = false;
