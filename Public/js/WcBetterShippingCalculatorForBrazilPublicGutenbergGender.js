@@ -217,7 +217,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // Criar o campo após a referência (birthdate ou last_name)
-        const lastInsertedElement = referenceField.parentElement; // Div pai do campo de referência
+        // Sobe até o container principal (ex: wc-block-components-text-input, wc-better-billing-ie),
+        // não apenas o parentElement imediato. Isso evita que o gender seja inserido
+        // dentro de wrappers internos como wc-better-birthdate-main-wrapper.
+        const lastInsertedElement = referenceField.closest('.wc-block-components-text-input') ||
+                                     referenceField.closest('.wc-better-billing-birthdate') ||
+                                     referenceField.closest('.wc-block-components-address-form__ie') ||
+                                     referenceField.parentElement;
         const genderContainer = createGenderFieldContainer(initialValue, containerType);
         
         if (!genderContainer) {

@@ -1198,6 +1198,43 @@ jQuery(function ($) {
         }
     }
 
+    // ── Reset completo quando o usuário alterna pickup ⇄ shipping ──────
+    // O React recria os inputs como controlled components. Nossos handlers
+    // jQuery sobrevivem em elementos obsoletos. Destruímos tudo e zeramos
+    // os mapas para que o MutationObserver recrie do zero com DOM fresco.
+
+    function resetAllPostcodeFetchers() {
+        Object.keys(activeCepFetchers).forEach(function (key) {
+            if (activeCepFetchers[key]) {
+                activeCepFetchers[key].destroy();
+            }
+        });
+        knownPostcodeInputs = {};
+        // Remove os checkboxes injetados para que sejam recriados também
+        $('.wc-better label[for^="wc-better-checkbox-"]').closest('.wc-block-components-checkbox').remove();
+    }
+
+    // Subscribe à store do WooCommerce Blocks: quando prefersCollection muda,
+    // o React vai recriar todo o bloco de endereço. Resetamos preventivamente.
+    if (typeof wp !== 'undefined' && wp.data && wp.data.subscribe) {
+        var wasCollecting = null;
+        wp.data.subscribe(function () {
+            try {
+                var checkout = wp.data.select('wc/store/checkout');
+                if (!checkout) return;
+                var collecting = checkout.prefersCollection();
+                if (collecting !== wasCollecting) {
+                    wasCollecting = collecting;
+                    // Aguarda o React terminar o re-render antes de resetar
+                    setTimeout(resetAllPostcodeFetchers, 50);
+                }
+            } catch (e) {}
+        });
+    }
+
+    // Mapa: baseId → elemento DOM do input. Detecta quando o React recria o DOM.
+    var knownPostcodeInputs = {};
+
     var observer = new MutationObserver(function () {
         var $postcodeDivs = $('.wc-block-components-address-form__postcode');
         $postcodeDivs.each(function () {
@@ -1207,8 +1244,13 @@ jQuery(function ($) {
             if ($input.length === 0) return;
             var baseId = $input.attr('id').replace('-postcode', '');
             var priorityClass = 'woo-better-priority-' + baseId;
-            if ($divComponent.hasClass(priorityClass)) return;
+
+            // Só bloqueia se o elemento input no DOM é exatamente o mesmo
+            // objeto que já conhecemos. Se React recriou (toggle pickup),
+            // o novo elemento é !== e reprocessamos.
+            if ($divComponent.hasClass(priorityClass) && knownPostcodeInputs[baseId] === $input[0]) return;
             $divComponent.addClass(priorityClass);
+            knownPostcodeInputs[baseId] = $input[0];
 
             // Lógica de posicionamento do CEP
             var checkboxId = 'wc-better-checkbox-' + baseId;
@@ -1254,6 +1296,11 @@ jQuery(function ($) {
                 insertCustomCheckboxBelowPostcode(baseId);
             } else if (!activeCepFetchers[baseId]) {
                 // Se o checkbox existe mas não há instância ativa, cria uma nova
+                activeCepFetchers[baseId] = new CepAddressFetcher('#' + baseId + '-postcode', 'label[for="' + checkboxId + '"]', baseId);
+            } else if (activeCepFetchers[baseId].input[0] !== $input[0]) {
+                // React recriou o input (novo objeto DOM, mesmo ID).
+                // Destrói o fetcher antigo (event listeners no DOM antigo) e recria.
+                activeCepFetchers[baseId].destroy();
                 activeCepFetchers[baseId] = new CepAddressFetcher('#' + baseId + '-postcode', 'label[for="' + checkboxId + '"]', baseId);
             }
 

@@ -146,13 +146,19 @@
       return featureMessage;
     }
 
-    const featureMessage1 = createFeatureMessage('✔️', [
+    const featureMessage1 = createFeatureMessage('🆕', [
       '<strong>NOVO:</strong> Formato para o CNPJ alfanumérico.'
     ]);
 
     // Cria o segundo bloco de mensagem
     const featureMessage2 = createFeatureMessage('✔️', [
       '<strong>AJUSTE:</strong> Novo sistema de frete por produto, prazos e comportamentos para frete grátis, além de ajustes na calculadora e no campo de número do Gutenberg.'
+    ]);
+
+    // Cria o terceiro bloco de mensagem — novos recursos
+    const featureMessage3 = createFeatureMessage('🆕', [
+      '<strong>NOVO:</strong> Prazo de Entrega: configure dias e horários de funcionamento para que o cliente defina uma data e hora de entrega no checkout.',
+      '<strong>NOVO:</strong> Pop-up de Validação de CEP: exiba um pop-up interativo para o cliente consultar se há entregas disponíveis na região.'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento
@@ -312,6 +318,7 @@
 
       stickyContainer.appendChild(featureMessage1);
       stickyContainer.appendChild(featureMessage2);
+      stickyContainer.appendChild(featureMessage3);
       stickyContainer.appendChild(promotionalCard);
 
       sideContainer.appendChild(stickyContainer);
@@ -621,6 +628,18 @@
               } else {
                 bodyComponent.appendChild(inputField);
               }
+            } else if (forminp.classList.contains('forminp-delivery-slots')) {
+              // Campo customizado de faixas de entrega: move o container inteiro
+              const slotsContainer = forminp.querySelector('.wc-better-delivery-slots-container');
+              if (slotsContainer) {
+                bodyComponent.appendChild(slotsContainer);
+              }
+            } else if (forminp.classList.contains('forminp-delivery-orders')) {
+              // Campo customizado de lista de pedidos: move o fieldset inteiro
+              const fieldset = forminp.querySelector('fieldset');
+              if (fieldset) {
+                bodyComponent.appendChild(fieldset);
+              }
             } else {
               bodyComponent.appendChild(inputField);
             }
@@ -879,6 +898,8 @@
               'woo_better_enable_progress_bar_value': 'woo_better_min_free_shipping_message',
               'woo_better_min_free_shipping_delivery_time': 'woo_better_enable_min_free_shipping',
               'woo_better_free_shipping_by_product_delivery_time': 'woo_better_enable_free_shipping_by_product',
+              'woo_better_cep_popup_fail_message': 'woo_better_calc_enable_cep_popup',
+              'woo_better_whatsapp_number' : 'woo_better_calc_enable_cep_popup',
 
               //Cart
               'woo_better_calc_cart_input_border_width': 'woo_better_calc_cart_input_background_color_field',

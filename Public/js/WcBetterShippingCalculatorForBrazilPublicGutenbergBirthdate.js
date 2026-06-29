@@ -1,560 +1,447 @@
-document.addEventListener("DOMContentLoaded", function () {
-    let billingBlockFound = false
-    let submitFound = false
-    let birthdateEventsBound = false
-    let placeOrderButton = null
-    let intervalCount = 0
-    let checkInterval = null
-    let updateDataTimeout = null // Timeout para debounce do salvamento
-    let birthdateFieldsActive = false // Flag para controlar se os campos estão ativos
+/**
+ * Birthdate Field for Gutenberg/Block Checkout
+ *
+ * Uses flatpickr (npm) for date-only picker.
+ * Auto-formats as dd/mm/aaaa as user types. Validates: not future, not >120 years.
+ * Saves via wp.data Store API namespace 'woo_better_birthdate'.
+ *
+ * @since 4.17.0
+ */
+import flatpickr from 'flatpickr';
+import { Portuguese } from 'flatpickr/dist/l10n/pt';
+import 'flatpickr/dist/flatpickr.min.css';
 
-    // Variáveis para salvar dados do campo
-    let savedBirthdateData = {
-        billing_birthdate: ''
-    };
+document.addEventListener('DOMContentLoaded', function () {
+    'use strict';
 
-    // Função para verificar se está usando mesmo endereço para cobrança
-    function isUsingSameAddressForBilling() {
-        const checkbox = document.querySelector('input[type="checkbox"][id^="checkbox-control"]');
-        if (checkbox) {
-            // Verifica se o checkbox está dentro do container correto
-            const checkboxContainer = checkbox.closest('.wc-block-checkout__use-address-for-billing');
-            if (checkboxContainer) {
-                return checkbox.checked;
-            }
-        }
-        return false;
-    }
+    const savedData = window.WooBetterBirthdateData || {};
 
-    // Função para remover campos de birthdate
-    function removeBirthdateFields() {
-        const birthdateField = document.querySelector('input[name="woo_better_birthdate"]');
-        const birthdateContainer = birthdateField ? birthdateField.closest('.wc-block-components-text-input') : null;
-        
-        if (birthdateContainer) {
-            birthdateContainer.remove();
-        }
-        
-        birthdateFieldsActive = false;
-        billingBlockFound = false;
-        birthdateEventsBound = false;
-        
-        // Limpar dados do Store API
-        clearBirthdateDataFromStore();
-    }
+    let birthdateInput = null;
+    let fieldContainerType = null;
 
-    // Função para limpar dados do Store API
-    function clearBirthdateDataFromStore() {
-        const emptyData = {
-            billing_birthdate: ''
-        };
+    // ── Store API ────────────────────────────────────────────────────────
 
-        // Usar setExtensionData (método principal)
+    function saveToStore(dateStr) {
+        // Converte d/m/Y para Y-m-d (ISO)
+        var parts = dateStr.split('/');
+        if (parts.length !== 3) return;
+        var iso = parts[2] + '-' + parts[1] + '-' + parts[0];
+        var payload = { billing_birthdate: iso };
         if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
             try {
-                const { dispatch } = wp.data;
-                if (dispatch('wc/store/checkout')) {
-                    const checkoutDispatch = dispatch('wc/store/checkout');
-                    if (checkoutDispatch.setExtensionData) {
-                        checkoutDispatch.setExtensionData('woo_better_birthdate', emptyData);
-                    }
+                var checkoutDispatch = wp.data.dispatch('wc/store/checkout');
+                if (checkoutDispatch && checkoutDispatch.setExtensionData) {
+                    checkoutDispatch.setExtensionData('woo_better_birthdate', payload);
                 }
-            } catch (error) {
-                // Silenciar erro
-            }
+            } catch (e) { /* silencioso */ }
         }
-
-        // Usar extensionCartUpdate como backup
         if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-            window.wc.blocksCheckout.extensionCartUpdate({
-                namespace: 'woo_better_birthdate',
-                data: emptyData
-            });
+            window.wc.blocksCheckout.extensionCartUpdate({ namespace: 'woo_better_birthdate', data: payload });
         }
     }
 
-    /**
-     * Observer para monitorar containers billing/shipping e recriar campo birthdate quando necessário
-     */
-    const checkoutFieldObserver = new MutationObserver((mutations) => {
-        // Verifica se a funcionalidade está habilitada
-        if (typeof WooBetterBirthdateData === 'undefined') {
-            if (birthdateFieldsActive) {
-                removeBirthdateFields();
+    function clearStoreData() {
+        var payload = { billing_birthdate: '' };
+        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+            try {
+                var checkoutDispatch = wp.data.dispatch('wc/store/checkout');
+                if (checkoutDispatch && checkoutDispatch.setExtensionData) {
+                    checkoutDispatch.setExtensionData('woo_better_birthdate', payload);
+                }
+            } catch (e) {}
+        }
+        if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+            window.wc.blocksCheckout.extensionCartUpdate({ namespace: 'woo_better_birthdate', data: payload });
+        }
+    }
+
+    // ── Validation ───────────────────────────────────────────────────────
+
+    function validateBirthdate(dateStr) {
+        var parts = dateStr.split('/');
+        if (parts.length !== 3) return { valid: false, message: 'Formato inválido. Use dd/mm/aaaa.' };
+        var day = parseInt(parts[0], 10);
+        var month = parseInt(parts[1], 10);
+        var year = parseInt(parts[2], 10);
+        if (isNaN(day) || isNaN(month) || isNaN(year)) return { valid: false, message: 'Data inválida.' };
+        if (year < 1000 || year > 9999) return { valid: false, message: 'Ano inválido.' };
+        var dateObj = new Date(year, month - 1, day);
+        if (dateObj.getDate() !== day || dateObj.getMonth() !== month - 1 || dateObj.getFullYear() !== year) {
+            return { valid: false, message: 'Data inválida.' };
+        }
+        var now = new Date(); now.setHours(0, 0, 0, 0);
+        if (dateObj > now) return { valid: false, message: 'A data de nascimento não pode ser no futuro.' };
+        var maxAge = new Date(); maxAge.setFullYear(now.getFullYear() - 120);
+        if (dateObj < maxAge) return { valid: false, message: 'Verifique a data de nascimento. Idade não pode ser superior a 120 anos.' };
+        return { valid: true };
+    }
+
+    // ── Mask ─────────────────────────────────────────────────────────────
+
+    function applyBirthdateMask(input) {
+        var val = input.value.replace(/\D/g, '').substring(0, 8);
+        if (val.length > 4) {
+            val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4);
+        } else if (val.length > 2) {
+            val = val.substring(0, 2) + '/' + val.substring(2);
+        }
+        input.value = val;
+    }
+
+    // ── DOM builders ─────────────────────────────────────────────────────
+
+    function getBirthdateContainer() {
+        return document.querySelector('.wc-better-billing-birthdate');
+    }
+
+    function getBirthdateErrorContainer() {
+        return document.querySelector('.wc-block-components-validation-error.wc-better-birthdate');
+    }
+
+    function showError(msg) {
+        var err = getBirthdateErrorContainer();
+        if (err) { err.style.display = 'block'; var s = err.querySelector('span'); if (s) s.textContent = msg || 'Por favor, insira uma data válida.'; }
+        var c = getBirthdateContainer(); if (c) c.classList.add('has-error');
+        if (birthdateInput) birthdateInput.setAttribute('aria-invalid', 'true');
+    }
+
+    function hideError() {
+        var err = getBirthdateErrorContainer();
+        if (err) err.style.display = 'none';
+        var c = getBirthdateContainer(); if (c) c.classList.remove('has-error');
+        if (birthdateInput) birthdateInput.setAttribute('aria-invalid', 'false');
+    }
+
+    // ── "Usar mesmo endereço" ──────────────────────────────────────────
+
+    function isUsingSameAddressForBilling() {
+        var checkbox = document.querySelector('input[type="checkbox"][id^="checkbox-control"]');
+        if (!checkbox) return false;
+        var checkboxContainer = checkbox.closest('.wc-block-checkout__use-address-for-billing');
+        if (!checkboxContainer) return false;
+        return checkbox.checked;
+    }
+
+    function getTargetContext() {
+        var useSame = isUsingSameAddressForBilling();
+        var container = useSame ? document.querySelector('#shipping') : document.querySelector('#billing');
+        var containerType = useSame ? 'shipping' : 'billing';
+        return { container: container, containerType: containerType };
+    }
+
+    function getReferenceElement(container) {
+        var containerType = container.id;
+        var lastNameField = container.querySelector('#' + containerType + '-last_name');
+        if (lastNameField) {
+            return lastNameField.closest('.wc-block-components-text-input') || lastNameField;
+        }
+        return null;
+    }
+
+    function ensureAddressEditorOpen(containerType) {
+        var editBtn = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="' + containerType + '"]');
+        if (!editBtn) return false;
+        if (editBtn.getAttribute('aria-expanded') !== 'true') editBtn.click();
+        return editBtn.getAttribute('aria-expanded') === 'true';
+    }
+
+    // ── Remove + clear ───────────────────────────────────────────────────
+
+    function removeField() {
+        var container = getBirthdateContainer();
+        if (container) container.remove();
+        birthdateInput = null;
+        fieldContainerType = null;
+        clearStoreData();
+    }
+
+    function createField(referenceElement) {
+        if (getBirthdateContainer()) return getBirthdateContainer();
+
+        var container = document.createElement('div');
+        container.className = 'wc-block-components-text-input wc-block-components-address-form__birthdate wc-better-billing-birthdate';
+
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'woo_better_birthdate';
+        input.name = 'woo_better_birthdate';
+        input.setAttribute('aria-label', 'Data de Nascimento');
+        input.setAttribute('aria-invalid', 'false');
+        input.setAttribute('autocomplete', 'bday');
+        input.setAttribute('inputmode', 'numeric');
+        input.style.paddingRight = '36px';
+
+        var label = document.createElement('label');
+        label.setAttribute('for', 'woo_better_birthdate');
+        label.textContent = 'Data de Nascimento';
+
+        // Ícone de calendário — mesma estrutura do delivery-datetime
+        var iconWrap = document.createElement('span');
+        iconWrap.id = 'woo_better_gutenberg_birthdate_calendar_icon';
+        iconWrap.setAttribute('style',
+            'display:flex;align-items:center;justify-content:center;position:absolute;right:12px;top:50%;' +
+            'transform:translateY(-50%);width:24px;height:24px;cursor:pointer;z-index:2;pointer-events:auto;'
+        );
+        iconWrap.setAttribute('aria-label', 'Abrir calendário');
+        iconWrap.setAttribute('tabindex', '0');
+        iconWrap.setAttribute('role', 'button');
+        iconWrap.innerHTML =
+            '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" ' +
+            'stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>' +
+            '<line x1="16" y1="2" x2="16" y2="6"></line>' +
+            '<line x1="8" y1="2" x2="8" y2="6"></line>' +
+            '<line x1="3" y1="10" x2="21" y2="10"></line>' +
+            '</svg>';
+
+        iconWrap.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); if (input._flatpickr) input._flatpickr.open(); });
+
+        // Error div — mesma estrutura do delivery-datetime
+        var errDiv = document.createElement('div');
+        errDiv.className = 'wc-block-components-validation-error wc-better-birthdate';
+        errDiv.setAttribute('role', 'alert');
+        errDiv.style.display = 'none';
+        var errP = document.createElement('p');
+        errP.id = 'validate-error-birthdate';
+        var svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svgEl.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        svgEl.setAttribute('viewBox', '-2 -2 24 24');
+        svgEl.setAttribute('width', '24');
+        svgEl.setAttribute('height', '24');
+        svgEl.setAttribute('aria-hidden', 'true');
+        svgEl.setAttribute('focusable', 'false');
+        var pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathEl.setAttribute('d', 'M10 2c4.42 0 8 3.58 8 8s-3.58 8-8 8-8-3.58-8-8 3.58-8 8-8zm1.13 9.38l.35-6.46H8.52l.35 6.46h2.26zm-.09 3.36c.24-.23.37-.55.37-.96 0-.42-.12-.74-.36-.97s-.59-.35-1.06-.35-.82.12-1.07.35-.37.55-.37.97c0 .41.13.73.38.96.26.23.61.34 1.06.34s.8-.11 1.05-.34z');
+        svgEl.appendChild(pathEl);
+        errP.appendChild(svgEl);
+        var errSpan = document.createElement('span');
+        errSpan.textContent = 'Por favor, insira uma data válida.';
+        errP.appendChild(errSpan);
+        errDiv.appendChild(errP);
+
+        // Wrapper principal: input + label + ícone. Mesmo padrão do campo IE
+        // (wc-better-ie-main-wrapper). Mantém o ícone absolute alinhado ao input,
+        // sem descer quando o erro aparece abaixo.
+        var fieldMain = document.createElement('div');
+        fieldMain.className = 'wc-better-birthdate-main-wrapper';
+        fieldMain.style.position = 'relative';
+        fieldMain.appendChild(input);
+        fieldMain.appendChild(label);
+        fieldMain.appendChild(iconWrap);
+
+        container.appendChild(fieldMain);
+        container.appendChild(errDiv);
+
+        // Insere após o elemento de referência (último da cadeia PersonType ou lastName)
+        // Insere IMEDIATAMENTE após o elemento de referência (lastName wrapper).
+        // Se outros scripts (PersonType) já inseriram campos depois do lastName,
+        // o insertBefore empurra esses campos pra frente, mantendo birthdate
+        // sempre colado no lastName.
+        referenceElement.parentElement.insertBefore(container, referenceElement.nextSibling);
+
+        birthdateInput = input;
+
+        bindFieldEvents();
+        return container;
+    }
+
+    // ── Events ───────────────────────────────────────────────────────────
+
+    function bindFieldEvents() {
+        if (!birthdateInput) return;
+        if (birthdateInput.dataset.eventsBound === '1') return;
+        birthdateInput.dataset.eventsBound = '1';
+
+        birthdateInput.addEventListener('focus', function () {
+            var c = getBirthdateContainer(); if (c) c.classList.add('is-active');
+        });
+        birthdateInput.addEventListener('blur', function () {
+            var c = getBirthdateContainer();
+            if (c && !birthdateInput.value.trim()) {
+                c.classList.remove('is-active');
+                showError('Por favor, insira sua data de nascimento.');
+            } else if (c && birthdateInput.value.trim()) {
+                c.classList.add('is-active');
             }
-            return;
+        });
+        // Limpa erro no momento em que o usuário começa a digitar
+        birthdateInput.addEventListener('input', function () {
+            hideError();
+        });
+    }
+
+    // ── Flatpickr ────────────────────────────────────────────────────────
+
+    function updateActiveState() {
+        var c = getBirthdateContainer();
+        if (!c) return;
+        if (birthdateInput && birthdateInput.value.trim()) {
+            c.classList.add('is-active');
+        } else {
+            c.classList.remove('is-active');
         }
+    }
 
-        const billingBlock = document.querySelector('#billing')
-        const shippingBlock = document.querySelector('#shipping')
-        const useSameAddress = isUsingSameAddressForBilling()
+    function initPicker(input) {
+        var now = new Date();
+        var maxDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var minDate = new Date(now.getFullYear() - 120, now.getMonth(), now.getDate());
 
-        // Determinar qual container usar baseado no checkbox
-        let targetContainer = useSameAddress ? shippingBlock : billingBlock;
-        let containerType = useSameAddress ? 'shipping' : 'billing';
-
-        if (!targetContainer) {
-            billingBlockFound = false
-            birthdateFieldsActive = false
-            return
-        }
-
-        if (targetContainer && !billingBlockFound) {
-            billingBlockFound = true
-            setTimeout(() => {
-                initializeBirthdateField(targetContainer, containerType)
-            }, 200)
-        }
-
-        // Verifica se o campo de data de nascimento ainda existe
-        const birthdateInput = document.querySelector('input[name="woo_better_birthdate"]')
-        if (!birthdateInput && billingBlockFound && targetContainer) {
-            birthdateEventsBound = false
-            setTimeout(() => {
-                initializeBirthdateField(targetContainer, containerType)
-            }, 300)
-        }
-
-        // Observar mudanças no checkbox de mesmo endereço
-        const sameAddressCheckbox = document.querySelector('.wc-block-checkout__use-address-for-billing input[type="checkbox"]');
-        if (sameAddressCheckbox && !sameAddressCheckbox.dataset.birthdateListener) {
-            sameAddressCheckbox.addEventListener('change', function() {
-                setTimeout(() => {
-                    if (birthdateFieldsActive) {
-                        // Remover campos do container atual
-                        removeBirthdateFields();
-                        
-                        // Recriar no container apropriado
-                        const newUseSameAddress = isUsingSameAddressForBilling();
-                        const newTargetContainer = newUseSameAddress ? document.querySelector('#shipping') : document.querySelector('#billing');
-                        const newContainerType = newUseSameAddress ? 'shipping' : 'billing';
-                        
-                        if (newTargetContainer) {
-                            initializeBirthdateField(newTargetContainer, newContainerType);
-                        }
+        var fp = flatpickr(input, {
+            enableTime: false,
+            dateFormat: 'd/m/Y',
+            maxDate: maxDate,
+            minDate: minDate,
+            locale: Portuguese,
+            clickOpens: false,   // não abre ao focar — só via ícone
+            allowInput: true,     // permite digitar
+            onChange: function (selectedDates, dateStr, instance) {
+                if (dateStr && dateStr.length === 10) {
+                    var result = validateBirthdate(dateStr);
+                    if (result.valid) {
+                        hideError();
+                        saveToStore(dateStr);
+                    } else {
+                        showError(result.message);
                     }
+                }
+                updateActiveState();
+            },
+            onClose: function (selectedDates, dateStr) {
+                if (dateStr && dateStr.length === 10) {
+                    var result = validateBirthdate(dateStr);
+                    if (result.valid) {
+                        hideError();
+                        saveToStore(dateStr);
+                    } else {
+                        showError(result.message);
+                    }
+                }
+                updateActiveState();
+            },
+            onKeyDown: function (selectedDates, dateStr, instance, e) {
+                // Permite teclas de controle
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
+                if (e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Tab' ||
+                    e.key === 'ArrowLeft' || e.key === 'ArrowRight' ||
+                    e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
+                    e.key === 'Home' || e.key === 'End' ||
+                    e.key === 'Enter' || e.key === 'Escape') return;
+                // Bloqueia letras
+                if (!/^\d$/.test(e.key)) {
+                    e.preventDefault();
+                    return;
+                }
+                // Aplica máscara dd/mm/aaaa após digitar
+                setTimeout(function () { applyBirthdateMask(input); }, 0);
+            },
+        });
+        input._flatpickr = fp;
+
+        // Preenche valor salvo — converte ISO Y-m-d para d/m/Y
+        var savedValue = (savedData.billing_birthdate || '').trim();
+        if (savedValue && savedValue.length === 10 && savedValue.indexOf('-') > -1) {
+            var isoParts = savedValue.split('-');
+            savedValue = isoParts[2] + '/' + isoParts[1] + '/' + isoParts[0];
+        }
+        if (savedValue && savedValue.length === 10) {
+            fp.setDate(savedValue, false);
+            updateActiveState();
+        }
+
+        return fp;
+    }
+
+    // ── Ensure field ─────────────────────────────────────────────────────
+
+    function ensureField() {
+        var ctx = getTargetContext();
+        if (!ctx.container) return;
+        if (!ensureAddressEditorOpen(ctx.containerType)) return;
+
+        var current = getBirthdateContainer();
+        if (current && fieldContainerType && fieldContainerType !== ctx.containerType) {
+            removeField();
+            current = null;
+        }
+
+        if (current) return;
+
+        var ref = getReferenceElement(ctx.container);
+        if (!ref) return;
+
+        createField(ref);
+        fieldContainerType = ctx.containerType;
+
+        if (birthdateInput && !birthdateInput._flatpickr) {
+            initPicker(birthdateInput);
+            updateActiveState();
+        }
+    }
+
+    // ── Place Order validation ───────────────────────────────────────────
+
+    var placeOrderBound = false;
+    function bindPlaceOrder() {
+        if (placeOrderBound) return;
+        var btn = document.querySelector('.wc-block-components-checkout-place-order-button') ||
+                   document.querySelector('.wc-block-checkout__actions_row button');
+        if (!btn) return;
+
+        btn.addEventListener('click', function (e) {
+            if (!birthdateInput) return;
+            if (!birthdateInput.value.trim()) {
+                e.stopPropagation();
+                e.preventDefault();
+                showError('Por favor, insira sua data de nascimento.');
+                birthdateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(function () { birthdateInput.focus(); }, 250);
+                return;
+            }
+            var result = validateBirthdate(birthdateInput.value);
+            if (!result.valid) {
+                e.stopPropagation();
+                e.preventDefault();
+                showError(result.message);
+                birthdateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+        placeOrderBound = true;
+    }
+
+    // ── Bootstrap ────────────────────────────────────────────────────────
+
+    var checkoutBlockFound = false;
+
+    var observer = new MutationObserver(function () {
+        var ctx = getTargetContext();
+
+        if (ctx.container && !checkoutBlockFound) {
+            checkoutBlockFound = true;
+            setTimeout(function () { ensureField(); }, 200);
+        }
+
+        var existing = getBirthdateContainer();
+        if (!existing && checkoutBlockFound && ctx.container) {
+            setTimeout(function () { ensureField(); }, 300);
+        }
+
+        var sameAddressCheckbox = document.querySelector('.wc-block-checkout__use-address-for-billing input[type="checkbox"]');
+        if (sameAddressCheckbox && !sameAddressCheckbox.dataset.birthdateListener) {
+            sameAddressCheckbox.addEventListener('change', function () {
+                setTimeout(function () {
+                    removeField();
+                    ensureField();
                 }, 300);
             });
             sameAddressCheckbox.dataset.birthdateListener = 'true';
         }
-    })
 
-    // Observer para detectar quando o botão "Place Order" é clicado
-    const submitObserver = new MutationObserver((mutations) => {
-        placeOrderButton = document.querySelector('.wc-block-components-checkout-place-order-button')
+        bindPlaceOrder();
+    });
 
-        if (placeOrderButton && !submitFound) {
-            submitFound = true
-            placeOrderButton.addEventListener('click', handleBirthdateValidationOnSubmit)
-        }
+    observer.observe(document.body, { childList: true, subtree: true });
 
-        if (!placeOrderButton) {
-            submitFound = false
-        }
-    })
-
-    function handleBirthdateValidationOnSubmit(event) {
-        const birthdateInput = document.querySelector('input[name="woo_better_birthdate"]');
-        const birthdateContainer = birthdateInput ? birthdateInput.closest('.wc-block-components-text-input') : null;
-        const birthdateError = birthdateContainer ? birthdateContainer.querySelector('.wc-block-components-validation-error') : null;
-
-        if (birthdateInput && birthdateContainer) {
-            const isValid = validateBirthdateField(birthdateInput, birthdateContainer);
-            
-            // Se campo está vazio ou inválido, bloquear submissão
-            if (!birthdateInput.value.trim() || !isValid) {
-                event.stopPropagation();
-                event.preventDefault();
-                
-                if (birthdateError) {
-                    birthdateError.style.display = 'block';
-                }
-                
-                // Scroll para o campo com erro
-                birthdateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-    }
-
-    checkoutFieldObserver.observe(document.body, { childList: true, subtree: true })
-    submitObserver.observe(document.body, { childList: true, subtree: true })
-
-    function initializeBirthdateField(container, containerType) {
-        if (birthdateEventsBound) return
-
-        // Verificar se a funcionalidade está habilitada
-        if (typeof WooBetterBirthdateData === 'undefined') {
-            return;
-        }
-
-        // Processo similar ao PersonType - encontrar editButton e expandir se necessário
-        const editButton = document.querySelector(`span.wc-block-components-address-card__edit[aria-controls="${containerType}"]`);
-        
-        if (!editButton) {
-            return;
-        }
-
-        if (editButton.getAttribute('aria-expanded') != 'true') {
-            editButton.click()
-        }
-
-        if (editButton.getAttribute('aria-expanded') == 'true') {
-            // Aguardar um pouco para que os campos sejam renderizados
-            setTimeout(() => {
-                addBirthdateField(container, containerType);
-            }, 300);
-        }
-    }
-
-    function addBirthdateField(container, containerType = 'billing') {
-        // Verificar se já existe para evitar duplicação
-        if (document.querySelector('input[name="woo_better_birthdate"]')) {
-            return;
-        }
-
-        // Encontrar o campo last_name como referência (seguindo padrão do PersonType)
-        const lastNameField = container.querySelector(`#${containerType}-last_name`);
-        
-        if (!lastNameField) {
-            return;
-        }
-
-        // Obter valor inicial se existir
-        let initialValue = (typeof WooBetterBirthdateData !== 'undefined' && WooBetterBirthdateData.billing_birthdate) ? WooBetterBirthdateData.billing_birthdate : '';
-        
-        // Usar valores salvos se existirem
-        if (savedBirthdateData.billing_birthdate) {
-            initialValue = savedBirthdateData.billing_birthdate;
-        } else {
-            savedBirthdateData.billing_birthdate = initialValue;
-        }
-
-        // Criar o campo após o last_name (seguindo padrão do PersonType)
-        const lastInsertedElement = lastNameField.parentElement; // Div pai do last_name
-        const birthdateContainer = createBirthdateFieldContainer(initialValue, containerType);
-        
-        if (!birthdateContainer) {
-            return;
-        }
-
-        // Inserir após o last_name
-        lastInsertedElement.insertAdjacentElement('afterend', birthdateContainer);
-        birthdateContainer.dataset.birthdateHighlighted = 'true';
-        
-        // Marcar como ativo e configurar eventos
-        birthdateFieldsActive = true;
-        birthdateEventsBound = true;
-        
-        // Configurar eventos do campo
-        setupBirthdateEvents();
-        
-        // Atualizar dados imediatamente
-        if (initialValue) {
-            setTimeout(() => {
-                saveBirthdateToExtensionData();
-            }, 100);
-        }
-    }
-
-    function setupBirthdateEvents() {
-        const birthdateInput = document.querySelector('input[name="woo_better_birthdate"]');
-        const birthdateContainer = birthdateInput ? birthdateInput.closest('.wc-block-components-text-input') : null;
-        
-        if (!birthdateInput || !birthdateContainer) {
-            return;
-        }
-
-        // Configurar eventos se ainda não foram configurados
-        if (!birthdateInput.dataset.eventsConfigured) {
-            birthdateInput.addEventListener('change', function() {
-                savedBirthdateData.billing_birthdate = this.value;
-                
-                // Validação de data
-                const isValid = validateBirthdateField(this, birthdateContainer);
-                
-                // Controlar exibição do erro baseado na validação
-                const errorDiv = birthdateContainer.querySelector('.wc-block-components-validation-error');
-                if (errorDiv) {
-                    if (!isValid) {
-                        errorDiv.style.display = 'block';
-                    } else {
-                        errorDiv.style.display = 'none';
-                    }
-                }
-                
-                // Salvar no Store API com debounce
-                clearTimeout(updateDataTimeout);
-                updateDataTimeout = setTimeout(() => {
-                    saveBirthdateToExtensionData();
-                }, 300);
-            });
-
-            birthdateInput.addEventListener('input', function() {
-                savedBirthdateData.billing_birthdate = this.value;
-                
-                // Limpar erro enquanto digita se tiver conteúdo válido
-                const errorDiv = birthdateContainer.querySelector('.wc-block-components-validation-error');
-                if (errorDiv && this.value.trim()) {
-                    const isValid = validateBirthdateField(this, birthdateContainer);
-                    if (isValid) {
-                        errorDiv.style.display = 'none';
-                    }
-                }
-            });
-            
-            birthdateInput.dataset.eventsConfigured = 'true';
-        }
-    }
-
-    function getWooCommerceInputPadding() {
-        // Lista de seletores para capturar padding dos inputs do WooCommerce
-        const inputSelectors = [
-            '.wc-block-components-text-input.is-active input[type=text]',
-            '.wc-block-components-text-input.is-active input[type=email]',  
-            '.wc-block-components-text-input.is-active input[type=tel]',
-            '.wc-block-components-text-input.is-active input[type=number]',
-            '.wc-block-components-form .wc-block-components-text-input.is-active input[type=text]',
-            '.wc-block-components-form .wc-block-components-text-input.is-active input[type=email]'
-        ];
-
-        for (const selector of inputSelectors) {
-            const existingInput = document.querySelector(selector);
-            if (existingInput) {
-                const computedStyle = window.getComputedStyle(existingInput);
-                const padding = computedStyle.getPropertyValue('padding');
-                
-                // Se encontrou padding válido, retorna
-                if (padding && padding !== '0px' && padding !== 'auto' && padding !== '') {
-                    return padding;
-                }
-            }
-        }
-
-        // Fallback: tenta encontrar qualquer input dentro de um container .wc-block-components-text-input
-        const fallbackInput = document.querySelector('.wc-block-components-text-input input');
-        if (fallbackInput) {
-            const computedStyle = window.getComputedStyle(fallbackInput);
-            const padding = computedStyle.getPropertyValue('padding');
-            
-            if (padding && padding !== '0px' && padding !== 'auto' && padding !== '') {
-                return padding;
-            }
-        }
-
-        return null;
-    }
-
-    function getLastNameFieldDimensions(containerType = 'billing') {
-        // Procurar o campo lastname no container específico
-        const lastNameInput = document.querySelector(`#${containerType}-last_name`);
-        
-        if (lastNameInput) {
-            const computedStyle = window.getComputedStyle(lastNameInput);
-            return {
-                height: computedStyle.getPropertyValue('height')
-            };
-        }
-
-        // Fallback: tentar encontrar qualquer input de lastname
-        const fallbackLastName = document.querySelector('input[id$="-last_name"]');
-        if (fallbackLastName) {
-            const computedStyle = window.getComputedStyle(fallbackLastName);
-            return {
-                height: computedStyle.getPropertyValue('height')
-            };
-        }
-
-        return null;
-    }
-
-    function createBirthdateFieldContainer(initialValue = '', containerType = 'billing') {
-        // Criar container seguindo o padrão dos campos do checkout
-        const fieldContainer = document.createElement('div');
-        fieldContainer.className = 'wc-block-components-text-input wc-block-components-address-form__birthdate is-active';
-
-        // Criar input
-        const input = document.createElement('input');
-        input.type = 'date';
-        input.name = 'woo_better_birthdate';
-        input.id = 'woo_better_birthdate';
-        input.setAttribute('autocapitalize', 'none');
-        input.setAttribute('aria-label', 'Data de Nascimento');
-        input.setAttribute('aria-invalid', 'false');
-        input.title = '';
-
-        // Definir limites de data nativos do HTML5
-        const now = new Date();
-        const maxDate = now.toISOString().split('T')[0]; // Data atual no formato YYYY-MM-DD
-        
-        const minDateObj = new Date();
-        minDateObj.setFullYear(now.getFullYear() - 120);
-        const minDate = minDateObj.toISOString().split('T')[0]; // 120 anos atrás
-        
-        input.setAttribute('min', minDate);
-        input.setAttribute('max', maxDate); // Data máxima é hoje
-
-        // Capturar dimensões do campo lastname para manter consistência visual
-        const lastNameDimensions = getLastNameFieldDimensions(containerType);
-        if (lastNameDimensions && lastNameDimensions.height && lastNameDimensions.height !== 'auto') {
-            // Aplicar apenas a altura do lastname ao birthdate
-            input.style.height = lastNameDimensions.height;
-        }
-
-        // Aplicar padding dos inputs existentes do WooCommerce
-        const existingInputPadding = getWooCommerceInputPadding();
-        if (existingInputPadding) {
-            input.style.padding = existingInputPadding;
-        }
-
-        // Preencher com valor inicial se existir
-        if (initialValue) {
-            input.value = initialValue;
-        }
-
-        // Criar label seguindo o padrão dos outros campos
-        const label = document.createElement('label');
-        label.htmlFor = 'woo_better_birthdate';
-        label.textContent = 'Data de Nascimento';
-
-        // Adicionar event listeners
-        input.addEventListener('change', function() {
-            savedBirthdateData.billing_birthdate = this.value;
-            
-            // Validação de data
-            const isValid = validateBirthdateField(this, fieldContainer);
-            
-            // Controlar exibição do erro baseado na validação
-            const errorDiv = fieldContainer.querySelector('.wc-block-components-validation-error');
-            if (errorDiv) {
-                if (!isValid) {
-                    errorDiv.style.display = 'block';
-                } else {
-                    errorDiv.style.display = 'none';
-                }
-            }
-            
-            // Salvar no Store API com debounce
-            clearTimeout(updateDataTimeout);
-            updateDataTimeout = setTimeout(() => {
-                saveBirthdateToExtensionData();
-            }, 300);
-        });
-
-        input.addEventListener('input', function() {
-            savedBirthdateData.billing_birthdate = this.value;
-            
-            // Limpar erro enquanto digita se tiver conteúdo válido
-            const errorDiv = fieldContainer.querySelector('.wc-block-components-validation-error');
-            if (errorDiv && this.value.trim()) {
-                const isValid = validateBirthdateField(this, fieldContainer);
-                if (isValid) {
-                    errorDiv.style.display = 'none';
-                }
-            }
-        });
-
-        // Montar o campo
-        fieldContainer.appendChild(input);
-        fieldContainer.appendChild(label);
-
-        // Criando a div de erro (inicialmente oculta) - seguindo padrão do WooCommerce
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'wc-block-components-validation-error wc-better-birthdate';
-        errorDiv.setAttribute('role', 'alert');
-        errorDiv.style.display = 'none';
-
-        const errorParagraph = document.createElement('p');
-        errorParagraph.id = 'validate-error-birthdate';
-
-        const errorSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        errorSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-        errorSvg.setAttribute('viewBox', '-2 -2 24 24');
-        errorSvg.setAttribute('width', '24');
-        errorSvg.setAttribute('height', '24');
-        errorSvg.setAttribute('aria-hidden', 'true');
-        errorSvg.setAttribute('focusable', 'false');
-
-        const errorPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        errorPath.setAttribute('d', 'M10 2c4.42 0 8 3.58 8 8s-3.58 8-8 8-8-3.58-8-8 3.58-8 8-8zm1.13 9.38l.35-6.46H8.52l.35 6.46h2.26zm-.09 3.36c.24-.23.37-.55.37-.96 0-.42-.12-.74-.36-.97s-.59-.35-1.06-.35-.82.12-1.07.35-.37.55-.37.97c0 .41.13.73.38.96.26.23.61.34 1.06.34s.8-.11 1.05-.34z');
-
-        errorSvg.appendChild(errorPath);
-        const errorMessage = document.createElement('span');
-        errorMessage.textContent = 'Por favor, insira uma data válida.';
-
-        errorParagraph.appendChild(errorSvg);
-        errorParagraph.appendChild(errorMessage);
-        errorDiv.appendChild(errorParagraph);
-
-        // Adicionando a mensagem de erro ao container
-        fieldContainer.appendChild(errorDiv);
-
-        return fieldContainer;
-    }
-
-    function validateBirthdateField(input, container) {
-        const dateValue = input.value
-        
-        // Não remove mais as classes antigas - apenas atualiza a mensagem de erro
-        let errorDiv = container.querySelector('.wc-block-components-validation-error');
-        let errorMessage = errorDiv ? errorDiv.querySelector('span') : null;
-
-        if (dateValue) {
-            const dateObj = new Date(dateValue)
-            const now = new Date()
-            
-            // Verifica se a data é válida
-            if (isNaN(dateObj.getTime())) {
-                if (errorMessage) errorMessage.textContent = 'Por favor, insira uma data válida.';
-                return false
-            }
-            
-            // Verifica se a data não é futura
-            if (dateObj > now) {
-                if (errorMessage) errorMessage.textContent = 'A data não pode ser futura.';
-                return false
-            }
-            
-            // Verifica idade máxima (120 anos)
-            const maxAge = new Date()
-            maxAge.setFullYear(now.getFullYear() - 120)
-            
-            if (dateObj < maxAge) {
-                if (errorMessage) errorMessage.textContent = 'Data muito antiga. Máximo de 120 anos atrás.';
-                return false
-            }
-            
-
-        }
-        
-        return true
-    }
-
-    function saveBirthdateToExtensionData() {
-        const data = {
-            billing_birthdate: savedBirthdateData.billing_birthdate
-        };
-
-        // Usar setExtensionData (método principal)
-        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
-            try {
-                const { dispatch } = wp.data;
-                if (dispatch('wc/store/checkout')) {
-                    const checkoutDispatch = dispatch('wc/store/checkout');
-                    if (checkoutDispatch.setExtensionData) {
-                        checkoutDispatch.setExtensionData('woo_better_birthdate', data);
-                    }
-                }
-            } catch (error) {
-                // Silenciar erro
-            }
-        }
-
-        // Usar extensionCartUpdate como backup
-        if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-            window.wc.blocksCheckout.extensionCartUpdate({
-                namespace: 'woo_better_birthdate',
-                data: data
-            });
-        }
-    }
+    ensureField();
+    bindPlaceOrder();
 });

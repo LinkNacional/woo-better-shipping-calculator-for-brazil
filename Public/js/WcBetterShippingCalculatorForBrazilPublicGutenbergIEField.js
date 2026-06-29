@@ -247,9 +247,19 @@ document.addEventListener("DOMContentLoaded", function () {
 	}
 
 	function getReferenceElement(container, containerType) {
-		const customCompany = container.querySelector('.wc-better-billing-company')
-		if (customCompany) {
-			return customCompany
+		// Prioridade de inserção: gender > birthdate > company > document > nativeCompany > lastName.
+		// Isso garante a ordem: lastName → birthdate → gender → document → company → IE
+
+		const genderContainer = container.querySelector('.wc-block-components-address-form__gender') ||
+		                        container.querySelector('.wc-better-billing-gender');
+		if (genderContainer) {
+			return genderContainer;
+		}
+
+		const birthdateContainer = container.querySelector('.wc-block-components-address-form__birthdate') ||
+		                           container.querySelector('.wc-better-billing-birthdate');
+		if (birthdateContainer) {
+			return birthdateContainer;
 		}
 
 		const documentInput = document.getElementById('billing_document')
@@ -258,6 +268,11 @@ document.addEventListener("DOMContentLoaded", function () {
 			if (documentContainer) {
 				return documentContainer
 			}
+		}
+
+		const customCompany = container.querySelector('.wc-better-billing-company')
+		if (customCompany) {
+			return customCompany
 		}
 
 		const nativeCompany = container.querySelector(`#${containerType}-company`)

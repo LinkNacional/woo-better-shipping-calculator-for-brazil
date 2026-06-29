@@ -103,9 +103,54 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                 ),
                 'custom_attributes' => array(
-                    'data-desc-tip' => __('Exibe informações detalhadas dos pedidos para melhor acompanhamento e controle.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('Habilite para mostrar detalhes adicionais dos pedidos, incluindo informações de entrega e dados complementares.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Ative a exibição de detalhes completos dos pedidos.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-desc-tip' => __('Adiciona os dados de CPF/CNPJ, IE, data de nascimento, gênero e prazo de entrega nos detalhes do pedido.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => sprintf(
+                        /* translators: %s: URL para a listagem de pedidos */
+                        __('Exibe as informações complementares do cliente (documentos, data de nascimento, prazo de entrega) na página de edição do pedido. Veja em <a href="%s">todos os pedidos</a>.', 'woo-better-shipping-calculator-for-brazil'),
+                        esc_url(admin_url('admin.php?page=wc-orders'))
+                    ),
+                    'data-title-description' => __('Exibe dados complementares nos detalhes do pedido.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'enable_cep_popup' => array(
+                'title'    => __('Pop-up de Validação de CEP', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_calc_enable_cep_popup',
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-subtitle' => __('Exibir pop-up para validação de CEP', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-desc-tip' => __('Exibe um pop-up ao entrar no site para que o cliente informe seu CEP e verifique se há entregas disponíveis para sua região.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Ao habilitar, um pop-up será exibido para os visitantes validarem se há frete disponível para o CEP informado. Se o cliente fechar ou preencher, não será exibido novamente por 2 dias.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ative o pop-up de consulta de CEP para visitantes.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'cep_popup_fail_message' => array(
+                'title'    => __('Mensagem de falha no pop-up', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_cep_popup_fail_message',
+                'default'  => __('Entre em contato conosco para organizar sua entrega.', 'woo-better-shipping-calculator-for-brazil'),
+                'type'     => 'text',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Texto exibido no pop-up quando o CEP não tem entrega disponível.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Personalize a mensagem exibida no pop-up de validação quando não há entrega para o CEP do cliente. Se deixar em branco, nenhuma mensagem será exibida.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Mensagem quando não há entrega disponível no CEP.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'whatsapp_number' => array(
+                'title'    => __('Número do WhatsApp', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_whatsapp_number',
+                'default'  => '',
+                'type'     => 'text',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Número de WhatsApp exibido no popup quando não há entrega para o CEP consultado.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Insira o número com DDD (ex: 11999999999 ou +5511999999999). Quando preenchido, será exibido um botão de WhatsApp no resultado de CEP sem entrega. Se deixar em branco, o botão não será exibido.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Número de WhatsApp para contato quando não há entrega.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'geral_section_end' => array(
@@ -911,6 +956,111 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             )
         );
 
+        $deliveryScheduleSettings = array(
+            // TAB 5: Prazo de Entrega
+            'delivery_schedule_section' => array(
+                'title' => __('Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'title',
+                'id'    => 'woo_better_calc_title_prazo_entrega'
+            ),
+            'enable_delivery_schedule' => array(
+                'title'    => __('Habilitar Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_enable_delivery_schedule',
+                'default'  => 'no',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Ative esta opção para habilitar o cálculo de prazo de entrega com base nos dias e horários de funcionamento.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Habilite para configurar os dias e horários de funcionamento que serão usados no cálculo do prazo de entrega dos fretes.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ative ou desative o recurso de prazo de entrega.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'min_preparation_hours' => array(
+                'title'    => __('Tempo Mínimo de Preparo (Horas)', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_min_preparation_hours',
+                'desc_tip' => false,
+                'default'  => '0',
+                'type'     => 'number',
+                'custom_attributes' => array(
+                    'min'  => 0,
+                    'step' => '1',
+                    'data-desc-tip' => __('Defina a antecedência mínima em horas para entregas no mesmo dia.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Insira o número de horas necessárias para o preparo. Isso impedirá que o cliente selecione horários de entrega no dia atual que estejam dentro dessa janela de tempo.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Ex: 2 (para exigir 2 horas de antecedência)', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'ignore_local_pickup' => array(
+                'title'    => __('Ignorar Retirada no Local', 'woo-better-shipping-calculator-for-brazil'),
+                'desc_tip' => false,
+                'id'       => 'woo_better_ignore_local_pickup',
+                'default'  => 'yes',
+                'type'     => 'radio',
+                'options'  => array(
+                    'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                    'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Quando ativo, a Retirada no Local é removida dos resultados de frete na consulta de CEP.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Ao habilitar, qualquer frete cujo nome contenha "Retirada" ou o título configurado em pickup_location será ocultado dos resultados.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Controla se a Retirada no Local deve ser ocultada nos resultados de frete.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'delivery_schedule' => array(
+                'title'    => __('Dias e Horários de Funcionamento', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_delivery_schedule',
+                'type'     => 'delivery_schedule',
+                'default'  => '{}',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Selecione os dias da semana e defina o horário de funcionamento para cálculo do prazo de entrega.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Marque os dias em que há expediente e defina o horário de início e fim. Estes dados serão usados para calcular o prazo de entrega dos fretes.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Configure os dias e horários ativos para o prazo de entrega.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'delivery_slots' => array(
+                'title'    => __('Faixas de Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_delivery_slots',
+                'type'     => 'delivery_slots',
+                'default'  => '[]',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Defina as faixas de horário que o cliente poderá escolher.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Adicione faixas de horário de entrega. O sistema filtrará automaticamente as faixas que cabem dentro do horário de funcionamento de cada dia.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Cadastre as faixas de horário disponíveis para entrega.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'delivery_schedule_section_end' => array(
+                'type' => 'sectionend',
+                'id'   => 'woo_better_calc_prazo_entrega'
+            )
+        );
+
+        $deliveryOrdersSettings = array(
+            // TAB 6: Pedidos com Prazo de Entrega
+            'delivery_orders_section' => array(
+                'title' => __('Pedidos com Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'title',
+                'id'    => 'woo_better_calc_title_pedidos_prazo'
+            ),
+            'delivery_orders_list' => array(
+                'title'   => __('Pedidos Pendentes', 'woo-better-shipping-calculator-for-brazil'),
+                'id'      => 'woo_better_delivery_orders_list',
+                'type'    => 'delivery_orders_list',
+                'default' => '[]',
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Acompanhe os pedidos com prazo de entrega pendente.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('Lista de pedidos que ainda não foram concluídos e possuem prazo de entrega definido. O status é atualizado automaticamente conforme o pedido é concluído.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Visualize e gerencie os prazos de entrega dos pedidos.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
+            'delivery_orders_section_end' => array(
+                'type' => 'sectionend',
+                'id'   => 'woo_better_calc_pedidos_prazo'
+            )
+        );
+
         $cacheSettings = array(
             // TAB 6: Cache
             'cache_section' => array(
@@ -982,7 +1132,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
             )
         );
 
-        $settings = array_merge($settings, $generalSettings, $freteSettings, $shortcodeSettings, $productSettings, $cartSettings, $cacheSettings);
+        $settings = array_merge($settings, $generalSettings, $freteSettings, $shortcodeSettings, $productSettings, $cartSettings, $deliveryScheduleSettings, $deliveryOrdersSettings, $cacheSettings);
 
         return apply_filters('woocommerce_get_settings_' . $this->id, $settings);
     }

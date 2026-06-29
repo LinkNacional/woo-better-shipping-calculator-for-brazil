@@ -147,6 +147,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+# 4.17.0 - 16/06/26
+* New: Delivery time field.
+* New: Postal code validation pop-up.
+
 # 4.16.0 - 11/06/26
 * New: Product-based shipping system.
 * New: Label system to define delivery business days for free shipping methods.
