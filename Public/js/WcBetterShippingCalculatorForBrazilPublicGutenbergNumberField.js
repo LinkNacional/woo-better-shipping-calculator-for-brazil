@@ -37,7 +37,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const editShippingButton = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="shipping"]');
 
-                if (editShippingButton.getAttribute('aria-expanded') != 'true') {
+                if (editShippingButton) {
+                    if (editShippingButton.getAttribute('aria-expanded') != 'true') {
                     editShippingButton.click()
                 }
 
@@ -305,6 +306,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                 }
 
+                }
+
                 intervalCount++
 
             }, 5);
@@ -343,6 +346,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     clearInterval(checkboxInterval)
                     shippingCheckboxInput.addEventListener('change', function (event) {
                         event.stopPropagation();
+                        if (!shippingNumberInput) { return; }
                         if (this.checked) {
                             shippingNumberInput.readOnly = true;
                             shippingNumberInput.classList.add('wc-better-readonly-disabled');
@@ -400,14 +404,18 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (shippingNumberInput && !shippingNumberInput.value.trim().length) {
                         event.stopPropagation(); // Bloqueia a propagação se estiver vazio
                         event.preventDefault(); // Previne o envio do formulário
-                        shippingErrorNumberInput.style.display = 'block';
+                        if (shippingErrorNumberInput) {
+                            shippingErrorNumberInput.style.display = 'block';
+                        }
                         const shippingContainer = document.querySelector('.wc-better-shipping-number');
                         if (shippingContainer) { shippingContainer.classList.add('has-error'); }
                         shippingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     } else if (billingNumberInput && !billingNumberInput.value.trim().length) {
                         event.stopPropagation(); // Bloqueia a propagação se estiver vazio
                         event.preventDefault(); // Previne o envio do formulário
-                        billingErrorNumberInput.style.display = 'block';
+                        if (billingErrorNumberInput) {
+                            billingErrorNumberInput.style.display = 'block';
+                        }
                         const billingContainer = document.querySelector('.wc-better-billing-number');
                         if (billingContainer) { billingContainer.classList.add('has-error'); }
                         billingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -423,6 +431,10 @@ document.addEventListener("DOMContentLoaded", function () {
     function billingNumberHandle(billingBlock) {
         const editBillingButton = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="billing"]');
         const editBillingInput = document.getElementById('billing-number')
+
+        if (!editBillingButton) {
+            return
+        }
 
         if (editBillingButton.getAttribute('aria-expanded') != 'true') {
             editBillingButton.click()
@@ -682,52 +694,62 @@ document.addEventListener("DOMContentLoaded", function () {
                 let billingCheckboxInputEl = document.getElementById('wc-billing-better-checkbox');
                 let billingNumberInputEl = document.getElementById('billing-number');
 
-                billingCheckboxInputEl.addEventListener('change', function (event) {
-                    event.stopPropagation();
-                    const divInputNumber = document.querySelector('.wc-better-billing-number');
-                    const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
+                if (billingCheckboxInputEl) {
+                    billingCheckboxInputEl.addEventListener('change', function (event) {
+                        event.stopPropagation();
+                        const divInputNumber = document.querySelector('.wc-better-billing-number');
+                        const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
 
-                    if (this.checked) {
-                        billingNumberInputEl.readOnly = true;
-                        billingNumberInputEl.classList.add('wc-better-readonly-disabled');
-                        billingNumberInputEl.setAttribute('value', 'S/N');
-                        billingNumberInputEl.value = 'S/N';
-                        billingNumberInputEl.style.backgroundColor = '#e0e0e0';
-                        billingNumberInputEl.style.color = '#808080';
-                        if (divInputNumber) {
-                            divInputNumber.classList.add('is-active');
+                        if (this.checked) {
+                            if (billingNumberInputEl) {
+                                billingNumberInputEl.readOnly = true;
+                                billingNumberInputEl.classList.add('wc-better-readonly-disabled');
+                                billingNumberInputEl.setAttribute('value', 'S/N');
+                                billingNumberInputEl.value = 'S/N';
+                                billingNumberInputEl.style.backgroundColor = '#e0e0e0';
+                                billingNumberInputEl.style.color = '#808080';
+                            }
+                            if (divInputNumber) {
+                                divInputNumber.classList.add('is-active');
+                            }
+                            if (billingErrorNumberInput) {
+                                billingErrorNumberInput.style.display = 'none';
+                                if (divInputNumber) { divInputNumber.classList.remove('has-error'); }
+                            }
+                        } else {
+                            if (billingNumberInputEl) {
+                                billingNumberInputEl.readOnly = false;
+                                billingNumberInputEl.classList.remove('wc-better-readonly-disabled');
+                                billingNumberInputEl.setAttribute('value', '');
+                                billingNumberInputEl.value = '';
+                                billingNumberInputEl.style.backgroundColor = '';
+                                billingNumberInputEl.style.color = '';
+                            }
+                            if (divInputNumber) {
+                                divInputNumber.classList.remove('is-active');
+                            }
                         }
-                        if (billingErrorNumberInput) {
-                            billingErrorNumberInput.style.display = 'none';
-                            if (divInputNumber) { divInputNumber.classList.remove('has-error'); }
-                        }
-                    } else {
-                        billingNumberInputEl.readOnly = false;
-                        billingNumberInputEl.classList.remove('wc-better-readonly-disabled');
-                        billingNumberInputEl.setAttribute('value', '');
-                        billingNumberInputEl.value = '';
-                        billingNumberInputEl.style.backgroundColor = '';
-                        billingNumberInputEl.style.color = '';
-                        if (divInputNumber) {
-                            divInputNumber.classList.remove('is-active');
-                        }
-                    }
-                });
+                    });
+                }
 
-                billingNumberInputEl.addEventListener('input', function () {
-                    const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
-                    if (billingNumberInputEl) {
+                if (billingNumberInputEl) {
+                    billingNumberInputEl.addEventListener('input', function () {
+                        const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
                         if (billingNumberInputEl.value.trim().length > 0) {
                             // Remove a restrição ao clique
-                            billingErrorNumberInput.style.display = 'none';
+                            if (billingErrorNumberInput) {
+                                billingErrorNumberInput.style.display = 'none';
+                            }
                             customInputDiv.classList.remove('has-error');
                         } else {
                             // Adiciona novamente a restrição caso fique vazio
-                            billingErrorNumberInput.style.display = 'block';
+                            if (billingErrorNumberInput) {
+                                billingErrorNumberInput.style.display = 'block';
+                            }
                             customInputDiv.classList.add('has-error');
                         }
-                    }
-                });
+                    });
+                }
             }
         }
     }
