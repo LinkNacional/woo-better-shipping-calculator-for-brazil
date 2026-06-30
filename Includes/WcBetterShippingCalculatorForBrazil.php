@@ -3330,14 +3330,9 @@ class WcBetterShippingCalculatorForBrazil
             $shipping_number = '';
             $billing_number = '';
 
-            // Captura dos dados do checkout tradicional
-            if (isset($_POST['billing_number'])) {
-                $billing_number = sanitize_text_field(wp_unslash($_POST['billing_number']));
-            }
-
-            if (isset($_POST['shipping_number'])) {
-                $shipping_number = sanitize_text_field(wp_unslash($_POST['shipping_number']));
-            }
+            // Captura dos dados do checkout tradicional (via $data, já filtrado por woocommerce_checkout_posted_data)
+            $billing_number = isset($data['billing_number']) ? sanitize_text_field(wp_unslash($data['billing_number'])) : '';
+            $shipping_number = isset($data['shipping_number']) ? sanitize_text_field(wp_unslash($data['shipping_number'])) : '';
 
             // Detecta se está usando o mesmo endereço
             $use_same_address = $this->detect_same_address_usage($order, $data);
@@ -3361,7 +3356,9 @@ class WcBetterShippingCalculatorForBrazil
                 }
             }
 
-            if (empty($shipping_number) && empty($billing_number)) {
+            // Só aplica fallback "S/N" se os campos não foram enviados (não existem em $data).
+            // Se existirem mas estiverem vazios, respeita (ex: PRO limpou os campos).
+            if (!array_key_exists('shipping_number', $data) && !array_key_exists('billing_number', $data)) {
                 $shipping_number = "S/N";
                 $billing_number = "S/N";
             }
@@ -3469,14 +3466,14 @@ class WcBetterShippingCalculatorForBrazil
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
 
         if ($person_type !== 'none') {
-            // Captura dos dados do checkout tradicional
-            $billing_persontype = isset($_POST['billing_persontype']) ? sanitize_text_field(wp_unslash($_POST['billing_persontype'])) : '';
-            $billing_cpf = isset($_POST['billing_cpf']) ? sanitize_text_field(wp_unslash($_POST['billing_cpf'])) : '';
-            $billing_cnpj = isset($_POST['billing_cnpj']) ? sanitize_text_field(wp_unslash($_POST['billing_cnpj'])) : '';
-            $billing_company = isset($_POST['billing_company']) ? sanitize_text_field(wp_unslash($_POST['billing_company'])) : '';
+            // Captura dos dados do checkout tradicional (via $data, já filtrado por woocommerce_checkout_posted_data)
+            $billing_persontype = isset($data['billing_persontype']) ? sanitize_text_field(wp_unslash($data['billing_persontype'])) : '';
+            $billing_cpf = isset($data['billing_cpf']) ? sanitize_text_field(wp_unslash($data['billing_cpf'])) : '';
+            $billing_cnpj = isset($data['billing_cnpj']) ? sanitize_text_field(wp_unslash($data['billing_cnpj'])) : '';
+            $billing_company = isset($data['billing_company']) ? sanitize_text_field(wp_unslash($data['billing_company'])) : '';
             
             // Captura do campo unificado
-            $billing_document = isset($_POST['billing_document']) ? sanitize_text_field(wp_unslash($_POST['billing_document'])) : '';
+            $billing_document = isset($data['billing_document']) ? sanitize_text_field(wp_unslash($data['billing_document'])) : '';
             
             // Se há documento unificado mas não há dados específicos, processar
             if (!empty($billing_document) && empty($billing_cpf) && empty($billing_cnpj)) {
@@ -5686,9 +5683,9 @@ class WcBetterShippingCalculatorForBrazil
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         
         if ($neighborhood_enabled === 'yes') {
-            // Captura dos dados do checkout tradicional
-            $billing_neighborhood = isset($_POST['billing_neighborhood']) ? sanitize_text_field(wp_unslash($_POST['billing_neighborhood'])) : '';
-            $shipping_neighborhood = isset($_POST['shipping_neighborhood']) ? sanitize_text_field(wp_unslash($_POST['shipping_neighborhood'])) : '';
+            // Captura dos dados do checkout tradicional (via $data, já filtrado por woocommerce_checkout_posted_data)
+            $billing_neighborhood = isset($data['billing_neighborhood']) ? sanitize_text_field(wp_unslash($data['billing_neighborhood'])) : '';
+            $shipping_neighborhood = isset($data['shipping_neighborhood']) ? sanitize_text_field(wp_unslash($data['shipping_neighborhood'])) : '';
 
             // Detecta se está usando o mesmo endereço
             $use_same_address = $this->detect_same_address_usage($order, $data);
@@ -5800,8 +5797,8 @@ class WcBetterShippingCalculatorForBrazil
         $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
         
         if ($birthdate_enabled === 'yes') {
-            // Captura dos dados do checkout tradicional
-            $billing_birthdate = isset($_POST['billing_birthdate']) ? sanitize_text_field(wp_unslash($_POST['billing_birthdate'])) : '';
+            // Captura dos dados do checkout tradicional (via $data, já filtrado por woocommerce_checkout_posted_data)
+            $billing_birthdate = isset($data['billing_birthdate']) ? sanitize_text_field(wp_unslash($data['billing_birthdate'])) : '';
 
             // Normaliza para Y-m-d antes de salvar
             $billing_birthdate = $this->normalize_birthdate_value($billing_birthdate);
@@ -5910,8 +5907,8 @@ class WcBetterShippingCalculatorForBrazil
         $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
         
         if ($gender_enabled === 'yes') {
-            // Captura dos dados do checkout tradicional
-            $billing_gender = isset($_POST['billing_gender']) ? sanitize_text_field(wp_unslash($_POST['billing_gender'])) : '';
+            // Captura dos dados do checkout tradicional (via $data, já filtrado por woocommerce_checkout_posted_data)
+            $billing_gender = isset($data['billing_gender']) ? sanitize_text_field(wp_unslash($data['billing_gender'])) : '';
 
             // CORREÇÃO: Sempre salva gênero quando habilitado para evitar dados antigos "Masculino"
             $order->update_meta_data('_billing_gender', $billing_gender);
@@ -5988,10 +5985,10 @@ class WcBetterShippingCalculatorForBrazil
 
         // Determina se o documento submetido é um CNPJ (14 dígitos)
         $billing_document = '';
-        if (!empty($_POST['billing_cnpj'])) {
-            $billing_document = sanitize_text_field(wp_unslash($_POST['billing_cnpj']));
-        } elseif (!empty($_POST['billing_document'])) {
-            $billing_document = sanitize_text_field(wp_unslash($_POST['billing_document']));
+        if (!empty($data['billing_cnpj'])) {
+            $billing_document = sanitize_text_field(wp_unslash($data['billing_cnpj']));
+        } elseif (!empty($data['billing_document'])) {
+            $billing_document = sanitize_text_field(wp_unslash($data['billing_document']));
         }
         $is_cnpj = strlen(preg_replace('/[^0-9A-Z]/', '', strtoupper($billing_document))) === 14;
 
@@ -6003,7 +6000,7 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        $billing_ie = isset($_POST['billing_ie']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['billing_ie']))) : '';
+        $billing_ie = isset($data['billing_ie']) ? strtoupper(sanitize_text_field(wp_unslash($data['billing_ie']))) : '';
 
         $order->update_meta_data('_billing_ie', $billing_ie);
 
