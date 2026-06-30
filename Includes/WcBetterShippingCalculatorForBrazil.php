@@ -1332,6 +1332,9 @@ class WcBetterShippingCalculatorForBrazil
         
         // Hook para formatação de endereço na página Minha Conta
         $this->loader->add_filter('woocommerce_my_account_my_address_formatted_address', $this, 'my_account_formatted_address', 10, 3);
+
+        // Integração com FunnelKit Checkout: habilita blocos brasileiros no drag-and-drop
+        $this->loader->add_filter('pre_option_wcbcf_settings', $this, 'funnelkit_get_wcbcf_settings', 10, 1);
     }
 
     public function postcode_param_priority( $params ) {
@@ -7285,5 +7288,39 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         return $data;
+    }
+
+    /**
+     * Integração com FunnelKit Checkout.
+     *
+     * Retorna wcbcf_settings baseadas nas opções reais do plugin, para que o
+     * FunnelKit libere no editor drag-and-drop apenas os blocos cujos campos
+     * estão ativos nas configurações.
+     *
+     * @since    4.16.0
+     * @param    mixed $default Valor padrão (ignorado).
+     * @return   array
+     */
+    public function funnelkit_get_wcbcf_settings($default) {
+        $person_type          = get_option('woo_better_calc_person_type_select', 'none');
+        $ie_enabled           = get_option('woo_better_calc_enable_ie_field', 'no');
+        $birthdate_enabled    = get_option('woo_better_calc_enable_birthdate_field', 'no');
+        $gender_enabled       = get_option('woo_better_calc_enable_gender_field', 'no');
+        $cell_phone_enabled   = get_option('woo_better_calc_contact_required', 'no');
+        $number_enabled       = get_option('woo_better_calc_number_required', 'no');
+        $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
+
+        return array(
+            'person_type'  => ($person_type !== 'none') ? 1 : 0,
+            'ie'           => (
+                $ie_enabled === 'yes'
+                && in_array($person_type, array('legal', 'both'), true)
+            ) ? 1 : 0,
+            'birthdate'    => ($birthdate_enabled === 'yes') ? 1 : 0,
+            'gender'       => ($gender_enabled === 'yes') ? 1 : 0,
+            'cell_phone'   => ($cell_phone_enabled === 'yes') ? 1 : 0,
+            'number'       => ($number_enabled === 'yes') ? 1 : 0,
+            'neighborhood' => ($neighborhood_enabled === 'yes') ? 1 : 0,
+        );
     }
 }
