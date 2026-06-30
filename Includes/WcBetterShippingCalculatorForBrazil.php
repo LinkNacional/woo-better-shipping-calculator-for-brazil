@@ -2795,11 +2795,6 @@ class WcBetterShippingCalculatorForBrazil
         // Valida o documento primeiro para determinar o tipo
         $validation = $this->validate_document($document_to_validate);
         
-        // Se for CPF, desativa a validação (retorna early)
-        if ($validation['type'] === 'cpf') {
-            return;
-        }
-        
         // Verifica se é válido
         if (!$validation['is_valid']) {
             wc_add_notice($validation['message'], 'error');
