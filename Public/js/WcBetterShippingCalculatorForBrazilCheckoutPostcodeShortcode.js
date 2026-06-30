@@ -94,9 +94,17 @@ jQuery(function ($) {
         if ($countrySelect.length && $checkboxDiv.length) {
             if ($countrySelect.val() !== 'BR') {
                 $checkboxDiv.hide();
-            } else {
+                $checkboxDiv.data('wc-better-country-hidden', true);
+            } else if ($checkboxDiv.data('wc-better-country-hidden')) {
+                // Foi escondido por país ≠ BR; país voltou a ser BR: restaura
+                $checkboxDiv.removeData('wc-better-country-hidden');
+                $checkboxDiv.show();
+            } else if ($checkboxDiv[0].style.display !== 'none') {
+                // Já visível, mantém como está
                 $checkboxDiv.show();
             }
+            // Se style.display === 'none' e não fomos nós que escondemos,
+            // respeita (ex: PRO ou retirada no local aplicou display:none).
         }
     }
 
