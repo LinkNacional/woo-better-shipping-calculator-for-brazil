@@ -85,6 +85,48 @@ document.addEventListener('DOMContentLoaded', function () {
         return cleanCep;
     }
 
+    /**
+     * Complementa o label do frete com prazo de entrega contido no meta_data,
+     * caso o label ainda não inclua essa informação.
+     *
+     * @param {string} label     Label original do método de entrega.
+     * @param {object} metaData  Meta dados do rate (ex: delivery_time, delivery_range).
+     * @return {string} Label com prazo anexado quando disponível e ausente.
+     */
+    function getDisplayLabel(label, metaData) {
+        if (!metaData || typeof metaData !== 'object') return label;
+
+        let deliveryStr = '';
+
+        // Busca por chaves comuns de prazo de entrega
+        if (metaData.delivery_time && String(metaData.delivery_time).trim()) {
+            deliveryStr = String(metaData.delivery_time).trim();
+        } else if (metaData.delivery_range && String(metaData.delivery_range).trim()) {
+            deliveryStr = String(metaData.delivery_range).trim();
+        } else if (metaData.DELIVERY_FORECAST && String(metaData.DELIVERY_FORECAST).trim()) {
+            deliveryStr = String(metaData.DELIVERY_FORECAST).trim();
+        }
+
+        if (!deliveryStr) return label;
+
+        // Se for apenas número: "5" → "(5 dias úteis)"
+        if (/^\d+$/.test(deliveryStr)) {
+            var days = parseInt(deliveryStr, 10);
+            deliveryStr = days === 1 ? '(1 dia útil)' : '(' + days + ' dias úteis)';
+        }
+        // Garante que esteja entre parênteses
+        if (!/^\(/.test(deliveryStr)) {
+            deliveryStr = '(' + deliveryStr + ')';
+        }
+
+        // Se o label já contém prazo, não duplica
+        if (/\([^)]*\d+\s*dia[^)]*\)/i.test(label)) {
+            return label;
+        }
+
+        return label + ' ' + deliveryStr;
+    }
+
     // Função para aplicar formatação em um input de CEP
     function applyFormatToInput(input, value) {
         if (!input) return;
@@ -824,7 +866,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 tempDiv.innerHTML = productInfo.currency_symbol;
                 const decodedSymbol = tempDiv.textContent || tempDiv.innerText || productInfo.currency_symbol;
 
-                listItem.innerHTML = `<strong>${decodedSymbol} ${parseFloat(rate.cost).toFixed(productInfo.currency_minor_unit).replace('.', ',')}</strong> - ${rate.label}`;
+                listItem.innerHTML = `<strong>${decodedSymbol} ${parseFloat(rate.cost).toFixed(productInfo.currency_minor_unit).replace('.', ',')}</strong> - ${getDisplayLabel(rate.label, rate.meta_data)}`;
                 shippingList.appendChild(listItem);
             });
         }
@@ -1619,7 +1661,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     tempDiv.innerHTML = shippingRates.product.currency_symbol;
                     const decodedSymbol = tempDiv.textContent || tempDiv.innerText || shippingRates.product.currency_symbol;
 
-                    listItem.innerHTML = `<strong>${decodedSymbol} ${cost}</strong> - ${rate.label}`;
+                    listItem.innerHTML = `<strong>${decodedSymbol} ${cost}</strong> - ${getDisplayLabel(rate.label, rate.meta_data)}`;
                     shippingList.appendChild(listItem);
                 });
 
@@ -1744,7 +1786,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     tempDiv.innerHTML = shippingRates.product.currency_symbol;
                     const decodedSymbol = tempDiv.textContent || tempDiv.innerText || shippingRates.product.currency_symbol;
 
-                    listItem.innerHTML = `<strong>${decodedSymbol} ${cost}</strong> - ${rate.label}`;
+                    listItem.innerHTML = `<strong>${decodedSymbol} ${cost}</strong> - ${getDisplayLabel(rate.label, rate.meta_data)}`;
                     shippingList.appendChild(listItem);
                 });
             }

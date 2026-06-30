@@ -5254,9 +5254,10 @@ class WcBetterShippingCalculatorForBrazil
         if ( isset( $calculated_package['rates'] ) && is_array( $calculated_package['rates'] ) ) {
             foreach ( $calculated_package['rates'] as $rate ) {
                 $shipping_rates[] = array(
-                    'id'    => $rate->get_id(),
-                    'label' => $rate->get_label(),
-                    'cost'  => $rate->get_cost(),
+                    'id'        => $rate->get_id(),
+                    'label'     => $rate->get_label(),
+                    'cost'      => $rate->get_cost(),
+                    'meta_data' => $rate->get_meta_data(),
                 );
             }
         }
@@ -5562,9 +5563,10 @@ class WcBetterShippingCalculatorForBrazil
                 if (isset($package['rates']) && is_array($package['rates'])) {
                     foreach ($package['rates'] as $rate) {
                         $shipping_rates[] = array(
-                            'id'    => $rate->get_id(),
-                            'label' => $rate->get_label(),
-                            'cost'  => $rate->get_cost(),
+                            'id'        => $rate->get_id(),
+                            'label'     => $rate->get_label(),
+                            'cost'      => $rate->get_cost(),
+                            'meta_data' => $rate->get_meta_data(),
                         );
                 }
             }
