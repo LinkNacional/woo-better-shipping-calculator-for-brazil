@@ -147,6 +147,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+# 4.16.1 - 01/07/26
+* Compatibility with the FunnelKit plugin.
+* CPF validation in the shortcode version.
+* Improved detection of available shipping labels in the custom calculator.
+
 # 4.16.0 - 11/06/26
 * New: Product-based shipping system.
 * New: Label system to define delivery business days for free shipping methods.
