@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const billingBlock = document.querySelector('#billing')
 
+
         if (!shippingBlock) {
             shippingBlockFound = false
             intervalCount = 0
@@ -46,7 +47,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     clearInterval(observerEditButton)
 
-                    const shippingAddress1 = shippingBlock.querySelector('.wc-block-components-text-input.wc-block-components-address-form__address_1');
+                    const shippingAddress1 = shippingBlock.querySelector('.wc-block-components-text-input.wc-block-components-address-form__address_1')
+                        || (() => {
+                            const el = document.getElementById('shipping-address_1') || document.getElementById('lkn-pro-shipping-address_1');
+                            return (el && el.offsetParent !== null) ? el.parentElement : null;
+                        })();
                     if (shippingAddress1) {
 
                         // Criando a div principal
@@ -290,10 +295,14 @@ document.addEventListener("DOMContentLoaded", function () {
                                 customInputDiv.classList.add('has-error');
                             }
                         });
+                    } else {
+                        shippingBlockFound = false
+                        intervalCount = 0
                     }
 
                     const billingCheckContainer = document.querySelector('.wc-block-components-checkbox.wc-block-checkout__use-address-for-billing');
                     const billingCheck = billingCheckContainer ? billingCheckContainer.querySelector('input') : null;
+
 
                     if (billingCheck) {
                         billingCheck.addEventListener('change', function () {
@@ -316,6 +325,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (billingBlock && !billingBlockFound) {
             billingNumberHandle(billingBlock)
+        } else if (billingBlock && billingBlockFound) {
         }
 
         const placeOrderContainer = document.querySelector('.wc-block-checkout__actions_row')
@@ -401,22 +411,26 @@ document.addEventListener("DOMContentLoaded", function () {
                     const shippingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-shipping');
                     const billingErrorNumberInput = document.querySelector('.wc-block-components-validation-error.wc-better-billing');
 
-                    if (shippingNumberInput && !shippingNumberInput.value.trim().length) {
+                    const shippingContainer = document.querySelector('.wc-better-shipping-number');
+                    const billingContainer = document.querySelector('.wc-better-billing-number');
+
+                    const shippingVisible = shippingContainer && shippingContainer.offsetParent !== null;
+                    const billingVisible = billingContainer && billingContainer.offsetParent !== null;
+
+                    if (shippingNumberInput && shippingVisible && !shippingNumberInput.value.trim().length) {
                         event.stopPropagation(); // Bloqueia a propagação se estiver vazio
                         event.preventDefault(); // Previne o envio do formulário
                         if (shippingErrorNumberInput) {
                             shippingErrorNumberInput.style.display = 'block';
                         }
-                        const shippingContainer = document.querySelector('.wc-better-shipping-number');
                         if (shippingContainer) { shippingContainer.classList.add('has-error'); }
                         shippingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    } else if (billingNumberInput && !billingNumberInput.value.trim().length) {
+                    } else if (billingNumberInput && billingVisible && !billingNumberInput.value.trim().length) {
                         event.stopPropagation(); // Bloqueia a propagação se estiver vazio
                         event.preventDefault(); // Previne o envio do formulário
                         if (billingErrorNumberInput) {
                             billingErrorNumberInput.style.display = 'block';
                         }
-                        const billingContainer = document.querySelector('.wc-better-billing-number');
                         if (billingContainer) { billingContainer.classList.add('has-error'); }
                         billingNumberInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
@@ -432,9 +446,11 @@ document.addEventListener("DOMContentLoaded", function () {
         const editBillingButton = document.querySelector('span.wc-block-components-address-card__edit[aria-controls="billing"]');
         const editBillingInput = document.getElementById('billing-number')
 
+
         if (!editBillingButton) {
             return
         }
+
 
         if (editBillingButton.getAttribute('aria-expanded') != 'true') {
             editBillingButton.click()
@@ -442,9 +458,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (editBillingButton.getAttribute('aria-expanded') == 'true' && !editBillingInput) {
 
-            const billingAddress1 = billingBlock.querySelector('.wc-block-components-text-input.wc-block-components-address-form__address_1');
+            const billingAddress1 = billingBlock.querySelector('.wc-block-components-text-input.wc-block-components-address-form__address_1')
+                || (() => {
+                    const el = document.getElementById('billing-address_1') || document.getElementById('lkn-pro-billing-address_1');
+                    return (el && el.offsetParent !== null) ? el.parentElement : null;
+                })();
+
 
             billingBlockFound = true
+
+            if (!billingAddress1) {
+                billingBlockFound = false;
+                setTimeout(() => {
+                    const retryBlock = document.querySelector('#billing');
+                    if (retryBlock) {
+                        billingBlockFound = false;
+                        billingNumberHandle(retryBlock);
+                    }
+                }, 300);
+                return;
+            }
 
             if (billingAddress1) {
 
