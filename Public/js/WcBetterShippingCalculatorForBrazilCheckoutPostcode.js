@@ -5,6 +5,8 @@ jQuery(function ($) {
     var activeCepPendingAutocomplete = {};
     // Flag global para controlar processamento do observer
     var isProcessingAddressUpdate = false;
+    // Flag global: evita que updateNumberFieldData dispare extensionCartUpdate durante inserção de endereço
+    window._wcBetterInsertingAddress = false;
 
     // Função para desabilitar checkbox e label
     function disableCheckboxAndLabel(type) {
@@ -96,7 +98,6 @@ jQuery(function ($) {
     }
 
     function updateAddressFields(type, apiData) {
-        // Verifica se deve ignorar verificação de processamento
         const skipCheck = apiData.skipProcessingCheck === true;
         
         // Verifica se já está processando para evitar loop (exceto se skipCheck for true)
@@ -428,6 +429,9 @@ jQuery(function ($) {
             }
             this._isInsertingAddress = true;
             
+            // Flag global: silencia extensionCartUpdate do NumberField durante inserção
+            window._wcBetterInsertingAddress = true;
+            
             try {
             
             // Ao marcar, desabilita imediatamente o checkbox
@@ -534,7 +538,11 @@ jQuery(function ($) {
                         }
                         
                         // Verifica se o campo foi atualizado
-                        const input = document.getElementById(`${this.context}-address_1`) || document.getElementById(`lkn-pro-${this.context}-address_1`);
+                        const ctx = this.context;
+                        const id1 = `${ctx}-address_1`;
+                        const id2 = `lkn-pro-${ctx}-address_1`;
+                        const id3 = (ctx.startsWith('lkn-pro-') ? ctx.slice(8) + '-address_1' : null);
+                        const input = document.getElementById(id1) || document.getElementById(id2) || (id3 ? document.getElementById(id3) : null);
                         if (input) {
                             
                             updateCount++;
@@ -563,12 +571,9 @@ jQuery(function ($) {
                                     isProcessingAddressUpdate = true;
                                 }, 100);
                             } else {
-                                // Nas execuções subsequentes, verifica a flag
-                                if (isProcessingAddressUpdate) {
-                                    return;
-                                }
-                                isProcessingAddressUpdate = true;
-                                updateAddressFields(this.context, data);
+                                // React recriou os inputs — força preenchimento novamente
+                                isProcessingAddressUpdate = false;
+                                updateAddressFields(this.context, { ...data, skipProcessingCheck: true });
                             }
                             
                             // Reset da flag após um delay
@@ -612,6 +617,10 @@ jQuery(function ($) {
             }
             } finally {
                 this._isInsertingAddress = false;
+                // Libera após um delay (observer ainda preenchendo endereços)
+                setTimeout(() => {
+                    window._wcBetterInsertingAddress = false;
+                }, 5000);
             }
         }
         showInsertingLabel() {

@@ -847,7 +847,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // extensionCartUpdate com debounce + guarda contra dados iguais (evita loop)
-        if (!skipCartUpdate) {
+        // Silencia durante inserção de endereço (handleCheckboxChange do Postcode)
+        if (!skipCartUpdate && !window._wcBetterInsertingAddress) {
             const shippingNumberInput = document.getElementById('shipping-number');
             const billingNumberInput = document.getElementById('billing-number');
             const data = {
