@@ -3355,13 +3355,6 @@ class WcBetterShippingCalculatorForBrazil
                     $billing_number = $shipping_number;
                 }
             }
-
-            // Só aplica fallback "S/N" se os campos não foram enviados (não existem em $data).
-            // Se existirem mas estiverem vazios, respeita (ex: PRO limpou os campos).
-            if (!array_key_exists('shipping_number', $data) && !array_key_exists('billing_number', $data)) {
-                $shipping_number = "S/N";
-                $billing_number = "S/N";
-            }
             
             // Salva os números como meta dados separados (sem concatenar no endereço)
             if (!empty($billing_number)) {
@@ -3428,11 +3421,6 @@ class WcBetterShippingCalculatorForBrazil
 
             if (empty($billing_number) && !empty($shipping_number)) {
                 $billing_number = $shipping_number;
-            }
-
-            if (empty($shipping_number) && empty($billing_number)) {
-                $shipping_number = "S/N";
-                $billing_number = "S/N";
             }
             
             // Salva os números como meta dados separados (sem concatenar no endereço)
