@@ -36,6 +36,9 @@ jQuery(function ($) {
 
     function insertCustomCheckboxBelowPostcode(type) {
         if (silentMode) {
+            // Modo silencioso: não recria o fetcher se ele estiver no meio de uma consulta
+            var existing = activeCepFetchers[type];
+            if (existing && existing._requestInProgress) return;
             // Modo silencioso: cria apenas o fetcher, sem UI de checkbox
             var inputSelSilent;
             if (type.indexOf('lkn-pro-') === 0) {
@@ -753,8 +756,9 @@ jQuery(function ($) {
 
             if (this.isValidCep(cep)) {
                 if (this._isSilentMode) {
-                    // Modo silencioso: desabilita o input do CEP durante a consulta
-                    this.input.prop('disabled', true);
+                    // Modo silencioso: usa readonly em vez de disabled para evitar re-render do React
+                    // (disabled causa destruição/recriação do input, cancelando o debounce)
+                     this.input.prop('readonly', true);
                 } else {
                     // Desabilita o checkbox imediatamente
                     $checkboxInput.prop('disabled', true);
@@ -861,7 +865,7 @@ jQuery(function ($) {
                     if (this._isInitialLoad && cep === this._initialCep) {
                         this._hideBorderSpinner();
                         if (this.input && this.input.length) {
-                            this.input.prop('disabled', false);
+                            this.input.prop('readonly', false);
                         }
                         this._isInitialLoad = false;
                         return;
@@ -913,7 +917,7 @@ jQuery(function ($) {
         _handleInvalidCep($checkboxInput, $checkboxLabel) {
             if (this._isSilentMode) {
                 this._hideBorderSpinner();
-                this.input.prop('disabled', false);
+                this.input.prop('readonly', false);
                 return;
             }
             $checkboxInput.prop('disabled', true);
@@ -930,7 +934,7 @@ jQuery(function ($) {
             this.addressData = null;
             if (this._isSilentMode) {
                 this._hideBorderSpinner();
-                this.input.prop('disabled', false);
+                this.input.prop('readonly', false);
             } else {
                 this.showNotFoundLabel();
                 $checkboxInput.prop('disabled', true);
@@ -1102,7 +1106,7 @@ jQuery(function ($) {
 
             // Reabilita o input do CEP
             if (this.input && this.input.length) {
-                this.input.prop('disabled', false);
+                this.input.prop('readonly', false);
             }
 
             // Aborta se um fill mais recente já iniciou (usuário selecionou outro autocomplete
@@ -1110,6 +1114,9 @@ jQuery(function ($) {
             if (generation !== this._silentFillGeneration) {
                 return;
             }
+
+            // Flag global: silencia extensionCartUpdate do NumberField enquanto preenche endereços
+            window._wcBetterInsertingAddress = true;
 
             // Preenche os campos de endereço diretamente via setter nativo do React.
             // Não usa invalidateResolutionForStore para evitar que o WC Blocks re-busque
@@ -1140,6 +1147,11 @@ jQuery(function ($) {
                     $betterCheckbox[0].checked = false;
                 }
             }
+
+            // Libera flag após preenchimento concluído (silent mode)
+            setTimeout(() => {
+                window._wcBetterInsertingAddress = false;
+            }, 3000);
         }
 
         showLoadingLabel() {
@@ -1315,6 +1327,12 @@ jQuery(function ($) {
             if ($checkboxLabel.length === 0) {
                 insertCustomCheckboxBelowPostcode(baseId);
             } else {
+                // Não recria o fetcher se ele estiver no meio de uma consulta de CEP
+                // (recriar chamaria destroy() → abortaria o AbortController ativo → fetchAddress falha)
+                var existingFetcher = activeCepFetchers[baseId];
+                if (existingFetcher && existingFetcher._requestInProgress) {
+                    return;
+                }
                 // Recria o fetcher sempre para garantir que this.input aponte para o elemento atual no DOM
                 // (evita referência a input removido após alternar entre retirada/envio)
                 var inputSel;
