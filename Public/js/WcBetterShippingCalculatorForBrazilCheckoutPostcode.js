@@ -35,14 +35,20 @@ jQuery(function ($) {
     function insertCustomCheckboxBelowPostcode(type) {
         if (silentMode) {
             // Modo silencioso: cria apenas o fetcher, sem UI de checkbox
-            if (!activeCepFetchers[type]) {
-                activeCepFetchers[type] = new CepAddressFetcher('#' + type + '-postcode, #lkn-pro-' + type + '-postcode', '', type);
+            var inputSelSilent;
+            if (type.indexOf('lkn-pro-') === 0) {
+                inputSelSilent = '#' + type + '-postcode';
+            } else {
+                inputSelSilent = '#' + type + '-postcode, #lkn-pro-' + type + '-postcode';
             }
+            activeCepFetchers[type] = new CepAddressFetcher(inputSelSilent, '', type);
             return;
         }
         if (!enableCheckbox) return; // Não insere o checkbox se não permitido
         var $postcodeInput = $('#' + type + '-postcode, #lkn-pro-' + type + '-postcode');
         if ($postcodeInput.length === 0) return;
+        // Se o input de postcode não está visível (ex: PRO escondeu com display:none), não processa
+        if ($postcodeInput[0].offsetParent === null) return;
         var $parentDiv = $postcodeInput.parent();
         var checkboxId = 'wc-better-checkbox-' + type;
         var $existingCheckbox = $('#' + checkboxId).closest('.wc-block-components-checkbox');
@@ -77,10 +83,14 @@ jQuery(function ($) {
         $checkboxLabel.append($checkboxInput, $checkboxSvg, $checkboxText);
         $clonedCheckbox.append($checkboxLabel);
         $clonedCheckbox.insertAfter($postcodeInput.parent());
-        // Instancia o monitoramento do CEP para atualizar label apenas se não existir
-        if (!activeCepFetchers[type]) {
-            activeCepFetchers[type] = new CepAddressFetcher('#' + type + '-postcode, #lkn-pro-' + type + '-postcode', 'label[for="' + checkboxId + '"]', type);
+        // Instancia o monitoramento do CEP (sempre recria para garantir bind correto no DOM atual)
+        var inputSelCreate;
+        if (type.indexOf('lkn-pro-') === 0) {
+            inputSelCreate = '#' + type + '-postcode';
+        } else {
+            inputSelCreate = '#' + type + '-postcode, #lkn-pro-' + type + '-postcode';
         }
+        activeCepFetchers[type] = new CepAddressFetcher(inputSelCreate, 'label[for="' + checkboxId + '"]', type);
         // Sempre desabilita ao inserir novo endereço
         disableCheckboxAndLabel(type);
     }
@@ -1279,9 +1289,16 @@ jQuery(function ($) {
             // Só insere o checkbox se ele ainda não existe
             if ($checkboxLabel.length === 0) {
                 insertCustomCheckboxBelowPostcode(baseId);
-            } else if (!activeCepFetchers[baseId]) {
-                // Se o checkbox existe mas não há instância ativa, cria uma nova
-                activeCepFetchers[baseId] = new CepAddressFetcher('#' + baseId + '-postcode, #lkn-pro-' + baseId + '-postcode', 'label[for="' + checkboxId + '"]', baseId);
+            } else {
+                // Recria o fetcher sempre para garantir que this.input aponte para o elemento atual no DOM
+                // (evita referência a input removido após alternar entre retirada/envio)
+                var inputSel;
+                if (baseId.indexOf('lkn-pro-') === 0) {
+                    inputSel = '#' + baseId + '-postcode';
+                } else {
+                    inputSel = '#' + baseId + '-postcode, #lkn-pro-' + baseId + '-postcode';
+                }
+                activeCepFetchers[baseId] = new CepAddressFetcher(inputSel, 'label[for="' + checkboxId + '"]', baseId);
             }
 
             // Esconde/mostra checkbox conforme país
