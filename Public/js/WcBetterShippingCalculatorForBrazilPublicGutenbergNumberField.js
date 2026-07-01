@@ -818,7 +818,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Função para atualizar dados dos campos de número
-    function updateNumberFieldData() {
+    let numberUpdateTimeout = null;
+    let lastSentNumberData = null;
+
+    function updateNumberFieldData(skipCartUpdate = false) {
         if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
             try {
                 const { dispatch } = wp.data;
@@ -841,6 +844,32 @@ document.addEventListener("DOMContentLoaded", function () {
             } catch (error) {
                 // Silenciar erro
             }
+        }
+
+        // extensionCartUpdate com debounce + guarda contra dados iguais (evita loop)
+        if (!skipCartUpdate) {
+            const shippingNumberInput = document.getElementById('shipping-number');
+            const billingNumberInput = document.getElementById('billing-number');
+            const data = {
+                shipping_number: shippingNumberInput ? shippingNumberInput.value : '',
+                billing_number: billingNumberInput ? billingNumberInput.value : ''
+            };
+            
+            // Não envia se os dados não mudaram
+            if (lastSentNumberData && lastSentNumberData.shipping_number === data.shipping_number && lastSentNumberData.billing_number === data.billing_number) {
+                return;
+            }
+            lastSentNumberData = data;
+            
+            if (numberUpdateTimeout) clearTimeout(numberUpdateTimeout);
+            numberUpdateTimeout = setTimeout(() => {
+                if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
+                    window.wc.blocksCheckout.extensionCartUpdate({
+                        namespace: 'woo_better_number_validation',
+                        data: data
+                    });
+                }
+            }, 1000);
         }
     }
 
@@ -869,21 +898,21 @@ document.addEventListener("DOMContentLoaded", function () {
         
         if (hasNumberFieldsChanged) {
             setTimeout(() => {
-                updateNumberFieldData();
+                updateNumberFieldData(true); // skipCartUpdate: evita loop
                 
                 // Adicionar listeners aos campos se ainda não existem
                 const shippingNumberInput = document.getElementById('shipping-number');
                 const billingNumberInput = document.getElementById('billing-number');
                 
                 if (shippingNumberInput && !shippingNumberInput.dataset.storeApiListener) {
-                    shippingNumberInput.addEventListener('input', updateNumberFieldData);
-                    shippingNumberInput.addEventListener('change', updateNumberFieldData);
+                    shippingNumberInput.addEventListener('input', () => updateNumberFieldData());
+                    shippingNumberInput.addEventListener('change', () => updateNumberFieldData());
                     shippingNumberInput.dataset.storeApiListener = 'true';
                 }
                 
                 if (billingNumberInput && !billingNumberInput.dataset.storeApiListener) {
-                    billingNumberInput.addEventListener('input', updateNumberFieldData);
-                    billingNumberInput.addEventListener('change', updateNumberFieldData);
+                    billingNumberInput.addEventListener('input', () => updateNumberFieldData());
+                    billingNumberInput.addEventListener('change', () => updateNumberFieldData());
                     billingNumberInput.dataset.storeApiListener = 'true';
                 }
             }, 100);
@@ -897,20 +926,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Configurar listeners iniciais se os campos já existirem
     setTimeout(() => {
-        updateNumberFieldData();
+        updateNumberFieldData(true); // skipCartUpdate no init
         
         const shippingNumberInput = document.getElementById('shipping-number');
         const billingNumberInput = document.getElementById('billing-number');
         
         if (shippingNumberInput && !shippingNumberInput.dataset.storeApiListener) {
-            shippingNumberInput.addEventListener('input', updateNumberFieldData);
-            shippingNumberInput.addEventListener('change', updateNumberFieldData);
+            shippingNumberInput.addEventListener('input', () => updateNumberFieldData());
+            shippingNumberInput.addEventListener('change', () => updateNumberFieldData());
             shippingNumberInput.dataset.storeApiListener = 'true';
         }
         
         if (billingNumberInput && !billingNumberInput.dataset.storeApiListener) {
-            billingNumberInput.addEventListener('input', updateNumberFieldData);
-            billingNumberInput.addEventListener('change', updateNumberFieldData);
+            billingNumberInput.addEventListener('input', () => updateNumberFieldData());
+            billingNumberInput.addEventListener('change', () => updateNumberFieldData());
             billingNumberInput.dataset.storeApiListener = 'true';
         }
     }, 500);

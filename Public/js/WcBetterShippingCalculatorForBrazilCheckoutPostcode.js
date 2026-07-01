@@ -292,6 +292,8 @@ jQuery(function ($) {
             this._spinnerRestoredOverflow = false;
             // Flag de carregamento inicial: impede handleCheckboxChange no remount do componente
             this._isInitialLoad = true;
+            // Guarda contra reentrada em handleCheckboxChange (AJAX → observer → loop)
+            this._isInsertingAddress = false;
             // CEP que estava no campo ao criar o fetcher: usado para distinguir init de nova digitação
             this._initialCep = this.sanitizeCep(this.input.val());
             // Flag para detectar sequência de autocomplete: deleteContentBackward seguido de jQuery trigger
@@ -417,9 +419,16 @@ jQuery(function ($) {
             
             // Se desmarcou o checkbox
             if (!event.target.checked) {
-                // ...existing code...
                 return;
             }
+            
+            // Guarda contra reentrada (AJAX → DOM rebuild → observer → fetcher init → auto-insert loop)
+            if (this._isInsertingAddress) {
+                return;
+            }
+            this._isInsertingAddress = true;
+            
+            try {
             
             // Ao marcar, desabilita imediatamente o checkbox
             if (event.target.checked) {
@@ -444,10 +453,11 @@ jQuery(function ($) {
                 numEl.dispatchEvent(new Event('change', { bubbles: true }));
                 $numberInput.prop('readonly', false).removeAttr('style');
                 $numberInput.closest('.wc-block-components-text-input').removeClass('is-active');
-                var betterCheckboxId = 'wc-' + this.context + '-better-checkbox';
+                var betterCtx = this.context.startsWith('lkn-pro-') ? this.context.slice(8) : this.context;
+                var betterCheckboxId = 'wc-' + betterCtx + '-better-checkbox';
                 var $betterCheckbox = $('#' + betterCheckboxId);
-                if ($betterCheckbox.length) {
-                    $betterCheckbox.prop('checked', false).trigger('change');
+                if ($betterCheckbox.length && $betterCheckbox.prop('checked')) {
+                    $betterCheckbox[0].checked = false;
                 }
             }
             // Se marcou o checkbox e tem endereço
@@ -600,6 +610,9 @@ jQuery(function ($) {
             } else {
                 
             }
+            } finally {
+                this._isInsertingAddress = false;
+            }
         }
         showInsertingLabel() {
             if (!this.checkboxLabel.length) return;
@@ -659,14 +672,14 @@ jQuery(function ($) {
 
             this._isUserInitiated = true;
             // Evento real do usuário (isTrusted): marca fim do carregamento inicial
-            if (event.isTrusted) {
+            if (nativeEvt.isTrusted) {
                 this._isInitialLoad = false;
                 // Digitação manual real: descarta qualquer valor de autocomplete pendente
                 delete activeCepPendingAutocomplete[this.context];
             }
             // Evento sintético do WooCommerce Blocks (isTrusted === false): ignora durante carregamento inicial.
             // Nota: eventos do init() têm isTrusted === undefined, portanto não são bloqueados aqui.
-            if (event.isTrusted === false && this._isInitialLoad) {
+            if (nativeEvt.isTrusted === false && this._isInitialLoad) {
                 return;
             }
 
@@ -826,8 +839,11 @@ jQuery(function ($) {
                     $numberInput.prop('readonly', false).removeAttr('style');
                     $numberInput.closest('.wc-block-components-text-input').removeClass('is-active');
                     var $betterCheckbox = $('#wc-' + this.context + '-better-checkbox');
-                    if ($betterCheckbox.length) {
-                        $betterCheckbox.prop('checked', false).trigger('change');
+                    if ($betterCheckbox.length === 0 && this.context.startsWith('lkn-pro-')) {
+                        $betterCheckbox = $('#wc-' + this.context.slice(8) + '-better-checkbox');
+                    }
+                    if ($betterCheckbox.length && $betterCheckbox.prop('checked')) {
+                        $betterCheckbox[0].checked = false;
                     }
                 }
 
@@ -1111,8 +1127,8 @@ jQuery(function ($) {
                 if ($betterCheckbox.length === 0 && context.startsWith('lkn-pro-')) {
                     $betterCheckbox = $('#wc-' + context.slice(8) + '-better-checkbox');
                 }
-                if ($betterCheckbox.length) {
-                    $betterCheckbox.prop('checked', false).trigger('change');
+                if ($betterCheckbox.length && $betterCheckbox.prop('checked')) {
+                    $betterCheckbox[0].checked = false;
                 }
             }
         }
