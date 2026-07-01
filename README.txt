@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 4.6
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 4.16.0
+Stable tag: 4.16.1
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -147,6 +147,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+# 4.16.1 - 01/07/26
+* Compatibility with the FunnelKit plugin.
+* CPF validation in the shortcode version.
+* Improved detection of available shipping labels in the custom calculator.
+
 # 4.16.0 - 11/06/26
 * New: Product-based shipping system.
 * New: Label system to define delivery business days for free shipping methods.
