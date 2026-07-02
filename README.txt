@@ -147,6 +147,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+# 4.16.2 - 02/07/26
+* New: Shipping calculation option via coupon/fees.
+
 # 4.16.1 - 01/07/26
 * Compatibility with the FunnelKit plugin.
 * CPF validation in the shortcode version.
