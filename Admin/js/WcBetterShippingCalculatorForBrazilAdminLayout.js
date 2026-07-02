@@ -878,6 +878,7 @@
               'woo_better_min_free_shipping_success_message': 'woo_better_min_free_shipping_message',
               'woo_better_enable_progress_bar_value': 'woo_better_min_free_shipping_message',
               'woo_better_min_free_shipping_delivery_time': 'woo_better_enable_min_free_shipping',
+              'woo_better_free_shipping_calc_base': 'woo_better_enable_min_free_shipping',
               'woo_better_free_shipping_by_product_delivery_time': 'woo_better_enable_free_shipping_by_product',
 
               //Cart

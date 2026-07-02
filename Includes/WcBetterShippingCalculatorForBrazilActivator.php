@@ -86,6 +86,7 @@ class WcBetterShippingCalculatorForBrazilActivator {
 			'woo_better_calc_font_source' => 'yes',
 			'woo_better_enable_min_free_shipping' => 'no',
 			'woo_better_min_free_shipping_value' => '0',
+			'woo_better_free_shipping_calc_base' => 'subtotal',
 			'woo_better_calc_enable_cart_page' => 'yes',
 			'woo_better_calc_enable_product_page' => 'yes',
 			'woo_better_calc_enable_auto_postcode_search' => 'yes',
