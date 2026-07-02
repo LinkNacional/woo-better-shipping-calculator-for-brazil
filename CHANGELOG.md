@@ -1,3 +1,6 @@
+# 4.16.2 - 02/07/26
+* Novo: Opção de cálculo de frete por meio de cupom ou taxas.
+
 # 4.16.1 - 01/07/26
 * Compatibilidade com o plugin FunnelKit.
 * Validação de CPF na versão de shortcode.

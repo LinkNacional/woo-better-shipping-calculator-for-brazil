@@ -12,6 +12,7 @@
 	let currentFreeShippingByProduct = false; // Status do frete grátis por produto
 	let observerInitialized = false; // Evita múltiplas inicializações
 	let hasApiError = false; // Flag para indicar erro na API
+	let hasApiCartData = false; // Flag: já recebemos cartTotal da API pelo menos uma vez
 
 	// NÃO inicializa com valor do PHP - vai fazer requisição para obter dados atuais
 	const progressConfig = typeof wc_better_shipping_progress !== 'undefined' ? wc_better_shipping_progress : {};
@@ -36,8 +37,9 @@
 		
 		const progressConfig = typeof wc_better_shipping_progress !== 'undefined' ? wc_better_shipping_progress : {};
 		
-		// Só funciona para blocks - remove completamente o suporte a shortcode
-		if (!progressConfig.has_cart_block) {
+		// Só funciona para blocks — tanto no carrinho quanto no checkout
+		const hasBlock = progressConfig.has_cart_block || progressConfig.has_checkout_block;
+		if (!hasBlock) {
 			return;
 		}
 		
@@ -76,6 +78,7 @@
 					
 					// Atualiza o total do carrinho  
 					currentCartTotal = parseFloat(responseData.cartTotal) || 0;
+				hasApiCartData = true;
 					
 				// ✅ ATUALIZA STATUS DO FRETE GRATUITO baseado na resposta
 				currentFreeShippingStatus = responseData.freeShipping || false;
@@ -231,7 +234,7 @@
 
 	function insertOrUpdateProgressBar() {
 		// Se não tem dados do carrinho, tenta obter do DOM
-		let cartTotal = currentCartTotal || getCartTotalFromDOM();
+		let cartTotal = hasApiCartData ? currentCartTotal : (currentCartTotal || getCartTotalFromDOM());
 		
 		let percent = 0;
 		let message = '';
