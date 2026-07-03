@@ -135,14 +135,6 @@ function deactivateWcBetterShippingCalculatorForBrazilOnDeleteSite($site) {
  * @since    1.0.0
  */
 
-/**
- * Integração com FunnelKit Checkout: classe stub para ativar compatibilidade
- * com campos brasileiros no editor drag-and-drop.
- */
-if (! class_exists('Extra_Checkout_Fields_For_Brazil_Front_End')) {
-    class Extra_Checkout_Fields_For_Brazil_Front_End {}
-}
-
 function runWcBetterShippingCalculatorForBrazil()
 {
 

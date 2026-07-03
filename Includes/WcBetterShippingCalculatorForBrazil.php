@@ -248,6 +248,17 @@ class WcBetterShippingCalculatorForBrazil
             $this->loader->add_action('woocommerce_product_options_shipping', $this, 'lkn_add_free_shipping_product_checkbox');
             $this->loader->add_action('woocommerce_process_product_meta', $this, 'lkn_save_free_shipping_product_checkbox');
         }
+
+        /**
+         * Integração com FunnelKit Checkout: classe stub para compatibilidade
+         * com campos brasileiros no editor drag-and-drop.
+         *
+         * Registrada no wp_loaded com prioridade PHP_INT_MAX (executa por
+         * último) para garantir que, se o plugin "woocommerce-extra-checkout-
+         * fields-for-brazil" estiver ativo, a classe real já tenha sido
+         * declarada antes — evitando "Cannot redeclare class".
+         */
+        $this->loader->add_action('wp_loaded', $this, 'register_funnelkit_stub_class', PHP_INT_MAX);
     }
 
     public function lkn_show_admin_notice()
@@ -7432,5 +7443,33 @@ class WcBetterShippingCalculatorForBrazil
             'number'       => ($number_enabled === 'yes') ? 1 : 0,
             'neighborhood' => ($neighborhood_enabled === 'yes') ? 1 : 0,
         );
+    }
+
+    /**
+     * Integração com FunnelKit Checkout: declara a classe stub
+     * Extra_Checkout_Fields_For_Brazil_Front_End caso o plugin
+     * "woocommerce-extra-checkout-fields-for-brazil" não esteja ativo.
+     *
+     * Executada no hook 'wp_loaded' com prioridade PHP_INT_MAX (a mais
+     * baixa possível) para garantir que o plugin externo já tenha declarado
+     * a classe real antes da verificação — evitando "Cannot redeclare class".
+     *
+     * @since    4.16.3
+     * @return   void
+     */
+    public function register_funnelkit_stub_class() {
+        // Se o plugin woocommerce-extra-checkout-fields-for-brazil estiver ativo,
+        // a classe real já foi ou será declarada por ele — não criamos a stub.
+        if (! function_exists('is_plugin_active')) {
+            include_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+            return;
+        }
+
+        if (! class_exists('Extra_Checkout_Fields_For_Brazil_Front_End')) {
+            class Extra_Checkout_Fields_For_Brazil_Front_End {}
+        }
     }
 }
