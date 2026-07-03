@@ -1,3 +1,6 @@
+# 4.16.3 - 03/07/26
+* Ajuste: correção no carregamento da classe.
+  
 # 4.16.2 - 02/07/26
 * Novo: Opção de cálculo de frete por meio de cupom ou taxas.
 
