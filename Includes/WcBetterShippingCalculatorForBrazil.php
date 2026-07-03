@@ -7468,8 +7468,6 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        if (! class_exists('Extra_Checkout_Fields_For_Brazil_Front_End')) {
-            class Extra_Checkout_Fields_For_Brazil_Front_End {}
-        }
+        require_once plugin_dir_path( __FILE__ ) . 'class-extra-checkout-fields-for-brazil-front-end-stub.php';
     }
 }

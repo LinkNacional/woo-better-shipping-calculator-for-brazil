@@ -20,7 +20,7 @@
  * Author:            Link Nacional
  * Author URI:        https://linknacional.com.br/
  * Requires PHP:      8.2
- * Requires at least: 4.6
+ * Requires at least: 5.0
  * License:           GPLv2 or later
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       woo-better-shipping-calculator-for-brazil

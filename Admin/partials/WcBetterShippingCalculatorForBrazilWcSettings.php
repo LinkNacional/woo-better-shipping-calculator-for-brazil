@@ -269,6 +269,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'custom_attributes' => array(
                     'data-desc-tip' => __('Ativa a caixa de seleção de frete grátis na edição do produto.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => sprintf(
+                        /* translators: %s is the admin URL to the products listing page. */
                         __('Ao habilitar, uma opção de "Frete Grátis" será exibida na aba "Entrega" dentro de cada produto. <a href="%s" target="_blank" style="font-weight: bold; text-decoration: underline;">Clique aqui para ver todos os produtos</a> e configurar.', 'woo-better-shipping-calculator-for-brazil'),
                         admin_url('edit.php?post_type=product')
                     ),
