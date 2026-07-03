@@ -144,11 +144,17 @@ document.addEventListener("DOMContentLoaded", function () {
                     const billingNeighborhoodInput = document.getElementById('billing-neighborhood');
                     const shippingNeighborhoodInput = document.getElementById('shipping-neighborhood');
 
+                    const billingContainer = document.querySelector('.wc-better-billing-neighborhood');
+                    const shippingContainer = document.querySelector('.wc-better-shipping-neighborhood');
+
+                    const billingVisible = billingContainer && billingContainer.offsetParent !== null;
+                    const shippingVisible = shippingContainer && shippingContainer.offsetParent !== null;
+
                     // Validação dos campos de bairro
                     let hasError = false;
 
-                    // Só validar billing se o país de billing for Brasil
-                    if (billingNeighborhoodInput && isBrazilSelected('billing')) {
+                    // Só validar billing se o país de billing for Brasil E o campo estiver visível
+                    if (billingNeighborhoodInput && isBrazilSelected('billing') && billingVisible) {
                         const billingValue = billingNeighborhoodInput.value.trim();
                         if (!billingValue.length) {
                             showNeighborhoodValidationError(billingNeighborhoodInput, 'Por favor, informe o bairro de cobrança.');
@@ -159,8 +165,8 @@ document.addEventListener("DOMContentLoaded", function () {
                         }
                     }
 
-                    // Só validar shipping se o país de shipping for Brasil
-                    if (shippingNeighborhoodInput && isBrazilSelected('shipping')) {
+                    // Só validar shipping se o país de shipping for Brasil E o campo estiver visível
+                    if (shippingNeighborhoodInput && isBrazilSelected('shipping') && shippingVisible) {
                         const shippingValue = shippingNeighborhoodInput.value.trim();
                         if (!shippingValue.length) {
                             showNeighborhoodValidationError(shippingNeighborhoodInput, 'Por favor, informe o bairro de entrega.');
@@ -208,8 +214,6 @@ document.addEventListener("DOMContentLoaded", function () {
             setTimeout(() => {
                 addBillingNeighborhoodField(billingBlock);
             }, 300);
-
-            billingBlockFound = true
         }
     }
 
@@ -235,8 +239,6 @@ document.addEventListener("DOMContentLoaded", function () {
             setTimeout(() => {
                 addShippingNeighborhoodField(shippingBlock);
             }, 300);
-
-            shippingBlockFound = true
         }
     }
 
@@ -247,11 +249,17 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // Procurar o campo de cidade para inserir o bairro antes dele
-        const billingCity = billingBlock.querySelector('#billing-city');
+        const billingCity = (() => {
+            const el = billingBlock.querySelector('#billing-city') || billingBlock.querySelector('#lkn-pro-billing-city');
+            return (el && el.offsetParent !== null) ? el : null;
+        })();
         
         if (!billingCity) {
+            billingBlockFound = false
             return;
         }
+
+        billingBlockFound = true
 
         // Obter valor inicial dos dados da página
         let initialNeighborhood = (typeof WooBetterNeighborhoodData !== 'undefined' && WooBetterNeighborhoodData.billing_neighborhood) ? WooBetterNeighborhoodData.billing_neighborhood : '';
@@ -284,22 +292,26 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // Procurar o campo de cidade para inserir o bairro antes dele
-        const shippingCity = shippingBlock.querySelector('#shipping-city');
+        const shippingCity = (() => {
+            const el = shippingBlock.querySelector('#shipping-city') || shippingBlock.querySelector('#lkn-pro-shipping-city');
+            return (el && el.offsetParent !== null) ? el : null;
+        })();
         
         if (!shippingCity) {
+            shippingBlockFound = false
             return;
         }
 
-        // Obter valor inicial dos dados da página
-        let initialNeighborhood = (typeof WooBetterNeighborhoodData !== 'undefined' && WooBetterNeighborhoodData.shipping_neighborhood) ? WooBetterNeighborhoodData.shipping_neighborhood : '';
+        shippingBlockFound = true
 
-        // Usar valor salvo se existir (prioridade sobre dados iniciais)
+        // Obter valor inicial com prioridade: saved > PHP
+        let initialNeighborhood = '';
         if (savedNeighborhoodData.shipping_neighborhood) {
             initialNeighborhood = savedNeighborhoodData.shipping_neighborhood;
-        } else {
-            // Se não temos dados salvos, salvar os dados iniciais
-            savedNeighborhoodData.shipping_neighborhood = initialNeighborhood;
+        } else if (typeof WooBetterNeighborhoodData !== 'undefined' && WooBetterNeighborhoodData.shipping_neighborhood) {
+            initialNeighborhood = WooBetterNeighborhoodData.shipping_neighborhood;
         }
+        savedNeighborhoodData.shipping_neighborhood = initialNeighborhood;
 
         // Inserir antes do campo de cidade
         let insertBeforeElement = shippingCity.parentElement;

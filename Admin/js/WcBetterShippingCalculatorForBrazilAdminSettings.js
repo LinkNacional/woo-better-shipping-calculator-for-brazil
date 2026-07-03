@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (minimumFreeShippingRadios.length > 0) {
             const minimumFreeShippingValue = document.getElementById('woo_better_min_free_shipping_value');
+            const minimumFreeShippingCalcBase = document.getElementById('woo_better_free_shipping_calc_base');
             const minimumFreeShippingMessage = document.getElementById('woo_better_min_free_shipping_message');
             const minimumFreeShippingSuccessMessage = document.getElementById('woo_better_min_free_shipping_success_message');
             
@@ -23,6 +24,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         minimumFreeShippingValue.readOnly = false;
                         minimumFreeShippingValue.style.backgroundColor = '';
                         minimumFreeShippingValue.style.cursor = '';
+                        
+                        // Habilita o select de base de cálculo
+                        if (minimumFreeShippingCalcBase) {
+                            minimumFreeShippingCalcBase.disabled = false;
+                            minimumFreeShippingCalcBase.style.backgroundColor = '';
+                            minimumFreeShippingCalcBase.style.cursor = '';
+                        }
                         
                         // Habilita os campos de mensagem
                         if (minimumFreeShippingMessage) {
@@ -57,6 +65,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         minimumFreeShippingValue.readOnly = true;
                         minimumFreeShippingValue.style.backgroundColor = '#f1f1f1';
                         minimumFreeShippingValue.style.cursor = 'not-allowed';
+                        
+                        // Desabilita o select de base de cálculo e reseta para subtotal
+                        if (minimumFreeShippingCalcBase) {
+                            minimumFreeShippingCalcBase.value = 'subtotal';
+                            minimumFreeShippingCalcBase.disabled = true;
+                            minimumFreeShippingCalcBase.style.backgroundColor = '#f1f1f1';
+                            minimumFreeShippingCalcBase.style.cursor = 'not-allowed';
+                        }
                         
                         // Desabilita os campos de mensagem
                         if (minimumFreeShippingMessage) {

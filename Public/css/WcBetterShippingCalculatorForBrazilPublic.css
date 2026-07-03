@@ -37,3 +37,8 @@
     pointer-events: none !important;
     opacity: 0.6 !important;
 }
+
+/* Wrapper do campo Número (Gutenberg) */
+.wc-better-number-main-wrapper {
+    flex: 1 0 calc(100%) !important;
+}

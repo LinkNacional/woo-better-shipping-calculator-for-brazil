@@ -5,6 +5,8 @@ jQuery(function ($) {
     var activeCepPendingAutocomplete = {};
     // Flag global para controlar processamento do observer
     var isProcessingAddressUpdate = false;
+    // Flag global: evita que updateNumberFieldData dispare extensionCartUpdate durante inserção de endereço
+    window._wcBetterInsertingAddress = false;
 
     // Função para desabilitar checkbox e label
     function disableCheckboxAndLabel(type) {
@@ -34,15 +36,24 @@ jQuery(function ($) {
 
     function insertCustomCheckboxBelowPostcode(type) {
         if (silentMode) {
+            // Modo silencioso: não recria o fetcher se ele estiver no meio de uma consulta
+            var existing = activeCepFetchers[type];
+            if (existing && existing._requestInProgress) return;
             // Modo silencioso: cria apenas o fetcher, sem UI de checkbox
-            if (!activeCepFetchers[type]) {
-                activeCepFetchers[type] = new CepAddressFetcher('#' + type + '-postcode', '', type);
+            var inputSelSilent;
+            if (type.indexOf('lkn-pro-') === 0) {
+                inputSelSilent = '#' + type + '-postcode';
+            } else {
+                inputSelSilent = '#' + type + '-postcode, #lkn-pro-' + type + '-postcode';
             }
+            activeCepFetchers[type] = new CepAddressFetcher(inputSelSilent, '', type);
             return;
         }
         if (!enableCheckbox) return; // Não insere o checkbox se não permitido
-        var $postcodeInput = $('#' + type + '-postcode');
+        var $postcodeInput = $('#' + type + '-postcode, #lkn-pro-' + type + '-postcode');
         if ($postcodeInput.length === 0) return;
+        // Se o input de postcode não está visível (ex: PRO escondeu com display:none), não processa
+        if ($postcodeInput[0].offsetParent === null) return;
         var $parentDiv = $postcodeInput.parent();
         var checkboxId = 'wc-better-checkbox-' + type;
         var $existingCheckbox = $('#' + checkboxId).closest('.wc-block-components-checkbox');
@@ -77,34 +88,41 @@ jQuery(function ($) {
         $checkboxLabel.append($checkboxInput, $checkboxSvg, $checkboxText);
         $clonedCheckbox.append($checkboxLabel);
         $clonedCheckbox.insertAfter($postcodeInput.parent());
-        // Instancia o monitoramento do CEP para atualizar label apenas se não existir
-        if (!activeCepFetchers[type]) {
-            activeCepFetchers[type] = new CepAddressFetcher('#' + type + '-postcode', 'label[for="' + checkboxId + '"]', type);
+        // Instancia o monitoramento do CEP (sempre recria para garantir bind correto no DOM atual)
+        var inputSelCreate;
+        if (type.indexOf('lkn-pro-') === 0) {
+            inputSelCreate = '#' + type + '-postcode';
+        } else {
+            inputSelCreate = '#' + type + '-postcode, #lkn-pro-' + type + '-postcode';
         }
+        activeCepFetchers[type] = new CepAddressFetcher(inputSelCreate, 'label[for="' + checkboxId + '"]', type);
         // Sempre desabilita ao inserir novo endereço
         disableCheckboxAndLabel(type);
     }
 
     function updateAddressFields(type, apiData) {
-        // Verifica se deve ignorar verificação de processamento
         const skipCheck = apiData.skipProcessingCheck === true;
         
         // Verifica se já está processando para evitar loop (exceto se skipCheck for true)
         if (!skipCheck && isProcessingAddressUpdate) {
             return;
         }
-        
+
         // Mapeia os campos relevantes
         const fieldMap = [
             { id: `${type}-address_1`, key: 'address' },
             { id: `${type}-address_2`, key: 'address_2' },
             { id: `${type}-city`, key: 'city' },
             { id: `${type}-state`, key: 'state' },
-            { id: `${type}-neighborhood`, key: 'district' }  // Adiciona campo de bairro
+            { id: `${type}-neighborhood`, key: 'district' },
         ];
 
+        // Para campos que NÃO usam prefixo lkn-pro- (neighborhood, number), extrai o
+        // context base (shipping/billing) removendo o prefixo.
+        const baseContext = type.startsWith('lkn-pro-') ? type.slice(8) : type;
+
         fieldMap.forEach(field => {
-            const input = document.getElementById(field.id);
+            const input = document.getElementById(field.id) || document.getElementById('lkn-pro-' + field.id) || (field.key === 'district' ? document.getElementById(baseContext + '-neighborhood') : null);
             if (!input) {
                 return;
             }
@@ -124,7 +142,7 @@ jQuery(function ($) {
                 }
             } else if (field.key === 'address') {
                 // Para o campo endereço principal, verifica se existe campo de bairro
-                const neighborhoodField = document.getElementById(`${type}-neighborhood`);
+                const neighborhoodField = document.getElementById(`${type}-neighborhood`) || document.getElementById(`lkn-pro-${type}-neighborhood`) || document.getElementById(`${baseContext}-neighborhood`);
                 const hasNeighborhoodField = neighborhoodField !== null;
                 
                 if (value && value.trim() !== '') {
@@ -278,6 +296,8 @@ jQuery(function ($) {
             this._spinnerRestoredOverflow = false;
             // Flag de carregamento inicial: impede handleCheckboxChange no remount do componente
             this._isInitialLoad = true;
+            // Guarda contra reentrada em handleCheckboxChange (AJAX → observer → loop)
+            this._isInsertingAddress = false;
             // CEP que estava no campo ao criar o fetcher: usado para distinguir init de nova digitação
             this._initialCep = this.sanitizeCep(this.input.val());
             // Flag para detectar sequência de autocomplete: deleteContentBackward seguido de jQuery trigger
@@ -340,6 +360,7 @@ jQuery(function ($) {
             if (!this._isSilentMode) {
                 const initialCep = this.sanitizeCep(this.input.val());
                 if (this.isValidCep(initialCep)) {
+                    this._isInitialLoad = false;
                     this.handleInput({ target: { value: initialCep } });
                 }
             }
@@ -402,9 +423,19 @@ jQuery(function ($) {
             
             // Se desmarcou o checkbox
             if (!event.target.checked) {
-                // ...existing code...
                 return;
             }
+            
+            // Guarda contra reentrada (AJAX → DOM rebuild → observer → fetcher init → auto-insert loop)
+            if (this._isInsertingAddress) {
+                return;
+            }
+            this._isInsertingAddress = true;
+            
+            // Flag global: silencia extensionCartUpdate do NumberField durante inserção
+            window._wcBetterInsertingAddress = true;
+            
+            try {
             
             // Ao marcar, desabilita imediatamente o checkbox
             if (event.target.checked) {
@@ -416,13 +447,24 @@ jQuery(function ($) {
             // Limpa o campo de número customizado e ajusta checkbox
             var numberFieldId = this.context + '-number';
             var $numberInput = $('#' + numberFieldId);
+            // Fallback para campo sem prefixo lkn-pro- (ex: shipping-number)
+            if ($numberInput.length === 0) {
+                var baseCtx = this.context.startsWith('lkn-pro-') ? this.context.slice(8) : this.context;
+                $numberInput = $('#' + baseCtx + '-number');
+            }
             if ($numberInput.length) {
-                $numberInput.val('').prop('readonly', false).removeAttr('style').trigger('change');
+                var numEl = $numberInput[0];
+                var nativeNumSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                nativeNumSetter.call(numEl, '');
+                numEl.dispatchEvent(new Event('input', { bubbles: true }));
+                numEl.dispatchEvent(new Event('change', { bubbles: true }));
+                $numberInput.prop('readonly', false).removeAttr('style');
                 $numberInput.closest('.wc-block-components-text-input').removeClass('is-active');
-                var betterCheckboxId = 'wc-' + this.context + '-better-checkbox';
+                var betterCtx = this.context.startsWith('lkn-pro-') ? this.context.slice(8) : this.context;
+                var betterCheckboxId = 'wc-' + betterCtx + '-better-checkbox';
                 var $betterCheckbox = $('#' + betterCheckboxId);
-                if ($betterCheckbox.length) {
-                    $betterCheckbox.prop('checked', false).trigger('change');
+                if ($betterCheckbox.length && $betterCheckbox.prop('checked')) {
+                    $betterCheckbox[0].checked = false;
                 }
             }
             // Se marcou o checkbox e tem endereço
@@ -445,7 +487,7 @@ jQuery(function ($) {
                 context: this.context,
                 nonce: (typeof wc_better_checkout_vars !== 'undefined' ? wc_better_checkout_vars.nonce : '')
             };
-            
+
             let ajaxCompleted = false;
             // Promise para requisição AJAX
             const ajaxPromise = new Promise((resolve, reject) => {
@@ -499,7 +541,11 @@ jQuery(function ($) {
                         }
                         
                         // Verifica se o campo foi atualizado
-                        const input = document.getElementById(`${this.context}-address_1`);
+                        const ctx = this.context;
+                        const id1 = `${ctx}-address_1`;
+                        const id2 = `lkn-pro-${ctx}-address_1`;
+                        const id3 = (ctx.startsWith('lkn-pro-') ? ctx.slice(8) + '-address_1' : null);
+                        const input = document.getElementById(id1) || document.getElementById(id2) || (id3 ? document.getElementById(id3) : null);
                         if (input) {
                             
                             updateCount++;
@@ -510,6 +556,9 @@ jQuery(function ($) {
 
                                 // Limpa campo de número após o re-render do WooCommerce Blocks
                                 var $numInput = $('#' + this.context + '-number');
+                                if ($numInput.length === 0 && this.context.startsWith('lkn-pro-')) {
+                                    $numInput = $('#' + this.context.slice(8) + '-number');
+                                }
                                 if ($numInput.length) {
                                     var numEl = $numInput[0];
                                     var nativeNumSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
@@ -525,12 +574,9 @@ jQuery(function ($) {
                                     isProcessingAddressUpdate = true;
                                 }, 100);
                             } else {
-                                // Nas execuções subsequentes, verifica a flag
-                                if (isProcessingAddressUpdate) {
-                                    return;
-                                }
-                                isProcessingAddressUpdate = true;
-                                updateAddressFields(this.context, data);
+                                // React recriou os inputs — força preenchimento novamente
+                                isProcessingAddressUpdate = false;
+                                updateAddressFields(this.context, { ...data, skipProcessingCheck: true });
                             }
                             
                             // Reset da flag após um delay
@@ -571,6 +617,13 @@ jQuery(function ($) {
                 }
             } else {
                 
+            }
+            } finally {
+                this._isInsertingAddress = false;
+                // Libera após um delay (observer ainda preenchendo endereços)
+                setTimeout(() => {
+                    window._wcBetterInsertingAddress = false;
+                }, 5000);
             }
         }
         showInsertingLabel() {
@@ -631,14 +684,14 @@ jQuery(function ($) {
 
             this._isUserInitiated = true;
             // Evento real do usuário (isTrusted): marca fim do carregamento inicial
-            if (event.isTrusted) {
+            if (nativeEvt.isTrusted) {
                 this._isInitialLoad = false;
                 // Digitação manual real: descarta qualquer valor de autocomplete pendente
                 delete activeCepPendingAutocomplete[this.context];
             }
             // Evento sintético do WooCommerce Blocks (isTrusted === false): ignora durante carregamento inicial.
             // Nota: eventos do init() têm isTrusted === undefined, portanto não são bloqueados aqui.
-            if (event.isTrusted === false && this._isInitialLoad) {
+            if (nativeEvt.isTrusted === false && this._isInitialLoad) {
                 return;
             }
 
@@ -703,8 +756,9 @@ jQuery(function ($) {
 
             if (this.isValidCep(cep)) {
                 if (this._isSilentMode) {
-                    // Modo silencioso: desabilita o input do CEP durante a consulta
-                    this.input.prop('disabled', true);
+                    // Modo silencioso: usa readonly em vez de disabled para evitar re-render do React
+                    // (disabled causa destruição/recriação do input, cancelando o debounce)
+                     this.input.prop('readonly', true);
                 } else {
                     // Desabilita o checkbox imediatamente
                     $checkboxInput.prop('disabled', true);
@@ -786,6 +840,9 @@ jQuery(function ($) {
                 // Limpa o campo de número ao preencher um novo endereço.
                 // No modo de sugestão: NÃO limpa aqui — só limpa quando o usuário confirmar o checkbox.
                 var $numberInput = $('#' + this.context + '-number');
+                if ($numberInput.length === 0 && this.context.startsWith('lkn-pro-')) {
+                    $numberInput = $('#' + this.context.slice(8) + '-number');
+                }
                 if ($numberInput.length && !this._isInitialLoad && this._isSilentMode) {
                     var numberEl = $numberInput[0];
                     var nativeNumberSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
@@ -795,8 +852,11 @@ jQuery(function ($) {
                     $numberInput.prop('readonly', false).removeAttr('style');
                     $numberInput.closest('.wc-block-components-text-input').removeClass('is-active');
                     var $betterCheckbox = $('#wc-' + this.context + '-better-checkbox');
-                    if ($betterCheckbox.length) {
-                        $betterCheckbox.prop('checked', false).trigger('change');
+                    if ($betterCheckbox.length === 0 && this.context.startsWith('lkn-pro-')) {
+                        $betterCheckbox = $('#wc-' + this.context.slice(8) + '-better-checkbox');
+                    }
+                    if ($betterCheckbox.length && $betterCheckbox.prop('checked')) {
+                        $betterCheckbox[0].checked = false;
                     }
                 }
 
@@ -805,7 +865,7 @@ jQuery(function ($) {
                     if (this._isInitialLoad && cep === this._initialCep) {
                         this._hideBorderSpinner();
                         if (this.input && this.input.length) {
-                            this.input.prop('disabled', false);
+                            this.input.prop('readonly', false);
                         }
                         this._isInitialLoad = false;
                         return;
@@ -857,7 +917,7 @@ jQuery(function ($) {
         _handleInvalidCep($checkboxInput, $checkboxLabel) {
             if (this._isSilentMode) {
                 this._hideBorderSpinner();
-                this.input.prop('disabled', false);
+                this.input.prop('readonly', false);
                 return;
             }
             $checkboxInput.prop('disabled', true);
@@ -874,7 +934,7 @@ jQuery(function ($) {
             this.addressData = null;
             if (this._isSilentMode) {
                 this._hideBorderSpinner();
-                this.input.prop('disabled', false);
+                this.input.prop('readonly', false);
             } else {
                 this.showNotFoundLabel();
                 $checkboxInput.prop('disabled', true);
@@ -999,7 +1059,7 @@ jQuery(function ($) {
             // Atualiza o campo CEP imediatamente com o valor correto antes de aguardar o AJAX.
             // Isso evita que o campo mostre apenas os dígitos parciais digitados pelo usuário
             // enquanto a requisição está em andamento (o React tende a restaurar seu state anterior).
-            const postcodeInputEl = document.getElementById(context + '-postcode');
+            const postcodeInputEl = document.getElementById(context + '-postcode') || document.getElementById('lkn-pro-' + context + '-postcode');
             if (postcodeInputEl && postcodeInputEl.value !== postcode) {
                 this._isFillingPostcode = true;
                 const postcodeNativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
@@ -1046,7 +1106,7 @@ jQuery(function ($) {
 
             // Reabilita o input do CEP
             if (this.input && this.input.length) {
-                this.input.prop('disabled', false);
+                this.input.prop('readonly', false);
             }
 
             // Aborta se um fill mais recente já iniciou (usuário selecionou outro autocomplete
@@ -1054,6 +1114,9 @@ jQuery(function ($) {
             if (generation !== this._silentFillGeneration) {
                 return;
             }
+
+            // Flag global: silencia extensionCartUpdate do NumberField enquanto preenche endereços
+            window._wcBetterInsertingAddress = true;
 
             // Preenche os campos de endereço diretamente via setter nativo do React.
             // Não usa invalidateResolutionForStore para evitar que o WC Blocks re-busque
@@ -1064,6 +1127,9 @@ jQuery(function ($) {
 
             // Limpa campo de número após o preenchimento
             var $numInput = $('#' + context + '-number');
+            if ($numInput.length === 0 && context.startsWith('lkn-pro-')) {
+                $numInput = $('#' + context.slice(8) + '-number');
+            }
             if ($numInput.length) {
                 var numEl = $numInput[0];
                 var nativeNumSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
@@ -1074,10 +1140,18 @@ jQuery(function ($) {
                 $numInput.closest('.wc-block-components-text-input').removeClass('is-active');
                 // Desmarca o checkbox S/N que fica dentro do campo de número (Gutenberg)
                 var $betterCheckbox = $('#wc-' + context + '-better-checkbox');
-                if ($betterCheckbox.length) {
-                    $betterCheckbox.prop('checked', false).trigger('change');
+                if ($betterCheckbox.length === 0 && context.startsWith('lkn-pro-')) {
+                    $betterCheckbox = $('#wc-' + context.slice(8) + '-better-checkbox');
+                }
+                if ($betterCheckbox.length && $betterCheckbox.prop('checked')) {
+                    $betterCheckbox[0].checked = false;
                 }
             }
+
+            // Libera flag após preenchimento concluído (silent mode)
+            setTimeout(() => {
+                window._wcBetterInsertingAddress = false;
+            }, 3000);
         }
 
         showLoadingLabel() {
@@ -1213,7 +1287,7 @@ jQuery(function ($) {
             // Lógica de posicionamento do CEP
             var checkboxId = 'wc-better-checkbox-' + baseId;
             var $checkboxLabel = $('label[for="' + checkboxId + '"]');
-            var $addressInput = $('#' + baseId + '-address_1');
+            var $addressInput = $('#' + baseId + '-address_1, #lkn-pro-' + baseId + '-address_1');
             var $addressParentDiv = $addressInput.length ? $addressInput.parent() : null;
             if ($checkboxLabel.length) {
                 // Se o checkbox existe, posiciona o CEP acima do checkbox
@@ -1252,9 +1326,22 @@ jQuery(function ($) {
             // Só insere o checkbox se ele ainda não existe
             if ($checkboxLabel.length === 0) {
                 insertCustomCheckboxBelowPostcode(baseId);
-            } else if (!activeCepFetchers[baseId]) {
-                // Se o checkbox existe mas não há instância ativa, cria uma nova
-                activeCepFetchers[baseId] = new CepAddressFetcher('#' + baseId + '-postcode', 'label[for="' + checkboxId + '"]', baseId);
+            } else {
+                // Não recria o fetcher se ele estiver no meio de uma consulta de CEP
+                // (recriar chamaria destroy() → abortaria o AbortController ativo → fetchAddress falha)
+                var existingFetcher = activeCepFetchers[baseId];
+                if (existingFetcher && existingFetcher._requestInProgress) {
+                    return;
+                }
+                // Recria o fetcher sempre para garantir que this.input aponte para o elemento atual no DOM
+                // (evita referência a input removido após alternar entre retirada/envio)
+                var inputSel;
+                if (baseId.indexOf('lkn-pro-') === 0) {
+                    inputSel = '#' + baseId + '-postcode';
+                } else {
+                    inputSel = '#' + baseId + '-postcode, #lkn-pro-' + baseId + '-postcode';
+                }
+                activeCepFetchers[baseId] = new CepAddressFetcher(inputSel, 'label[for="' + checkboxId + '"]', baseId);
             }
 
             // Esconde/mostra checkbox conforme país
@@ -1273,18 +1360,18 @@ jQuery(function ($) {
     // Verificação forçada para garantir que billing e shipping sejam processados
     setTimeout(function() {
         ['billing', 'shipping'].forEach(function(baseId) {
-            var $addressInput = $('#' + baseId + '-address_1');
+            var $addressInput = $('#' + baseId + '-address_1, #lkn-pro-' + baseId + '-address_1');
             
             // Tenta múltiplos seletores para o div do postcode
-            var $divComponent = $('.wc-block-components-address-form__postcode input[id="' + baseId + '-postcode"]').parent();
+            var $divComponent = $('.wc-block-components-address-form__postcode input[id="' + baseId + '-postcode"], .wc-block-components-address-form__postcode input[id="lkn-pro-' + baseId + '-postcode"]').parent();
             
             // Se não encontrou, tenta outros seletores
             if ($divComponent.length === 0) {
-                $divComponent = $('#' + baseId + '-postcode').parent();
+                $divComponent = $('#' + baseId + '-postcode, #lkn-pro-' + baseId + '-postcode').parent();
             }
             
             if ($divComponent.length === 0) {
-                $divComponent = $('input[id="' + baseId + '-postcode"]').closest('.wc-block-components-address-form__postcode');
+                $divComponent = $('input[id="' + baseId + '-postcode"], input[id="lkn-pro-' + baseId + '-postcode"]').closest('.wc-block-components-address-form__postcode');
             }
             
             var priorityClass = 'woo-better-priority-' + baseId;

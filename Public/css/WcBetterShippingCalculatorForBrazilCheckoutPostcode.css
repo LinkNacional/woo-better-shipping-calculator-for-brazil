@@ -9,3 +9,7 @@
 .wc-better-checkbox-disabled-label {
     cursor: not-allowed !important;
 }
+
+.wc-block-checkout__use-address-for-shipping.wc-better {
+    margin-top: 10px !important;
+}

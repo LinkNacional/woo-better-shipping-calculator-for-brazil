@@ -152,6 +152,22 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                     'data-title-description' => __('Ex: 200,00', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
+            'free_shipping_calc_base' => array(
+                'title'    => __('Base de Cálculo', 'woo-better-shipping-calculator-for-brazil'),
+                'id'       => 'woo_better_free_shipping_calc_base',
+                'desc_tip' => false,
+                'default'  => 'subtotal',
+                'type'     => 'select',
+                'options'  => array(
+                    'subtotal' => __('Subtotal', 'woo-better-shipping-calculator-for-brazil'),
+                    'total'    => __('Total', 'woo-better-shipping-calculator-for-brazil'),
+                ),
+                'custom_attributes' => array(
+                    'data-desc-tip' => __('Define qual valor será usado como base para o cálculo do frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-description' => __('<strong>Subtotal:</strong> considera apenas o valor dos produtos (padrão).<br><strong>Total:</strong> considera subtotal + taxas - cupons de desconto.', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Escolha entre usar apenas o subtotal ou o valor total (com taxas e descontos) como base para liberar o frete grátis.', 'woo-better-shipping-calculator-for-brazil')
+                )
+            ),
             'only_free_shipping' => array(
                 'title'    => __('Ocultar outros fretes quando Grátis', 'woo-better-shipping-calculator-for-brazil'),
                 'desc_tip' => false,
@@ -253,6 +269,7 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'custom_attributes' => array(
                     'data-desc-tip' => __('Ativa a caixa de seleção de frete grátis na edição do produto.', 'woo-better-shipping-calculator-for-brazil'),
                     'data-description' => sprintf(
+                        /* translators: %s is the admin URL to the products listing page. */
                         __('Ao habilitar, uma opção de "Frete Grátis" será exibida na aba "Entrega" dentro de cada produto. <a href="%s" target="_blank" style="font-weight: bold; text-decoration: underline;">Clique aqui para ver todos os produtos</a> e configurar.', 'woo-better-shipping-calculator-for-brazil'),
                         admin_url('edit.php?post_type=product')
                     ),

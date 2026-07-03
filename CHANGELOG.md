@@ -1,3 +1,14 @@
+# 4.16.3 - 03/07/26
+* Ajuste: correção no carregamento da classe.
+  
+# 4.16.2 - 02/07/26
+* Novo: Opção de cálculo de frete por meio de cupom ou taxas.
+
+# 4.16.1 - 01/07/26
+* Compatibilidade com o plugin FunnelKit.
+* Validação de CPF na versão de shortcode.
+* Melhoria na detecção da label dos fretes disponíveis na calculadora personalizada.
+  
 # 4.16.0 - 11/06/26
 * Novo: Sistema de frete por produto.
 * Novo: Sistema de label para definir os dias úteis para entrega nos fretes grátis.
