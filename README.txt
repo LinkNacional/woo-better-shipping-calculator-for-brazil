@@ -147,6 +147,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+# 4.16.4 - 06/07/26
+* Adjust: Fallback for the plugin's calculator label when shipping business days are not detected.
+
 # 4.16.3 - 03/07/26
 * Fix: Correction in class loading.
 
