@@ -676,22 +676,36 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        if (editButton.getAttribute('aria-expanded') != 'true') {
-            editButton.click()
+        const isExpanded = editButton.getAttribute('aria-expanded') === 'true';
+        
+        if (!isExpanded) {
+            editButton.click();
         }
 
-        if (editButton.getAttribute('aria-expanded') == 'true') {
-            
-            // Aguardar um pouco para que os campos sejam renderizados
-            setTimeout(() => {
+        // Marcar como encontrado ANTES do setTimeout para evitar que o MutationObserver
+        // interfira enquanto aguardamos o React expandir a seção
+        billingBlockFound = true;
+        
+        // Iniciar observer específico para o container imediatamente
+        startContainerObserver(container, containerType);
+
+        // Se o container já estava expandido, delay curto.
+        // Se clicamos para expandir, delay maior para aguardar o React re-renderizar
+        // e atualizar o atributo aria-expanded + renderizar os campos internos.
+        const delay = isExpanded ? 300 : 600;
+
+        setTimeout(() => {
+            // Verificar novamente se o container está expandido após o delay
+            const currentEditButton = document.querySelector(`span.wc-block-components-address-card__edit[aria-controls="${containerType}"]`);
+            if (currentEditButton && currentEditButton.getAttribute('aria-expanded') === 'true') {
                 addPersonTypeFields(container, containerType);
-            }, 300);
-
-            billingBlockFound = true
-            
-            // Iniciar observer específico para o container
-            startContainerObserver(container, containerType);
-        }
+            } else if (currentEditButton) {
+                // Se ainda não expandiu, tentar mais uma vez com delay extra
+                setTimeout(() => {
+                    addPersonTypeFields(container, containerType);
+                }, 400);
+            }
+        }, delay);
     }
 
     function billingPersonTypeHandle(billingBlock) {

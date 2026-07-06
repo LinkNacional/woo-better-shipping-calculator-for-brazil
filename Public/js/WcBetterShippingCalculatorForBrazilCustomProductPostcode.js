@@ -98,13 +98,75 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let deliveryStr = '';
 
-        // Busca por chaves comuns de prazo de entrega
-        if (metaData.delivery_time && String(metaData.delivery_time).trim()) {
-            deliveryStr = String(metaData.delivery_time).trim();
-        } else if (metaData.delivery_range && String(metaData.delivery_range).trim()) {
-            deliveryStr = String(metaData.delivery_range).trim();
-        } else if (metaData.DELIVERY_FORECAST && String(metaData.DELIVERY_FORECAST).trim()) {
-            deliveryStr = String(metaData.DELIVERY_FORECAST).trim();
+        /**
+         * Tenta extrair prazo de entrega do meta_data, que pode vir em dois formatos:
+         * 1. Objeto chave-valor: {"delivery_time": "(5 a 6 dias)", "_delivery_forecast": "7", ...}
+         * 2. Array de pares (formato nativo WC): [{"key": "_delivery_forecast", "value": "7"}, ...]
+         */
+        function tryGet(obj, key) {
+            if (obj && typeof obj === 'object' && obj[key] != null && String(obj[key]).trim()) {
+                return String(obj[key]).trim();
+            }
+            return '';
+        }
+
+        // Chaves conhecidas de prazo de entrega, em ordem de prioridade.
+        // Cobrem: Correios (_delivery_forecast), Melhor Envio, J&T, LATAM, Azul Cargo,
+        // além de convenções com underscore, português e genéricas.
+        var deliveryKeys = [
+            'delivery_time',
+            '_delivery_forecast',
+            '_delivery_time',
+            'delivery_range',
+            '_delivery_range',
+            'delivery_forecast',
+            'DELIVERY_FORECAST',
+            '_delivery_days',
+            'delivery_days',
+            '_prazo',
+            '_prazo_entrega',
+            'prazo',
+            'prazo_entrega',
+            '_estimate',
+            '_shipping_estimate',
+            'shipping_estimate',
+            'estimate',
+            '_transit_time',
+            'transit_time',
+            '_transit_days',
+            'transit_days',
+            '_deadline',
+            'deadline',
+            'estimated_delivery',
+            '_estimated_delivery',
+            'shipping_time',
+            '_delivery_date',
+            'delivery_date',
+            'total_days',
+            'tempo_entrega',
+            'dias_uteis',
+        ];
+
+        // Tenta extrair do formato objeto direto
+        for (var i = 0; i < deliveryKeys.length; i++) {
+            deliveryStr = tryGet(metaData, deliveryKeys[i]);
+            if (deliveryStr) break;
+        }
+
+        // Fallback: se for array de {key, value} (formato nativo do WooCommerce)
+        if (!deliveryStr && Array.isArray(metaData)) {
+            for (var k = 0; k < metaData.length; k++) {
+                var item = metaData[k];
+                if (item && typeof item === 'object' && item.key) {
+                    for (var j = 0; j < deliveryKeys.length; j++) {
+                        if (item.key === deliveryKeys[j]) {
+                            deliveryStr = tryGet(item, 'value');
+                            if (deliveryStr) break;
+                        }
+                    }
+                }
+                if (deliveryStr) break;
+            }
         }
 
         if (!deliveryStr) return label;
@@ -114,12 +176,11 @@ document.addEventListener('DOMContentLoaded', function () {
             var days = parseInt(deliveryStr, 10);
             deliveryStr = days === 1 ? '(1 dia útil)' : '(' + days + ' dias úteis)';
         }
-        // Garante que esteja entre parênteses
-        if (!/^\(/.test(deliveryStr)) {
-            deliveryStr = '(' + deliveryStr + ')';
-        }
+        // Garante que esteja entre parênteses (uma única vez)
+        deliveryStr = deliveryStr.replace(/^[\s(]+|[\s)]+$/g, '');
+        deliveryStr = '(' + deliveryStr + ')';
 
-        // Se o label já contém prazo, não duplica
+        // Se o label já contém prazo entre parênteses com número + "dia", não duplica
         if (/\([^)]*\d+\s*dia[^)]*\)/i.test(label)) {
             return label;
         }

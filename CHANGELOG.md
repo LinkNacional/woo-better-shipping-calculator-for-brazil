@@ -1,3 +1,6 @@
+# 4.16.4 - 06/07/26
+* Ajuste: Fallback para a label da calculadora do plugin quando os dias úteis do prazo não são detectados.
+  
 # 4.16.3 - 03/07/26
 * Ajuste: correção no carregamento da classe.
   

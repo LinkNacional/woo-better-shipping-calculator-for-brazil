@@ -1,7 +1,70 @@
-.devcontainer/devcontainer.json
-.vscode/settings.json
-.vscode/mcp.json
-vendor
-node_modules
+<# ========================
+# Dependências
+# ========================
+vendor/
+node_modules/
+
+# ========================
+# Logs e Debugs
+# ========================
+*.log
 Includes/logs/*.log
-.vscode/functions
+debug.log
+
+# ========================
+# Segurança e Ambiente
+# ========================
+.env
+.env.*
+!.env.example
+sftp.json
+
+# ========================
+# Testes (PHPUnit, Behat, etc)
+# Cache do PHPUnit
+# ========================
+.phpunit.result.cache
+coverage/
+tests/_output/
+.phpunit.cache/
+.phpunit.result.cache
+.phan/stubs
+
+# ========================
+# Configurações Locais e Agentes
+# ========================
+.vscode/settings.json
+.vscode/functions/
+.vscode/mcp.json
+.vscode/wordpress-mcp.json
+# Arquivos de cache locais de agentes (ajuste conforme a necessidade do Reasonix)
+.reasonix_cache/ 
+# Arquivos temporários e logs de execução do agente Reasonix
+.reasonix/truncated-results/
+
+# IMPORTANTE: Normalmente o devcontainer DEVE ser versionado para o time usar. 
+# Remova a linha abaixo se quiser compartilhar o ambiente Docker com a equipe.
+.devcontainer/devcontainer.json
+
+# ========================
+# Build e Distribuição
+# ========================
+*.zip
+*.tar.gz
+build/
+dist/
+
+# ========================
+# OS e IDEs
+# ========================
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# ========================
+# WordPress Core isolado gerado via Composer para testes
+# Dependências de plugins para testes (WPackagist)
+# ========================
+wordpress/
+wp-content/
