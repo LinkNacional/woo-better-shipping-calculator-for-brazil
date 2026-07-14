@@ -180,6 +180,10 @@ class WcBetterShippingCalculatorForBrazil
         // detect state from postcode
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100, 1);
 
+        // Garante que o placeholder do address_1 seja ajustado no momento da renderização,
+        // após todos os outros filtros terem sido aplicados
+        $this->loader->add_filter('woocommerce_form_field_args', $this, 'lkn_adjust_address_placeholder', 999, 3);
+
         $this->loader->add_action('rest_api_init', $this, 'lkn_register_custom_cep_route');
 
         $this->loader->add_filter('woocommerce_get_settings_pages', $this, 'lkn_add_woo_better_settings_page');
@@ -213,9 +217,9 @@ class WcBetterShippingCalculatorForBrazil
         // Reseta a flag is_shipping_calculation_active após o cálculo dos totais do carrinho.
         $this->loader->add_action('woocommerce_after_calculate_totals', $this, 'lkn_reset_shipping_calculation_flag', 10, 1);
 
-        if ($disabled_shipping === 'all' || $disabled_shipping === 'digital') {
-            $this->loader->add_action('woocommerce_get_country_locale', $this, 'lkn_woo_better_shipping_calculator_locale', 10, 1);
-        }
+        // O ajuste de placeholder do address_1 via locale deve sempre estar ativo,
+        // pois o JS address-i18n.js sobrescreve o placeholder no cliente.
+        $this->loader->add_action('woocommerce_get_country_locale', $this, 'lkn_woo_better_shipping_calculator_locale', 10, 1);
 
         $this->loader->add_filter('woocommerce_get_country_locale', $this, 'lkn_disable_company_required_based_on_person_type', 20, 1);
 
@@ -872,6 +876,20 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_woo_better_shipping_calculator_locale($locale)
     {
+        // Quando o campo de número está habilitado, ajusta o placeholder do address_1
+        // diretamente no locale. Isso é necessário porque o JS address-i18n.js do
+        // WooCommerce sobrescreve o placeholder no cliente usando os dados de locale.
+        $number_field = get_option('woo_better_calc_number_required', 'no');
+        if ($number_field === 'yes') {
+            if (! isset($locale['BR'])) {
+                $locale['BR'] = array();
+            }
+            if (! isset($locale['BR']['address_1'])) {
+                $locale['BR']['address_1'] = array();
+            }
+            $locale['BR']['address_1']['placeholder'] = __('Nome da rua', 'woo-better-shipping-calculator-for-brazil');
+        }
+
         // Ocultar campos de endereço via locale só tem efeito no checkout em blocos (Gutenberg).
         // No checkout clássico/shortcode os campos são removidos via woocommerce_checkout_fields.
         $is_blocks_checkout = false;
@@ -1134,6 +1152,7 @@ class WcBetterShippingCalculatorForBrazil
                 'class'       => array('form-row-wide'),
                 'priority'    => 55,
             );
+
         }
 
         // Adiciona campo de data de nascimento
@@ -1203,6 +1222,35 @@ class WcBetterShippingCalculatorForBrazil
         }
         
         return $fields;
+    }
+
+    /**
+     * Ajusta o placeholder do campo address_1 no momento da renderização (woocommerce_form_field_args).
+     * Esta é a última oportunidade de modificar o placeholder, após todos os filtros de campos.
+     *
+     * @param array  $args  Argumentos do campo (inclui 'placeholder').
+     * @param string $key   Chave do campo (ex: 'billing_address_1').
+     * @param mixed  $value Valor atual do campo.
+     * @return array
+     */
+    public function lkn_adjust_address_placeholder($args, $key, $value)
+    {
+        $number_field = get_option('woo_better_calc_number_required', 'no');
+        if ($number_field !== 'yes') {
+            return $args;
+        }
+
+        // Apenas para os campos de endereço (billing e shipping)
+        if ($key === 'billing_address_1' || $key === 'shipping_address_1') {
+            $args['placeholder'] = __('Nome da rua', 'woo-better-shipping-calculator-for-brazil');
+
+            // Remove data-placeholder de custom_attributes caso exista (adicionado por terceiros)
+            if (isset($args['custom_attributes']['data-placeholder'])) {
+                unset($args['custom_attributes']['data-placeholder']);
+            }
+        }
+
+        return $args;
     }
 
     public function lkn_register_custom_cep_route()
@@ -7034,6 +7082,7 @@ class WcBetterShippingCalculatorForBrazil
                 'class'       => array('form-row-wide'),
                 'priority'    => 56
             );
+
         }
         
         // Verificar se auto-preenchimento de CEP está habilitado
@@ -7160,6 +7209,7 @@ class WcBetterShippingCalculatorForBrazil
                 'class'       => array('form-row-wide'),
                 'priority'    => 56
             );
+
         }
         
         // Verificar se auto-preenchimento de CEP está habilitado
