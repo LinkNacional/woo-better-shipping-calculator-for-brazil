@@ -1,3 +1,6 @@
+# 4.16.5 - 14/07/26
+* Ajuste: Nome do placeholder no campo de endereço do checkout clássico.
+  
 # 4.16.4 - 06/07/26
 * Ajuste: Fallback para a label da calculadora do plugin quando os dias úteis do prazo não são detectados.
   
