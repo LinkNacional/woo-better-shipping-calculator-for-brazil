@@ -1,3 +1,6 @@
+# 4.16.6 - 17/07/26
+* Ajuste: Nome da descrição do campo de endereço.
+  
 # 4.16.5 - 14/07/26
 * Ajuste: Nome do placeholder no campo de endereço do checkout clássico.
   

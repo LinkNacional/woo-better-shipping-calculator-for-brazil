@@ -147,6 +147,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+ 4.16.6 - 17/07/26
+* Tweak: Address field description name.
+
 # 4.16.5 - 14/07/26
 * Tweak: Placeholder name in the classic checkout address field.
 
