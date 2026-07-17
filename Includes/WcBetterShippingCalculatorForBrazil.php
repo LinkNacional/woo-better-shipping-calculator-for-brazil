@@ -1250,6 +1250,14 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
+        // Se description já foi definido por terceiros, substitui por "Nome da rua";
+        // se não existia, mantém vazio para não criar o <span> desnecessariamente.
+        if ($key === 'billing_address_1' || $key === 'shipping_address_1' || $key === 'billing_address_2' || $key === 'shipping_address_2') {
+            if (! empty($args['description'])) {
+                $args['description'] = __('Nome da rua', 'woo-better-shipping-calculator-for-brazil');
+            }
+        }
+
         return $args;
     }
 
