@@ -132,7 +132,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.16.5';
+            $this->version = '4.16.6';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -301,7 +301,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '4.16.4', '4.16.3', '4.16.2', '4.16.1', '4.16.0', '4.15.2', '4.15.1', '4.15.0', '4.14.0', '4.13.0', '4.12.5', '4.12.4', '4.12.3' );
+            $old_versions   = array( '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1', '4.16.0', '4.15.2', '4.15.1', '4.15.0', '4.14.0', '4.13.0', '4.12.5', '4.12.4', '4.12.3' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -1247,6 +1247,14 @@ class WcBetterShippingCalculatorForBrazil
             // Remove data-placeholder de custom_attributes caso exista (adicionado por terceiros)
             if (isset($args['custom_attributes']['data-placeholder'])) {
                 unset($args['custom_attributes']['data-placeholder']);
+            }
+        }
+
+        // Se description já foi definido por terceiros, substitui por "Nome da rua";
+        // se não existia, mantém vazio para não criar o <span> desnecessariamente.
+        if ($key === 'billing_address_1' || $key === 'shipping_address_1' || $key === 'billing_address_2' || $key === 'shipping_address_2') {
+            if (! empty($args['description'])) {
+                $args['description'] = __('Nome da rua', 'woo-better-shipping-calculator-for-brazil');
             }
         }
 

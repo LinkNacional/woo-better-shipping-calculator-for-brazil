@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 5.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 4.16.5
+Stable tag: 4.16.6
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -147,6 +147,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+ 4.16.6 - 17/07/26
+* Tweak: Address field description name.
+
 # 4.16.5 - 14/07/26
 * Tweak: Placeholder name in the classic checkout address field.
 
