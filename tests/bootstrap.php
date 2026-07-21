@@ -36,40 +36,25 @@ if ( ! defined( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' ) ) {
 require_once dirname( __DIR__ ) . '/vendor/wp-phpunit/wp-phpunit/includes/bootstrap.php';
 
 // ---------------------------------------------------------------------------
-// 4. Hook muplugins_loaded: carrega WooCommerce sibling
+// 4. Carrega WooCommerce sibling + nosso plugin ANTES do wp-settings.php
 // ---------------------------------------------------------------------------
-tests_add_filter(
-    'muplugins_loaded',
-    function () {
-        $wc_main_file = dirname( __DIR__, 2 ) . '/woocommerce/woocommerce.php';
+$wc_main_file = dirname( __DIR__, 2 ) . '/woocommerce/woocommerce.php';
+$plugin_main_file = dirname( __DIR__ ) . '/wc-better-shipping-calculator-for-brazil.php';
 
-        if ( ! file_exists( $wc_main_file ) ) {
-            fwrite(
-                STDERR,
-                sprintf(
-                    '[Tests Bootstrap] ERRO: WooCommerce não encontrado em: %s' . PHP_EOL .
-                    'Certifique-se de que o WooCommerce está instalado como vizinho do plugin no Local WP.' . PHP_EOL .
-                    'Estrutura esperada: wp-content/plugins/woocommerce/woocommerce.php' . PHP_EOL,
-                    $wc_main_file
-                )
-            );
-            return;
-        }
+if ( ! file_exists( $wc_main_file ) ) {
+    fwrite(
+        STDERR,
+        sprintf(
+            '[Tests Bootstrap] ERRO: WooCommerce não encontrado em: %s' . PHP_EOL,
+            $wc_main_file
+        )
+    );
+} else {
+    require_once $wc_main_file;
+}
 
-        require_once $wc_main_file;
-    },
-    5 // Prioridade menor = carrega ANTES
-);
-
-// ---------------------------------------------------------------------------
-// 5. Hook muplugins_loaded: carrega nosso plugin
-// ---------------------------------------------------------------------------
-tests_add_filter(
-    'muplugins_loaded',
-    function () {
-        $plugin_main_file = dirname( __DIR__ ) . '/wc-better-shipping-calculator-for-brazil.php';
-
-        require_once $plugin_main_file;
-    },
-    10 // Prioridade maior = carrega DEPOIS do WooCommerce
-);
+// Nosso plugin: require_once antes do WP carregar.
+// As funções add_action/add_filter ainda não existem, mas o plugin
+// só as chama na construção do objeto (adiada pelo autoloader).
+// Constantes e autoloader são definidos imediatamente.
+require_once $plugin_main_file;

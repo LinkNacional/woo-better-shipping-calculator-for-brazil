@@ -15,6 +15,7 @@ phases = [
     "red",
     "green",
     "security",
+    "plugin-check",
     "refactor",
 ]
 
@@ -46,6 +47,14 @@ checks = [
     "capability_check",         # current_user_can() para ações restritas
 ]
 output = "Checklist de segurança preenchido (5/5)"
+
+[pipeline.plugin-check]
+description = "WordPress Plugin Check (PCP) — validação oficial de código"
+required = true
+command = "rtk ./.reasonix/skills/plugin-check.sh"
+require_pass = true            # zero errors + zero warnings (modo estrito)
+retry_on_fail = true           # corrigir e re-executar até passar limpo
+output = "JSON do plugin-check com 0 errors, 0 warnings"
 
 [pipeline.refactor]
 description = "Refatorar sem quebrar testes (REFACTOR)"
