@@ -892,16 +892,16 @@ class WcBetterShippingCalculatorForBrazil
 
         // Ocultar campos de endereço via locale só tem efeito no checkout em blocos (Gutenberg).
         // No checkout clássico/shortcode os campos são removidos via woocommerce_checkout_fields.
-        $is_blocks_checkout = false;
-        if ( function_exists( 'has_block' ) ) {
-            global $post;
-            if ( isset( $post ) && is_a( $post, 'WP_Post' ) ) {
-                $is_blocks_checkout = has_block( 'woocommerce/checkout', $post );
-            }
-        }
-        if ( ! $is_blocks_checkout ) {
-            return $locale;
-        }
+        //
+        // REASON: Removida a guarda has_block() que verificava $post.
+        // Em contexto REST API (Store API do WooCommerce Blocks), $post não está
+        // disponível e has_block() retorna false, fazendo a função retornar sem
+        // aplicar hidden=true/required=false. Isso causava erro de validação:
+        // "Endereço é obrigatório, Cidade é obrigatório, Estado é obrigatório, CEP é obrigatório"
+        // mesmo com a opção "Desabilitar Frete e Endereço para Todos" ativa.
+        //
+        // Seguro porque o locale só é consumido pelo checkout em blocos;
+        // o checkout clássico usa woocommerce_checkout_fields (unset dos campos).
 
         $disabled_shipping = get_option('woo_better_calc_disabled_shipping', 'default');
         $only_virtual = false;
