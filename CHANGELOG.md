@@ -1,3 +1,6 @@
+# 4.16.7 - 23/07/26
+* Ajuste: Adição do metadado do melhor envio V2 na label.
+
 # 4.16.6 - 17/07/26
 * Ajuste: Nome da descrição do campo de endereço.
   
