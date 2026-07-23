@@ -30,6 +30,7 @@ jobs:
         run: |
           mkdir -p build/${{ env.PLUGIN_NAME }}
           mv ./Admin ./Includes ./languages ./Public *.php *.txt ./build/${{ env.PLUGIN_NAME }}
+          rm -f ./build/${{ env.PLUGIN_NAME }}/wp-tests-config.php ./build/${{ env.PLUGIN_NAME }}/psalm-stubs.php
           cp -r vendor build/${{ env.PLUGIN_NAME }}/vendor
           find ./build -type f -exec chmod 0644 {} +
           find ./build -type d -exec chmod 0755 {} +
