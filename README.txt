@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 5.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 4.16.6
+Stable tag: 4.16.7
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -147,40 +147,43 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
- 4.16.6 - 17/07/26
+# 4.16.7 - 2026-07-17
+* Adjustment: Added best V2 submission metadata to the label.
+
+# 4.16.6 - 2026-07-17
 * Tweak: Address field description name.
 
-# 4.16.5 - 14/07/26
+# 4.16.5 - 2026-07-14
 * Tweak: Placeholder name in the classic checkout address field.
 
-# 4.16.4 - 06/07/26
+# 4.16.4 - 2026-07-06
 * Adjust: Fallback for the plugin's calculator label when shipping business days are not detected.
 
-# 4.16.3 - 03/07/26
+# 4.16.3 - 2026-07-03
 * Fix: Correction in class loading.
 
-# 4.16.2 - 02/07/26
+# 4.16.2 - 2026-07-02
 * New: Shipping calculation option via coupon/fees.
 
-# 4.16.1 - 01/07/26
+# 4.16.1 - 2026-07-01
 * Compatibility with the FunnelKit plugin.
 * CPF validation in the shortcode version.
 * Improved detection of available shipping labels in the custom calculator.
 
-# 4.16.0 - 11/06/26
+# 4.16.0 - 2026-06-11
 * New: Product-based shipping system.
 * New: Label system to define delivery business days for free shipping methods.
 * New: Behavior system triggered upon detecting free shipping.
 * Fix: Free shipping bar detection when running the plugin's calculator component.
 * Fix: Address number checkbox field in Gutenberg.
 
-# 4.15.2 - 09/06/26
+# 4.15.2 - 2026-06-09
 * Fixed: CEP format sent to the API.
 
-# 4.15.1 - 08/06/26
+# 4.15.1 - 2026-06-08
 * Fixed: Click event to dismiss the update notice.
 
-# 4.15.0 - 01/06/26
+# 4.15.0 - 2026-06-01
 * New: Alphanumeric CNPJ format support (IN RFB 2.229/2024).
 * Fixed: Address number field auto-fill on first automatic lookup.
 * Fixed: has-error class on the Gutenberg number field when the field is empty.
@@ -188,162 +191,162 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * Fixed: Nonce for the contact number field.
 * Fixed: Address auto-fill on the order edit page.
 
-# 4.14.0 - 27/05/26
+# 4.14.0 - 2026-05-27
 * New: CEP address auto-fill feature.
 * Fixed: Checkbox behavior when filling the address.
 * Fixed: Field positioning in order data + removal of country code.
 * New: Icons, banners and screenshots.
 * Fixed: highlighted field position in classic checkout.
 
-# 4.13.0 - 25/05/26
+# 4.13.0 - 2026-05-25
 * Fixed: Optional/required CPF field.
 * New: State Registration (IE) field.
 
-# 4.12.5 - 29/04/26
+# 4.12.5 - 2026-04-29
 * Fixed: CEP auto-fill system for cache.
 * Fixed: Address synchronization when filling the form.
 
-# 4.12.4 - 22/04/26
+# 4.12.4 - 2026-04-22
 * Fixed: CPF field filling.
 * Fixed: Country field changes.
 * Fixed: Field population when detecting empty country.
 
-# 4.12.3 - 13/04/26
+# 4.12.3 - 2026-04-13
 * Fixed: Address number field.
 
-# 4.12.2 - 06/04/26
+# 4.12.2 - 2026-04-06
 * Fixed: Fix Birthdate validation
 
-# 4.12.1 - 02/04/26
+# 4.12.1 - 2026-04-02
 * Fixed: CEP field highlighting configuration.
 
-# 4.12.0 - 02/04/26
+# 4.12.0 - 2026-04-02
 * Added: New birth date and gender fields.
 * Enhancement: New option for free shipping detection.
 * Added: New option for free shipping detection.
 
-# 4.11.0 - 01/04/26
+# 4.11.0 - 2026-04-01
 * Enhancement: New free shipping detection system through shipping zones.
 * Enhancement: New option for checkout block (Campos Brasileiros)
 * Enhancement: New quantity detection system on product page.
 
-= 4.10.1 - 30/03/2026
+= 4.10.1 - 2026-03-30
 * Fixed cart change detection (adding/removing products).
 * Fixed component expansion when the block was minimized.
 
-= 4.10.0 - 11/03/2026
+= 4.10.0 - 2026-03-11
 * Fixed script loading between Classic and Block versions.
 * Fixed error_log in cache function.
 * New option to hide the custom shipping calculator component when only digital products are detected.
 
-= 4.9.2 - 06/03/2026
+= 4.9.2 - 2026-03-06
 * Adjustment: Changed the phone field position on the edit address page.
 
-= 4.9.1 - 06/03/2026
+= 4.9.1 - 2026-03-06
 * Adjustment: Highlight on the ZIP code field via shortcode.
 * Adjustment: Shipping configuration fields.
 
-= 4.9.0 - 04/03/2026
+= 4.9.0 - 2026-03-04
 * Added: New options to highlight the contact and email fields.
 * Added: New option to prevent duplicate free shipping.
 
-= 4.8.0 - 09/02/2026
+= 4.8.0 - 2026-02-09
 * Addition: Option to hide shipping methods when free shipping is acquired.
 * Adjustment: stopPropagation on the checkbox button to prevent the form from being updated improperly.
 * Adjustment: Improved cache description message, providing tips about possible issues with cache plugins.
 * Addition: Hook for displaying custom address variables.
 * Adjustments to ajax and rest_api routes to prevent caching.
 
-= 4.7.4 - 21/01/2026
+= 4.7.4 - 2026-01-21
 * Fix: variable products shipping calculation on product page.
 
-= 4.7.3 - 13/01/2026
+= 4.7.3 - 2026-01-13
 * Fix: phone number field regarding digits.
 * Fix: phone number field with more configuration options.
 * Fix: postal code field display configuration in shortcode.
 
-= 4.7.2 - 07/01/2026
+= 4.7.2 - 2026-01-07
 * Fix: number field verification + Brazilian plugin compatibility.
 
-= 4.7.1 - 06/01/2026
+= 4.7.1 - 2026-01-06
 * Fix: dynamic CPF/CNPJ field in block editor.
 
-= 4.7.0 - 23/12/2025
+= 4.7.0 - 2025-12-23
 * NEW: CPF/CNPJ field
 * NEW: Neighborhood field.
 * Adjustment: free shipping bar.
 
-= 4.6.0 - 15/12/2025 =
+= 4.6.0 - 2025-12-15 =
 * NEW: Dynamic progress bar for free shipping with customizable messages.
 * NEW: Automatic capture and formatting of country codes in phone numbers.
 * NEW: Complete feature parity between block editor and shortcode.
 
-= 4.5.0 - 24/10/2025 =
+= 4.5.0 - 2025-10-24 =
 * NEW: Text font configuration system in the product and cart components.
 * NEW: Automatic address filling on the Checkout page.
 * NEW: Highlight for the ZIP code field in the Checkout page form.
 
-= 4.4.0 - 10/09/2025 =
+= 4.4.0 - 2025-09-10 =
 * New: cache system for postal code queries.
 * New: plugin display card.
 * New: Psalm and CodeQL libraries for code
 
-= 4.3.3 - 15/08/2025 =
+= 4.3.3 - 2025-08-15 =
 * Fix: Button styles.
 * Fix: Nonce.
 * Fix: Currency type and decimal places.
 
-= 4.3.2 - 08/08/2025 =
+= 4.3.2 - 2025-08-08 =
 * Fix: Component display issue.
 * Adjustment: Message in Gutenberg fields.
 * Addition: Link configuration field.
 
-= 4.3.1 - 05/08/2025 =
+= 4.3.1 - 2025-08-05 =
 * Adjustment: Option that defines the component position is now at a higher level, for both product page and cart.
 * Fix: When defining the CEP component position on a product page in custom mode, it did not display as expected.
 * Fix: Default icon color value.
 * Addition: Link that leads to configuration page is now available on the product page when the user is a page administrator.
 
-= 4.3.0 - 29/07/2025 =
+= 4.3.0 - 2025-07-29 =
 * Addition: New custom ZIP code verification components.
 * Addition: ZIP code component for the product page.
 * Addition: ZIP code component for the Woo cart page
 
-= 4.2.1 - 09/06/2025 =
+= 4.2.1 - 2025-06-09 =
 * Fix: Decimal separator.
 * Fix: Dynamic URL.
 * Fix: Progress bar on the legacy cart page.
 
-= 4.2.0 - 06/06/2025 =
+= 4.2.0 - 2025-06-06 =
 * Addition: Option to set a minimum cart value for free shipping.
 
-= 4.1.6 - 02/06/2025 =
+= 4.1.6 - 2025-06-02 =
 * Adjustment: fix in the address auto-fill field.
 
-= 4.1.5 - 22/05/2025 =
+= 4.1.5 - 2025-05-22 =
 * Adjustment: address hiding field.
 * Addition: plugin contributors.
 * Addition: link to the plugin settings page on the cart page only when the user is an administrator.
 
-= 4.1.4 - 20/05/2025 =
+= 4.1.4 - 2025-05-20 =
 * Adjustment: neighborhood field is outside the established parameters.
 * Adjustment: README.txt file tags.
 
-= 4.1.3 - 15/05/2025 =
+= 4.1.3 - 2025-05-15 =
 * Adjustment: more dynamic blueprint at the time of playground configuration.
 
-= 4.1.2 - 07/05/2025 =
+= 4.1.2 - 2025-05-07 =
 * Fix: Adjustments in the identification of physical and digital products.
 * Adjustment: Improvement in the githubworkflow flow for plugin release in the repository and WordPress.
 
-= 4.1.1 - 29/04/2025 =
+= 4.1.1 - 2025-04-29 =
 * Fix: Improved README.txt description for Portuguese - BR.
 * Fix: Improved Gutenberg field for ZIP code field, now it is possible to enable or disable address hiding in ZIP code fields.
 
-= 4.0.1 - 23/04/2025 =
+= 4.0.1 - 2025-04-23 =
 * Fix: New Readme.txt and image list.
 
-= 4.0.0 - 26/03/2025 =
+= 4.0.0 - 2025-03-26 =
 * Adjustment: Plugin changed to Object Oriented (OO) model.
 * New settings tab for the plugin.
 * Compatibility with Gutenberg.

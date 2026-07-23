@@ -9,6 +9,11 @@
             "Lkn\\WcBetterShippingCalculatorForBrazil\\PublicView\\": "Public/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Lkn\\WcBetterShippingCalculatorForBrazil\\Tests\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "Link Nacional",
@@ -17,12 +22,16 @@
     ],
     "minimum-stability": "stable",
     "require-dev": {
-        "phan/phan": "5.4.1"
+        "phan/phan": "5.4.1",
+        "phpunit/phpunit": "^9.6",
+        "wp-phpunit/wp-phpunit": "^7.0",
+        "yoast/phpunit-polyfills": "^4.0",
+        "roots/wordpress": "^7.0"
     },
-    "require": {},
     "config": {
         "allow-plugins": {
-            "composer/installers": true
+            "composer/installers": true,
+            "roots/wordpress-core-installer": true
         }
     }
 }

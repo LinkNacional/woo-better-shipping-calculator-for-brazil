@@ -1,0 +1,69 @@
+# .reasonix.toml — Pipeline de Comportamento Obrigatório
+#
+# Força o ciclo RED → GREEN → REFACTOR com gate de segurança.
+# Qualquer desvio interrompe o fluxo e exige justificativa no código.
+
+[agent]
+rules = "AGENTS.md"
+style = "caveman"             # respostas telegráficas, zero fillers
+token_killer = "rtk"           # logs comprimidos via RTK
+
+[pipeline]
+# Ordem imutável das fases. O agente NÃO pode pular etapas.
+phases = [
+    "spec",
+    "red",
+    "green",
+    "security",
+    "plugin-check",
+    "refactor",
+]
+
+[pipeline.spec]
+description = "Ler e confirmar entendimento da especificação antes de codificar"
+required = true
+output = "Resumo de ≤5 linhas do que será implementado"
+
+[pipeline.red]
+description = "Escrever teste unitário/de integração que FALHA (RED)"
+required = true
+output = "Arquivo de teste + comando phpunit mostrando FAILURE"
+require_fail = true            # teste DEVE falhar antes de prosseguir
+
+[pipeline.green]
+description = "Código mínimo para o teste passar (GREEN)"
+required = true
+output = "Implementação + comando phpunit mostrando SUCCESS"
+require_pass = true            # teste DEVE passar antes de prosseguir
+
+[pipeline.security]
+description = "Validação de segurança antes do refactor"
+required = true
+checks = [
+    "nonce_verification",      # wp_verify_nonce em toda requisição state-changing
+    "input_sanitization",       # sanitize_* + wp_unslash em todos os inputs
+    "output_escaping",          # esc_* em todos os outputs
+    "prepared_statements",      # $wpdb->prepare() em todas as queries
+    "capability_check",         # current_user_can() para ações restritas
+]
+output = "Checklist de segurança preenchido (5/5)"
+
+[pipeline.plugin-check]
+description = "WordPress Plugin Check (PCP) — validação oficial de código"
+required = true
+command = "rtk ./.reasonix/skills/plugin-check.sh"
+require_pass = true            # zero errors + zero warnings (modo estrito)
+retry_on_fail = true           # corrigir e re-executar até passar limpo
+output = "JSON do plugin-check com 0 errors, 0 warnings"
+
+[pipeline.refactor]
+description = "Refatorar sem quebrar testes (REFACTOR)"
+required = true
+output = "Código limpo + phpunit ainda verde"
+require_pass = true            # testes DEVEM continuar passando
+
+[environment]
+php_min = "7.4"
+wp_min = "6.8"
+wc_min = "8.0"
+test_db = "local_tests"

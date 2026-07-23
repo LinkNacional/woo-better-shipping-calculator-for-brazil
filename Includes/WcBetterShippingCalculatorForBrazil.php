@@ -132,7 +132,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.16.6';
+            $this->version = '4.16.7';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -301,7 +301,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1', '4.16.0', '4.15.2', '4.15.1', '4.15.0', '4.14.0', '4.13.0', '4.12.5', '4.12.4', '4.12.3' );
+            $old_versions   = array( '4.16.6', '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1', '4.16.0', '4.15.2', '4.15.1', '4.15.0', '4.14.0', '4.13.0', '4.12.5', '4.12.4' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -890,8 +890,10 @@ class WcBetterShippingCalculatorForBrazil
             $locale['BR']['address_1']['placeholder'] = __('Nome da rua', 'woo-better-shipping-calculator-for-brazil');
         }
 
-        // Ocultar campos de endereço via locale só tem efeito no checkout em blocos (Gutenberg).
-        // No checkout clássico/shortcode os campos são removidos via woocommerce_checkout_fields.
+        // Ocultar campos de endereço via locale.
+        // ATENÇÃO: Desde WooCommerce >= 10.8, o locale afeta AMBOS os formulários
+        // (blocos e clássico). Por isso a guarda has_block() é obrigatória para
+        // não esconder campos indevidamente no checkout clássico.
         $is_blocks_checkout = false;
         if ( function_exists( 'has_block' ) ) {
             global $post;
@@ -899,7 +901,15 @@ class WcBetterShippingCalculatorForBrazil
                 $is_blocks_checkout = has_block( 'woocommerce/checkout', $post );
             }
         }
-        if ( ! $is_blocks_checkout ) {
+
+        // REASON: Em contexto REST API (Store API do WooCommerce Blocks), $post
+        // não está disponível e has_block() retorna false. Como a Store API só
+        // existe no checkout em blocos, assumimos is_blocks_checkout=true nesse
+        // caso para aplicar hidden=true/required=false e evitar erro de validação:
+        // "Endereço é obrigatório, Cidade é obrigatório, Estado é obrigatório, CEP é obrigatório".
+        $is_rest_blocks_context = defined( 'REST_REQUEST' ) && REST_REQUEST;
+
+        if ( ! $is_blocks_checkout && ! $is_rest_blocks_context ) {
             return $locale;
         }
 
