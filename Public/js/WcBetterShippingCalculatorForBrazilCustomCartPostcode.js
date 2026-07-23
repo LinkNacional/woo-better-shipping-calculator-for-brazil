@@ -139,6 +139,7 @@ document.addEventListener('DOMContentLoaded', function () {
             'delivery_time',
             '_delivery_forecast',
             '_delivery_time',
+            'melhorenvio_delivery_time',
             'delivery_range',
             '_delivery_range',
             'delivery_forecast',
