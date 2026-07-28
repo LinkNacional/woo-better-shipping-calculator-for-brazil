@@ -132,7 +132,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.16.7';
+            $this->version = '4.16.8';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -339,7 +339,11 @@ class WcBetterShippingCalculatorForBrazil
             </div>
             <?php
         } else {
-            // ── Card de Atualização / Changelog (usuário veterano) ─────────────────
+            // ── Card de Atualização / Changelog (usuário veterano) ────────
+            // Só exibe se a versão contém novas funcionalidades
+            if (! defined('WC_BETTER_SHIPPING_NEW_FEATURES') || ! WC_BETTER_SHIPPING_NEW_FEATURES) {
+                return;
+            }
             ?>
             <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
                 <div style="height: 100%; padding: 10px;">
@@ -1172,7 +1176,7 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
                 'placeholder' => __('dd/mm/aaaa', 'woo-better-shipping-calculator-for-brazil'),
                 'type'        => 'date',
-                'required'    => true,
+                'required'    => get_option('woo_better_calc_birthdate_required', 'yes') === 'yes',
                 'class'       => array('form-row-wide'),
                 'priority'    => 25,
             );
@@ -3018,6 +3022,11 @@ class WcBetterShippingCalculatorForBrazil
      * Valida campo de data de nascimento no checkout
      */
     public function validate_birthdate_value() {
+        // Verifica se o campo está habilitado
+        if (get_option('woo_better_calc_enable_birthdate_field', 'no') !== 'yes') {
+            return;
+        }
+
         // Verifica se é Brasil
         if (!$this->is_brazil_checkout()) {
             return;
@@ -3983,42 +3992,46 @@ class WcBetterShippingCalculatorForBrazil
             ]);
             
             // Registra campos para data de nascimento
-            woocommerce_store_api_register_endpoint_data( [
-                'endpoint'        => 'checkout',
-                'namespace'       => 'woo_better_birthdate',
-                'schema_callback' => function() {
-                    return [
-                        'billing_birthdate' => [
-                            'type'     => 'string',
-                            'readonly' => true,
-                        ],
-                    ];
-                },
-                'data_callback' => function() {
-                    return [
-                        'billing_birthdate'  => '', 
-                    ];
-                },
-            ]);
+            if (get_option('woo_better_calc_enable_birthdate_field', 'no') === 'yes') {
+                woocommerce_store_api_register_endpoint_data( [
+                    'endpoint'        => 'checkout',
+                    'namespace'       => 'woo_better_birthdate',
+                    'schema_callback' => function() {
+                        return [
+                            'billing_birthdate' => [
+                                'type'     => 'string',
+                                'readonly' => true,
+                            ],
+                        ];
+                    },
+                    'data_callback' => function() {
+                        return [
+                            'billing_birthdate'  => '', 
+                        ];
+                    },
+                ]);
+            }
 
             // Registra campos para gênero
-            woocommerce_store_api_register_endpoint_data( [
-                'endpoint'        => 'checkout',
-                'namespace'       => 'woo_better_gender',
-                'schema_callback' => function() {
-                    return [
-                        'billing_gender' => [
-                            'type'     => 'string',
-                            'readonly' => true,
-                        ],
-                    ];
-                },
-                'data_callback' => function() {
-                    return [
-                        'billing_gender'  => '', 
-                    ];
-                },
-            ]);
+            if (get_option('woo_better_calc_enable_gender_field', 'no') === 'yes') {
+                woocommerce_store_api_register_endpoint_data( [
+                    'endpoint'        => 'checkout',
+                    'namespace'       => 'woo_better_gender',
+                    'schema_callback' => function() {
+                        return [
+                            'billing_gender' => [
+                                'type'     => 'string',
+                                'readonly' => true,
+                            ],
+                        ];
+                    },
+                    'data_callback' => function() {
+                        return [
+                            'billing_gender'  => '', 
+                        ];
+                    },
+                ]);
+            }
 
             // Registra campos para Inscrição Estadual (IE)
             woocommerce_store_api_register_endpoint_data( [
@@ -4114,16 +4127,20 @@ class WcBetterShippingCalculatorForBrazil
             ]);
             
             // Callback para data de nascimento
-            woocommerce_store_api_register_update_callback([
-                'namespace' => 'woo_better_birthdate',
-                'callback'  => [ $this, 'handle_birthdate_update' ],
-            ]);
+            if (get_option('woo_better_calc_enable_birthdate_field', 'no') === 'yes') {
+                woocommerce_store_api_register_update_callback([
+                    'namespace' => 'woo_better_birthdate',
+                    'callback'  => [ $this, 'handle_birthdate_update' ],
+                ]);
+            }
             
             // Callback para gênero
-            woocommerce_store_api_register_update_callback([
-                'namespace' => 'woo_better_gender',
-                'callback'  => [ $this, 'handle_gender_update' ],
-            ]);
+            if (get_option('woo_better_calc_enable_gender_field', 'no') === 'yes') {
+                woocommerce_store_api_register_update_callback([
+                    'namespace' => 'woo_better_gender',
+                    'callback'  => [ $this, 'handle_gender_update' ],
+                ]);
+            }
 
             // Callback para Inscrição Estadual (IE)
             woocommerce_store_api_register_update_callback([
@@ -4372,11 +4389,10 @@ class WcBetterShippingCalculatorForBrazil
         $billing_birthdate = $this->normalize_birthdate_value($billing_birthdate);
 
         // Guarda os dados de data de nascimento na sessão e no perfil do usuário
-        if (!empty($billing_birthdate)) {
-            WC()->session->set( 'billing_birthdate', $billing_birthdate );
-            if (is_user_logged_in()) {
-                update_user_meta( get_current_user_id(), 'billing_birthdate', $billing_birthdate );
-            }
+        // CORREÇÃO: Sempre salva quando habilitado para sobrescrever valores antigos
+        WC()->session->set( 'billing_birthdate', $billing_birthdate );
+        if (is_user_logged_in()) {
+            update_user_meta( get_current_user_id(), 'billing_birthdate', $billing_birthdate );
         }
     }
 
@@ -5992,9 +6008,8 @@ class WcBetterShippingCalculatorForBrazil
             $billing_birthdate = $this->normalize_birthdate_value($billing_birthdate);
 
             // Salva a data de nascimento
-            if (!empty($billing_birthdate)) {
-                $order->update_meta_data('_billing_birthdate', $billing_birthdate);
-            }
+            // CORREÇÃO: Sempre salva quando habilitado para sobrescrever valores antigos
+            $order->update_meta_data('_billing_birthdate', $billing_birthdate);
         }
     }
 
@@ -6041,9 +6056,10 @@ class WcBetterShippingCalculatorForBrazil
                         400
                     );
                 }
-
-                $order->update_meta_data('_billing_birthdate', $billing_birthdate);
             }
+
+            // CORREÇÃO: Sempre salva quando habilitado para sobrescrever valores antigos
+            $order->update_meta_data('_billing_birthdate', $billing_birthdate);
         }
     }
 
@@ -7054,7 +7070,7 @@ class WcBetterShippingCalculatorForBrazil
             $fields['billing_birthdate'] = array(
                 'label'       => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
                 'placeholder' => __('DD/MM/AAAA', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => true,
+                'required'    => get_option('woo_better_calc_birthdate_required', 'yes') === 'yes',
                 'class'       => array('form-row-wide'),
                 'priority'    => 25,
                 'type'        => 'date'

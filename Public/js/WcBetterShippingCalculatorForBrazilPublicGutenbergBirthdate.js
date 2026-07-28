@@ -161,8 +161,11 @@ document.addEventListener("DOMContentLoaded", function () {
         if (birthdateInput && birthdateContainer) {
             const isValid = validateBirthdateField(birthdateInput, birthdateContainer);
             
-            // Se campo está vazio ou inválido, bloquear submissão
-            if (!birthdateInput.value.trim() || !isValid) {
+            // Se campo é obrigatório e está vazio, ou se está inválido, bloquear submissão
+            const isRequired = (typeof WooBetterBirthdateData !== 'undefined' && !!WooBetterBirthdateData.birthdate_required);
+            const isEmpty = !birthdateInput.value.trim();
+            const shouldBlock = (isRequired && isEmpty) || (!isEmpty && !isValid);
+            if (shouldBlock) {
                 event.stopPropagation();
                 event.preventDefault();
                 
@@ -405,6 +408,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (existingInputPadding) {
             input.style.padding = existingInputPadding;
         }
+
+        input.style.lineHeight = '1';
 
         // Preencher com valor inicial se existir
         if (initialValue) {

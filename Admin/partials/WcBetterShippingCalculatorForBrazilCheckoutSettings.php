@@ -254,6 +254,22 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Adiciona o campo de Data de Nascimento para coleta de informações adicionais do cliente.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+                'birthdate_required' => array(
+                    'title'    => __('Obrigatoriedade da Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_birthdate_required',
+                    'desc_tip' => false,
+                    'default'  => get_option('woo_better_calc_enable_birthdate_field', 'no'),
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Define se o campo de Data de Nascimento é obrigatório ou opcional no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Escolha "Habilitar" para exigir o preenchimento ou "Desabilitar" para deixar a critério do cliente.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Controla a obrigatoriedade do campo de Data de Nascimento quando ele está habilitado.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
                 'enable_gender_field' => array(
                     'title'    => __('Campo de Gênero', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_enable_gender_field',

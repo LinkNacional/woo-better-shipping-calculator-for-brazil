@@ -655,7 +655,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-gutenberg-birthdate',
                     'WooBetterBirthdateData',
                     array(
-                        'billing_birthdate' => $billing_birthdate
+                        'billing_birthdate' => $billing_birthdate,
+                        'birthdate_required' => get_option('woo_better_calc_birthdate_required', 'yes') === 'yes'
                     )
                 );
             }
@@ -919,7 +920,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-shortcode-birthdate',
                     'wc_better_checkout_shortcode_birthdate_vars',
                     array(
-                        'billing_birthdate' => $billing_birthdate
+                        'billing_birthdate' => $billing_birthdate,
+                        'birthdate_required' => get_option('woo_better_calc_birthdate_required', 'yes') === 'yes'
                     )
                 );
             }
@@ -1553,7 +1555,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-edit-address-birthdate',
                     'WooBetterBirthdateData',
                     array(
-                        'billing_birthdate' => $billing_birthdate
+                        'billing_birthdate' => $billing_birthdate,
+                        'birthdate_required' => get_option('woo_better_calc_birthdate_required', 'yes') === 'yes'
                     )
                 );
             }
