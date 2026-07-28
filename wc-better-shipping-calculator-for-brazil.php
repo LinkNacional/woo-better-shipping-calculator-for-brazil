@@ -77,6 +77,12 @@ if (! defined('WC_BETTER_SHIPPING_PRODUCT_QUANTITY')) {
     define('WC_BETTER_SHIPPING_PRODUCT_QUANTITY', 1);
 }
 
+// Define se esta versão contém novas funcionalidades (true) ou apenas correções de bug (false).
+// Quando false, o notice de atualização não é exibido para usuários veteranos.
+if (! defined('WC_BETTER_SHIPPING_NEW_FEATURES')) {
+    define('WC_BETTER_SHIPPING_NEW_FEATURES', false);
+}
+
 /**
  * The code that runs during plugin activation.
  * This action is documented in includes/class-wc-better-shipping-calculator-for-brazil-activator.php

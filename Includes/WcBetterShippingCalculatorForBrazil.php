@@ -339,7 +339,11 @@ class WcBetterShippingCalculatorForBrazil
             </div>
             <?php
         } else {
-            // ── Card de Atualização / Changelog (usuário veterano) ─────────────────
+            // ── Card de Atualização / Changelog (usuário veterano) ────────
+            // Só exibe se a versão contém novas funcionalidades
+            if (! defined('WC_BETTER_SHIPPING_NEW_FEATURES') || ! WC_BETTER_SHIPPING_NEW_FEATURES) {
+                return;
+            }
             ?>
             <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
                 <div style="height: 100%; padding: 10px;">
