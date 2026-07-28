@@ -277,4 +277,41 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     
     linkObserver.observe(document.body, { childList: true, subtree: true });
+
+    // ── Dependência: Data de Nascimento → Obrigatoriedade ──────────────────
+    const birthdateFieldRadios = document.querySelectorAll('input[name="woo_better_calc_enable_birthdate_field"]');
+    const birthdateRequiredRadios = document.querySelectorAll('input[name="woo_better_calc_birthdate_required"]');
+
+    function lockClickHandler(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function updateBirthdateRequiredState() {
+        if (!birthdateRequiredRadios.length) return;
+        const selectedValue = Array.from(birthdateFieldRadios).find(r => r.checked)?.value;
+        const isLocked = (selectedValue === 'no');
+
+        birthdateRequiredRadios.forEach(radio => {
+            // Visual: parece desabilitado mas sem usar o atributo disabled (que exclui do POST)
+            radio.style.opacity = isLocked ? '0.6' : '';
+            radio.style.pointerEvents = isLocked ? 'none' : '';
+            radio.style.cursor = isLocked ? 'not-allowed' : '';
+
+            // Bloqueia clique e força valor 'no' quando está lockado
+            if (isLocked) {
+                radio.checked = (radio.value === 'no');
+                radio.addEventListener('click', lockClickHandler, true);
+            } else {
+                radio.removeEventListener('click', lockClickHandler, true);
+            }
+        });
+    }
+
+    if (birthdateFieldRadios.length && birthdateRequiredRadios.length) {
+        birthdateFieldRadios.forEach(radio => {
+            radio.addEventListener('change', updateBirthdateRequiredState);
+        });
+        updateBirthdateRequiredState(); // estado inicial
+    }
 });

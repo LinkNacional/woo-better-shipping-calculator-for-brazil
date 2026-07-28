@@ -258,7 +258,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     'title'    => __('Obrigatoriedade da Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_birthdate_required',
                     'desc_tip' => false,
-                    'default'  => 'yes',
+                    'default'  => get_option('woo_better_calc_enable_birthdate_field', 'no'),
                     'type'     => 'radio',
                     'options'  => array(
                         'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
