@@ -880,6 +880,7 @@
               'woo_better_min_free_shipping_delivery_time': 'woo_better_enable_min_free_shipping',
               'woo_better_free_shipping_calc_base': 'woo_better_enable_min_free_shipping',
               'woo_better_free_shipping_by_product_delivery_time': 'woo_better_enable_free_shipping_by_product',
+              'woo_better_calc_birthdate_required': 'woo_better_calc_enable_birthdate_field',
 
               //Cart
               'woo_better_calc_cart_input_border_width': 'woo_better_calc_cart_input_background_color_field',

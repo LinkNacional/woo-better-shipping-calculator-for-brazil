@@ -1172,7 +1172,7 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
                 'placeholder' => __('dd/mm/aaaa', 'woo-better-shipping-calculator-for-brazil'),
                 'type'        => 'date',
-                'required'    => true,
+                'required'    => get_option('woo_better_calc_birthdate_required', 'yes') === 'yes',
                 'class'       => array('form-row-wide'),
                 'priority'    => 25,
             );
@@ -4385,11 +4385,10 @@ class WcBetterShippingCalculatorForBrazil
         $billing_birthdate = $this->normalize_birthdate_value($billing_birthdate);
 
         // Guarda os dados de data de nascimento na sessão e no perfil do usuário
-        if (!empty($billing_birthdate)) {
-            WC()->session->set( 'billing_birthdate', $billing_birthdate );
-            if (is_user_logged_in()) {
-                update_user_meta( get_current_user_id(), 'billing_birthdate', $billing_birthdate );
-            }
+        // CORREÇÃO: Sempre salva quando habilitado para sobrescrever valores antigos
+        WC()->session->set( 'billing_birthdate', $billing_birthdate );
+        if (is_user_logged_in()) {
+            update_user_meta( get_current_user_id(), 'billing_birthdate', $billing_birthdate );
         }
     }
 
@@ -6005,9 +6004,8 @@ class WcBetterShippingCalculatorForBrazil
             $billing_birthdate = $this->normalize_birthdate_value($billing_birthdate);
 
             // Salva a data de nascimento
-            if (!empty($billing_birthdate)) {
-                $order->update_meta_data('_billing_birthdate', $billing_birthdate);
-            }
+            // CORREÇÃO: Sempre salva quando habilitado para sobrescrever valores antigos
+            $order->update_meta_data('_billing_birthdate', $billing_birthdate);
         }
     }
 
@@ -6054,9 +6052,10 @@ class WcBetterShippingCalculatorForBrazil
                         400
                     );
                 }
-
-                $order->update_meta_data('_billing_birthdate', $billing_birthdate);
             }
+
+            // CORREÇÃO: Sempre salva quando habilitado para sobrescrever valores antigos
+            $order->update_meta_data('_billing_birthdate', $billing_birthdate);
         }
     }
 
@@ -7067,7 +7066,7 @@ class WcBetterShippingCalculatorForBrazil
             $fields['billing_birthdate'] = array(
                 'label'       => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
                 'placeholder' => __('DD/MM/AAAA', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => true,
+                'required'    => get_option('woo_better_calc_birthdate_required', 'yes') === 'yes',
                 'class'       => array('form-row-wide'),
                 'priority'    => 25,
                 'type'        => 'date'
