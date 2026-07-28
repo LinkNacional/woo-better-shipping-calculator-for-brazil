@@ -1,3 +1,7 @@
+# 4.16.8 - 28/07/26
+* Ajuste: Verificação de campo obrigatório para data de nascimento e gênero.
+* Novo: Sistema de campo de data de nascimento obrigatório.
+  
 # 4.16.7 - 23/07/26
 * Ajuste: Adição do metadado do melhor envio V2 na label.
 

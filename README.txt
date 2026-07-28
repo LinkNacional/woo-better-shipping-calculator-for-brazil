@@ -147,6 +147,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+# 4.16.8 - 2026-07-28
+* Adjustment: Mandatory field validation for birth date and gender.
+* New: Mandatory birth date field system.
+
 # 4.16.7 - 2026-07-17
 * Adjustment: Added best V2 submission metadata to the label.
 
