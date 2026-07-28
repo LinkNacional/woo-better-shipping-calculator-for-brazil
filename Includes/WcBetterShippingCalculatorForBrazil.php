@@ -3018,6 +3018,11 @@ class WcBetterShippingCalculatorForBrazil
      * Valida campo de data de nascimento no checkout
      */
     public function validate_birthdate_value() {
+        // Verifica se o campo está habilitado
+        if (get_option('woo_better_calc_enable_birthdate_field', 'no') !== 'yes') {
+            return;
+        }
+
         // Verifica se é Brasil
         if (!$this->is_brazil_checkout()) {
             return;
@@ -3983,42 +3988,46 @@ class WcBetterShippingCalculatorForBrazil
             ]);
             
             // Registra campos para data de nascimento
-            woocommerce_store_api_register_endpoint_data( [
-                'endpoint'        => 'checkout',
-                'namespace'       => 'woo_better_birthdate',
-                'schema_callback' => function() {
-                    return [
-                        'billing_birthdate' => [
-                            'type'     => 'string',
-                            'readonly' => true,
-                        ],
-                    ];
-                },
-                'data_callback' => function() {
-                    return [
-                        'billing_birthdate'  => '', 
-                    ];
-                },
-            ]);
+            if (get_option('woo_better_calc_enable_birthdate_field', 'no') === 'yes') {
+                woocommerce_store_api_register_endpoint_data( [
+                    'endpoint'        => 'checkout',
+                    'namespace'       => 'woo_better_birthdate',
+                    'schema_callback' => function() {
+                        return [
+                            'billing_birthdate' => [
+                                'type'     => 'string',
+                                'readonly' => true,
+                            ],
+                        ];
+                    },
+                    'data_callback' => function() {
+                        return [
+                            'billing_birthdate'  => '', 
+                        ];
+                    },
+                ]);
+            }
 
             // Registra campos para gênero
-            woocommerce_store_api_register_endpoint_data( [
-                'endpoint'        => 'checkout',
-                'namespace'       => 'woo_better_gender',
-                'schema_callback' => function() {
-                    return [
-                        'billing_gender' => [
-                            'type'     => 'string',
-                            'readonly' => true,
-                        ],
-                    ];
-                },
-                'data_callback' => function() {
-                    return [
-                        'billing_gender'  => '', 
-                    ];
-                },
-            ]);
+            if (get_option('woo_better_calc_enable_gender_field', 'no') === 'yes') {
+                woocommerce_store_api_register_endpoint_data( [
+                    'endpoint'        => 'checkout',
+                    'namespace'       => 'woo_better_gender',
+                    'schema_callback' => function() {
+                        return [
+                            'billing_gender' => [
+                                'type'     => 'string',
+                                'readonly' => true,
+                            ],
+                        ];
+                    },
+                    'data_callback' => function() {
+                        return [
+                            'billing_gender'  => '', 
+                        ];
+                    },
+                ]);
+            }
 
             // Registra campos para Inscrição Estadual (IE)
             woocommerce_store_api_register_endpoint_data( [
@@ -4114,16 +4123,20 @@ class WcBetterShippingCalculatorForBrazil
             ]);
             
             // Callback para data de nascimento
-            woocommerce_store_api_register_update_callback([
-                'namespace' => 'woo_better_birthdate',
-                'callback'  => [ $this, 'handle_birthdate_update' ],
-            ]);
+            if (get_option('woo_better_calc_enable_birthdate_field', 'no') === 'yes') {
+                woocommerce_store_api_register_update_callback([
+                    'namespace' => 'woo_better_birthdate',
+                    'callback'  => [ $this, 'handle_birthdate_update' ],
+                ]);
+            }
             
             // Callback para gênero
-            woocommerce_store_api_register_update_callback([
-                'namespace' => 'woo_better_gender',
-                'callback'  => [ $this, 'handle_gender_update' ],
-            ]);
+            if (get_option('woo_better_calc_enable_gender_field', 'no') === 'yes') {
+                woocommerce_store_api_register_update_callback([
+                    'namespace' => 'woo_better_gender',
+                    'callback'  => [ $this, 'handle_gender_update' ],
+                ]);
+            }
 
             // Callback para Inscrição Estadual (IE)
             woocommerce_store_api_register_update_callback([
