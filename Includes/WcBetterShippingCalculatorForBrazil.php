@@ -132,7 +132,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.16.8';
+            $this->version = '4.16.9';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -7507,6 +7507,17 @@ class WcBetterShippingCalculatorForBrazil
      * @return   array
      */
     public function funnelkit_get_wcbcf_settings($default) {
+        // REASON: pre_option_wcbcf_settings só deve intervir quando o plugin
+        // Brazilian Market NÃO está ativo — caso contrário, a opção real do
+        // plugin externo deve prevalecer.
+        if (! function_exists('is_plugin_active')) {
+            include_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+            return $default;
+        }
+
         $person_type          = get_option('woo_better_calc_person_type_select', 'none');
         $ie_enabled           = get_option('woo_better_calc_enable_ie_field', 'no');
         $birthdate_enabled    = get_option('woo_better_calc_enable_birthdate_field', 'no');
@@ -7515,18 +7526,37 @@ class WcBetterShippingCalculatorForBrazil
         $number_enabled       = get_option('woo_better_calc_number_required', 'no');
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
 
-        return array(
-            'person_type'  => ($person_type !== 'none') ? 1 : 0,
-            'ie'           => (
-                $ie_enabled === 'yes'
-                && in_array($person_type, array('legal', 'both'), true)
-            ) ? 1 : 0,
-            'birthdate'    => ($birthdate_enabled === 'yes') ? 1 : 0,
-            'gender'       => ($gender_enabled === 'yes') ? 1 : 0,
-            'cell_phone'   => ($cell_phone_enabled === 'yes') ? 1 : 0,
-            'number'       => ($number_enabled === 'yes') ? 1 : 0,
-            'neighborhood' => ($neighborhood_enabled === 'yes') ? 1 : 0,
-        );
+        $settings = array();
+
+        if ($person_type !== 'none') {
+            $settings['person_type'] = 1;
+        }
+
+        if ($ie_enabled === 'yes' && in_array($person_type, array('legal', 'both'), true)) {
+            $settings['ie'] = 1;
+        }
+
+        if ($birthdate_enabled === 'yes') {
+            $settings['birthdate'] = 1;
+        }
+
+        if ($gender_enabled === 'yes') {
+            $settings['gender'] = 1;
+        }
+
+        if ($cell_phone_enabled === 'yes') {
+            $settings['cell_phone'] = 1;
+        }
+
+        if ($number_enabled === 'yes') {
+            $settings['number'] = 1;
+        }
+
+        if ($neighborhood_enabled === 'yes') {
+            $settings['neighborhood'] = 1;
+        }
+
+        return $settings;
     }
 
     /**
