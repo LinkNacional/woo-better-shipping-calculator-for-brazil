@@ -1,5 +1,8 @@
+# 4.16.10 - 30/07/26
+* Ajuste: Padronização dos campos do Funnelkit com o plugin Brazilian.
+
 # 4.16.9 - 29/07/26
-* Ajuste: Sistema de verificação do plugin Funilkit com o plugin Brazilian.
+* Ajuste: Sistema de verificação do plugin Funnelkit com o plugin Brazilian.
 
 # 4.16.8 - 28/07/26
 * Ajuste: Verificação de campo obrigatório para data de nascimento e gênero.

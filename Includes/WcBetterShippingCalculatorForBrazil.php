@@ -132,7 +132,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.16.9';
+            $this->version = '4.16.10';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -301,7 +301,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '4.16.6', '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1', '4.16.0', '4.15.2', '4.15.1', '4.15.0', '4.14.0', '4.13.0', '4.12.5', '4.12.4' );
+            $old_versions   = array( '4.16.9', '4.16.8', '4.16.7' ,'4.16.6', '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1', '4.16.0', '4.15.2', '4.15.1', '4.15.0', '4.14.0' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -7498,35 +7498,32 @@ class WcBetterShippingCalculatorForBrazil
     /**
      * Integração com FunnelKit Checkout.
      *
-     * Retorna wcbcf_settings baseadas nas opções reais do plugin, para que o
-     * FunnelKit libere no editor drag-and-drop apenas os blocos cujos campos
-     * estão ativos nas configurações.
+     * Retorna wcbcf_settings com merge: preserva as configurações reais do
+     * Brazilian Market (rg, mailcheck, maskedinput, validate_cpf, etc.) e
+     * sobrescreve apenas as chaves gerenciadas pelo Calculator quando ativas.
      *
      * @since    4.16.0
-     * @param    mixed $default Valor padrão (ignorado).
+     * @param    mixed $default Valor padrão (não utilizado — a option real
+     *                          é lida via remove_filter temporário).
      * @return   array
      */
     public function funnelkit_get_wcbcf_settings($default) {
-        // REASON: pre_option_wcbcf_settings só deve intervir quando o plugin
-        // Brazilian Market NÃO está ativo — caso contrário, a opção real do
-        // plugin externo deve prevalecer.
-        if (! function_exists('is_plugin_active')) {
-            include_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
+        // REASON: Remove o filtro temporariamente para ler a option real
+        // do Brazilian Market sem causar recursão. Depois faz merge com
+        // as configs do Calculator, preservando chaves de terceiros (rg,
+        // mailcheck, etc).
+        remove_filter('pre_option_wcbcf_settings', array($this, 'funnelkit_get_wcbcf_settings'), 10);
+        $real_settings = get_option('wcbcf_settings');
+        add_filter('pre_option_wcbcf_settings', array($this, 'funnelkit_get_wcbcf_settings'), 10, 1);
 
-        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
-            return $default;
-        }
+        $settings = is_array($real_settings) ? $real_settings : array();
 
         $person_type          = get_option('woo_better_calc_person_type_select', 'none');
         $ie_enabled           = get_option('woo_better_calc_enable_ie_field', 'no');
         $birthdate_enabled    = get_option('woo_better_calc_enable_birthdate_field', 'no');
         $gender_enabled       = get_option('woo_better_calc_enable_gender_field', 'no');
-        $cell_phone_enabled   = get_option('woo_better_calc_contact_required', 'no');
         $number_enabled       = get_option('woo_better_calc_number_required', 'no');
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
-
-        $settings = array();
 
         if ($person_type !== 'none') {
             $settings['person_type'] = 1;
@@ -7542,10 +7539,6 @@ class WcBetterShippingCalculatorForBrazil
 
         if ($gender_enabled === 'yes') {
             $settings['gender'] = 1;
-        }
-
-        if ($cell_phone_enabled === 'yes') {
-            $settings['cell_phone'] = 1;
         }
 
         if ($number_enabled === 'yes') {
