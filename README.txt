@@ -147,6 +147,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+# 4.16.10 - 2026-07-30
+* Adjustment: Standardization of Funnelkit fields with the Brazilian plugin.
+
 # 4.16.9 - 2026-07-29
 * Tweak: Funilkit plugin verification system with the Brazilian plugin.
 
