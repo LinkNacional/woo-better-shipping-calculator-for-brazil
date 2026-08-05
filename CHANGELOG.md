@@ -1,3 +1,7 @@
+# 4.16.11 - 07/08/26
+* Correção: Cálculo de frete com o uso da base de cálculo com o total.
+* Ajuste: Melhoria na skill de preparação para lançamento.
+
 # 4.16.10 - 30/07/26
 * Ajuste: Padronização dos campos do Funnelkit com o plugin Brazilian.
 

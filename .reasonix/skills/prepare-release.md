@@ -1,6 +1,6 @@
 ---
 name: prepare-release
-description: Prepara release: atualiza readme.txt, readme.md, CHANGELOG.md, cabeçalho PHP, constante VERSION, fallback, testes baseado no git log
+description: Prepara release: atualiza readme.txt, readme.md, CHANGELOG.md, cabeçalho PHP, constante VERSION, fallback, testes, .yml workflows baseado no git log
 ---
 
 # prepare-release
@@ -36,12 +36,12 @@ fi
 
 ### 3. Atualizar TODOS os arquivos com versão
 
-A versão aparece em **7 locais** espalhados por **5 arquivos**. Atualize todos:
+A versão aparece em **11 locais** espalhados por **8 arquivos**. Atualize todos:
 
 #### 3a. `readme.txt`
 - `Stable tag:` → nova versão
 - `Tested up to:` e `Requires PHP:` se alterados
-- Adicionar entrada no `== Changelog ==` (topo da seção), **sempre em inglês**:
+- Adicionar entrada no `== Changelog ==` (topo da seção), **sempre em inglês**, usando a **data atual** (hoje):
   ```
   # VERSION - YYYY-MM-DD
   * Item baseado nos commits
@@ -49,7 +49,7 @@ A versão aparece em **7 locais** espalhados por **5 arquivos**. Atualize todos:
 - Se `highlights` foi fornecido, avalie adicionar na `== Description ==` (NUNCA apague conteúdo existente)
 
 #### 3b. `CHANGELOG.md`
-- Adicionar entrada no topo do arquivo, **em português**:
+- Adicionar entrada no topo do arquivo, **em português**, usando a **data atual** (hoje):
   ```
   # VERSION - DD/MM/AA
   * Item baseado nos commits
@@ -71,15 +71,34 @@ A versão aparece em **7 locais** espalhados por **5 arquivos**. Atualize todos:
 #### 3f. `tests/ExampleTest.php`
 - `$this->assertEquals( 'NOVA_VERSION', WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION )` (asserção de teste)
 
+#### 3g. `.github/workflows/main.yml`
+- `DEPLOY_TAG: "NOVA_VERSION"` (tag de deploy do workflow principal)
+
+#### 3h. `.github/workflows/release-candidate.yml`
+- `DEPLOY_TAG: "NOVA_VERSION-rc.1"` (tag de deploy do release candidate)
+
+#### 3i. `.github/workflows/wordpress-release.yml`
+- `DEPLOY_TAG: "NOVA_VERSION"` (tag de deploy do release WordPress.org)
+
+#### 3j. `Includes/WcBetterShippingCalculatorForBrazil.php` — `$old_versions`
+- Localizar o array `$old_versions`. Aplicar DUAS operações atômicas: (a) remover o **último** elemento do array, (b) adicionar `VERSAO_ANTIGA` como **primeiro** elemento.
+- ⚠️ **O array NUNCA deve crescer.** Antes e depois o array DEVE ter o mesmo número de elementos.
+- Exemplo concreto:
+  ```php
+  // Antes (14 elementos):  array( '4.16.9', '4.16.8', '4.16.7', ..., '4.15.0', '4.14.0' );
+  // Depois (14 elementos): array( '4.16.10', '4.16.9', '4.16.8', '4.16.7', ..., '4.15.0' );
+  ```
+  Último (`'4.14.0'`) sai. `'4.16.10'` entra no início. Total: 14 → 14.
+
 ### 4. Validação final
 Rodar grep com a versão **antiga** para confirmar que não restou nenhuma ocorrência fora do esperado:
 ```
-grep -r "VERSAO_ANTIGA" --include="*.php" --include="*.md" --include="*.txt" .
+grep -r "VERSAO_ANTIGA" --include="*.php" --include="*.md" --include="*.txt" --include="*.yml" .
 ```
 O esperado: `readme.txt` e `CHANGELOG.md` ainda contêm a versão antiga **apenas** nas entradas antigas do Changelog (isso é correto). Qualquer outro arquivo retornando a versão antiga é **erro** e deve ser corrigido.
 
-Depois, grep com a versão **nova** para confirmar que aparece em todos os **8 locais** (5 arquivos):
+Depois, grep com a versão **nova** para confirmar que aparece em todos os **11+ locais** (8 arquivos):
 ```
-grep -rn "NOVA_VERSAO" --include="*.php" --include="*.md" --include="*.txt" .
+grep -rn "NOVA_VERSAO" --include="*.php" --include="*.md" --include="*.txt" --include="*.yml" .
 ```
-Deve retornar 8+ matches (múltiplas entradas no changelog do `readme.txt` são normais).
+Deve retornar 11+ matches (múltiplas entradas no changelog do `readme.txt` são normais).
