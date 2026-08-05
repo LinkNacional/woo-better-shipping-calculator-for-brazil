@@ -1,4 +1,4 @@
-# 4.16.11 - 07/08/26
+# 4.16.11 - 05/08/26
 * Correção: Cálculo de frete com o uso da base de cálculo com o total.
 * Ajuste: Melhoria na skill de preparação para lançamento.
 

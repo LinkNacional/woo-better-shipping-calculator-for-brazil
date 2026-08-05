@@ -148,9 +148,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
-# 4.16.11 - 2026-08-07
+# 4.16.11 - 2026-08-05
 * Fix: Shipping calculation when using order total as calculation base.
 * Dev: Improved release preparation skill.
+
 # 4.16.10 - 2026-07-30
 * Adjustment: Standardization of Funnelkit fields with the Brazilian plugin.
 

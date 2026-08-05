@@ -41,15 +41,17 @@ A versão aparece em **11 locais** espalhados por **8 arquivos**. Atualize todos
 #### 3a. `readme.txt`
 - `Stable tag:` → nova versão
 - `Tested up to:` e `Requires PHP:` se alterados
-- Adicionar entrada no `== Changelog ==` (topo da seção), **sempre em inglês**, usando a **data atual** (hoje):
+- Adicionar entrada no `== Changelog ==` (topo da seção), **sempre em inglês**, usando a **data de hoje** (obtida via `date +%Y-%m-%d`). Deixar uma **linha em branco** entre a nova entrada e a anterior:
   ```
   # VERSION - YYYY-MM-DD
   * Item baseado nos commits
+
+  # VERSAO_ANTERIOR - YYYY-MM-DD
   ```
 - Se `highlights` foi fornecido, avalie adicionar na `== Description ==` (NUNCA apague conteúdo existente)
 
 #### 3b. `CHANGELOG.md`
-- Adicionar entrada no topo do arquivo, **em português**, usando a **data atual** (hoje):
+- Adicionar entrada no topo do arquivo, **em português**, usando a **data de hoje** (obtida via `date +%d/%m/%y`):
   ```
   # VERSION - DD/MM/AA
   * Item baseado nos commits
