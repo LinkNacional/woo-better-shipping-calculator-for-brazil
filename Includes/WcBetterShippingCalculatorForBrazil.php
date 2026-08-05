@@ -97,28 +97,6 @@ class WcBetterShippingCalculatorForBrazil
     private $is_shipping_calculation_active = false;
 
     /**
-     * Flag que controla a injeção de frete grátis no modo "total".
-     * Quando calc_base=total, o frete grátis só pode ser injetado depois
-     * que o calculate_totals termina de computar fees e descontos.
-     *
-     * @since    4.18.0
-     * @access   private
-     * @var      bool
-     */
-    private $is_free_shipping_total_pass = false;
-
-    /**
-     * Total do carrinho (sem frete) calculado no woocommerce_after_calculate_totals.
-     * Armazenado para uso no segundo passe do woocommerce_package_rates,
-     * porque nesse hook as fees ainda não estão disponíveis.
-     *
-     * @since    4.18.0
-     * @access   private
-     * @var      float
-     */
-    private $free_shipping_total_value = 0;
-
-    /**
      * Define the core functionality of the plugin.
      *
      * Set the plugin name and the plugin version that can be used throughout the plugin.
@@ -209,10 +187,6 @@ class WcBetterShippingCalculatorForBrazil
         // Ativa a flag is_shipping_calculation_active ANTES do cálculo dos totais do carrinho,
         // para que o filtro woocommerce_get_cart_contents possa remover produtos com frete grátis.
         $this->loader->add_action('woocommerce_before_calculate_totals', $this, 'lkn_set_shipping_calculation_flag', 10, 1);
-
-        // Hook que roda DEPOIS do calculate_totals — usado para o modo calc_base=total,
-        // porque nesse ponto fees, descontos e taxas já estão computados.
-        $this->loader->add_action('woocommerce_after_calculate_totals', $this, 'lkn_after_calculate_totals_free_shipping', 10, 1);
 
         // Reseta a flag is_shipping_calculation_active após o cálculo dos totais do carrinho.
         $this->loader->add_action('woocommerce_after_calculate_totals', $this, 'lkn_reset_shipping_calculation_flag', 10, 1);
@@ -621,47 +595,13 @@ class WcBetterShippingCalculatorForBrazil
      * @param WC_Cart $cart O carrinho do WooCommerce.
      * @return void
      */
+    /**
+     * @deprecated 5.0.0 Two-pass removido. Cálculo agora é feito diretamente
+     *             no woocommerce_package_rates via get_subtotal() - get_discount_total().
+     */
     public function lkn_after_calculate_totals_free_shipping($cart)
     {
-        $calc_base = get_option('woo_better_free_shipping_calc_base', 'subtotal');
-        if ($calc_base !== 'total') {
-            return;
-        }
-
-        // Evita loop infinito: só age se ainda não foi o segundo passe
-        if ($this->is_free_shipping_total_pass) {
-            $this->is_free_shipping_total_pass = false;
-            return;
-        }
-
-        $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
-        if ($enable_min !== 'yes') {
-            return;
-        }
-
-        $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
-        if ($min_value <= 0) {
-            return;
-        }
-
-        // Agora o total está completamente calculado. Removemos o frete
-        // pois o total da regra não deve incluir o custo de outros fretes.
-        $cart_total = (float) $cart->total
-            - (float) $cart->get_shipping_total()
-            - (float) $cart->get_shipping_tax();
-
-        if ($cart_total >= $min_value) {
-            // Armazena o valor para o segundo passe do woocommerce_package_rates
-            $this->free_shipping_total_value = $cart_total;
-            $this->is_free_shipping_total_pass = true;
-
-            // Limpa cache de sessão para forçar o woocommerce_package_rates
-            for ($i = 0; $i < 10; $i++) {
-                WC()->session->__unset('shipping_for_package_' . $i);
-            }
-
-            $cart->calculate_totals();
-        }
+        return;
     }
 
     /**
@@ -703,7 +643,6 @@ class WcBetterShippingCalculatorForBrazil
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
         $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
         $calc_base = get_option('woo_better_free_shipping_calc_base', 'subtotal');
-        $only_free_shipping = get_option('woo_better_only_free_shipping', 'yes');
         $keep_other_methods = get_option('woo_better_keep_other_methods_with_free_shipping', 'yes');
         $avoid_free_shipping_duplication = get_option('woo_better_avoid_free_shipping_duplication', 'no');
 
@@ -737,10 +676,10 @@ class WcBetterShippingCalculatorForBrazil
                 $cart_total = isset($package['contents_cost']) ? floatval($package['contents_cost']) : 0;
             } else {
                 if ($calc_base === 'total') {
-                    if (! $this->is_free_shipping_total_pass) {
-                        return $rates;
-                    }
-                    $cart_total = $this->free_shipping_total_value;
+                    // REASON: Base de cálculo = subtotal - cupons de desconto.
+                    // Juros/fees de gateway não entram na conta.
+                    $cart_total = (float) WC()->cart->get_subtotal()
+                        - (float) WC()->cart->get_discount_total();
                 } else {
                     $cart_total = WC()->cart->get_displayed_subtotal();
                 }
@@ -5190,11 +5129,9 @@ class WcBetterShippingCalculatorForBrazil
         // Dados básicos do carrinho
         $calc_base = get_option('woo_better_free_shipping_calc_base', 'subtotal');
         if ($calc_base === 'total') {
-            $cart->calculate_shipping();
-            // Total sem frete = total do carrinho - custo do frete
-            $cart_total = (float) $cart->total
-                - (float) $cart->get_shipping_total()
-                - (float) $cart->get_shipping_tax();
+            // Subtotal - cupons de desconto (juros não entram)
+            $cart_total = (float) $cart->get_subtotal()
+                - (float) $cart->get_discount_total();
         } else {
             $cart_total = $cart->get_displayed_subtotal();
         }
