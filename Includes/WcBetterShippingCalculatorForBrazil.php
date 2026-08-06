@@ -1395,6 +1395,9 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_wc_better_get_user_postcode', $this, 'wc_better_get_user_postcode');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_get_user_postcode', $this, 'wc_better_get_user_postcode');
 
+        $this->loader->add_action('wp_ajax_wc_better_persist_postcode', $this, 'wc_better_persist_postcode');
+        $this->loader->add_action('wp_ajax_nopriv_wc_better_persist_postcode', $this, 'wc_better_persist_postcode');
+
         $this->loader->add_action('woocommerce_get_country_locale', $this, 'wc_better_calc_phone_number', 10, 1);
         $this->loader->add_filter('woocommerce_get_country_locale', $this, 'lkn_checkout_fields_locale_priority', 11, 1);
 
@@ -5078,6 +5081,11 @@ class WcBetterShippingCalculatorForBrazil
      * @return void JSON com o CEP do usuário
      */
     public function wc_better_get_user_postcode() {
+        // Headers anti-cache para evitar que LiteSpeed/similares cacheiem a resposta
+        header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: Wed, 11 Jan 1984 05:00:00 GMT');
+        
         // Verifica nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wc_better_get_user_postcode')) {
             wp_send_json_error([
@@ -5104,6 +5112,90 @@ class WcBetterShippingCalculatorForBrazil
 
         wp_send_json_success([
             'postcode' => $cart_cep
+        ]);
+    }
+
+    /**
+     * AJAX endpoint para persistir apenas o CEP no WC()->customer.
+     * Usado quando a API de CEP retorna erro (CEP inválido) — salva o postcode
+     * sem tocar nos demais campos de endereço.
+     *
+     * @since 4.16.12
+     * @access public
+     * @return void JSON
+     */
+    public function wc_better_persist_postcode() {
+        // Verifica nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wc_better_get_user_postcode')) {
+            wp_send_json_error([
+                'error' => true,
+                'message' => 'Falha na verificação de segurança (nonce).'
+            ], 403);
+        }
+
+        // Verifica se WooCommerce está disponível
+        if (!function_exists('WC')) {
+            wp_send_json_error([
+                'error' => true,
+                'message' => 'WooCommerce não está disponível.'
+            ], 400);
+        }
+
+        $postcode = isset($_POST['postcode']) ? sanitize_text_field(wp_unslash($_POST['postcode'])) : '';
+
+        if (empty($postcode) || !WC()->customer) {
+            wp_send_json_error([
+                'error' => true,
+                'message' => 'CEP inválido ou cliente não disponível.'
+            ], 400);
+        }
+
+        // Salva APENAS o postcode
+        WC()->customer->set_shipping_postcode($postcode);
+        WC()->customer->set_billing_postcode($postcode);
+        WC()->customer->set_shipping_country('BR');
+        WC()->customer->set_billing_country('BR');
+
+        // Limpa endereço antigo (CEP inválido não tem dados de rua/cidade/estado)
+        WC()->customer->set_shipping_address_1('');
+        WC()->customer->set_shipping_address_2('');
+        WC()->customer->set_shipping_city('');
+        WC()->customer->set_shipping_state('');
+        WC()->customer->set_billing_address_1('');
+        WC()->customer->set_billing_address_2('');
+        WC()->customer->set_billing_city('');
+        WC()->customer->set_billing_state('');
+
+        WC()->customer->save();
+
+        // Limpa endereço da sessão WC (número, bairro, rua, cidade, estado)
+        if (WC()->session) {
+            WC()->session->__unset('billing_number');
+            WC()->session->__unset('shipping_number');
+            WC()->session->__unset('billing_neighborhood');
+            WC()->session->__unset('shipping_neighborhood');
+            WC()->session->__unset('billing_address_1');
+            WC()->session->__unset('shipping_address_1');
+            WC()->session->__unset('billing_city');
+            WC()->session->__unset('shipping_city');
+            WC()->session->__unset('billing_state');
+            WC()->session->__unset('shipping_state');
+            WC()->session->__unset('billing_postcode');
+            WC()->session->__unset('shipping_postcode');
+            WC()->session->save_data();
+        }
+
+        // Limpa metadados de endereço do plugin no perfil do usuário logado
+        if (is_user_logged_in()) {
+            $user_id = get_current_user_id();
+            update_user_meta($user_id, 'billing_number', '');
+            update_user_meta($user_id, 'shipping_number', '');
+            update_user_meta($user_id, 'billing_neighborhood', '');
+            update_user_meta($user_id, 'shipping_neighborhood', '');
+        }
+
+        wp_send_json_success([
+            'postcode' => $postcode
         ]);
     }
 
