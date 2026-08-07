@@ -97,28 +97,6 @@ class WcBetterShippingCalculatorForBrazil
     private $is_shipping_calculation_active = false;
 
     /**
-     * Flag que controla a injeção de frete grátis no modo "total".
-     * Quando calc_base=total, o frete grátis só pode ser injetado depois
-     * que o calculate_totals termina de computar fees e descontos.
-     *
-     * @since    4.18.0
-     * @access   private
-     * @var      bool
-     */
-    private $is_free_shipping_total_pass = false;
-
-    /**
-     * Total do carrinho (sem frete) calculado no woocommerce_after_calculate_totals.
-     * Armazenado para uso no segundo passe do woocommerce_package_rates,
-     * porque nesse hook as fees ainda não estão disponíveis.
-     *
-     * @since    4.18.0
-     * @access   private
-     * @var      float
-     */
-    private $free_shipping_total_value = 0;
-
-    /**
      * Define the core functionality of the plugin.
      *
      * Set the plugin name and the plugin version that can be used throughout the plugin.
@@ -132,7 +110,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.16.10';
+            $this->version = '4.16.11';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -209,10 +187,6 @@ class WcBetterShippingCalculatorForBrazil
         // Ativa a flag is_shipping_calculation_active ANTES do cálculo dos totais do carrinho,
         // para que o filtro woocommerce_get_cart_contents possa remover produtos com frete grátis.
         $this->loader->add_action('woocommerce_before_calculate_totals', $this, 'lkn_set_shipping_calculation_flag', 10, 1);
-
-        // Hook que roda DEPOIS do calculate_totals — usado para o modo calc_base=total,
-        // porque nesse ponto fees, descontos e taxas já estão computados.
-        $this->loader->add_action('woocommerce_after_calculate_totals', $this, 'lkn_after_calculate_totals_free_shipping', 10, 1);
 
         // Reseta a flag is_shipping_calculation_active após o cálculo dos totais do carrinho.
         $this->loader->add_action('woocommerce_after_calculate_totals', $this, 'lkn_reset_shipping_calculation_flag', 10, 1);
@@ -301,7 +275,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '4.16.9', '4.16.8', '4.16.7' ,'4.16.6', '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1', '4.16.0', '4.15.2', '4.15.1', '4.15.0', '4.14.0' );
+            $old_versions   = array( '4.16.10', '4.16.9', '4.16.8', '4.16.7' ,'4.16.6', '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1', '4.16.0', '4.15.2', '4.15.1', '4.15.0' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -621,47 +595,13 @@ class WcBetterShippingCalculatorForBrazil
      * @param WC_Cart $cart O carrinho do WooCommerce.
      * @return void
      */
+    /**
+     * @deprecated 5.0.0 Two-pass removido. Cálculo agora é feito diretamente
+     *             no woocommerce_package_rates via get_subtotal() - get_discount_total().
+     */
     public function lkn_after_calculate_totals_free_shipping($cart)
     {
-        $calc_base = get_option('woo_better_free_shipping_calc_base', 'subtotal');
-        if ($calc_base !== 'total') {
-            return;
-        }
-
-        // Evita loop infinito: só age se ainda não foi o segundo passe
-        if ($this->is_free_shipping_total_pass) {
-            $this->is_free_shipping_total_pass = false;
-            return;
-        }
-
-        $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
-        if ($enable_min !== 'yes') {
-            return;
-        }
-
-        $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
-        if ($min_value <= 0) {
-            return;
-        }
-
-        // Agora o total está completamente calculado. Removemos o frete
-        // pois o total da regra não deve incluir o custo de outros fretes.
-        $cart_total = (float) $cart->total
-            - (float) $cart->get_shipping_total()
-            - (float) $cart->get_shipping_tax();
-
-        if ($cart_total >= $min_value) {
-            // Armazena o valor para o segundo passe do woocommerce_package_rates
-            $this->free_shipping_total_value = $cart_total;
-            $this->is_free_shipping_total_pass = true;
-
-            // Limpa cache de sessão para forçar o woocommerce_package_rates
-            for ($i = 0; $i < 10; $i++) {
-                WC()->session->__unset('shipping_for_package_' . $i);
-            }
-
-            $cart->calculate_totals();
-        }
+        return;
     }
 
     /**
@@ -703,7 +643,6 @@ class WcBetterShippingCalculatorForBrazil
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
         $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
         $calc_base = get_option('woo_better_free_shipping_calc_base', 'subtotal');
-        $only_free_shipping = get_option('woo_better_only_free_shipping', 'yes');
         $keep_other_methods = get_option('woo_better_keep_other_methods_with_free_shipping', 'yes');
         $avoid_free_shipping_duplication = get_option('woo_better_avoid_free_shipping_duplication', 'no');
 
@@ -737,10 +676,10 @@ class WcBetterShippingCalculatorForBrazil
                 $cart_total = isset($package['contents_cost']) ? floatval($package['contents_cost']) : 0;
             } else {
                 if ($calc_base === 'total') {
-                    if (! $this->is_free_shipping_total_pass) {
-                        return $rates;
-                    }
-                    $cart_total = $this->free_shipping_total_value;
+                    // REASON: Base de cálculo = subtotal - cupons de desconto.
+                    // Juros/fees de gateway não entram na conta.
+                    $cart_total = (float) WC()->cart->get_subtotal()
+                        - (float) WC()->cart->get_discount_total();
                 } else {
                     $cart_total = WC()->cart->get_displayed_subtotal();
                 }
@@ -1455,6 +1394,9 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('wp_ajax_wc_better_get_user_postcode', $this, 'wc_better_get_user_postcode');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_get_user_postcode', $this, 'wc_better_get_user_postcode');
+
+        $this->loader->add_action('wp_ajax_wc_better_persist_postcode', $this, 'wc_better_persist_postcode');
+        $this->loader->add_action('wp_ajax_nopriv_wc_better_persist_postcode', $this, 'wc_better_persist_postcode');
 
         $this->loader->add_action('woocommerce_get_country_locale', $this, 'wc_better_calc_phone_number', 10, 1);
         $this->loader->add_filter('woocommerce_get_country_locale', $this, 'lkn_checkout_fields_locale_priority', 11, 1);
@@ -5139,6 +5081,11 @@ class WcBetterShippingCalculatorForBrazil
      * @return void JSON com o CEP do usuário
      */
     public function wc_better_get_user_postcode() {
+        // Headers anti-cache para evitar que LiteSpeed/similares cacheiem a resposta
+        header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: Wed, 11 Jan 1984 05:00:00 GMT');
+        
         // Verifica nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wc_better_get_user_postcode')) {
             wp_send_json_error([
@@ -5169,6 +5116,90 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * AJAX endpoint para persistir apenas o CEP no WC()->customer.
+     * Usado quando a API de CEP retorna erro (CEP inválido) — salva o postcode
+     * sem tocar nos demais campos de endereço.
+     *
+     * @since 4.16.12
+     * @access public
+     * @return void JSON
+     */
+    public function wc_better_persist_postcode() {
+        // Verifica nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'wc_better_get_user_postcode')) {
+            wp_send_json_error([
+                'error' => true,
+                'message' => 'Falha na verificação de segurança (nonce).'
+            ], 403);
+        }
+
+        // Verifica se WooCommerce está disponível
+        if (!function_exists('WC')) {
+            wp_send_json_error([
+                'error' => true,
+                'message' => 'WooCommerce não está disponível.'
+            ], 400);
+        }
+
+        $postcode = isset($_POST['postcode']) ? sanitize_text_field(wp_unslash($_POST['postcode'])) : '';
+
+        if (empty($postcode) || !WC()->customer) {
+            wp_send_json_error([
+                'error' => true,
+                'message' => 'CEP inválido ou cliente não disponível.'
+            ], 400);
+        }
+
+        // Salva APENAS o postcode
+        WC()->customer->set_shipping_postcode($postcode);
+        WC()->customer->set_billing_postcode($postcode);
+        WC()->customer->set_shipping_country('BR');
+        WC()->customer->set_billing_country('BR');
+
+        // Limpa endereço antigo (CEP inválido não tem dados de rua/cidade/estado)
+        WC()->customer->set_shipping_address_1('');
+        WC()->customer->set_shipping_address_2('');
+        WC()->customer->set_shipping_city('');
+        WC()->customer->set_shipping_state('');
+        WC()->customer->set_billing_address_1('');
+        WC()->customer->set_billing_address_2('');
+        WC()->customer->set_billing_city('');
+        WC()->customer->set_billing_state('');
+
+        WC()->customer->save();
+
+        // Limpa endereço da sessão WC (número, bairro, rua, cidade, estado)
+        if (WC()->session) {
+            WC()->session->__unset('billing_number');
+            WC()->session->__unset('shipping_number');
+            WC()->session->__unset('billing_neighborhood');
+            WC()->session->__unset('shipping_neighborhood');
+            WC()->session->__unset('billing_address_1');
+            WC()->session->__unset('shipping_address_1');
+            WC()->session->__unset('billing_city');
+            WC()->session->__unset('shipping_city');
+            WC()->session->__unset('billing_state');
+            WC()->session->__unset('shipping_state');
+            WC()->session->__unset('billing_postcode');
+            WC()->session->__unset('shipping_postcode');
+            WC()->session->save_data();
+        }
+
+        // Limpa metadados de endereço do plugin no perfil do usuário logado
+        if (is_user_logged_in()) {
+            $user_id = get_current_user_id();
+            update_user_meta($user_id, 'billing_number', '');
+            update_user_meta($user_id, 'shipping_number', '');
+            update_user_meta($user_id, 'billing_neighborhood', '');
+            update_user_meta($user_id, 'shipping_neighborhood', '');
+        }
+
+        wp_send_json_success([
+            'postcode' => $postcode
+        ]);
+    }
+
+    /**
      * AJAX endpoint para obter dados do carrinho e status do frete
      *
      * @since 4.11.0
@@ -5190,11 +5221,9 @@ class WcBetterShippingCalculatorForBrazil
         // Dados básicos do carrinho
         $calc_base = get_option('woo_better_free_shipping_calc_base', 'subtotal');
         if ($calc_base === 'total') {
-            $cart->calculate_shipping();
-            // Total sem frete = total do carrinho - custo do frete
-            $cart_total = (float) $cart->total
-                - (float) $cart->get_shipping_total()
-                - (float) $cart->get_shipping_tax();
+            // Subtotal - cupons de desconto (juros não entram)
+            $cart_total = (float) $cart->get_subtotal()
+                - (float) $cart->get_discount_total();
         } else {
             $cart_total = $cart->get_displayed_subtotal();
         }

@@ -35,17 +35,27 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function processUserPostcode(cartCep) {
-        const lastPostcode = getLastUsedPostcode();
-        
-        // Normaliza ambos os CEPs para comparação
         const normalizedCartCep = formatCEP(cartCep);
-        const normalizedLastPostcode = formatCEP(lastPostcode);
+        const cepRegex = /^\d{5}-\d{3}$/;
         
-        if (normalizedCartCep && normalizedCartCep !== normalizedLastPostcode) {
-            // Reseta cache e faz nova consulta usando o CEP do carrinho
-            invalidateCache();
-            setLastUsedPostcode(normalizedCartCep);
+        if (normalizedCartCep && cepRegex.test(normalizedCartCep)) {
+            // Insere o CEP no campo de input
+            const input = document.querySelector('.woo-better-input-current-style');
+            if (input) {
+                applyFormatToInput(input, normalizedCartCep);
+            }
+            
+            // Se auto-consulta está habilitada E a flag não indica falha anterior
+            if (WooBetterData.enable_search === 'yes' && isLastCepValid() !== false) {
+                setTimeout(() => {
+                    const button = document.querySelector('.woo-better-button-current-style');
+                    if (button && !button.disabled) {
+                        button.click();
+                    }
+                }, 300);
+            }
         }
+        // Se CEP vazio ou inválido: não faz nada, deixa o campo vazio
     }
 
     // Inicia a busca do CEP quando o DOM carregar
@@ -189,6 +199,16 @@ document.addEventListener('DOMContentLoaded', function () {
         return label + ' ' + deliveryStr;
     }
 
+    /**
+     * Lê o CEP atual do campo de input, formatado.
+     * Substitui getLastUsedPostcode — agora o input é a fonte da verdade.
+     * @return {string} CEP formatado ou string vazia
+     */
+    function getCurrentInputPostcode() {
+        const input = document.querySelector('.woo-better-input-current-style');
+        return input ? formatCEP(input.value) : '';
+    }
+
     // Função para aplicar formatação em um input de CEP
     function applyFormatToInput(input, value) {
         if (!input) return;
@@ -211,9 +231,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function invalidateCache() {
-        // Função de reset do cache customizado
+        // Invalida cache de produto e cache de CEP inválido
         try {
-            localStorage.removeItem('woo_better_calc_custom_cache');
+            localStorage.removeItem('woo_better_product_cache');
         } catch (e) {
             // Ignora erro de localStorage
         }
@@ -314,9 +334,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     form.style.display = 'block';
                 }
                 
-                // Se tem consulta automática habilitada e já tem CEP salvo, faz nova consulta
-                const lastPostcode = getLastUsedPostcode();
-                if (WooBetterData.enable_search === 'yes' && lastPostcode) {
+                // Se tem consulta automática habilitada e já tem CEP no campo, faz nova consulta
+                const inputEl = document.querySelector('.woo-better-input-current-style');
+                const lastPostcode = inputEl ? formatCEP(inputEl.value) : '';
+                if (WooBetterData.enable_search === 'yes' && lastPostcode && isLastCepValid() !== false) {
                     setTimeout(() => {
                         const submitButton = document.querySelector('.woo-better-button-current-style');
                         if (submitButton && !submitButton.disabled) {
@@ -424,6 +445,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     const inputPostcode = document.querySelector('.woo-better-input-current-style');
                     if (inputPostcode && inputPostcode.value && inputPostcode.value.trim().length >= 9) {
                         const postcode = inputPostcode.value.trim();
+                        
+                        // Verifica flag de consulta anterior
+                        if (isLastCepValid() === false) {
+                            return;
+                        }
                         
                         // Primeiro verifica se há cache para esta variação específica
                         const cachedData = getCachedShippingData(postcode, WooBetterData.product_id);
@@ -829,7 +855,9 @@ document.addEventListener('DOMContentLoaded', function () {
         infoBlock.classList.add('woo-better-info-block');
         infoBlock.classList.add(font_class);
 
-        const lastPostcode = getLastUsedPostcode();
+        // Lê CEP do campo de input
+        const inputEl = document.querySelector('.woo-better-input-current-style');
+        const lastPostcode = inputEl ? formatCEP(inputEl.value) : '';
 
         // Verifica se os dados passados são dados reais (não placeholder)
         const hasRealData = productInfo && productInfo.name && productInfo.name !== '*******';
@@ -962,7 +990,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            const currentPostcode = getLastUsedPostcode();
+            // Lê o CEP do campo de input em vez de cache
+            const inputEl2 = document.querySelector('.woo-better-input-current-style');
+            const currentPostcode = inputEl2 ? formatCEP(inputEl2.value) : '';
             if (currentPostcode) {
                 // Marca que o usuário fez uma consulta manual
                 hasUserMadeQuery = true;
@@ -1026,7 +1056,9 @@ document.addEventListener('DOMContentLoaded', function () {
         form.style.marginTop = '20px';
         form.style.padding = '0px';
 
-        const lastPostcode = getLastUsedPostcode();
+        // Lê CEP do campo de input
+        const inputElCreate = document.querySelector('.woo-better-input-current-style');
+        const lastPostcode = inputElCreate ? formatCEP(inputElCreate.value) : '';
         if (lastPostcode && WooBetterData.enable_search === 'yes') {
             // Só esconde o formulário se há CEP salvo E a consulta automática está habilitada
             form.style.display = 'none';
@@ -1230,7 +1262,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     const form = createForm();
 
                     // Verifica se há dados em cache para usar como inicialização
-                    const lastPostcode = getLastUsedPostcode();
+                    // Lê CEP do campo de input (preenchido por fetchUserPostcodeAndInitialize)
+                    const inputObs = document.querySelector('.woo-better-input-current-style');
+                    const lastPostcode = inputObs ? formatCEP(inputObs.value) : '';
                     let initializeData = {
                         product: {
                             name: '*******',
@@ -1278,7 +1312,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // Chama a função para buscar o nonce e depois executa a lógica do cache
                     fetchProductNonce(function () {
-                        const lastPostcode = getLastUsedPostcode();
+                        const inputNonce = document.querySelector('.woo-better-input-current-style');
+                        const lastPostcode = inputNonce ? formatCEP(inputNonce.value) : '';
 
                         if (lastPostcode) {
                             const inputPostcode = document.querySelector('.woo-better-input-current-style');
@@ -1301,7 +1336,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                             if (cachedData) {
                                                 const infoBlock = document.querySelector('.woo-better-info-block');
                                                 processShippingRatesFromCache(cachedData, form, infoBlock, lastPostcode);
-                                            } else {
+                                            } else if (isLastCepValid() !== false) {
                                                 setTimeout(() => {
                                                     const submitButton = document.querySelector('.woo-better-button-current-style');
                                                     if (submitButton && !submitButton.disabled) {
@@ -1323,7 +1358,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                         // Se há cache, usa os dados do cache diretamente sem nova consulta
                                         const infoBlock = document.querySelector('.woo-better-info-block');
                                         processShippingRatesFromCache(cachedData, form, infoBlock, lastPostcode);
-                                    } else {
+                                    } else if (isLastCepValid() !== false) {
                                         // Não há cache para este produto específico com o CEP atual
                                         // Inconsistência detectada: exibe o formulário imediatamente
                                         form.style.display = 'block';
@@ -1503,6 +1538,9 @@ document.addEventListener('DOMContentLoaded', function () {
                             enablePostcodeForm();
                         });
                 } else {
+                    // Marca CEP como inválido para evitar consultas automáticas repetidas
+                    setLastCepValid(false);
+                    persistPostcodeOnly(postcode);
                     enablePostcodeForm();
 
                     // Só mostra alert se for problema específico do CEP
@@ -1549,9 +1587,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // Salva no cache para evitar consultas futuras
                     setCachedShippingData(postcode, WooBetterData.product_id, digitalProductData);
-                    
-                    // Atualiza o último CEP usado
-                    setLastUsedPostcode(postcode);
 
                     // Tratamento para produtos digitais
                     const contentBlock = infoBlock.querySelector('.woo-better-content-block');
@@ -1610,6 +1645,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 if (!shippingRates || !Array.isArray(shippingRates.shipping_rates) || shippingRates.shipping_rates.length === 0) {
+                    // Marca CEP como inválido (sem métodos de frete)
+                    setLastCepValid(false);
                     // Esconde todos os componentes filhos do bloco
                     const contentBlock = infoBlock.querySelector('.woo-better-content-block');
                     if (contentBlock) {
@@ -1662,8 +1699,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Salva no novo sistema de cache estruturado
                 setCachedShippingData(postcode, WooBetterData.product_id, dataWithTimestamp);
 
-                // Atualiza o último CEP usado
-                setLastUsedPostcode(postcode);
+                // Continua com o processamento
 
                 // Marca que o usuário fez uma consulta manual
                 hasUserMadeQuery = true;
@@ -1802,9 +1838,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Esconde o formulário de CEP
             form.style.display = 'none';
-
-            // Atualiza o último CEP usado
-            setLastUsedPostcode(postcode);
 
             // Mantém o bloco de informações visível e apenas atualiza o conteúdo
             const cepBlock = document.querySelector('.woo-better-current-postcode-block');
@@ -2050,7 +2083,45 @@ document.addEventListener('DOMContentLoaded', function () {
         // Salva os dados com a nova chave que inclui quantidade
         cache[postcode][productCacheKey] = cleanData;
 
+        // Uma consulta bem-sucedida marca a flag como true
+        setLastCepValid(true);
+
         localStorage.setItem(cacheKey, JSON.stringify(cache));
+    }
+
+    /**
+     * Flag booleana compartilhada: indica se a última consulta de CEP foi bem-sucedida.
+     * true = sucesso (pode auto-consultar), false = falha (não auto-consultar).
+     * Se ausente (null/undefined) = estado inicial, permite auto-consulta.
+     */
+    function isLastCepValid() {
+        const key = 'woo_better_last_cep_valid';
+        const val = localStorage.getItem(key);
+        if (val === null) return null; // nunca consultou
+        return val === 'true';
+    }
+
+    function setLastCepValid(valid) {
+        localStorage.setItem('woo_better_last_cep_valid', valid ? 'true' : 'false');
+    }
+
+    /**
+     * Persiste apenas o postcode no WC()->customer via AJAX,
+     * sem dados de endereço (usado quando a API de CEP falha).
+     */
+    function persistPostcodeOnly(postcode) {
+        if (!postcode) return;
+
+        const formData = new FormData();
+        formData.append('action', 'wc_better_persist_postcode');
+        formData.append('nonce', WooBetterData.get_postcode_nonce);
+        formData.append('postcode', postcode);
+
+        const apiUrl = WooBetterData.ajaxurl + '?t=' + Date.now();
+        fetch(apiUrl, {
+            method: 'POST',
+            body: formData,
+        }).catch(() => {});
     }
 
     // Funções para gerenciar o token centralizado
@@ -2071,69 +2142,6 @@ document.addEventListener('DOMContentLoaded', function () {
         localStorage.setItem(tokenCacheKey, JSON.stringify(tokenCacheData));
     }
 
-    function getLastUsedPostcode() {
-        if (!isTokenValid()) {
-            // Token inválido - limpa todos os caches
-            clearAllCaches();
-            return null;
-        }
-
-        // Primeiro verifica se há um CEP compartilhado salvo no token cache
-        const sharedPostcode = getSharedPostcode();
-        if (sharedPostcode) {
-            return sharedPostcode;
-        }
-
-        const cacheTimeMinutes = parseInt(WooBetterData.cache_time) || 0;
-
-        // Se nunca expira, retorna qualquer CEP do cache
-        if (cacheTimeMinutes === 0) {
-            const cache = getProductCache();
-            const cepKeys = Object.keys(cache);
-            return cepKeys.length > 0 ? cepKeys[0] : null;
-        }
-
-        // Se expira, precisa verificar timestamp - por agora retorna o primeiro CEP válido
-        const cache = getProductCache();
-        const cacheExpirationMs = cacheTimeMinutes * 60 * 1000;
-
-        for (const cep of Object.keys(cache)) {
-            for (const productId of Object.keys(cache[cep])) {
-                if (Date.now() - cache[cep][productId].timestamp < cacheExpirationMs) {
-                    return cep;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    function setLastUsedPostcode(postcode) {
-        // Garante que o CEP seja salvo sempre formatado
-        const formattedPostcode = formatCEP(postcode);
-        // Salva o CEP como compartilhado entre produto e carrinho
-        setSharedPostcode(formattedPostcode);
-        updateTokenCache();
-    }
-
-    // Funções para gerenciar o CEP compartilhado
-    function getSharedPostcode() {
-        if (!isTokenValid()) {
-            return null;
-        }
-
-        const tokenCacheData = getTokenCacheData();
-        return tokenCacheData.shared_postcode || null;
-    }
-
-    function setSharedPostcode(postcode) {
-        const tokenCacheData = getTokenCacheData();
-        tokenCacheData.shared_postcode = postcode;
-        tokenCacheData.last_updated = Date.now();
-
-        const tokenCacheKey = 'woo_better_token_cache_data';
-        localStorage.setItem(tokenCacheKey, JSON.stringify(tokenCacheData));
-    }
 
     function getTokenCacheData() {
         const tokenCacheKey = 'woo_better_token_cache_data';
@@ -2152,6 +2160,7 @@ document.addEventListener('DOMContentLoaded', function () {
         localStorage.removeItem('woo_better_product_cache');
         localStorage.removeItem('woo_better_cart_cache');
         localStorage.removeItem('woo_better_token_cache_data');
+        localStorage.removeItem('woo_better_last_cep_valid');
         // Remove também caches antigos para limpeza
         localStorage.removeItem('woo_better_token_cache');
         localStorage.removeItem('woo_better_postcode_cache');
@@ -2179,7 +2188,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const parentContainer = createParentContainer();
             const form = createForm();
 
-            const lastPostcode = getLastUsedPostcode();
+            // Lê CEP do campo de input (preenchido por fetchUserPostcodeAndInitialize)
+            const inputChk = document.querySelector('.woo-better-input-current-style');
+            const lastPostcode = inputChk ? formatCEP(inputChk.value) : '';
             let initializeData = {
                 product: {
                     name: '*******',
@@ -2222,7 +2233,8 @@ document.addEventListener('DOMContentLoaded', function () {
             targetElement.insertAdjacentElement('afterend', parentContainer);
 
             fetchProductNonce(function () {
-                const lastPostcode = getLastUsedPostcode();
+                const inputChk2 = document.querySelector('.woo-better-input-current-style');
+                const lastPostcode = inputChk2 ? formatCEP(inputChk2.value) : '';
 
                 if (lastPostcode) {
                     const inputPostcode = document.querySelector('.woo-better-input-current-style');
@@ -2240,7 +2252,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                     if (cachedData) {
                                         const infoBlock = document.querySelector('.woo-better-info-block');
                                         processShippingRatesFromCache(cachedData, form, infoBlock, lastPostcode);
-                                    } else {
+                                    } else if (isLastCepValid() !== false) {
                                         setTimeout(() => {
                                             const submitButton = document.querySelector('.woo-better-button-current-style');
                                             if (submitButton && !submitButton.disabled) {
@@ -2258,7 +2270,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             if (cachedData) {
                                 const infoBlock = document.querySelector('.woo-better-info-block');
                                 processShippingRatesFromCache(cachedData, form, infoBlock, lastPostcode);
-                            } else {
+                            } else if (isLastCepValid() !== false) {
                                 form.style.display = 'block';
                                 if (WooBetterData.enable_search === 'yes') {
                                     setTimeout(() => {

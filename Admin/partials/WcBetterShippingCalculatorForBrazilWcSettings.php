@@ -160,12 +160,12 @@ class WcBetterShippingCalculatorForBrazilWcSettings extends \WC_Settings_Page
                 'type'     => 'select',
                 'options'  => array(
                     'subtotal' => __('Subtotal', 'woo-better-shipping-calculator-for-brazil'),
-                    'total'    => __('Total', 'woo-better-shipping-calculator-for-brazil'),
+                    'total'    => __('Subtotal + Cupons', 'woo-better-shipping-calculator-for-brazil'),
                 ),
                 'custom_attributes' => array(
                     'data-desc-tip' => __('Define qual valor será usado como base para o cálculo do frete grátis.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-description' => __('<strong>Subtotal:</strong> considera apenas o valor dos produtos (padrão).<br><strong>Total:</strong> considera subtotal + taxas - cupons de desconto.', 'woo-better-shipping-calculator-for-brazil'),
-                    'data-title-description' => __('Escolha entre usar apenas o subtotal ou o valor total (com taxas e descontos) como base para liberar o frete grátis.', 'woo-better-shipping-calculator-for-brazil')
+                    'data-description' => __('<strong>Subtotal:</strong> considera apenas o valor dos produtos.<br><strong>Subtotal + Cupons:</strong> considera subtotal com cupons de desconto aplicados (não inclui juros/taxas de gateway).', 'woo-better-shipping-calculator-for-brazil'),
+                    'data-title-description' => __('Escolha entre usar apenas o subtotal ou subtotal com cupons de desconto como base para liberar o frete grátis.', 'woo-better-shipping-calculator-for-brazil')
                 )
             ),
             'only_free_shipping' => array(
