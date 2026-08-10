@@ -42,6 +42,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const normalizedCartCep = formatCEP(cartCep);
         const cepRegex = /^\d{5}-\d{3}$/;
         
+        // Salva em variável de módulo para persistir entre recriações do componente (shortcode)
+        if (normalizedCartCep && cepRegex.test(normalizedCartCep)) {
+            ajaxFetchedPostcode = normalizedCartCep;
+        } else {
+            ajaxFetchedPostcode = '';
+        }
+        
         if (normalizedCartCep && cepRegex.test(normalizedCartCep)) {
             // Insere o CEP no campo de input
             const input = document.querySelector('.woo-better-input-current-style');
@@ -76,6 +83,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let observerInitialized = false; // Flag para evitar múltiplas inicializações
     let isSendingCEP = false; // Flag para evitar execuções simultâneas de sendCEP
     let isInternalCartUpdate = false; // Flag para pular monitoramento quando é evento interno
+    let ajaxFetchedPostcode = ''; // CEP obtido via AJAX, persiste entre recriações do componente
 
     // Função para formatar CEP (XXXXX-XXX)
     function formatCEP(cep) {
@@ -786,7 +794,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Lê CEP do campo de input
         const inputElCf = document.querySelector('.woo-better-input-current-style');
-        const lastPostcode = inputElCf ? formatCEP(inputElCf.value) : '';
+        const lastPostcode = inputElCf ? formatCEP(inputElCf.value) : (ajaxFetchedPostcode || '');
         if (lastPostcode && (WooBetterData.enable_search === 'yes' || hasUserMadeQuery)) {
             form.style.display = 'none';
         }
@@ -2464,7 +2472,6 @@ document.addEventListener('DOMContentLoaded', function () {
             
             // Se o componente deveria existir mas não existe mais, e temos um local para recriá-lo
             if (!existingComponent && targetElement && containerFound) {
-                debugLog('Componente removido detectado, recriando...');
                 
                 // Reseta o flag para permitir recriação
                 containerFound = false;
@@ -2495,8 +2502,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const parentContainer = createParentContainer();
             const form = createForm();
 
-            // Lê CEP do campo de input (preenchido por fetchUserPostcodeAndInitialize)
+            // Se o input foi criado vazio mas temos CEP salvo do AJAX, popula agora
             const inputChkObs = document.querySelector('.woo-better-input-current-style');
+            if (inputChkObs && !formatCEP(inputChkObs.value) && ajaxFetchedPostcode) {
+                applyFormatToInput(inputChkObs, ajaxFetchedPostcode);
+            }
+
+            // Lê CEP do campo de input (preenchido por fetchUserPostcodeAndInitialize ou pelo fallback acima)
             const lastPostcode = inputChkObs ? formatCEP(inputChkObs.value) : '';
             let initializeData = {
                 cart: {
