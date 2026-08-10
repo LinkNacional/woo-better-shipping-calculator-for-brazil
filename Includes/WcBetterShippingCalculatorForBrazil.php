@@ -643,7 +643,7 @@ class WcBetterShippingCalculatorForBrazil
         $enable_min = get_option('woo_better_enable_min_free_shipping', 'no');
         $min_value = floatval(get_option('woo_better_min_free_shipping_value', 0));
         $calc_base = get_option('woo_better_free_shipping_calc_base', 'subtotal');
-        $keep_other_methods = get_option('woo_better_keep_other_methods_with_free_shipping', 'yes');
+        $only_free_shipping = get_option('woo_better_only_free_shipping', 'yes');
         $avoid_free_shipping_duplication = get_option('woo_better_avoid_free_shipping_duplication', 'no');
 
         if ($this->is_playground_environment()) {
@@ -699,7 +699,7 @@ class WcBetterShippingCalculatorForBrazil
                     array(),
                     'free_shipping'
                 );
-                if ($keep_other_methods === 'no') {
+                if ($only_free_shipping === 'yes') {
                     // Mantém apenas fretes gratuitos (cost == 0) e adiciona o nosso
                     $new_rates = array('free_shipping_min' => $free_shipping_rate);
                     foreach ($rates as $key => $rate) {
@@ -752,7 +752,7 @@ class WcBetterShippingCalculatorForBrazil
                     array(),
                     'free_shipping'
                 );
-                if ($keep_other_methods === 'no') {
+                if ($only_free_shipping === 'yes') {
                     // Mantém apenas fretes gratuitos (cost == 0) e adiciona o nosso
                     $new_rates = array('free_shipping_product' => $free_shipping_rate);
                     foreach ($rates as $key => $rate) {
