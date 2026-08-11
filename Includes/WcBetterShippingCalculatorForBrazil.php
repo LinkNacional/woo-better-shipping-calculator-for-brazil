@@ -5450,7 +5450,7 @@ class WcBetterShippingCalculatorForBrazil
                 'state'     => $shipping_data['state'],
                 'postcode'  => $shipping_data['postcode'],
                 'city'      => $shipping_data['city'],
-                'address'   => $shipping_data['address_1'],
+                'address_1'   => $shipping_data['address_1'],
                 'address_2' => $shipping_data['address_2'],
             ),
         );
@@ -5761,7 +5761,7 @@ class WcBetterShippingCalculatorForBrazil
                 'state'     => $shipping_data['state'],
                 'postcode'  => $shipping_data['postcode'],
                 'city'      => $shipping_data['city'],
-                'address'   => $shipping_data['address_1'],
+                'address_1'   => $shipping_data['address_1'],
                 'address_2' => $shipping_data['address_2'],
             ),
         );
