@@ -430,7 +430,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 		if (!ieInput.dataset.eventsBound) {
 			ieInput.addEventListener('input', function () {
-				const normalizedValue = ieInput.value.toUpperCase()
+				const normalizedValue = ieInput.value.replace(/[^A-Za-z0-9\-\/\. ]/g, '').toUpperCase()
 				if (normalizedValue !== ieInput.value) {
 					setInputValue(ieInput, normalizedValue)
 					return

@@ -161,6 +161,9 @@ npm run build                      # assets
 composer test                      # phpunit
 composer psalm                     # análise estática
 ```
+
+- **NUNCA editar `jsCompiled/*.COMPILED.js`** — são artefatos gerados pelo webpack via `npm run build`. Edite apenas os fontes em `Public/js/*.js` (ou `Admin/js/*.js`) e rode o build para regenerar.
+- Em mudanças de JS que afetam UX (máscara/validação/normalização de campo), aplicar a regra também no handler de digitação ao vivo, não só na carga inicial do valor salvo.
 - !/bin/bash
 echo "=== 🚀 Assistente de Release (Readme.txt) ==="
 echo "Vamos preparar as informações para o Reasonix atualizar o readme."
