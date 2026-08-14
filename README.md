@@ -7,9 +7,9 @@
 * Contribuidores: LinkNacional, luizbills
 * Link para doações: [LinkNacional](https://www.linknacional.com.br/)
 * Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
-* Testado até: 7.0
+* Testado até: 7.1
 * Requer PHP: 8.2
-* Tag estável: 4.16.11
+* Tag estável: 4.16.12
 * Licença: GPLv2 ou posterior
 * URI da licença: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 

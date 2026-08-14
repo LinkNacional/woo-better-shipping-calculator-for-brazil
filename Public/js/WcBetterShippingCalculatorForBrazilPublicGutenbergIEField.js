@@ -406,7 +406,7 @@ document.addEventListener("DOMContentLoaded", function () {
 			return
 		}
 
-		const value = (savedIEData.billing_ie || '').toString().trim().toUpperCase()
+		const value = String(savedIEData.billing_ie || '').replace(/[^A-Za-z0-9\-\/\. ]/g, '').trim().toUpperCase()
 		if (!value) {
 			setIEFieldDisabled(false)
 			return
@@ -430,7 +430,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 		if (!ieInput.dataset.eventsBound) {
 			ieInput.addEventListener('input', function () {
-				const normalizedValue = ieInput.value.toUpperCase()
+				const normalizedValue = ieInput.value.replace(/[^A-Za-z0-9\-\/\. ]/g, '').toUpperCase()
 				if (normalizedValue !== ieInput.value) {
 					setInputValue(ieInput, normalizedValue)
 					return

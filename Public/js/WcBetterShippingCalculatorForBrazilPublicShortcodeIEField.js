@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Preenche o valor salvo, se houver
         if (typeof WooBetterIEData !== 'undefined' && WooBetterIEData.billing_ie) {
-            ieInput.value = WooBetterIEData.billing_ie;
+            ieInput.value = String(WooBetterIEData.billing_ie).replace(/[^A-Za-z0-9\-\/\. ]/g, '').toUpperCase();
         }
 
         // Cria o checkbox "Isento" se ainda não existir
@@ -274,6 +274,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (billingCountrySelect) {
             billingCountrySelect.addEventListener('change', updateIEFieldVisibility);
+        }
+
+        // Impede inserção de caracteres inválidos e força maiúsculas no campo IE
+        if (ieInput) {
+            ieInput.addEventListener('input', function () {
+                var normalized = this.value.replace(/[^A-Za-z0-9\-\/\. ]/g, '').toUpperCase();
+                if (normalized !== this.value) {
+                    this.value = normalized;
+                }
+            });
         }
 
         window.addEventListener('resize', positionIsentoInsideInput);

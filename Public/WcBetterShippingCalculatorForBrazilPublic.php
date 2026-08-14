@@ -567,7 +567,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-gutenberg-ie-field',
                     'WooBetterIEData',
                     array(
-                        'billing_ie' => $billing_ie,
+                        'billing_ie' => sanitize_text_field($billing_ie),
                     )
                 );
 
@@ -832,7 +832,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-shortcode-ie-field',
                     'WooBetterIEData',
                     array(
-                        'billing_ie' => $billing_ie
+                        'billing_ie' => sanitize_text_field($billing_ie)
                     )
                 );
 
@@ -1433,7 +1433,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     $this->plugin_name . '-edit-address-ie-field',
                     'WooBetterIEData',
                     array(
-                        'billing_ie' => $billing_ie
+                        'billing_ie' => sanitize_text_field($billing_ie)
                     )
                 );
 
