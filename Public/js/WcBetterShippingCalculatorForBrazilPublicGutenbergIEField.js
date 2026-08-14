@@ -406,7 +406,7 @@ document.addEventListener("DOMContentLoaded", function () {
 			return
 		}
 
-		const value = (savedIEData.billing_ie || '').toString().trim().toUpperCase()
+		const value = String(savedIEData.billing_ie || '').replace(/[^A-Za-z0-9\-\/\. ]/g, '').trim().toUpperCase()
 		if (!value) {
 			setIEFieldDisabled(false)
 			return

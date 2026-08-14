@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Preenche o valor salvo, se houver
         if (typeof WooBetterIEData !== 'undefined' && WooBetterIEData.billing_ie) {
-            ieInput.value = WooBetterIEData.billing_ie;
+            ieInput.value = String(WooBetterIEData.billing_ie).replace(/[^A-Za-z0-9\-\/\. ]/g, '').toUpperCase();
         }
 
         // Cria o checkbox "Isento" se ainda não existir
