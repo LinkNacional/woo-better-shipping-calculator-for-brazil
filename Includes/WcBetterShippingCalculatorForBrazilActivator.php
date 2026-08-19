@@ -98,7 +98,8 @@ class WcBetterShippingCalculatorForBrazilActivator {
 			'woo_better_calc_product_input_icon' => 'transit',
 			'woo_better_calc_enable_settings_link' => 'no',
 			'woo_better_calc_apply_cpf_mask' => 'yes',
-			'woo_better_calc_apply_cnpj_mask' => 'yes'
+			'woo_better_calc_apply_cnpj_mask' => 'yes',
+			'woo_better_calc_enable_cnpj_api_validation' => 'yes'
 		);
 		
 		foreach ($default_options as $option_name => $default_value) {

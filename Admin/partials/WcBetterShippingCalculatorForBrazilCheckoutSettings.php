@@ -140,6 +140,22 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Controla a formatação do CNPJ ao salvar os dados do cliente.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+                'enable_cnpj_api_validation' => array(
+                    'title'    => __('Validação de CNPJ na Receita Federal', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_enable_cnpj_api_validation',
+                    'desc_tip' => false,
+                    'default'  => 'yes',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Após validar o dígito verificador, consulta a Receita Federal (BrasilAPI, com fallback para ReceitaWS) para confirmar que o CNPJ existe.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Adiciona uma camada extra de validação: além do cálculo do dígito verificador, o plugin consulta a base da Receita Federal para garantir que o CNPJ é real. Aplica-se apenas a CNPJs numéricos.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Confirma na Receita Federal se o CNPJ informado realmente existe.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
                 'enable_ie_field' => array(
                     'title'    => __('Campo de Inscrição Estadual (IE)', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_enable_ie_field',
