@@ -137,6 +137,17 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             ieInput.dispatchEvent(new Event('change', { bubbles: true }));
         });
+
+        // Impede que o WooCommerce valide o checkbox "Isento" como se fosse o campo
+        // obrigatório da IE. O campo obrigatório real é o #billing_ie; este checkbox é
+        // apenas um atalho de UX. Sem isto, ao revalidar o formulário após um erro
+        // (ex.: CNPJ não encontrado na Receita), o checkout.js marca a IE como
+        // inválida/vermelha porque o checkbox "Isento" está desmarcado.
+        if (typeof jQuery !== 'undefined') {
+            jQuery(isentoCheckbox).on('validate focusout', function (event) {
+                event.stopPropagation();
+            });
+        }
     }
 
     function setIEFieldDisabled(disabled) {
