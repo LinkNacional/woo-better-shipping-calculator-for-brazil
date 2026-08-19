@@ -142,7 +142,8 @@ When the customer enters a valid 8-digit CEP (Brazilian postcode) on the checkou
 
 If you find any errors or have suggestions, please open an issue in our [GitHub repository](https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil).
 
-* [Brasil API](https://brasilapi.com.br) - ZIP code field.
+* [Brasil API](https://brasilapi.com.br) - ZIP code lookup and CNPJ validation.
+* [ReceitaWS](https://receitaws.com.br) - CNPJ validation (fallback).
 * [VIACEP](https://viacep.com.br) - ZIP code field.
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
