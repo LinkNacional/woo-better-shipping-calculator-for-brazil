@@ -2393,8 +2393,10 @@ class WcBetterShippingCalculatorForBrazil
             include_once(ABSPATH . 'wp-admin/includes/plugin.php');
         }
         
-        // Se o plugin estiver ativo, não exibe os dados
-        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+        // Só não exibe os dados se o plugin Brazilian Market on WooCommerce estiver ativo E a classe de pedidos dele estiver carregada.
+        // Dessa forma, um plugin fake (mesmo slug, sem a classe) não impede a exibição do bloco.
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')
+            && class_exists('Extra_Checkout_Fields_For_Brazil_Order')) {
             return;
         }
         
@@ -2462,8 +2464,10 @@ class WcBetterShippingCalculatorForBrazil
             include_once(ABSPATH . 'wp-admin/includes/plugin.php');
         }
         
-        // Se o plugin estiver ativo, não exibe os dados
-        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+        // Só não exibe os dados se o plugin Brazilian Market on WooCommerce estiver ativo E a classe de pedidos dele estiver carregada.
+        // Dessa forma, um plugin fake (mesmo slug, sem a classe) não impede a exibição do bloco.
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')
+            && class_exists('Extra_Checkout_Fields_For_Brazil_Order')) {
             return;
         }
         
