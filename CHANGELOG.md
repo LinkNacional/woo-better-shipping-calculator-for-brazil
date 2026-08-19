@@ -1,3 +1,8 @@
+# 4.17.0 - 19/08/26
+* Novo: Validação de CNPJ na Receita Federal (BrasilAPI com fallback ReceitaWS).
+* Correção: Campo IE deixou de ser destacado em vermelho sem motivo após erro de validação do CNPJ.
+* Docs: Adicionados BrasilAPI e ReceitaWS aos créditos de terceiros.
+
 # 4.16.12 - 14/08/26
 * Correção: Sanitização e validação dos caracteres do campo Inscrição Estadual (IE).
 * Segurança: Sanitização adicional do campo IE na ponte PHP→JS.
