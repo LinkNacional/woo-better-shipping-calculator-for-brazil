@@ -110,7 +110,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.16.12';
+            $this->version = '4.17.0';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -275,7 +275,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '4.16.11', '4.16.10', '4.16.9', '4.16.8', '4.16.7' ,'4.16.6', '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1', '4.16.0', '4.15.2', '4.15.1' );
+            $old_versions   = array( '4.16.12', '4.16.11', '4.16.10', '4.16.9', '4.16.8', '4.16.7' ,'4.16.6', '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1', '4.16.0', '4.15.2' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -2393,8 +2393,10 @@ class WcBetterShippingCalculatorForBrazil
             include_once(ABSPATH . 'wp-admin/includes/plugin.php');
         }
         
-        // Se o plugin estiver ativo, não exibe os dados
-        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+        // Só não exibe os dados se o plugin Brazilian Market on WooCommerce estiver ativo E a classe de pedidos dele estiver carregada.
+        // Dessa forma, um plugin fake (mesmo slug, sem a classe) não impede a exibição do bloco.
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')
+            && class_exists('Extra_Checkout_Fields_For_Brazil_Order')) {
             return;
         }
         
@@ -2462,8 +2464,10 @@ class WcBetterShippingCalculatorForBrazil
             include_once(ABSPATH . 'wp-admin/includes/plugin.php');
         }
         
-        // Se o plugin estiver ativo, não exibe os dados
-        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
+        // Só não exibe os dados se o plugin Brazilian Market on WooCommerce estiver ativo E a classe de pedidos dele estiver carregada.
+        // Dessa forma, um plugin fake (mesmo slug, sem a classe) não impede a exibição do bloco.
+        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')
+            && class_exists('Extra_Checkout_Fields_For_Brazil_Order')) {
             return;
         }
         
@@ -2889,6 +2893,203 @@ class WcBetterShippingCalculatorForBrazil
     }
     
     /**
+     * Valida a existência do CNPJ na Receita Federal (camada adicional ao cálculo).
+     *
+     * Consulta a BrasilAPI e, em caso de indisponibilidade, usa a ReceitaWS como
+     * fallback. Comportamento fail-closed: se nenhuma API responder, rejeita o CNPJ.
+     *
+     * @param string $document Documento CNPJ (com ou sem formatação).
+     * @return string Mensagem de erro ou string vazia se válido.
+     */
+    private function validate_cnpj_existence($document) {
+        if (get_option('woo_better_calc_enable_cnpj_api_validation', 'yes') !== 'yes') {
+            return '';
+        }
+
+        $cnpj = preg_replace('/[^0-9A-Z]/', '', strtoupper($document));
+
+        // CNPJ alfanumérico (IN RFB 2.229/2024) ainda não está disponível nas APIs.
+        // Mantém apenas o resultado do cálculo matemático.
+        if (strlen($cnpj) !== 14 || !ctype_digit($cnpj)) {
+            return '';
+        }
+
+        $status = $this->cnpj_exists_via_api($cnpj);
+
+        if ('found' === $status) {
+            return '';
+        }
+
+        if ('not_found' === $status) {
+            return __('CNPJ não encontrado na Receita Federal. Verifique o número informado.', 'woo-better-shipping-calculator-for-brazil');
+        }
+
+        // 'unavailable' — fail-closed.
+        return __('Não foi possível validar o CNPJ no momento. Tente novamente em instantes.', 'woo-better-shipping-calculator-for-brazil');
+    }
+
+    /**
+     * Verifica a existência de um CNPJ numérico via BrasilAPI (fallback ReceitaWS).
+     *
+     * @param string $cnpj CNPJ limpo (somente dígitos, 14 caracteres).
+     * @return string 'found' | 'not_found' | 'unavailable'
+     */
+    private function cnpj_exists_via_api($cnpj) {
+        $cache_key = 'woo_better_shipping_cnpj_' . $cnpj;
+        $cached = get_transient($cache_key);
+
+        if (false !== $cached) {
+            return $cached;
+        }
+
+        $status = $this->cnpj_lookup_brasilapi($cnpj);
+
+        if ('unavailable' === $status) {
+            $status = $this->cnpj_lookup_receitaws($cnpj);
+        }
+
+        // Cacheia apenas resultados definitivos para reduzir chamadas e evitar rate limit.
+        if ('found' === $status) {
+            set_transient($cache_key, 'found', WEEK_IN_SECONDS);
+        } elseif ('not_found' === $status) {
+            set_transient($cache_key, 'not_found', DAY_IN_SECONDS);
+        }
+
+        return apply_filters('wc_better_shipping_calculator_cnpj_api_status', $status, $cnpj);
+    }
+
+    /**
+     * Consulta a BrasilAPI para verificar a existência do CNPJ.
+     *
+     * @param string $cnpj CNPJ limpo (somente dígitos).
+     * @return string 'found' | 'not_found' | 'unavailable'
+     */
+    private function cnpj_lookup_brasilapi($cnpj) {
+        $url = 'https://brasilapi.com.br/api/cnpj/v1/' . rawurlencode($cnpj);
+
+        $response = wp_remote_get($url, array(
+            'timeout' => 5,
+            'headers' => array('Accept' => 'application/json'),
+        ));
+
+        if (is_wp_error($response)) {
+            return 'unavailable';
+        }
+
+        $http_code = (int) wp_remote_retrieve_response_code($response);
+
+        if (200 === $http_code) {
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+            $found_cnpj = isset($body['cnpj']) ? preg_replace('/[^0-9]/', '', (string) $body['cnpj']) : '';
+            return ($found_cnpj === $cnpj) ? 'found' : 'unavailable';
+        }
+
+        if (404 === $http_code) {
+            return 'not_found';
+        }
+
+        // 429 (rate limit), 5xx e status inesperados.
+        return 'unavailable';
+    }
+
+    /**
+     * Consulta a ReceitaWS (fallback) para verificar a existência do CNPJ.
+     *
+     * @param string $cnpj CNPJ limpo (somente dígitos).
+     * @return string 'found' | 'unavailable'
+     */
+    private function cnpj_lookup_receitaws($cnpj) {
+        $url = 'https://receitaws.com.br/v1/cnpj/' . rawurlencode($cnpj);
+
+        $response = wp_remote_get($url, array(
+            'timeout' => 5,
+            'headers' => array('Accept' => 'application/json'),
+        ));
+
+        if (is_wp_error($response)) {
+            return 'unavailable';
+        }
+
+        $http_code = (int) wp_remote_retrieve_response_code($response);
+
+        if (200 === $http_code) {
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+            $is_ok = isset($body['status']) && 'OK' === strtoupper((string) $body['status']);
+            $found_cnpj = isset($body['cnpj']) ? preg_replace('/[^0-9]/', '', (string) $body['cnpj']) : '';
+            return ($is_ok && $found_cnpj === $cnpj) ? 'found' : 'unavailable';
+        }
+
+        // 404 ("not in cache"/"CNPJ inválido"), 429 e 5xx — trata como indisponível,
+        // pois o 404 da ReceitaWS é ambíguo (pode significar apenas "ainda não cacheado").
+        return 'unavailable';
+    }
+
+    /**
+     * Valida o CNPJ no checkout em blocos (Gutenberg/Store API).
+     *
+     * Repete o mesmo fluxo do checkout clássico (cálculo + existência na Receita),
+     * mas bloqueia o pedido lançando RouteException, que a Store API converte em
+     * erro de checkout e impede a finalização.
+     *
+     * @param WC_Order      $order   Pedido em construção.
+     * @param WP_REST_Request $request Requisição do checkout.
+     * @return void
+     */
+    private function validate_cnpj_blocks($order, $request)
+    {
+        if (get_option('woo_better_calc_person_type_select', 'none') === 'none') {
+            return;
+        }
+
+        // Fora do Brasil não há CPF/CNPJ obrigatório.
+        $billing_country = $order->get_billing_country();
+        if (!empty($billing_country) && 'BR' !== $billing_country) {
+            return;
+        }
+
+        $extensions = $request->get_param('extensions') ?? [];
+        $billing_cnpj = '';
+        $billing_document = '';
+
+        if (isset($extensions['woo_better_person_type']['billing_cnpj'])) {
+            $billing_cnpj = sanitize_text_field($extensions['woo_better_person_type']['billing_cnpj']);
+        }
+        if (empty($billing_cnpj) && isset($_POST['billing_cnpj'])) {
+            $billing_cnpj = sanitize_text_field(wp_unslash($_POST['billing_cnpj']));
+        }
+        if (isset($_POST['billing_document'])) {
+            $billing_document = sanitize_text_field(wp_unslash($_POST['billing_document']));
+        }
+
+        $document = !empty($billing_cnpj) ? $billing_cnpj : $billing_document;
+        $clean = preg_replace('/[^0-9A-Z]/', '', strtoupper($document));
+
+        // Não é CNPJ (ou está incompleto): nada a validar nesta camada.
+        if (strlen($clean) !== 14) {
+            return;
+        }
+
+        // Camada 1: cálculo do dígito verificador (idêntica ao JS e ao clássico).
+        if (!$this->validate_cnpj($clean)) {
+            throw new \Automattic\WooCommerce\StoreApi\Exceptions\RouteException(
+                'woo_better_calc_cnpj_invalid',
+                __('CNPJ inválido. Verifique os números informados.', 'woo-better-shipping-calculator-for-brazil'),
+                400
+            );
+        }
+
+        // Camada 2: existência na Receita Federal (BrasilAPI + fallback ReceitaWS).
+        $api_error = $this->validate_cnpj_existence($clean);
+        if (!empty($api_error)) {
+            throw new \Automattic\WooCommerce\StoreApi\Exceptions\RouteException(
+                'woo_better_calc_cnpj_invalid',
+                $api_error,
+                400
+            );
+        }
+    }
+
+    /**
      * Valida documentos de tipo de pessoa no checkout tradicional
      */
     public function validate_person_type_documents() {
@@ -2942,9 +3143,19 @@ class WcBetterShippingCalculatorForBrazil
         }
         
         // Verifica se o tipo está correto com a configuração
-        if (!$this->is_document_type_allowed($validation['type'], $person_type)) {
+        $type_allowed = $this->is_document_type_allowed($validation['type'], $person_type);
+        if (!$type_allowed) {
             $error_message = $this->get_document_type_error_message($validation['type'], $person_type);
             wc_add_notice($error_message, 'error');
+        }
+
+        // Camada adicional: confirma existência do CNPJ na Receita Federal
+        // (somente se o tipo de documento for permitido pela configuração).
+        if ($type_allowed && 'cnpj' === $validation['type']) {
+            $api_error = $this->validate_cnpj_existence($document_to_validate);
+            if (!empty($api_error)) {
+                wc_add_notice($api_error, 'error');
+            }
         }
     }
     
@@ -3371,6 +3582,10 @@ class WcBetterShippingCalculatorForBrazil
         if (!$order) {
             return;
         }
+
+        // Validação de CNPJ (cálculo + Receita) para o checkout em blocos.
+        // Lança RouteException para impedir a finalização quando inválido.
+        $this->validate_cnpj_blocks($order, $request);
 
         // Processa números de endereço primeiro
         $this->process_address_numbers_from_request($order, $request);

@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 4.16.12
+Stable tag: 4.17.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -142,11 +142,17 @@ When the customer enters a valid 8-digit CEP (Brazilian postcode) on the checkou
 
 If you find any errors or have suggestions, please open an issue in our [GitHub repository](https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil).
 
-* [Brasil API](https://brasilapi.com.br) - ZIP code field.
+* [Brasil API](https://brasilapi.com.br) - ZIP code lookup and CNPJ validation.
+* [ReceitaWS](https://receitaws.com.br) - CNPJ validation (fallback).
 * [VIACEP](https://viacep.com.br) - ZIP code field.
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 4.17.0 - 2026-08-19
+* New: CNPJ validation against the Brazilian Federal Revenue (BrasilAPI with ReceitaWS fallback).
+* Fix: IE field no longer wrongly highlighted after a CNPJ validation error.
+* Docs: Added BrasilAPI and ReceitaWS to the third-party credits.
 
 # 4.16.12 - 2026-08-14
 * Fix: Sanitization and character validation of the IE (Inscrição Estadual) field.
