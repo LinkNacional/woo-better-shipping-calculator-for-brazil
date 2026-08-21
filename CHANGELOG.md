@@ -1,3 +1,8 @@
+# 4.17.1 - 21/08/26
+* Correção: CNPJ agora é validado pela situação cadastral (ATIVA) na Receita Federal (BrasilAPI e ReceitaWS).
+* Correção: CNPJ alfanumérico (IN RFB 2.229/2024) passou a ser validado pela API (fail-closed) em vez de ser aceito só pelo dígito verificador.
+* Ajuste: Descrição do campo de validação de CNPJ atualizada nas configurações.
+
 # 4.17.0 - 19/08/26
 * Novo: Validação de CNPJ na Receita Federal (BrasilAPI com fallback ReceitaWS).
 * Correção: Campo IE deixou de ser destacado em vermelho sem motivo após erro de validação do CNPJ.

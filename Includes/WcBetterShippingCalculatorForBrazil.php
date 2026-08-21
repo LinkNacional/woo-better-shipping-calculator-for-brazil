@@ -110,7 +110,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.17.0';
+            $this->version = '4.17.1';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -275,7 +275,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '4.16.12', '4.16.11', '4.16.10', '4.16.9', '4.16.8', '4.16.7' ,'4.16.6', '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1', '4.16.0', '4.15.2' );
+            $old_versions   = array( '4.17.0', '4.16.12', '4.16.11', '4.16.10', '4.16.9', '4.16.8', '4.16.7', '4.16.6', '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1', '4.16.0' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -2908,12 +2908,13 @@ class WcBetterShippingCalculatorForBrazil
 
         $cnpj = preg_replace('/[^0-9A-Z]/', '', strtoupper($document));
 
-        // CNPJ alfanumérico (IN RFB 2.229/2024) ainda não está disponível nas APIs.
-        // Mantém apenas o resultado do cálculo matemático.
-        if (strlen($cnpj) !== 14 || !ctype_digit($cnpj)) {
+        if (strlen($cnpj) !== 14) {
             return '';
         }
 
+        // CNPJ alfanumérico (IN RFB 2.229/2024) também passa pela API. As APIs
+        // ainda não suportam o novo formato (respondem 400), o que falha fechado
+        // abaixo em vez de aceitar um CNPJ inexistente só pelo dígito verificador.
         $status = $this->cnpj_exists_via_api($cnpj);
 
         if ('found' === $status) {
@@ -2924,15 +2925,19 @@ class WcBetterShippingCalculatorForBrazil
             return __('CNPJ não encontrado na Receita Federal. Verifique o número informado.', 'woo-better-shipping-calculator-for-brazil');
         }
 
+        if ('inactive' === $status) {
+            return __('CNPJ com situação cadastral inativa na Receita Federal.', 'woo-better-shipping-calculator-for-brazil');
+        }
+
         // 'unavailable' — fail-closed.
         return __('Não foi possível validar o CNPJ no momento. Tente novamente em instantes.', 'woo-better-shipping-calculator-for-brazil');
     }
 
     /**
-     * Verifica a existência de um CNPJ numérico via BrasilAPI (fallback ReceitaWS).
+     * Verifica a existência de um CNPJ via BrasilAPI (fallback ReceitaWS).
      *
-     * @param string $cnpj CNPJ limpo (somente dígitos, 14 caracteres).
-     * @return string 'found' | 'not_found' | 'unavailable'
+     * @param string $cnpj CNPJ limpo (sem formatação, 14 caracteres).
+     * @return string 'found' | 'not_found' | 'inactive' | 'unavailable'
      */
     private function cnpj_exists_via_api($cnpj) {
         $cache_key = 'woo_better_shipping_cnpj_' . $cnpj;
@@ -2951,18 +2956,18 @@ class WcBetterShippingCalculatorForBrazil
         // Cacheia apenas resultados definitivos para reduzir chamadas e evitar rate limit.
         if ('found' === $status) {
             set_transient($cache_key, 'found', WEEK_IN_SECONDS);
-        } elseif ('not_found' === $status) {
-            set_transient($cache_key, 'not_found', DAY_IN_SECONDS);
+        } elseif (in_array($status, array('not_found', 'inactive'), true)) {
+            set_transient($cache_key, $status, DAY_IN_SECONDS);
         }
 
         return apply_filters('wc_better_shipping_calculator_cnpj_api_status', $status, $cnpj);
     }
 
     /**
-     * Consulta a BrasilAPI para verificar a existência do CNPJ.
+     * Consulta a BrasilAPI para verificar a existência e a situação cadastral do CNPJ.
      *
-     * @param string $cnpj CNPJ limpo (somente dígitos).
-     * @return string 'found' | 'not_found' | 'unavailable'
+     * @param string $cnpj CNPJ limpo (sem formatação).
+     * @return string 'found' | 'not_found' | 'inactive' | 'unavailable'
      */
     private function cnpj_lookup_brasilapi($cnpj) {
         $url = 'https://brasilapi.com.br/api/cnpj/v1/' . rawurlencode($cnpj);
@@ -2981,22 +2986,38 @@ class WcBetterShippingCalculatorForBrazil
         if (200 === $http_code) {
             $body = json_decode(wp_remote_retrieve_body($response), true);
             $found_cnpj = isset($body['cnpj']) ? preg_replace('/[^0-9]/', '', (string) $body['cnpj']) : '';
-            return ($found_cnpj === $cnpj) ? 'found' : 'unavailable';
+            if ($found_cnpj !== $cnpj) {
+                return 'unavailable';
+            }
+
+            $situacao = '';
+            if (isset($body['descricao_situacao_cadastral'])) {
+                $situacao = strtoupper(trim((string) $body['descricao_situacao_cadastral']));
+            } elseif (isset($body['situacao_cadastral'])) {
+                // 2 = ATIVA na tabela de situação cadastral da Receita Federal.
+                $situacao = (2 === (int) $body['situacao_cadastral']) ? 'ATIVA' : 'INATIVA';
+            }
+
+            if ('' === $situacao) {
+                return 'unavailable';
+            }
+
+            return ('ATIVA' === $situacao) ? 'found' : 'inactive';
         }
 
         if (404 === $http_code) {
             return 'not_found';
         }
 
-        // 429 (rate limit), 5xx e status inesperados.
+        // 400 (CNPJ alfanumérico/novo formato), 429 (rate limit), 5xx e status inesperados.
         return 'unavailable';
     }
 
     /**
-     * Consulta a ReceitaWS (fallback) para verificar a existência do CNPJ.
+     * Consulta a ReceitaWS (fallback) para verificar a existência e a situação cadastral do CNPJ.
      *
-     * @param string $cnpj CNPJ limpo (somente dígitos).
-     * @return string 'found' | 'unavailable'
+     * @param string $cnpj CNPJ limpo (sem formatação).
+     * @return string 'found' | 'inactive' | 'unavailable'
      */
     private function cnpj_lookup_receitaws($cnpj) {
         $url = 'https://receitaws.com.br/v1/cnpj/' . rawurlencode($cnpj);
@@ -3016,7 +3037,16 @@ class WcBetterShippingCalculatorForBrazil
             $body = json_decode(wp_remote_retrieve_body($response), true);
             $is_ok = isset($body['status']) && 'OK' === strtoupper((string) $body['status']);
             $found_cnpj = isset($body['cnpj']) ? preg_replace('/[^0-9]/', '', (string) $body['cnpj']) : '';
-            return ($is_ok && $found_cnpj === $cnpj) ? 'found' : 'unavailable';
+            if (!$is_ok || $found_cnpj !== $cnpj) {
+                return 'unavailable';
+            }
+
+            $situacao = isset($body['situacao']) ? strtoupper(trim((string) $body['situacao'])) : '';
+            if ('' === $situacao) {
+                return 'unavailable';
+            }
+
+            return ('ATIVA' === $situacao) ? 'found' : 'inactive';
         }
 
         // 404 ("not in cache"/"CNPJ inválido"), 429 e 5xx — trata como indisponível,
