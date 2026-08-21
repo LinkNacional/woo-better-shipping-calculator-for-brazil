@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 4.17.0
+Stable tag: 4.17.1
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -148,6 +148,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 4.17.1 - 2026-08-21
+* Fix: CNPJ now validated for active registration status (situação cadastral ATIVA) against the Federal Revenue (BrasilAPI and ReceitaWS).
+* Fix: Alphanumeric CNPJ (IN RFB 2.229/2024) now goes through the API (fail-closed) instead of being accepted by check digit only.
+* Dev: Updated the CNPJ API validation field description in the settings.
 
 # 4.17.0 - 2026-08-19
 * New: CNPJ validation against the Brazilian Federal Revenue (BrasilAPI with ReceitaWS fallback).
