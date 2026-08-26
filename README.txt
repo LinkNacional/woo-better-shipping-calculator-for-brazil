@@ -87,21 +87,13 @@ When you need help, please create a topic in the [Plugin Support Forum](https://
 
 == Screenshots ==
 
-1. New plugin settings page.
-2. Old cart screen using the Gutenberg block editor.
-3. New cart screen using the Gutenberg block editor.
-4. Old cart screen using the WooCommerce shortcode.
-5. New cart screen using the WooCommerce shortcode.
-6. Number field using the Gutenberg block editor.
-7. Number field using the WooCommerce shortcode.
-8. Progress bar in Gutenberg cart.
-9. Progress bar in Gutenberg checkout.
-10. Progress bar in Legacy cart.
-11. Progress bar in Legacy checkout.
-12. New postcode component.
-13. New layout for postcode component.
-14. Automatic Address Pre-filling in Checkout. (New)
-15. Mandatory Phone Field with DDI. (New)
+1. CPF/CNPJ field in the Gutenberg block editor.
+2. CPF/CNPJ and Company Name and IE fields in the Gutenberg block editor.
+3. Number field using the Gutenberg block editor.
+4. Number field using the WooCommerce shortcode.
+5. Mandatory Phone Field with DDI.
+6. Automatic Address Pre-filling in Checkout.
+7. Birthdate and Gender fields in the Gutenberg block editor.
 
 == Frequently Asked Questions ==
 
