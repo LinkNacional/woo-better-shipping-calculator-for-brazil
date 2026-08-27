@@ -39,6 +39,30 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
     private const OPTION_SHOWN = 'woo_better_calc_shipping_migration_notice_shown';
 
     /**
+     * Opção que registra que o aviso final (notice) foi dispensado.
+     *
+     * Quando 'yes', a camada de aviso final não é mais exibida — o usuário
+     * optou por não instalar o novo plugin.
+     *
+     * @var string
+     */
+    private const OPTION_DISMISSED = 'woo_better_calc_shipping_migration_dismissed';
+
+    /**
+     * Ação AJAX usada para dispensar definitivamente o aviso final.
+     *
+     * @var string
+     */
+    private const AJAX_ACTION = 'woo_better_calc_dismiss_shipping_migration';
+
+    /**
+     * Ação do nonce usada para dispensar o aviso final.
+     *
+     * @var string
+     */
+    private const NONCE_ACTION = 'woo_better_calc_dismiss_shipping_migration_nonce';
+
+    /**
      * Versão a partir da qual o aviso passa a ser exibido.
      *
      * @var string
@@ -157,6 +181,8 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             .woo-better-shipping-migration__title { font-size: 24px; line-height: 1.3; margin: 0 0 12px; }
             .woo-better-shipping-migration__lead { font-size: 15px; color: #50575e; margin: 0 0 24px; }
             .woo-better-shipping-migration__body { text-align: left; background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 6px; padding: 16px 20px; margin: 0 0 24px; color: #3c434a; }
+            .woo-better-shipping-migration__features { list-style: none; margin: 12px 0 0; padding: 0; }
+            .woo-better-shipping-migration__features li { padding: 5px 0; }
             .woo-better-shipping-migration__actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
             .woo-better-shipping-migration__installed { font-size: 15px; color: #007017; }
             .woo-better-shipping-migration__hint { margin-top: 20px; color: #787c82; font-size: 12px; }
@@ -180,8 +206,15 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
 
                 <div class="woo-better-shipping-migration__body">
                     <p>
-                        <?php esc_html_e('Para continuar utilizando a calculadora de frete, instale o plugin abaixo. Seus dados não foram alterados — nesta versão o aviso é apenas informativo.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                        <?php esc_html_e('Para continuar usando estes recursos, instale o plugin abaixo. Seus dados não foram alterados.', 'woo-better-shipping-calculator-for-brazil'); ?>
                     </p>
+
+                    <ul class="woo-better-shipping-migration__features">
+                        <li>🚚 <?php esc_html_e('Frete grátis por valor mínimo e por produto', 'woo-better-shipping-calculator-for-brazil'); ?></li>
+                        <li>🙈 <?php esc_html_e('Esconder campos de endereço conforme o tipo de produto (digital/virtual)', 'woo-better-shipping-calculator-for-brazil'); ?></li>
+                        <li>📦 <?php esc_html_e('Calculadora de frete na página do produto', 'woo-better-shipping-calculator-for-brazil'); ?></li>
+                        <li>🛒 <?php esc_html_e('Calculadora de frete na página do carrinho', 'woo-better-shipping-calculator-for-brazil'); ?></li>
+                    </ul>
                 </div>
 
                 <div class="woo-better-shipping-migration__actions">
@@ -202,6 +235,129 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             </div>
         </div>
         <?php
+    }
+
+    /**
+     * Camada de aviso final: notice admin exibido quando o usuário fecha a
+     * tela de migração sem instalar/ativar o novo plugin.
+     *
+     * Mensagem curta, com botão de instalação/ativação e botão de dispensar.
+     * Uma vez dispensado, o aviso não aparece mais.
+     *
+     * @since 4.18.0
+     */
+    public function maybe_show_notice(): void
+    {
+        if ( ! is_admin() || wp_doing_ajax() ) {
+            return;
+        }
+
+        if ( ! current_user_can('manage_options') ) {
+            return;
+        }
+
+        // Só a partir de uma versão superior a 4.17.1.
+        if ( ! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')
+            || ! version_compare(WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION, self::VERSION_THRESHOLD, '>') ) {
+            return;
+        }
+
+        // A tela de migração ainda não foi exibida: o redirect cuida disso.
+        if ( 'yes' !== get_option(self::OPTION_SHOWN, 'no') ) {
+            return;
+        }
+
+        // Usuário já dispensou a camada final: não insiste.
+        if ( 'yes' === get_option(self::OPTION_DISMISSED, 'no') ) {
+            return;
+        }
+
+        // Plugin já ativo: não há o que avisar.
+        if ( $this->is_shipping_plugin_active() ) {
+            return;
+        }
+
+        // Não sobrepor a própria tela de migração.
+        $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
+        if ( self::SCREEN_SLUG === $page ) {
+            return;
+        }
+
+        $is_installed = $this->is_shipping_plugin_installed();
+
+        $action_url = $is_installed
+            ? wp_nonce_url(
+                self_admin_url('plugins.php?action=activate&plugin=' . self::SHIPPING_PLUGIN_FILE),
+                'activate-plugin_' . self::SHIPPING_PLUGIN_FILE
+            )
+            : wp_nonce_url(
+                self_admin_url('update.php?action=install-plugin&plugin=' . self::SHIPPING_PLUGIN_SLUG),
+                'install-plugin_' . self::SHIPPING_PLUGIN_SLUG
+            );
+
+        $action_label = $is_installed
+            ? __('Ativar Shipping Simulator', 'woo-better-shipping-calculator-for-brazil')
+            : __('Instalar Shipping Simulator', 'woo-better-shipping-calculator-for-brazil');
+
+        $nonce     = wp_create_nonce(self::NONCE_ACTION);
+        $ajax_url  = admin_url('admin-ajax.php');
+        ?>
+        <div class="notice notice-warning is-dismissible" data-dismissible="woo-better-shipping-migration-notice" data-nonce="<?php echo esc_attr($nonce); ?>">
+            <p>
+                <strong><?php esc_html_e('A Calculadora de Frete migrou para o Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong><br>
+                <?php esc_html_e('Instale o novo plugin para continuar usando frete grátis, a calculadora de frete no produto/carrinho e as opções de endereço.', 'woo-better-shipping-calculator-for-brazil'); ?>
+            </p>
+            <p>
+                <a href="<?php echo esc_url($action_url); ?>" class="button button-primary"><?php echo esc_html($action_label); ?></a>
+            </p>
+            <button type="button" class="notice-dismiss"><span class="screen-reader-text"><?php esc_html_e('Dispensar este aviso.', 'woo-better-shipping-calculator-for-brazil'); ?></span></button>
+        </div>
+        <script>
+        (function () {
+            var notice = document.querySelector('[data-dismissible="woo-better-shipping-migration-notice"]');
+            if (!notice) return;
+            var dismiss = notice.querySelector('.notice-dismiss');
+            if (!dismiss) return;
+            dismiss.addEventListener('click', function () {
+                var formData = new FormData();
+                formData.append('action', <?php echo wp_json_encode(self::AJAX_ACTION); ?>);
+                formData.append('nonce', notice.getAttribute('data-nonce'));
+                fetch(<?php echo wp_json_encode($ajax_url); ?>, { method: 'POST', credentials: 'same-origin', body: formData })
+                    .then(function () { notice.remove(); })
+                    .catch(function () { notice.remove(); });
+            });
+        })();
+        </script>
+        <?php
+    }
+
+    /**
+     * Retorna a ação AJAX usada para dispensar o aviso final.
+     *
+     * @since 4.18.0
+     * @return string
+     */
+    public static function get_ajax_action(): string
+    {
+        return self::AJAX_ACTION;
+    }
+
+    /**
+     * Dispensa definitivamente a camada de aviso final.
+     *
+     * @since 4.18.0
+     */
+    public function dismiss_notice(): void
+    {
+        check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+        if ( ! current_user_can('manage_options') ) {
+            wp_send_json_error(array( 'message' => 'Unauthorized' ), 403);
+        }
+
+        update_option(self::OPTION_DISMISSED, 'yes');
+
+        wp_send_json_success();
     }
 
     /**

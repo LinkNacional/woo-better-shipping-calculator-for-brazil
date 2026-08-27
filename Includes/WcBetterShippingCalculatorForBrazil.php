@@ -136,6 +136,8 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('admin_menu', $shipping_migration, 'register_admin_page');
         $this->loader->add_action('admin_init', $shipping_migration, 'maybe_redirect');
+        $this->loader->add_action('admin_notices', $shipping_migration, 'maybe_show_notice');
+        $this->loader->add_action('wp_ajax_' . WcBetterShippingCalculatorForBrazilShippingMigration::get_ajax_action(), $shipping_migration, 'dismiss_notice');
 
         // detect state from postcode
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100, 1);
