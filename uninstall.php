@@ -31,5 +31,4 @@ if (! defined('WP_UNINSTALL_PLUGIN')) {
 }
 
 delete_option('woo_better_calc_number_required');
-delete_option('woo_better_calc_disabled_shipping');
-delete_option('woo_better_calc_hide_calculator_digital');
+delete_option('woo_better_calc_shipping_migration_notice_shown');

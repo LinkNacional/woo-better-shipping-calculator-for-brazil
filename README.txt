@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 4.17.1
+Stable tag: 5.0.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -87,21 +87,13 @@ When you need help, please create a topic in the [Plugin Support Forum](https://
 
 == Screenshots ==
 
-1. New plugin settings page.
-2. Old cart screen using the Gutenberg block editor.
-3. New cart screen using the Gutenberg block editor.
-4. Old cart screen using the WooCommerce shortcode.
-5. New cart screen using the WooCommerce shortcode.
-6. Number field using the Gutenberg block editor.
-7. Number field using the WooCommerce shortcode.
-8. Progress bar in Gutenberg cart.
-9. Progress bar in Gutenberg checkout.
-10. Progress bar in Legacy cart.
-11. Progress bar in Legacy checkout.
-12. New postcode component.
-13. New layout for postcode component.
-14. Automatic Address Pre-filling in Checkout. (New)
-15. Mandatory Phone Field with DDI. (New)
+1. CPF/CNPJ field in the Gutenberg block editor.
+2. CPF/CNPJ and Company Name and IE fields in the Gutenberg block editor.
+3. Number field using the Gutenberg block editor.
+4. Number field using the WooCommerce shortcode.
+5. Mandatory Phone Field with DDI.
+6. Automatic Address Pre-filling in Checkout.
+7. Birthdate and Gender fields in the Gutenberg block editor.
 
 == Frequently Asked Questions ==
 
@@ -148,6 +140,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.0.0 - 2026-08-27
+* Major: Migrated the shipping calculator resources to shipping-simulation.
 
 # 4.17.1 - 2026-08-21
 * Fix: CNPJ now validated for active registration status (situação cadastral ATIVA) against the Federal Revenue (BrasilAPI and ReceitaWS).

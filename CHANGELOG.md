@@ -1,3 +1,6 @@
+# 5.0.0 - 27/08/26
+* Novo: Migração dos recursos da calculadora de frete para o shipping-simulation.
+
 # 4.17.1 - 21/08/26
 * Correção: CNPJ agora é validado pela situação cadastral (ATIVA) na Receita Federal (BrasilAPI e ReceitaWS).
 * Correção: CNPJ alfanumérico (IN RFB 2.229/2024) passou a ser validado pela API (fail-closed) em vez de ser aceito só pelo dígito verificador.
