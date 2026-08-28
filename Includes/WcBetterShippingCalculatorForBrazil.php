@@ -137,6 +137,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('admin_menu', $shipping_migration, 'register_admin_page');
         $this->loader->add_action('admin_init', $shipping_migration, 'maybe_redirect');
         $this->loader->add_action('admin_head', $shipping_migration, 'remove_admin_notices', 0);
+        $this->loader->add_action('admin_enqueue_scripts', $shipping_migration, 'enqueue_assets');
         $this->loader->add_action('admin_notices', $shipping_migration, 'maybe_show_notice');
         $this->loader->add_action('wp_ajax_' . WcBetterShippingCalculatorForBrazilShippingMigration::get_ajax_action(), $shipping_migration, 'dismiss_notice');
 

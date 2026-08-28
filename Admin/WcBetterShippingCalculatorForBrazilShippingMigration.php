@@ -265,22 +265,6 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         );
 
         ?>
-        <style>
-            .woo-better-shipping-migration { max-width: 760px; margin: 40px auto; }
-            .woo-better-shipping-migration__card { position: relative; background: #fff; border: 1px solid #c3c4c7; border-radius: 8px; padding: 48px 40px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); text-align: center; }
-            .woo-better-shipping-migration__close { position: absolute; top: 16px; right: 16px; width: 34px; height: 34px; line-height: 32px; font-size: 26px; color: #787c82; text-decoration: none; border: 1px solid transparent; border-radius: 4px; }
-            .woo-better-shipping-migration__close:hover { color: #d63638; border-color: #c3c4c7; }
-            .woo-better-shipping-migration__badge { font-size: 52px; line-height: 1; margin-bottom: 16px; }
-            .woo-better-shipping-migration__title { font-size: 24px; line-height: 1.3; margin: 0 0 12px; }
-            .woo-better-shipping-migration__lead { font-size: 15px; color: #50575e; margin: 0 0 24px; }
-            .woo-better-shipping-migration__body { text-align: left; background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 6px; padding: 16px 20px; margin: 0 0 24px; color: #3c434a; }
-            .woo-better-shipping-migration__features { list-style: none; margin: 12px 0 0; padding: 0; }
-            .woo-better-shipping-migration__features li { padding: 5px 0; }
-            .woo-better-shipping-migration__actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-            .woo-better-shipping-migration__installed { font-size: 15px; color: #007017; }
-            .woo-better-shipping-migration__hint { margin-top: 20px; color: #787c82; font-size: 12px; }
-        </style>
-
         <div class="wrap woo-better-shipping-migration">
             <div class="woo-better-shipping-migration__card">
                 <a href="<?php echo esc_url($close_url); ?>" class="woo-better-shipping-migration__close" aria-label="<?php esc_attr_e('Fechar e não mostrar novamente', 'woo-better-shipping-calculator-for-brazil'); ?>">
@@ -369,43 +353,7 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
      */
     public function maybe_show_notice(): void
     {
-        if ( ! is_admin() || wp_doing_ajax() ) {
-            return;
-        }
-
-        if ( ! current_user_can('manage_options') ) {
-            return;
-        }
-
-        // Só a partir de uma versão superior a 4.17.1.
-        if ( ! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')
-            || ! version_compare(WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION, self::VERSION_THRESHOLD, '>') ) {
-            return;
-        }
-
-        // Usuário novo: a sugestão de instalação cuida desse caso.
-        if ( ! $this->has_legacy_calculator_config() ) {
-            return;
-        }
-
-        // A tela de migração ainda não foi exibida: o redirect cuida disso.
-        if ( 'yes' !== get_option(self::OPTION_SHOWN, 'no') ) {
-            return;
-        }
-
-        // Usuário já dispensou a camada final: não insiste.
-        if ( 'yes' === get_option(self::OPTION_DISMISSED, 'no') ) {
-            return;
-        }
-
-        // Plugin já ativo: não há o que avisar.
-        if ( $this->is_shipping_plugin_active() ) {
-            return;
-        }
-
-        // Não sobrepor a própria tela de migração.
-        $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
-        if ( self::SCREEN_SLUG === $page ) {
+        if ( ! $this->should_show_final_notice() ) {
             return;
         }
 
@@ -425,10 +373,9 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             ? __('Ativar Shipping Simulator', 'woo-better-shipping-calculator-for-brazil')
             : __('Instalar Shipping Simulator', 'woo-better-shipping-calculator-for-brazil');
 
-        $nonce     = wp_create_nonce(self::NONCE_ACTION);
-        $ajax_url  = admin_url('admin-ajax.php');
+        $nonce = wp_create_nonce(self::NONCE_ACTION);
         ?>
-        <div class="notice notice-warning is-dismissible" data-dismissible="woo-better-shipping-migration-notice" data-nonce="<?php echo esc_attr($nonce); ?>">
+        <div class="notice notice-warning is-dismissible" data-dismissible="woo-better-shipping-migration-notice" data-action="<?php echo esc_attr(self::AJAX_ACTION); ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
             <p>
                 <strong><?php esc_html_e('A Calculadora de Frete migrou para o Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong><br>
                 <?php if ( $is_installed ) : ?>
@@ -442,23 +389,107 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             </p>
             <button type="button" class="notice-dismiss"><span class="screen-reader-text"><?php esc_html_e('Dispensar este aviso.', 'woo-better-shipping-calculator-for-brazil'); ?></span></button>
         </div>
-        <script>
-        (function () {
-            var notice = document.querySelector('[data-dismissible="woo-better-shipping-migration-notice"]');
-            if (!notice) return;
-            var dismiss = notice.querySelector('.notice-dismiss');
-            if (!dismiss) return;
-            dismiss.addEventListener('click', function () {
-                var formData = new FormData();
-                formData.append('action', <?php echo wp_json_encode(self::AJAX_ACTION); ?>);
-                formData.append('nonce', notice.getAttribute('data-nonce'));
-                fetch(<?php echo wp_json_encode($ajax_url); ?>, { method: 'POST', credentials: 'same-origin', body: formData })
-                    .then(function () { notice.remove(); })
-                    .catch(function () { notice.remove(); });
-            });
-        })();
-        </script>
         <?php
+    }
+
+    /**
+     * Decide se a camada final (notice) de migração deve ser exibida.
+     *
+     * @since 4.18.0
+     * @return bool
+     */
+    private function should_show_final_notice(): bool
+    {
+        if ( ! is_admin() || wp_doing_ajax() ) {
+            return false;
+        }
+
+        if ( ! current_user_can('manage_options') ) {
+            return false;
+        }
+
+        // Só a partir de uma versão superior a 4.17.1.
+        if ( ! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')
+            || ! version_compare(WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION, self::VERSION_THRESHOLD, '>') ) {
+            return false;
+        }
+
+        // Usuário novo: a sugestão de instalação cuida desse caso.
+        if ( ! $this->has_legacy_calculator_config() ) {
+            return false;
+        }
+
+        // A tela de migração ainda não foi exibida: o redirect cuida disso.
+        if ( 'yes' !== get_option(self::OPTION_SHOWN, 'no') ) {
+            return false;
+        }
+
+        // Usuário já dispensou a camada final: não insiste.
+        if ( 'yes' === get_option(self::OPTION_DISMISSED, 'no') ) {
+            return false;
+        }
+
+        // Plugin já ativo: não há o que avisar.
+        if ( $this->is_shipping_plugin_active() ) {
+            return false;
+        }
+
+        // Não sobrepor a própria tela de migração.
+        return ! $this->is_migration_screen();
+    }
+
+    /**
+     * Verifica se a página atual é a tela de migração.
+     *
+     * @since 5.0.0
+     * @return bool
+     */
+    private function is_migration_screen(): bool
+    {
+        $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
+        return self::SCREEN_SLUG === $page;
+    }
+
+    /**
+     * Enfileira os assets (CSS/JS) dos avisos e da tela de migração.
+     *
+     * @since 5.0.0
+     * @return void
+     */
+    public function enqueue_assets(): void
+    {
+        $version = defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')
+            ? WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION
+            : '';
+
+        $on_migration_screen = $this->is_migration_screen();
+
+        $show_notice = $on_migration_screen
+            || $this->should_show_final_notice()
+            || $this->should_show_suggestion()
+            || $this->should_show_shipping_update_notice();
+
+        if ( ! $show_notice ) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'woo-better-shipping-notices',
+            WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilNotices.COMPILED.css',
+            [],
+            $version
+        );
+
+        // A tela de migração não tem aviso dispensável.
+        if ( ! $on_migration_screen ) {
+            wp_enqueue_script(
+                'woo-better-shipping-notices',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilNotices.COMPILED.js',
+                [],
+                $version,
+                true
+            );
+        }
     }
 
     /**
@@ -571,27 +602,17 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             ? __('Ativar Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil')
             : __('Instalar Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil');
 
-        $nonce     = wp_create_nonce(self::NONCE_SUGGESTION_ACTION);
-        $ajax_url  = admin_url('admin-ajax.php');
-        $icon_url  = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.png';
+        $nonce    = wp_create_nonce(self::NONCE_SUGGESTION_ACTION);
+        $icon_url = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.png';
         ?>
-        <style>
-            .woo-better-install-suggestion { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-left: 4px solid #5f3dc4; }
-            .woo-better-install-suggestion__icon { flex: 0 0 auto; width: 40px; height: 40px; }
-            .woo-better-install-suggestion__icon img { width: 40px; height: 40px; display: block; border-radius: 6px; }
-            .woo-better-install-suggestion__content { flex: 1 1 auto; }
-            .woo-better-install-suggestion__content p { margin: 0 0 12px; }
-            .woo-better-install-suggestion__title { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; flex-wrap: wrap; }
-            .woo-better-install-suggestion__badge { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #5f3dc4; color: #fff; font-size: 11px; font-weight: 600; }
-        </style>
-        <div class="notice notice-info is-dismissible woo-better-install-suggestion" data-dismissible="woo-better-install-suggestion" data-nonce="<?php echo esc_attr($nonce); ?>">
-            <div class="woo-better-install-suggestion__icon">
+        <div class="notice notice-info is-dismissible woo-better-notice woo-better-notice--brand" data-dismissible="woo-better-install-suggestion" data-action="<?php echo esc_attr(self::AJAX_SUGGESTION_ACTION); ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
+            <div class="woo-better-notice__icon">
                 <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?>">
             </div>
-            <div class="woo-better-install-suggestion__content">
-                <p class="woo-better-install-suggestion__title">
+            <div class="woo-better-notice__content">
+                <p class="woo-better-notice__title">
                     <strong><?php esc_html_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
-                    <span class="woo-better-install-suggestion__badge"><?php esc_html_e('Sugestão', 'woo-better-shipping-calculator-for-brazil'); ?></span>
+                    <span class="woo-better-notice__badge"><?php esc_html_e('Sugestão', 'woo-better-shipping-calculator-for-brazil'); ?></span>
                 </p>
                 <p>
                     <?php esc_html_e('Os recursos da Calculadora de Frete agora fazem parte do plugin Shipping Simulator for WooCommerce. Instale-o para usar a calculadora de frete nas páginas de produto e carrinho, frete grátis e demais recursos.', 'woo-better-shipping-calculator-for-brazil'); ?>
@@ -600,22 +621,6 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             </div>
             <button type="button" class="notice-dismiss"><span class="screen-reader-text"><?php esc_html_e('Dispensar este aviso.', 'woo-better-shipping-calculator-for-brazil'); ?></span></button>
         </div>
-        <script>
-        (function () {
-            var notice = document.querySelector('[data-dismissible="woo-better-install-suggestion"]');
-            if (!notice) return;
-            var dismiss = notice.querySelector('.notice-dismiss');
-            if (!dismiss) return;
-            dismiss.addEventListener('click', function () {
-                var formData = new FormData();
-                formData.append('action', <?php echo wp_json_encode(self::AJAX_SUGGESTION_ACTION); ?>);
-                formData.append('nonce', notice.getAttribute('data-nonce'));
-                fetch(<?php echo wp_json_encode($ajax_url); ?>, { method: 'POST', credentials: 'same-origin', body: formData })
-                    .then(function () { notice.remove(); })
-                    .catch(function () { notice.remove(); });
-            });
-        })();
-        </script>
         <?php
     }
 
@@ -689,31 +694,21 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             return;
         }
 
-        $nonce     = wp_create_nonce(self::NONCE_SHIPPING_UPDATE_ACTION);
-        $ajax_url  = admin_url('admin-ajax.php');
-        $icon_url  = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.png';
+        $nonce      = wp_create_nonce(self::NONCE_SHIPPING_UPDATE_ACTION);
+        $icon_url   = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.png';
         $update_url = wp_nonce_url(
             self_admin_url('update.php?action=upgrade-plugin&plugin=' . self::SHIPPING_PLUGIN_FILE),
             'upgrade-plugin_' . self::SHIPPING_PLUGIN_FILE
         );
         ?>
-        <style>
-            .woo-better-shipping-update { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-left: 4px solid #dba617; }
-            .woo-better-shipping-update__icon { flex: 0 0 auto; width: 40px; height: 40px; }
-            .woo-better-shipping-update__icon img { width: 40px; height: 40px; display: block; border-radius: 6px; }
-            .woo-better-shipping-update__content { flex: 1 1 auto; }
-            .woo-better-shipping-update__content p { margin: 0 0 12px; }
-            .woo-better-shipping-update__title { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; flex-wrap: wrap; }
-            .woo-better-shipping-update__badge { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #dba617; color: #1d2327; font-size: 11px; font-weight: 600; }
-        </style>
-        <div class="notice notice-warning is-dismissible woo-better-shipping-update" data-dismissible="woo-better-shipping-update" data-nonce="<?php echo esc_attr($nonce); ?>">
-            <div class="woo-better-shipping-update__icon">
+        <div class="notice notice-warning is-dismissible woo-better-notice woo-better-notice--update" data-dismissible="woo-better-shipping-update" data-action="<?php echo esc_attr(self::AJAX_SHIPPING_UPDATE_ACTION); ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
+            <div class="woo-better-notice__icon">
                 <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?>">
             </div>
-            <div class="woo-better-shipping-update__content">
-                <p class="woo-better-shipping-update__title">
+            <div class="woo-better-notice__content">
+                <p class="woo-better-notice__title">
                     <strong><?php esc_html_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
-                    <span class="woo-better-shipping-update__badge"><?php esc_html_e('Atualização', 'woo-better-shipping-calculator-for-brazil'); ?></span>
+                    <span class="woo-better-notice__badge"><?php esc_html_e('Atualização', 'woo-better-shipping-calculator-for-brazil'); ?></span>
                 </p>
                 <p>
                     <?php esc_html_e('O plugin Shipping Simulator for WooCommerce está desatualizado. Atualize-o para ter acesso aos novos recursos da calculadora de frete.', 'woo-better-shipping-calculator-for-brazil'); ?>
@@ -722,22 +717,6 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             </div>
             <button type="button" class="notice-dismiss"><span class="screen-reader-text"><?php esc_html_e('Dispensar este aviso.', 'woo-better-shipping-calculator-for-brazil'); ?></span></button>
         </div>
-        <script>
-        (function () {
-            var notice = document.querySelector('[data-dismissible="woo-better-shipping-update"]');
-            if (!notice) return;
-            var dismiss = notice.querySelector('.notice-dismiss');
-            if (!dismiss) return;
-            dismiss.addEventListener('click', function () {
-                var formData = new FormData();
-                formData.append('action', <?php echo wp_json_encode(self::AJAX_SHIPPING_UPDATE_ACTION); ?>);
-                formData.append('nonce', notice.getAttribute('data-nonce'));
-                fetch(<?php echo wp_json_encode($ajax_url); ?>, { method: 'POST', credentials: 'same-origin', body: formData })
-                    .then(function () { notice.remove(); })
-                    .catch(function () { notice.remove(); });
-            });
-        })();
-        </script>
         <?php
     }
 
