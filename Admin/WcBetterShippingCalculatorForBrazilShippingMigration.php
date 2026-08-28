@@ -603,7 +603,7 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             : __('Instalar Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil');
 
         $nonce    = wp_create_nonce(self::NONCE_SUGGESTION_ACTION);
-        $icon_url = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.png';
+        $icon_url = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.gif';
         ?>
         <div class="notice notice-info is-dismissible woo-better-notice woo-better-notice--brand" data-dismissible="woo-better-install-suggestion" data-action="<?php echo esc_attr(self::AJAX_SUGGESTION_ACTION); ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
             <div class="woo-better-notice__icon">
@@ -695,7 +695,7 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         }
 
         $nonce      = wp_create_nonce(self::NONCE_SHIPPING_UPDATE_ACTION);
-        $icon_url   = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.png';
+        $icon_url   = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.gif';
         $update_url = wp_nonce_url(
             self_admin_url('update.php?action=upgrade-plugin&plugin=' . self::SHIPPING_PLUGIN_FILE),
             'upgrade-plugin_' . self::SHIPPING_PLUGIN_FILE

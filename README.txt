@@ -1,7 +1,7 @@
-=== Calculadora de Frete e Campos Checkout para o Brasil ===
+=== Fields for Brazilian Checkout for WooCommerce ===
 Contributors: LinkNacional, luizbills
 Donate link:
-Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
+Tags: woocommerce, checkout, CPF, CNPJ, CEP
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
@@ -9,19 +9,21 @@ Stable tag: 5.0.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
-Shipping calculator for Brazilian WooCommerce stores with automatic Postal Code address pre-filling and Brazilian Market on WooCommerce.
+Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce.
 
 == Description ==
 
-Improved shipping calculator designed specifically for **Brazilian e-commerce stores using [WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/)**, making it easier and significantly improving the data entry flow on the cart and checkout pages.
+Complete Brazilian checkout fields designed specifically for **WooCommerce stores in Brazil**, making it easier and significantly improving the data entry flow on the checkout pages.
 
-This version includes **full compatibility with Shortcodes and Gutenberg themes**, allowing you to place the shipping calculator anywhere on your site with maximum flexibility.
+This version includes **full compatibility with Shortcodes and Gutenberg themes**, allowing you to use the Brazilian checkout fields anywhere on your site with maximum flexibility.
 
 This [WordPress](https://www.linknacional.com.br/wordpress/) plugin ensures faster address verification and cleaner form management, leading to a better user experience and fewer abandoned carts.
 
+> **Note:** The shipping calculator features have moved to the [Shipping Simulator for WooCommerce](https://wordpress.org/plugins/shipping-simulator-for-woocommerce/) plugin.
+
 ## 🚀 New Features: Complete Brazilian Checkout
 
-We have expanded the plugin capabilities to offer a full checkout solution for the Brazilian market. Now, in addition to the shipping calculator, the plugin manages **Custom Checkout Fields** essential for Brazilian logistics and invoicing.
+We have expanded the plugin capabilities to offer a full checkout solution for the Brazilian market, managing **Custom Checkout Fields** essential for Brazilian logistics and invoicing.
 
 **New Field Features:**
 * **CPF & CNPJ:** Adds fields for Individual (CPF) and Company (CNPJ) Tax IDs with automatic validation.
@@ -42,28 +44,18 @@ This is a major update for store owners who need to issue invoices (Nota Fiscal)
 
 ### Key Features & Improvements:
 
-#### **On the Cart Page:**
-
-* **ZIP Code Validation:** Real-time validation of the CEP (ZIP code) format.
-* **Submission Control:** The checkout/proceed button is only enabled after the customer enters a valid CEP.
-* **Dynamic Field Hiding:** Option to hide unnecessary address fields on the Cart page for a cleaner interface.
-* Compatibility with both **Legacy** and **Blocks (Gutenberg)** WooCommerce modes.
-
 #### **On the Checkout Page:**
 
 * **✨ NEW: Automatic Address Lookup:** Automatically pre-fills the street, neighborhood, city, and state fields after the customer enters a valid CEP.
 * **✨ NEW: Checkout Custom Fields:** Adds support for CPF, CNPJ, Number, Neighborhood, and Birthdate.
 * **✨ NEW: Input Validation:** Validates CPF/CNPJ algorithms and applies input masks to prevent typing errors.
 * **✨ NEW: Person Type Selector:** Allows customers to switch between "Person" (Pessoa Física) and "Company" (Pessoa Jurídica) during checkout.
-* ** Automatic Address Lookup:** Automatically pre-fills the street, neighborhood, city, and state fields after the customer enters a valid CEP.
-* ** Required Phone Field with DDI:** The phone field is now mandatory and includes a resource to capture the Country Code (DDI), ensuring complete contact information.
+* **Required Phone Field with DDI:** The phone field is now mandatory and includes a resource to capture the Country Code (DDI), ensuring complete contact information.
 * **Number Field Addition:** Adds the mandatory "Number" field, often missing in standard WooCommerce forms. Includes a `checkbox` option for addresses that are "Sem Número" (No Number).
 * Dynamic Field Hiding: Option to hide address fields when not needed.
-* Compatible with Correios and all WooCommerce shipping
 
 #### **Additional Features:**
 
-* **Free Shipping Minimum:** Option to set a minimum cart value required to activate the free shipping method.
 * Fully customizable through the dedicated plugin settings page.
 * The plugin is fully customizable via action and filter hooks for advanced users.
 
@@ -75,13 +67,14 @@ When you need help, please create a topic in the [Plugin Support Forum](https://
 
 
 ** Recommended Plugins **
+* [Shipping Simulator for WooCommerce](https://wordpress.org/plugins/shipping-simulator-for-woocommerce/) - Shipping calculator for the product and cart pages, free shipping rules and more.
 * [Link Invoice Payment for WooCommerce](https://wordpress.org/plugins/invoice-payment-for-woocommerce/) - Integrate custom payment methods and offer invoice-based payments in your WooCommerce store.
 * [Pix For WooCommerce](https://br.wordpress.org/plugins/payment-gateway-pix-for-woocommerce/) - Integrate Pix, Brazil’s revolutionary instant payment system, into your WooCommerce store 
 
 == Installation ==
 
 1.  Access your WordPress admin and go to **Plugins > Add New**.
-2.  Search for "Improved Shipping Calculator for Brazilian Stores".
+2.  Search for "Fields for Brazilian Checkout for WooCommerce".
 3.  Find the plugin, click "Install Now" and then "Activate".
 4.  Done! No additional configuration is needed, but we recommend visiting the plugin settings.
 
@@ -100,26 +93,6 @@ When you need help, please create a topic in the [Plugin Support Forum](https://
 = Does this plugin replace "Brazilian Market on WooCommerce"? =
 
 Yes, this plugin acts as an updated solution for *Brazilian Market on WooCommerce*. It maintains full compatibility with existing data but offers improved features. **Note:** To use it, you must disable the *Brazilian Market on WooCommerce* plugin (by Claudio Sanches) to avoid field conflicts.
-
-= How can I CHANGE the text "Calculate shipping"? =
-
-Use the following code:
-
-add_filter(
-	'wc_better_shipping_calculator_for_brazil_postcode_label',
-	function () {
-		return 'your new text';
-	}
-);
-
-= How can I REMOVE the text "Calculate shipping"? =
-
-Use the following code:
-
-add_filter(
-	'wc_better_shipping_calculator_for_brazil_postcode_label',
-	'__return_null'
-);
 
 = Why is the Phone field now mandatory and asking for a Country Code (DDI)? =
 
