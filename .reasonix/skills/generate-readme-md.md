@@ -29,7 +29,7 @@ Estrutura obrigatória (GitHub Flavored Markdown):
 
 ```markdown
 <div align="center">
-    <img src="Includes/assets/images/icon-256x256.png" alt="Logo do Projeto" width="200" />
+    <img src="Includes/assets/images/icon-256x256.gif" alt="Logo do Projeto" width="200" />
 </div>
 
 # [Plugin Name]
@@ -72,4 +72,4 @@ Possui dúvidas? Deseja dar um feedback sobre o que achou do plugin ou compartil
 ### 4. Regras
 - Substitua `SLUG` pelo slug real em todas as badges
 - NUNCA invente dados — tudo vem do `readme.txt`
-- Se não existir `icon-256x256.png`, use um placeholder ou omita a div da logo
+- Se não existir `icon-256x256.gif`, use um placeholder ou omita a div da logo
