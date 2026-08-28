@@ -136,8 +136,19 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('admin_menu', $shipping_migration, 'register_admin_page');
         $this->loader->add_action('admin_init', $shipping_migration, 'maybe_redirect');
+        $this->loader->add_action('admin_head', $shipping_migration, 'remove_admin_notices', 0);
         $this->loader->add_action('admin_notices', $shipping_migration, 'maybe_show_notice');
         $this->loader->add_action('wp_ajax_' . WcBetterShippingCalculatorForBrazilShippingMigration::get_ajax_action(), $shipping_migration, 'dismiss_notice');
+
+        // Sugestão de instalação do Shipping Simulator para usuários novos
+        // (sem configuração antiga da calculadora de frete).
+        $this->loader->add_action('admin_notices', $shipping_migration, 'maybe_show_install_suggestion');
+        $this->loader->add_action('wp_ajax_woo_better_calc_dismiss_install_suggestion', $shipping_migration, 'dismiss_install_suggestion');
+
+        // Aviso de atualização do Shipping Simulator quando o woo-better já
+        // está atualizado e o shipping-simulator está desatualizado.
+        $this->loader->add_action('admin_notices', $shipping_migration, 'maybe_show_shipping_update_notice');
+        $this->loader->add_action('wp_ajax_woo_better_calc_dismiss_shipping_update', $shipping_migration, 'dismiss_shipping_update_notice');
 
         // detect state from postcode
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100, 1);

@@ -63,6 +63,62 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
     private const NONCE_ACTION = 'woo_better_calc_dismiss_shipping_migration_nonce';
 
     /**
+     * Opção que marca a sugestão de instalação como dispensada.
+     *
+     * @var string
+     */
+    private const OPTION_SUGGESTION_DISMISSED = 'woo_better_calc_install_suggestion_dismissed';
+
+    /**
+     * Ação AJAX para dispensar a sugestão de instalação.
+     *
+     * @var string
+     */
+    private const AJAX_SUGGESTION_ACTION = 'woo_better_calc_dismiss_install_suggestion';
+
+    /**
+     * Ação do nonce para dispensar a sugestão de instalação.
+     *
+     * @var string
+     */
+    private const NONCE_SUGGESTION_ACTION = 'woo_better_calc_dismiss_install_suggestion_nonce';
+
+    /**
+     * Options legadas da "Calculadora de frete" que foram migradas para o
+     * plugin shipping-simulator-for-woocommerce.
+     *
+     * A presença de qualquer uma delas indica um usuário antigo (que já usava
+     * a calculadora) — e, portanto, um caso de migração. Um usuário novo não
+     * possui nenhuma dessas options salvas (o ativador atual não as cria mais).
+     *
+     * @var string[]
+     */
+    private const LEGACY_CALCULATOR_OPTIONS = [
+        'woo_better_calc_disabled_shipping',
+        'woo_better_calc_hide_calculator_digital',
+        'woo_better_calc_font_source',
+        'woo_better_calc_enable_settings_link',
+        'woo_better_enable_min_free_shipping',
+        'woo_better_min_free_shipping_value',
+        'woo_better_free_shipping_calc_base',
+        'woo_better_only_free_shipping',
+        'woo_better_avoid_free_shipping_duplication',
+        'woo_better_min_free_shipping_delivery_time',
+        'woo_better_min_free_shipping_message',
+        'woo_better_min_free_shipping_success_message',
+        'woo_better_enable_progress_bar_value',
+        'woo_better_enable_free_shipping_by_product',
+        'woo_better_free_shipping_by_product_delivery_time',
+        'woo_better_enable_free_shipping_detection',
+        'woo_better_keep_other_methods_with_free_shipping',
+        'woo_better_calc_enable_product_page',
+        'woo_better_calc_enable_cart_page',
+        'woo_better_calc_enable_auto_postcode_search',
+        'woo_better_calc_cache_expiration_time',
+        'woo_better_calc_enable_auto_cache_reset',
+    ];
+
+    /**
      * Versão a partir da qual o aviso passa a ser exibido.
      *
      * @var string
@@ -82,6 +138,37 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
      * @var string
      */
     private const SHIPPING_PLUGIN_FILE = 'shipping-simulator-for-woocommerce/main.php';
+
+    /**
+     * Versão do shipping-simulator a partir da qual os novos recursos da
+     * calculadora de frete estão disponíveis. Abaixo dela, o plugin está
+     * desatualizado.
+     *
+     * @var string
+     */
+    private const SHIPPING_PLUGIN_UPDATE_THRESHOLD = '3.0.0';
+
+    /**
+     * Opção que marca o aviso de atualização do shipping-simulator como
+     * dispensado.
+     *
+     * @var string
+     */
+    private const OPTION_SHIPPING_UPDATE_DISMISSED = 'woo_better_calc_shipping_update_dismissed';
+
+    /**
+     * Ação AJAX para dispensar o aviso de atualização do shipping-simulator.
+     *
+     * @var string
+     */
+    private const AJAX_SHIPPING_UPDATE_ACTION = 'woo_better_calc_dismiss_shipping_update';
+
+    /**
+     * Ação do nonce para dispensar o aviso de atualização.
+     *
+     * @var string
+     */
+    private const NONCE_SHIPPING_UPDATE_ACTION = 'woo_better_calc_dismiss_shipping_update_nonce';
 
     /**
      * Registra a página de aviso como uma página admin oculta.
@@ -118,6 +205,12 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         // Só exibe a partir de uma versão superior a 4.17.1.
         if ( ! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')
             || ! version_compare(WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION, self::VERSION_THRESHOLD, '>') ) {
+            return;
+        }
+
+        // Usuário novo (sem configuração antiga da calculadora): não é
+        // migração. A sugestão de instalação cuida desse caso.
+        if ( ! $this->has_legacy_calculator_config() ) {
             return;
         }
 
@@ -206,7 +299,13 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
 
                 <div class="woo-better-shipping-migration__body">
                     <p>
-                        <?php esc_html_e('Para continuar usando estes recursos, instale o plugin abaixo. Seus dados não foram alterados.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                        <?php if ( $shipping_plugin_active ) : ?>
+                            <?php esc_html_e('O novo plugin já está ativo. Seus dados não foram alterados.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                        <?php elseif ( $shipping_plugin_installed ) : ?>
+                            <?php esc_html_e('O novo plugin já está instalado. Ative-o para continuar usando estes recursos. Seus dados não serão alterados.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                        <?php else : ?>
+                            <?php esc_html_e('Para continuar usando estes recursos, instale o plugin abaixo. Seus dados não serão alterados.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                        <?php endif; ?>
                     </p>
 
                     <ul class="woo-better-shipping-migration__features">
@@ -238,6 +337,28 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
     }
 
     /**
+     * Remove os notices de outros plugins na tela de migração.
+     *
+     * A tela é uma página admin comum, então o WordPress imprime todos os
+     * `admin_notices`/`all_admin_notices` registrados por terceiros (e pelo
+     * próprio woo-better) no topo. Aqui limpamos esses hooks antes de serem
+     * disparados para manter a tela limpa.
+     *
+     * @since 4.18.0
+     */
+    public function remove_admin_notices(): void
+    {
+        $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
+
+        if ( self::SCREEN_SLUG !== $page ) {
+            return;
+        }
+
+        remove_all_actions('admin_notices');
+        remove_all_actions('all_admin_notices');
+    }
+
+    /**
      * Camada de aviso final: notice admin exibido quando o usuário fecha a
      * tela de migração sem instalar/ativar o novo plugin.
      *
@@ -259,6 +380,11 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         // Só a partir de uma versão superior a 4.17.1.
         if ( ! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')
             || ! version_compare(WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION, self::VERSION_THRESHOLD, '>') ) {
+            return;
+        }
+
+        // Usuário novo: a sugestão de instalação cuida desse caso.
+        if ( ! $this->has_legacy_calculator_config() ) {
             return;
         }
 
@@ -305,7 +431,11 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         <div class="notice notice-warning is-dismissible" data-dismissible="woo-better-shipping-migration-notice" data-nonce="<?php echo esc_attr($nonce); ?>">
             <p>
                 <strong><?php esc_html_e('A Calculadora de Frete migrou para o Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong><br>
-                <?php esc_html_e('Instale o novo plugin para continuar usando frete grátis, a calculadora de frete no produto/carrinho e as opções de endereço.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                <?php if ( $is_installed ) : ?>
+                    <?php esc_html_e('Ative o novo plugin para continuar usando frete grátis, a calculadora de frete no produto/carrinho e as opções de endereço.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                <?php else : ?>
+                    <?php esc_html_e('Instale o novo plugin para continuar usando frete grátis, a calculadora de frete no produto/carrinho e as opções de endereço.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                <?php endif; ?>
             </p>
             <p>
                 <a href="<?php echo esc_url($action_url); ?>" class="button button-primary"><?php echo esc_html($action_label); ?></a>
@@ -388,5 +518,324 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         }
 
         return file_exists(WP_PLUGIN_DIR . '/' . self::SHIPPING_PLUGIN_FILE);
+    }
+
+    /**
+     * Verifica se existe alguma configuração legada da calculadora de frete.
+     *
+     * Usada para distinguir "migração" (usuário antigo) de "sugestão"
+     * (usuário novo). O ativador da versão atual não cria mais as options da
+     * calculadora, então a presença de qualquer uma delas só ocorre em
+     * instalações antigas.
+     *
+     * @since 5.0.0
+     * @return bool
+     */
+    private function has_legacy_calculator_config(): bool
+    {
+        foreach ( self::LEGACY_CALCULATOR_OPTIONS as $option ) {
+            if ( false !== get_option($option, false) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Exibe a sugestão de instalação do Shipping Simulator quando o usuário é
+     * novo (sem configuração antiga da calculadora) e o plugin de destino não
+     * está ativo.
+     *
+     * @since 5.0.0
+     */
+    public function maybe_show_install_suggestion(): void
+    {
+        if ( ! $this->should_show_suggestion() ) {
+            return;
+        }
+
+        $is_installed = $this->is_shipping_plugin_installed();
+
+        $action_url = $is_installed
+            ? wp_nonce_url(
+                self_admin_url('plugins.php?action=activate&plugin=' . self::SHIPPING_PLUGIN_FILE),
+                'activate-plugin_' . self::SHIPPING_PLUGIN_FILE
+            )
+            : wp_nonce_url(
+                self_admin_url('update.php?action=install-plugin&plugin=' . self::SHIPPING_PLUGIN_SLUG),
+                'install-plugin_' . self::SHIPPING_PLUGIN_SLUG
+            );
+
+        $action_label = $is_installed
+            ? __('Ativar Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil')
+            : __('Instalar Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil');
+
+        $nonce     = wp_create_nonce(self::NONCE_SUGGESTION_ACTION);
+        $ajax_url  = admin_url('admin-ajax.php');
+        $icon_url  = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.png';
+        ?>
+        <style>
+            .woo-better-install-suggestion { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-left: 4px solid #5f3dc4; }
+            .woo-better-install-suggestion__icon { flex: 0 0 auto; width: 40px; height: 40px; }
+            .woo-better-install-suggestion__icon img { width: 40px; height: 40px; display: block; border-radius: 6px; }
+            .woo-better-install-suggestion__content { flex: 1 1 auto; }
+            .woo-better-install-suggestion__content p { margin: 0 0 12px; }
+            .woo-better-install-suggestion__title { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; flex-wrap: wrap; }
+            .woo-better-install-suggestion__badge { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #5f3dc4; color: #fff; font-size: 11px; font-weight: 600; }
+        </style>
+        <div class="notice notice-info is-dismissible woo-better-install-suggestion" data-dismissible="woo-better-install-suggestion" data-nonce="<?php echo esc_attr($nonce); ?>">
+            <div class="woo-better-install-suggestion__icon">
+                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?>">
+            </div>
+            <div class="woo-better-install-suggestion__content">
+                <p class="woo-better-install-suggestion__title">
+                    <strong><?php esc_html_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
+                    <span class="woo-better-install-suggestion__badge"><?php esc_html_e('Sugestão', 'woo-better-shipping-calculator-for-brazil'); ?></span>
+                </p>
+                <p>
+                    <?php esc_html_e('Os recursos da Calculadora de Frete agora fazem parte do plugin Shipping Simulator for WooCommerce. Instale-o para usar a calculadora de frete nas páginas de produto e carrinho, frete grátis e demais recursos.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                </p>
+                <a href="<?php echo esc_url($action_url); ?>" class="button button-primary"><?php echo esc_html($action_label); ?></a>
+            </div>
+            <button type="button" class="notice-dismiss"><span class="screen-reader-text"><?php esc_html_e('Dispensar este aviso.', 'woo-better-shipping-calculator-for-brazil'); ?></span></button>
+        </div>
+        <script>
+        (function () {
+            var notice = document.querySelector('[data-dismissible="woo-better-install-suggestion"]');
+            if (!notice) return;
+            var dismiss = notice.querySelector('.notice-dismiss');
+            if (!dismiss) return;
+            dismiss.addEventListener('click', function () {
+                var formData = new FormData();
+                formData.append('action', <?php echo wp_json_encode(self::AJAX_SUGGESTION_ACTION); ?>);
+                formData.append('nonce', notice.getAttribute('data-nonce'));
+                fetch(<?php echo wp_json_encode($ajax_url); ?>, { method: 'POST', credentials: 'same-origin', body: formData })
+                    .then(function () { notice.remove(); })
+                    .catch(function () { notice.remove(); });
+            });
+        })();
+        </script>
+        <?php
+    }
+
+    /**
+     * Dispensa definitivamente a sugestão de instalação.
+     *
+     * @since 5.0.0
+     */
+    public function dismiss_install_suggestion(): void
+    {
+        check_ajax_referer(self::NONCE_SUGGESTION_ACTION, 'nonce');
+
+        if ( ! current_user_can('manage_options') ) {
+            wp_send_json_error(array( 'message' => 'Unauthorized' ), 403);
+        }
+
+        update_option(self::OPTION_SUGGESTION_DISMISSED, 'yes');
+
+        wp_send_json_success();
+    }
+
+    /**
+     * Decide se a sugestão de instalação deve ser exibida.
+     *
+     * @since 5.0.0
+     * @return bool
+     */
+    private function should_show_suggestion(): bool
+    {
+        if ( ! is_admin() || wp_doing_ajax() ) {
+            return false;
+        }
+
+        if ( ! current_user_can('manage_options') ) {
+            return false;
+        }
+
+        // Plugin de destino já ativo: nada a sugerir.
+        if ( $this->is_shipping_plugin_active() ) {
+            return false;
+        }
+
+        // Usuário antigo: o fluxo de migração cuida desse caso.
+        if ( $this->has_legacy_calculator_config() ) {
+            return false;
+        }
+
+        // Já dispensado permanentemente.
+        if ( 'yes' === get_option(self::OPTION_SUGGESTION_DISMISSED, 'no') ) {
+            return false;
+        }
+
+        // Não sobrepor a própria tela de migração.
+        $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
+        if ( self::SCREEN_SLUG === $page ) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Exibe o aviso de atualização quando o shipping-simulator está instalado,
+     * ativo e desatualizado (abaixo da versão com os novos recursos).
+     *
+     * @since 5.0.0
+     */
+    public function maybe_show_shipping_update_notice(): void
+    {
+        if ( ! $this->should_show_shipping_update_notice() ) {
+            return;
+        }
+
+        $nonce     = wp_create_nonce(self::NONCE_SHIPPING_UPDATE_ACTION);
+        $ajax_url  = admin_url('admin-ajax.php');
+        $icon_url  = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.png';
+        $update_url = wp_nonce_url(
+            self_admin_url('update.php?action=upgrade-plugin&plugin=' . self::SHIPPING_PLUGIN_FILE),
+            'upgrade-plugin_' . self::SHIPPING_PLUGIN_FILE
+        );
+        ?>
+        <style>
+            .woo-better-shipping-update { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-left: 4px solid #dba617; }
+            .woo-better-shipping-update__icon { flex: 0 0 auto; width: 40px; height: 40px; }
+            .woo-better-shipping-update__icon img { width: 40px; height: 40px; display: block; border-radius: 6px; }
+            .woo-better-shipping-update__content { flex: 1 1 auto; }
+            .woo-better-shipping-update__content p { margin: 0 0 12px; }
+            .woo-better-shipping-update__title { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; flex-wrap: wrap; }
+            .woo-better-shipping-update__badge { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #dba617; color: #1d2327; font-size: 11px; font-weight: 600; }
+        </style>
+        <div class="notice notice-warning is-dismissible woo-better-shipping-update" data-dismissible="woo-better-shipping-update" data-nonce="<?php echo esc_attr($nonce); ?>">
+            <div class="woo-better-shipping-update__icon">
+                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?>">
+            </div>
+            <div class="woo-better-shipping-update__content">
+                <p class="woo-better-shipping-update__title">
+                    <strong><?php esc_html_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
+                    <span class="woo-better-shipping-update__badge"><?php esc_html_e('Atualização', 'woo-better-shipping-calculator-for-brazil'); ?></span>
+                </p>
+                <p>
+                    <?php esc_html_e('O plugin Shipping Simulator for WooCommerce está desatualizado. Atualize-o para ter acesso aos novos recursos da calculadora de frete.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                </p>
+                <a href="<?php echo esc_url($update_url); ?>" class="button button-primary"><?php esc_html_e('Atualizar Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></a>
+            </div>
+            <button type="button" class="notice-dismiss"><span class="screen-reader-text"><?php esc_html_e('Dispensar este aviso.', 'woo-better-shipping-calculator-for-brazil'); ?></span></button>
+        </div>
+        <script>
+        (function () {
+            var notice = document.querySelector('[data-dismissible="woo-better-shipping-update"]');
+            if (!notice) return;
+            var dismiss = notice.querySelector('.notice-dismiss');
+            if (!dismiss) return;
+            dismiss.addEventListener('click', function () {
+                var formData = new FormData();
+                formData.append('action', <?php echo wp_json_encode(self::AJAX_SHIPPING_UPDATE_ACTION); ?>);
+                formData.append('nonce', notice.getAttribute('data-nonce'));
+                fetch(<?php echo wp_json_encode($ajax_url); ?>, { method: 'POST', credentials: 'same-origin', body: formData })
+                    .then(function () { notice.remove(); })
+                    .catch(function () { notice.remove(); });
+            });
+        })();
+        </script>
+        <?php
+    }
+
+    /**
+     * Dispensa definitivamente o aviso de atualização do shipping-simulator.
+     *
+     * @since 5.0.0
+     */
+    public function dismiss_shipping_update_notice(): void
+    {
+        check_ajax_referer(self::NONCE_SHIPPING_UPDATE_ACTION, 'nonce');
+
+        if ( ! current_user_can('manage_options') ) {
+            wp_send_json_error(array( 'message' => 'Unauthorized' ), 403);
+        }
+
+        update_option(self::OPTION_SHIPPING_UPDATE_DISMISSED, 'yes');
+
+        wp_send_json_success();
+    }
+
+    /**
+     * Decide se o aviso de atualização do shipping-simulator deve ser exibido.
+     *
+     * @since 5.0.0
+     * @return bool
+     */
+    private function should_show_shipping_update_notice(): bool
+    {
+        if ( ! is_admin() || wp_doing_ajax() ) {
+            return false;
+        }
+
+        if ( ! current_user_can('manage_options') ) {
+            return false;
+        }
+
+        // Só exibe quando o woo-better já está na versão nova (5.0.0+).
+        if ( ! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')
+            || version_compare(WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION, self::VERSION_THRESHOLD, '<=') ) {
+            return false;
+        }
+
+        // Shipping-simulator precisa estar ativo.
+        if ( ! $this->is_shipping_plugin_active() ) {
+            return false;
+        }
+
+        // E desatualizado.
+        if ( ! $this->shipping_plugin_is_outdated() ) {
+            return false;
+        }
+
+        // Já dispensado permanentemente.
+        if ( 'yes' === get_option(self::OPTION_SHIPPING_UPDATE_DISMISSED, 'no') ) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Lê a versão do shipping-simulator instalado.
+     *
+     * @since 5.0.0
+     * @return string Versão (ex.: '2.4.4') ou '' se não instalado.
+     */
+    private function shipping_plugin_version(): string
+    {
+        $file = WP_PLUGIN_DIR . '/' . self::SHIPPING_PLUGIN_FILE;
+
+        if ( ! file_exists($file) ) {
+            return '';
+        }
+
+        if ( ! function_exists('get_plugin_data') ) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        $data = get_plugin_data($file, false, false);
+
+        return isset($data['Version']) ? $data['Version'] : '';
+    }
+
+    /**
+     * Verifica se o shipping-simulator está desatualizado.
+     *
+     * @since 5.0.0
+     * @return bool
+     */
+    private function shipping_plugin_is_outdated(): bool
+    {
+        $version = $this->shipping_plugin_version();
+
+        if ( '' === $version ) {
+            return false;
+        }
+
+        return version_compare($version, self::SHIPPING_PLUGIN_UPDATE_THRESHOLD, '<');
     }
 }
