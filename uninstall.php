@@ -32,3 +32,6 @@ if (! defined('WP_UNINSTALL_PLUGIN')) {
 
 delete_option('woo_better_calc_number_required');
 delete_option('woo_better_calc_shipping_migration_notice_shown');
+delete_option('woo_better_calc_shipping_migration_dismissed');
+delete_option('woo_better_calc_install_suggestion_dismissed');
+delete_option('woo_better_calc_shipping_update_dismissed');
