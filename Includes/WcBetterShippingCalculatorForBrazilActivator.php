@@ -69,7 +69,7 @@ class WcBetterShippingCalculatorForBrazilActivator {
 		if (!is_plugin_active('woocommerce/woocommerce.php')) {
 			// Apenas mostrar aviso, não bloquear ativação pois pode ser ativado depois
 			add_action('admin_notices', function() {
-				echo '<div class="error"><p><strong>Calculadora de Frete e Campos Checkout para o Brasil:</strong> Este plugin requer o WooCommerce para funcionar corretamente.</p></div>';
+				echo '<div class="error"><p><strong>Fields for Brazilian Checkout for WooCommerce:</strong> Este plugin requer o WooCommerce para funcionar corretamente.</p></div>';
 			});
 		}
 		

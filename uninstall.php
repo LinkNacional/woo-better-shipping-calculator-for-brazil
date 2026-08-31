@@ -35,3 +35,36 @@ delete_option('woo_better_calc_shipping_migration_notice_shown');
 delete_option('woo_better_calc_shipping_migration_dismissed');
 delete_option('woo_better_calc_install_suggestion_dismissed');
 delete_option('woo_better_calc_shipping_update_dismissed');
+
+// Opções legadas da "Calculadora de Frete" (migradas para o
+// shipping-simulator-for-woocommerce). Removê-las na desinstalação garante
+// que uma reinstalação seja tratada como "usuário novo" (sugestão) em vez de
+// "migração", já que o ativador atual não as cria mais.
+$legacy_calculator_options = array(
+    'woo_better_calc_disabled_shipping',
+    'woo_better_calc_hide_calculator_digital',
+    'woo_better_calc_font_source',
+    'woo_better_calc_enable_settings_link',
+    'woo_better_enable_min_free_shipping',
+    'woo_better_min_free_shipping_value',
+    'woo_better_free_shipping_calc_base',
+    'woo_better_only_free_shipping',
+    'woo_better_avoid_free_shipping_duplication',
+    'woo_better_min_free_shipping_delivery_time',
+    'woo_better_min_free_shipping_message',
+    'woo_better_min_free_shipping_success_message',
+    'woo_better_enable_progress_bar_value',
+    'woo_better_enable_free_shipping_by_product',
+    'woo_better_free_shipping_by_product_delivery_time',
+    'woo_better_enable_free_shipping_detection',
+    'woo_better_keep_other_methods_with_free_shipping',
+    'woo_better_calc_enable_product_page',
+    'woo_better_calc_enable_cart_page',
+    'woo_better_calc_enable_auto_postcode_search',
+    'woo_better_calc_cache_expiration_time',
+    'woo_better_calc_enable_auto_cache_reset',
+);
+
+foreach ($legacy_calculator_options as $option_name) {
+    delete_option($option_name);
+}
