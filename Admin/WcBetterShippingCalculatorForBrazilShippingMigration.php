@@ -371,20 +371,27 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
 
         $action_label = __('Continuar utilizando Recursos do Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil');
 
-        $nonce = wp_create_nonce(self::NONCE_ACTION);
+        $nonce    = wp_create_nonce(self::NONCE_ACTION);
+        $icon_url = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.gif';
         ?>
-        <div class="notice notice-warning is-dismissible" data-dismissible="woo-better-shipping-migration-notice" data-action="<?php echo esc_attr(self::AJAX_ACTION); ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
-            <p>
-                <strong><?php esc_html_e('A Calculadora de Frete migrou para o Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong><br>
-                <?php if ( $is_installed ) : ?>
-                    <?php esc_html_e('Ative o novo plugin para continuar usando frete grátis, a calculadora de frete no produto/carrinho e as opções de endereço.', 'woo-better-shipping-calculator-for-brazil'); ?>
-                <?php else : ?>
-                    <?php esc_html_e('Instale o novo plugin para continuar usando frete grátis, a calculadora de frete no produto/carrinho e as opções de endereço.', 'woo-better-shipping-calculator-for-brazil'); ?>
-                <?php endif; ?>
-            </p>
-            <p>
+        <div class="notice notice-info is-dismissible woo-better-notice woo-better-notice--brand" data-dismissible="woo-better-shipping-migration-notice" data-action="<?php echo esc_attr(self::AJAX_ACTION); ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
+            <div class="woo-better-notice__icon">
+                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?>">
+            </div>
+            <div class="woo-better-notice__content">
+                <p class="woo-better-notice__title">
+                    <strong><?php esc_html_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
+                    <span class="woo-better-notice__badge"><?php esc_html_e('Migração', 'woo-better-shipping-calculator-for-brazil'); ?></span>
+                </p>
+                <p>
+                    <?php if ( $is_installed ) : ?>
+                        <?php esc_html_e('Ative o novo plugin para continuar usando frete grátis, a calculadora de frete no produto/carrinho e as opções de endereço.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                    <?php else : ?>
+                        <?php esc_html_e('Instale o novo plugin para continuar usando frete grátis, a calculadora de frete no produto/carrinho e as opções de endereço.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                    <?php endif; ?>
+                </p>
                 <a href="<?php echo esc_url($action_url); ?>" class="button button-primary"><?php echo esc_html($action_label); ?></a>
-            </p>
+            </div>
             <button type="button" class="notice-dismiss"><span class="screen-reader-text"><?php esc_html_e('Dispensar este aviso.', 'woo-better-shipping-calculator-for-brazil'); ?></span></button>
         </div>
         <?php
