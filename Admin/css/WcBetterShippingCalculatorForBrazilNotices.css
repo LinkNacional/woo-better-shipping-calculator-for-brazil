@@ -142,11 +142,18 @@
 }
 
 .woo-better-shipping-migration__actions .button-hero {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: auto !important;
+    min-height: 0 !important;
     white-space: normal !important;
     word-wrap: break-word !important;
     overflow-wrap: anywhere !important;
     text-align: center !important;
     line-height: 1.4 !important;
+    padding: 12px 24px !important;
+    box-sizing: border-box !important;
 }
 
 .woo-better-shipping-migration__installed {
@@ -167,6 +174,9 @@
     }
 
     .woo-better-shipping-migration__actions .button-hero {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         width: 100% !important;
         height: auto !important;
         min-height: 0 !important;
@@ -175,7 +185,7 @@
         overflow-wrap: anywhere !important;
         text-align: center !important;
         line-height: 1.4 !important;
-        padding-top: 10px !important;
-        padding-bottom: 10px !important;
+        padding: 12px 16px !important;
+        box-sizing: border-box !important;
     }
 }
