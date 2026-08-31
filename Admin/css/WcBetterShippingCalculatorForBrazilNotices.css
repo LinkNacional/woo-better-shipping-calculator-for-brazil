@@ -151,3 +151,23 @@
     color: #787c82;
     font-size: 12px;
 }
+
+@media (max-width: 600px) {
+    .woo-better-shipping-migration__actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .woo-better-shipping-migration__actions .button-hero {
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        white-space: normal;
+        word-wrap: break-word;
+        overflow-wrap: anywhere;
+        text-align: center;
+        line-height: 1.4;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+}
