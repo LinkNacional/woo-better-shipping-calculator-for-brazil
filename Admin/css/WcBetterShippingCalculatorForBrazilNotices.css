@@ -135,10 +135,18 @@
 }
 
 .woo-better-shipping-migration__actions {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    flex-wrap: wrap;
+    display: flex !important;
+    gap: 12px !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+}
+
+.woo-better-shipping-migration__actions .button-hero {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: anywhere !important;
+    text-align: center !important;
+    line-height: 1.4 !important;
 }
 
 .woo-better-shipping-migration__installed {
@@ -154,20 +162,20 @@
 
 @media (max-width: 600px) {
     .woo-better-shipping-migration__actions {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: column !important;
+        align-items: stretch !important;
     }
 
     .woo-better-shipping-migration__actions .button-hero {
-        width: 100%;
-        height: auto;
-        min-height: 0;
-        white-space: normal;
-        word-wrap: break-word;
-        overflow-wrap: anywhere;
-        text-align: center;
-        line-height: 1.4;
-        padding-top: 10px;
-        padding-bottom: 10px;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        overflow-wrap: anywhere !important;
+        text-align: center !important;
+        line-height: 1.4 !important;
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
     }
 }
