@@ -249,7 +249,7 @@ class WcBetterShippingCalculatorForBrazil
             ?>
             <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
                 <div style="height: 100%; padding: 10px;">
-                    <strong style="font-size: 18px;">🚀 Calculadora de Frete e Campos Checkout para o Brasil</strong>
+                    <strong style="font-size: 18px;">🚀 Fields for Brazilian Checkout for WooCommerce</strong>
                     
                     <p style="font-size: 14px; margin-top: 10px;">
                         <strong>Agora é oficial:</strong> somos a melhor alternativa ao "Brazilian Fields"! Nossos campos de checkout agora são compatíveis com shortcodes e temas em blocos, com integração total ao Melhor Envio, Correios, entre outros.
@@ -277,7 +277,7 @@ class WcBetterShippingCalculatorForBrazil
             ?>
             <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
                 <div style="height: 100%; padding: 10px;">
-                    <strong style="font-size: 18px;">🚀 Calculadora de Frete e Campos Checkout para o Brasil — Atualização v<?php echo esc_html( $version ); ?></strong>
+                    <strong style="font-size: 18px;">🚀 Fields for Brazilian Checkout for WooCommerce — Atualização v<?php echo esc_html( $version ); ?></strong>
 
                     <div style="margin-top: 10px;">
                         <p style="font-size: 14px; margin-top: 8px;">

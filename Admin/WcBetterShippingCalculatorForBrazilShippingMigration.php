@@ -376,11 +376,11 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         ?>
         <div class="notice notice-info is-dismissible woo-better-notice woo-better-notice--brand" data-dismissible="woo-better-shipping-migration-notice" data-action="<?php echo esc_attr(self::AJAX_ACTION); ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
             <div class="woo-better-notice__icon">
-                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?>">
+                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Fields for Brazilian Checkout for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?>">
             </div>
             <div class="woo-better-notice__content">
                 <p class="woo-better-notice__title">
-                    <strong><?php esc_html_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
+                    <strong><?php esc_html_e('Fields for Brazilian Checkout for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
                     <span class="woo-better-notice__badge"><?php esc_html_e('Migração', 'woo-better-shipping-calculator-for-brazil'); ?></span>
                 </p>
                 <p>
@@ -612,11 +612,11 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         ?>
         <div class="notice notice-info is-dismissible woo-better-notice woo-better-notice--brand" data-dismissible="woo-better-install-suggestion" data-action="<?php echo esc_attr(self::AJAX_SUGGESTION_ACTION); ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
             <div class="woo-better-notice__icon">
-                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?>">
+                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Fields for Brazilian Checkout for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?>">
             </div>
             <div class="woo-better-notice__content">
                 <p class="woo-better-notice__title">
-                    <strong><?php esc_html_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
+                    <strong><?php esc_html_e('Fields for Brazilian Checkout for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
                     <span class="woo-better-notice__badge"><?php esc_html_e('Sugestão', 'woo-better-shipping-calculator-for-brazil'); ?></span>
                 </p>
                 <p>
@@ -708,11 +708,11 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         ?>
         <div class="notice notice-warning is-dismissible woo-better-notice woo-better-notice--update" data-dismissible="woo-better-shipping-update" data-action="<?php echo esc_attr(self::AJAX_SHIPPING_UPDATE_ACTION); ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
             <div class="woo-better-notice__icon">
-                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?>">
+                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Fields for Brazilian Checkout for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?>">
             </div>
             <div class="woo-better-notice__content">
                 <p class="woo-better-notice__title">
-                    <strong><?php esc_html_e('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
+                    <strong><?php esc_html_e('Fields for Brazilian Checkout for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
                     <span class="woo-better-notice__badge"><?php esc_html_e('Atualização', 'woo-better-shipping-calculator-for-brazil'); ?></span>
                 </p>
                 <p>
