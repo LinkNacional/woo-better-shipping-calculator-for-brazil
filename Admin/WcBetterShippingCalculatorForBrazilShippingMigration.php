@@ -301,15 +301,15 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
                 </div>
 
                 <div class="woo-better-shipping-migration__actions">
+                    <a href="<?php echo esc_url($close_url); ?>" class="button button-secondary button-hero"><?php esc_html_e('Agora não', 'woo-better-shipping-calculator-for-brazil'); ?></a>
+
                     <?php if ( $shipping_plugin_active ) : ?>
                         <p class="woo-better-shipping-migration__installed">✅ <?php esc_html_e('Shipping Simulator for WooCommerce já está ativo. Tudo pronto!', 'woo-better-shipping-calculator-for-brazil'); ?></p>
                     <?php elseif ( $shipping_plugin_installed ) : ?>
-                        <a href="<?php echo esc_url($activate_url); ?>" class="button button-primary button-hero"><?php esc_html_e('Ativar Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></a>
+                        <a href="<?php echo esc_url($activate_url); ?>" class="button button-primary button-hero"><?php esc_html_e('Continuar utilizando Recursos do Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil'); ?></a>
                     <?php else : ?>
-                        <a href="<?php echo esc_url($install_url); ?>" class="button button-primary button-hero"><?php esc_html_e('Instalar Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></a>
+                        <a href="<?php echo esc_url($install_url); ?>" class="button button-primary button-hero"><?php esc_html_e('Continuar utilizando Recursos do Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil'); ?></a>
                     <?php endif; ?>
-
-                    <a href="<?php echo esc_url($close_url); ?>" class="button button-secondary button-hero"><?php esc_html_e('Agora não', 'woo-better-shipping-calculator-for-brazil'); ?></a>
                 </div>
 
                 <p class="woo-better-shipping-migration__hint">
@@ -369,9 +369,7 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
                 'install-plugin_' . self::SHIPPING_PLUGIN_SLUG
             );
 
-        $action_label = $is_installed
-            ? __('Ativar Shipping Simulator', 'woo-better-shipping-calculator-for-brazil')
-            : __('Instalar Shipping Simulator', 'woo-better-shipping-calculator-for-brazil');
+        $action_label = __('Continuar utilizando Recursos do Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil');
 
         $nonce = wp_create_nonce(self::NONCE_ACTION);
         ?>
