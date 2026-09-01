@@ -12,13 +12,12 @@ document.addEventListener("DOMContentLoaded", function () {
 	}
 
 	function isUsingSameAddressForBilling() {
-		const checkbox = document.querySelector('input[type="checkbox"][id^="checkbox-control"]')
+		const checkbox = document.querySelector('.wc-block-checkout__use-address-for-billing input[type="checkbox"]')
 		if (!checkbox) {
 			return false
 		}
 
-		const checkboxContainer = checkbox.closest('.wc-block-checkout__use-address-for-billing')
-		return !!checkboxContainer && checkbox.checked
+		return checkbox.checked
 	}
 
 	function isBrazilSelected() {
@@ -572,6 +571,15 @@ document.addEventListener("DOMContentLoaded", function () {
 		const referenceElement = getReferenceElement(context.container, context.containerType)
 		if (!referenceElement) {
 			return
+		}
+
+		// Reposiciona o campo quando o ancoradouro correto muda. O campo é criado
+		// cedo (DOMContentLoaded), antes de Empresa/CPF-CNPJ existirem, e nesse
+		// caso cai no fallback de sobrenome. Quando a Empresa/CPF-CNPJ aparecem,
+		// movemos o IE para logo abaixo do ancoradouro correto.
+		const existingContainer = getIEContainer()
+		if (existingContainer && existingContainer.previousElementSibling !== referenceElement) {
+			referenceElement.insertAdjacentElement('afterend', existingContainer)
 		}
 
 		createIEField(referenceElement)
