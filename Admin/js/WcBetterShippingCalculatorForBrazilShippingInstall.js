@@ -12,43 +12,103 @@
         }, 300);
     }
 
-    function showSuccessCard(action) {
-        var cfg = WooBetterShippingInstall.success || {};
-
-        // Evita duplicar o cartão caso o sucesso dispare mais de uma vez.
-        var existing = document.querySelector('.woo-better-shipping-success-card');
-        if (existing) {
-            existing.remove();
-        }
-
-        var desc = cfg[action] || '';
-        var html =
-            '<div class="notice woo-better-notice woo-better-notice--success woo-better-shipping-success-card">' +
-                '<div class="woo-better-notice__content">' +
-                    '<p class="woo-better-notice__title">' +
-                        '<strong>' + (cfg.title || '') + '</strong>' +
-                        '<span class="woo-better-notice__badge">' + (cfg.badge || '') + '</span>' +
-                    '</p>' +
-                    '<p>' + desc + '</p>' +
-                '</div>' +
-                '<button type="button" class="notice-dismiss woo-better-shipping-success-card__close"><span class="screen-reader-text">' + (cfg.close || 'Fechar') + '</span></button>' +
-            '</div>';
-
+    function mountCard(card) {
         var host = document.querySelector('.wp-header-end') || document.querySelector('#wpbody-content');
         if (!host) {
             return;
         }
-
-        var temp = document.createElement('div');
-        temp.innerHTML = html;
-        var card = temp.firstElementChild;
-
         host.insertAdjacentElement('afterend', card);
 
-        // Fecha sozinho um pouco antes do redirect.
+        // Fecha sozinho após alguns segundos.
         setTimeout(function () {
             closeCard(card);
         }, 3600);
+    }
+
+    function showSuccessCard(key) {
+        var cfg = (window.WooBetterShippingInstall && WooBetterShippingInstall.success) || {};
+
+        var existing = document.querySelector('.woo-better-shipping-success-card, .woo-better-shipping-error-card');
+        if (existing) {
+            existing.remove();
+        }
+
+        var card = document.createElement('div');
+        card.className = 'notice woo-better-notice woo-better-notice--success woo-better-shipping-success-card';
+
+        var content = document.createElement('div');
+        content.className = 'woo-better-notice__content';
+
+        var title = document.createElement('p');
+        title.className = 'woo-better-notice__title';
+        var strong = document.createElement('strong');
+        strong.textContent = cfg.title || '';
+        var badge = document.createElement('span');
+        badge.className = 'woo-better-notice__badge';
+        badge.textContent = cfg.badge || '';
+        title.appendChild(strong);
+        title.appendChild(badge);
+
+        var body = document.createElement('p');
+        body.textContent = cfg[key] || '';
+
+        content.appendChild(title);
+        content.appendChild(body);
+        card.appendChild(content);
+
+        var close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'notice-dismiss woo-better-shipping-success-card__close';
+        var sr = document.createElement('span');
+        sr.className = 'screen-reader-text';
+        sr.textContent = cfg.close || 'Fechar';
+        close.appendChild(sr);
+        card.appendChild(close);
+
+        mountCard(card);
+    }
+
+    function showErrorCard(message) {
+        var cfg = (window.WooBetterShippingInstall && WooBetterShippingInstall.error) || {};
+
+        var existing = document.querySelector('.woo-better-shipping-success-card, .woo-better-shipping-error-card');
+        if (existing) {
+            existing.remove();
+        }
+
+        var card = document.createElement('div');
+        card.className = 'notice woo-better-notice woo-better-notice--error woo-better-shipping-error-card';
+
+        var content = document.createElement('div');
+        content.className = 'woo-better-notice__content';
+
+        var title = document.createElement('p');
+        title.className = 'woo-better-notice__title';
+        var strong = document.createElement('strong');
+        strong.textContent = cfg.title || '';
+        var badge = document.createElement('span');
+        badge.className = 'woo-better-notice__badge';
+        badge.textContent = cfg.badge || '';
+        title.appendChild(strong);
+        title.appendChild(badge);
+
+        var body = document.createElement('p');
+        body.textContent = message || 'Erro. Tente novamente.';
+
+        content.appendChild(title);
+        content.appendChild(body);
+        card.appendChild(content);
+
+        var close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'notice-dismiss woo-better-shipping-error-card__close';
+        var sr = document.createElement('span');
+        sr.className = 'screen-reader-text';
+        sr.textContent = cfg.close || 'Fechar';
+        close.appendChild(sr);
+        card.appendChild(close);
+
+        mountCard(card);
     }
 
     function start(btn) {
@@ -66,7 +126,6 @@
 
         var bar = btn.querySelector('.woo-better-shipping-install-button__bar');
         var text = btn.querySelector('.woo-better-shipping-install-button__text');
-        var action = btn.getAttribute('data-install-action');
 
         if (bar) {
             bar.style.transition = 'width 6s linear';
@@ -76,7 +135,7 @@
         var formData = new FormData();
         formData.append('action', WooBetterShippingInstall.action);
         formData.append('nonce', WooBetterShippingInstall.nonce);
-        formData.append('install_action', action);
+        formData.append('install_action', btn.getAttribute('data-install-action'));
 
         fetch(WooBetterShippingInstall.ajaxurl || '/wp-admin/admin-ajax.php', {
             method: 'POST',
@@ -99,22 +158,17 @@
                 text.textContent = 'Sucesso!';
             }
 
-            showSuccessCard(action);
-
+            // O cartão de sucesso é exibido pelo shipping-simulator após o redirect.
             var redirect = data.data && data.data.redirect_url
                 ? data.data.redirect_url
                 : WooBetterShippingInstall.fallback_url;
 
             setTimeout(function () {
                 window.location.href = redirect;
-            }, 4000);
-        }).catch(function (err) {
-            btn.classList.remove('is-loading');
-            btn.classList.add('is-error');
-            btn.removeAttribute('data-installing');
-            if (text) {
-                text.textContent = (err && err.message) ? err.message : 'Erro. Tente novamente.';
-            }
+            }, 1500);
+        }).catch(function () {
+            // O erro é exibido como cartão após o refresh (via transient).
+            window.location.reload();
         });
     }
 
@@ -124,9 +178,9 @@
             return;
         }
 
-        var close = target.closest('.woo-better-shipping-success-card__close');
+        var close = target.closest('.woo-better-shipping-success-card__close, .woo-better-shipping-error-card__close');
         if (close) {
-            closeCard(close.closest('.woo-better-shipping-success-card'));
+            closeCard(close.closest('.woo-better-shipping-success-card, .woo-better-shipping-error-card'));
             return;
         }
 
@@ -136,4 +190,13 @@
             start(btn);
         }
     });
+
+    // Exibe o cartão (sucesso ou erro) ao carregar a página.
+    if (window.WooBetterShippingInstall && WooBetterShippingInstall.show_on_load) {
+        if ('error' === WooBetterShippingInstall.show_on_load) {
+            showErrorCard(WooBetterShippingInstall.error_message);
+        } else {
+            showSuccessCard(WooBetterShippingInstall.show_on_load);
+        }
+    }
 })();

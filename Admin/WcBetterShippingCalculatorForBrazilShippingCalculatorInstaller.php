@@ -31,11 +31,15 @@ class WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller
 
     private const SHIPPING_SETTINGS_TAB = 'wc-shipping-simulator-calculadora';
 
+    /** Transient de erro exibido pelo woo-better após o refresh. */
+    public const ERROR_TRANSIENT = 'woo_better_calc_shipping_update_error';
+
     public function handle(): void
     {
         check_ajax_referer(self::NONCE_ACTION, 'nonce');
 
         if (! current_user_can('install_plugins')) {
+            set_transient(self::ERROR_TRANSIENT, 'Unauthorized', 5 * MINUTE_IN_SECONDS);
             wp_send_json_error(array('message' => 'Unauthorized'), 403);
         }
 
@@ -44,6 +48,7 @@ class WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller
         $result = $this->run_action($action);
 
         if (is_wp_error($result)) {
+            set_transient(self::ERROR_TRANSIENT, $result->get_error_message(), 5 * MINUTE_IN_SECONDS);
             wp_send_json_error(array('message' => $result->get_error_message()), 400);
         }
 
@@ -51,11 +56,16 @@ class WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller
         if (! is_plugin_active(self::SHIPPING_PLUGIN_FILE)) {
             $activation = activate_plugin(self::SHIPPING_PLUGIN_FILE);
             if (is_wp_error($activation)) {
+                set_transient(self::ERROR_TRANSIENT, $activation->get_error_message(), 5 * MINUTE_IN_SECONDS);
                 wp_send_json_error(array('message' => $activation->get_error_message()), 400);
             }
         }
 
         $version = $this->get_shipping_version();
+
+        // O shipping-simulator lê este transient após o redirect para exibir
+        // o cartão de sucesso uma única vez (some no F5).
+        set_transient('wc_shipping_simulator_success', $action, 5 * MINUTE_IN_SECONDS);
 
         wp_send_json_success(array(
             'version'      => $version,
@@ -98,13 +108,11 @@ class WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller
             'action'       => self::AJAX_ACTION,
             'nonce'        => wp_create_nonce(self::NONCE_ACTION),
             'fallback_url' => admin_url('plugins.php'),
+            'show_on_load' => '',
             'success'      => array(
-                'title'    => __('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
-                'badge'    => __('Sucesso', 'woo-better-shipping-calculator-for-brazil'),
-                'close'    => __('Fechar', 'woo-better-shipping-calculator-for-brazil'),
-                'install'  => __('O plugin Simulador de Frete para WooCommerce foi instalado e ativado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
-                'upgrade'  => __('O plugin Simulador de Frete para WooCommerce foi atualizado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
-                'activate' => __('O plugin Simulador de Frete para WooCommerce foi ativado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+                'title' => '',
+                'badge' => '',
+                'close' => '',
             ),
         ));
     }

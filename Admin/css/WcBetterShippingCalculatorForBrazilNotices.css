@@ -74,6 +74,19 @@
     transition: opacity 0.3s ease;
 }
 
+.woo-better-notice--error {
+    border-left-color: #d63638;
+}
+
+.woo-better-notice--error .woo-better-notice__badge {
+    background: #d63638;
+    color: #fff;
+}
+
+.woo-better-shipping-error-card {
+    transition: opacity 0.3s ease;
+}
+
 /* ── Tela de migração (página oculta) ── */
 .woo-better-shipping-migration {
     max-width: 760px;
