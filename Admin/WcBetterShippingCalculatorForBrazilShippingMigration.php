@@ -350,7 +350,13 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
 
         $is_installed = $this->is_shipping_plugin_installed();
 
-        $action_label = __('Continuar utilizando Recursos do Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil');
+        $action_label = $is_installed
+            ? __('Continuar utilizando Recursos do Simulador de Frete', 'woo-better-shipping-calculator-for-brazil')
+            : __('Continuar utilizando Recursos do Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil');
+
+        $badge = $is_installed
+            ? __('Sugestão', 'woo-better-shipping-calculator-for-brazil')
+            : __('Migração', 'woo-better-shipping-calculator-for-brazil');
 
         $nonce    = wp_create_nonce(self::NONCE_ACTION);
         $icon_url = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.gif';
@@ -362,7 +368,7 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             <div class="woo-better-notice__content">
                 <p class="woo-better-notice__title">
                     <strong><?php esc_html_e('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
-                    <span class="woo-better-notice__badge"><?php esc_html_e('Migração', 'woo-better-shipping-calculator-for-brazil'); ?></span>
+                    <span class="woo-better-notice__badge"><?php echo esc_html($badge); ?></span>
                 </p>
                 <p>
                     <?php if ( $is_installed ) : ?>
@@ -537,6 +543,7 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             'action'       => WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::AJAX_ACTION,
             'nonce'        => wp_create_nonce(WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::NONCE_ACTION),
             'fallback_url' => admin_url('plugins.php'),
+            'icon_url'     => WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.gif',
             'show_on_load' => $show_on_load,
             'error_message' => $error_message,
             'success'      => array(
