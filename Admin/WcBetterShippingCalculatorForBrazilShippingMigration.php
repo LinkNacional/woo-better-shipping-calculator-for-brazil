@@ -489,7 +489,7 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
 
         $on_migration_screen = $this->is_migration_screen();
 
-        $success = get_transient('woo_better_calc_shipping_update_success');
+        $success = get_transient(WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::SUCCESS_TRANSIENT);
         $error   = get_transient(WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::ERROR_TRANSIENT);
 
         $show_notice = $on_migration_screen
@@ -529,7 +529,7 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             delete_transient(WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::ERROR_TRANSIENT);
         } elseif (false !== $success) {
             $show_on_load = (string) $success;
-            delete_transient('woo_better_calc_shipping_update_success');
+            delete_transient(WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::SUCCESS_TRANSIENT);
         }
 
         wp_localize_script('woo-better-shipping-install', 'WooBetterShippingInstall', array(
@@ -540,10 +540,12 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             'show_on_load' => $show_on_load,
             'error_message' => $error_message,
             'success'      => array(
-                'title'   => __('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
-                'badge'   => __('Sucesso', 'woo-better-shipping-calculator-for-brazil'),
-                'close'   => __('Fechar', 'woo-better-shipping-calculator-for-brazil'),
-                'upgrade' => __('O plugin Campos Checkout Brasileiro para WooCommerce foi atualizado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+                'title'    => __('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
+                'badge'    => __('Sucesso', 'woo-better-shipping-calculator-for-brazil'),
+                'close'    => __('Fechar', 'woo-better-shipping-calculator-for-brazil'),
+                'install'  => __('O plugin Simulador de Frete para WooCommerce foi instalado e ativado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+                'upgrade'  => __('O plugin Simulador de Frete para WooCommerce foi atualizado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+                'activate' => __('O plugin Simulador de Frete para WooCommerce foi ativado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
             ),
             'error'        => array(
                 'title' => __('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
