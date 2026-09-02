@@ -1,4 +1,4 @@
-=== Fields for Brazilian Checkout for WooCommerce ===
+=== Brazilian Checkout Fields for WooCommerce ===
 Contributors: LinkNacional, luizbills
 Donate link:
 Tags: woocommerce, checkout, CPF, CNPJ, CEP
@@ -74,7 +74,7 @@ When you need help, please create a topic in the [Plugin Support Forum](https://
 == Installation ==
 
 1.  Access your WordPress admin and go to **Plugins > Add New**.
-2.  Search for "Fields for Brazilian Checkout for WooCommerce".
+2.  Search for "Brazilian Checkout Fields for WooCommerce".
 3.  Find the plugin, click "Install Now" and then "Activate".
 4.  Done! No additional configuration is needed, but we recommend visiting the plugin settings.
 

@@ -167,6 +167,45 @@
     font-size: 12px;
 }
 
+.woo-better-shipping-install-button {
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.woo-better-shipping-install-button__bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background: #2e7d32;
+    z-index: 0;
+}
+
+.woo-better-shipping-install-button__text {
+    position: relative;
+    z-index: 1;
+}
+
+.woo-better-shipping-install-button.is-loading {
+    background: #e8f5e9 !important;
+    border-color: #2e7d32 !important;
+    color: #1e4620 !important;
+    cursor: progress !important;
+}
+
+.woo-better-shipping-install-button.is-success {
+    background: #c8e6c9 !important;
+    border-color: #2e7d32 !important;
+    color: #1b5e20 !important;
+}
+
+.woo-better-shipping-install-button.is-error {
+    background: #ffebee !important;
+    border-color: #c62828 !important;
+    color: #b71c1c !important;
+}
+
 @media (max-width: 600px) {
     .woo-better-shipping-migration__actions {
         flex-direction: column !important;

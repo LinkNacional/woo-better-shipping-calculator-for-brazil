@@ -69,7 +69,11 @@ class WcBetterShippingCalculatorForBrazilActivator {
 		if (!is_plugin_active('woocommerce/woocommerce.php')) {
 			// Apenas mostrar aviso, não bloquear ativação pois pode ser ativado depois
 			add_action('admin_notices', function() {
-				echo '<div class="error"><p><strong>Fields for Brazilian Checkout for WooCommerce:</strong> Este plugin requer o WooCommerce para funcionar corretamente.</p></div>';
+				$pagenow = isset($GLOBALS['pagenow']) ? $GLOBALS['pagenow'] : '';
+				if (in_array($pagenow, array('update.php', 'update-core.php', 'update-core-network.php'), true)) {
+					return;
+				}
+				echo '<div class="error"><p><strong>' . esc_html__('Brazilian Checkout Fields for WooCommerce', 'woo-better-shipping-calculator-for-brazil') . ':</strong> ' . esc_html__('Este plugin requer o WooCommerce para funcionar corretamente.', 'woo-better-shipping-calculator-for-brazil') . '</p></div>';
 			});
 		}
 		
