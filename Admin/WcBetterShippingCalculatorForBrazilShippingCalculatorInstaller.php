@@ -98,6 +98,14 @@ class WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller
             'action'       => self::AJAX_ACTION,
             'nonce'        => wp_create_nonce(self::NONCE_ACTION),
             'fallback_url' => admin_url('plugins.php'),
+            'success'      => array(
+                'title'    => __('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
+                'badge'    => __('Sucesso', 'woo-better-shipping-calculator-for-brazil'),
+                'close'    => __('Fechar', 'woo-better-shipping-calculator-for-brazil'),
+                'install'  => __('O plugin Simulador de Frete para WooCommerce foi instalado e ativado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+                'upgrade'  => __('O plugin Simulador de Frete para WooCommerce foi atualizado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+                'activate' => __('O plugin Simulador de Frete para WooCommerce foi ativado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+            ),
         ));
     }
 
