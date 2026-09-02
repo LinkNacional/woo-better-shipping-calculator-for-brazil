@@ -13,7 +13,7 @@
  * @package           WcBetterShippingCalculatorForBrazil
  *
  * @wordpress-plugin
- * Plugin Name:       Brazilian Checkout Fields for WooCommerce
+ * Plugin Name:       Campos Checkout Brasileiro para WooCommerce
  * Plugin URI:        https://www.linknacional.com.br/wordpress
  * Description:       Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce.
  * Version:           5.0.0
