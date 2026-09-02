@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Tela de aviso sobre a migração dos recursos da "Calculadora de Frete"
- * para o plugin "Shipping Simulator for WooCommerce".
+ * para o plugin "Simulador de Frete para WooCommerce".
  *
  * Exibida uma única vez quando o plugin é atualizado para uma versão
  * superior a 4.17.1. Nesta etapa NÃO há migração de dados — apenas
@@ -292,7 +292,7 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
                     <a href="<?php echo esc_url($close_url); ?>" class="button button-secondary button-hero"><?php esc_html_e('Agora não', 'woo-better-shipping-calculator-for-brazil'); ?></a>
 
                     <?php if ( $shipping_plugin_active ) : ?>
-                        <p class="woo-better-shipping-migration__installed">✅ <?php esc_html_e('Shipping Simulator for WooCommerce já está ativo. Tudo pronto!', 'woo-better-shipping-calculator-for-brazil'); ?></p>
+                        <p class="woo-better-shipping-migration__installed">✅ <?php esc_html_e('Simulador de Frete para WooCommerce já está ativo. Tudo pronto!', 'woo-better-shipping-calculator-for-brazil'); ?></p>
                     <?php else : ?>
                         <button type="button" class="button button-primary button-hero woo-better-shipping-install-button" data-install-action="<?php echo $shipping_plugin_installed ? 'activate' : 'install'; ?>">
                             <span class="woo-better-shipping-install-button__bar" aria-hidden="true"></span>
@@ -352,11 +352,11 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         ?>
         <div class="notice notice-info is-dismissible woo-better-notice woo-better-notice--brand" data-dismissible="woo-better-shipping-migration-notice" data-action="<?php echo esc_attr(self::AJAX_ACTION); ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
             <div class="woo-better-notice__icon">
-                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Brazilian Checkout Fields for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?>">
+                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?>">
             </div>
             <div class="woo-better-notice__content">
                 <p class="woo-better-notice__title">
-                    <strong><?php esc_html_e('Brazilian Checkout Fields for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
+                    <strong><?php esc_html_e('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
                     <span class="woo-better-notice__badge"><?php esc_html_e('Migração', 'woo-better-shipping-calculator-for-brazil'); ?></span>
                 </p>
                 <p>
@@ -605,26 +605,26 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         $is_installed = $this->is_shipping_plugin_installed();
 
         $action_label = $is_installed
-            ? __('Ativar Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil')
-            : __('Instalar Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil');
+            ? __('Ativar Simulador de Frete para WooCommerce', 'woo-better-shipping-calculator-for-brazil')
+            : __('Instalar Simulador de Frete para WooCommerce', 'woo-better-shipping-calculator-for-brazil');
 
         $nonce    = wp_create_nonce(self::NONCE_SUGGESTION_ACTION);
         $icon_url = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.gif';
         ?>
         <div class="notice notice-info is-dismissible woo-better-notice woo-better-notice--brand" data-dismissible="woo-better-install-suggestion" data-action="<?php echo esc_attr(self::AJAX_SUGGESTION_ACTION); ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
             <div class="woo-better-notice__icon">
-                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Brazilian Checkout Fields for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?>">
+                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?>">
             </div>
             <div class="woo-better-notice__content">
                 <p class="woo-better-notice__title">
-                    <strong><?php esc_html_e('Brazilian Checkout Fields for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
+                    <strong><?php esc_html_e('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
                     <span class="woo-better-notice__badge"><?php esc_html_e('Sugestão', 'woo-better-shipping-calculator-for-brazil'); ?></span>
                 </p>
                 <p>
                     <?php if ( $is_installed ) : ?>
-                        <?php esc_html_e('Os recursos da Calculadora de Frete agora fazem parte do plugin Shipping Simulator for WooCommerce. Ative-o para usar a calculadora de frete nas páginas de produto e carrinho, frete grátis e demais recursos.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                        <?php esc_html_e('Os recursos da Calculadora de Frete agora fazem parte do plugin Simulador de Frete para WooCommerce. Ative-o para usar a calculadora de frete nas páginas de produto e carrinho, frete grátis e demais recursos.', 'woo-better-shipping-calculator-for-brazil'); ?>
                     <?php else : ?>
-                        <?php esc_html_e('Os recursos da Calculadora de Frete agora fazem parte do plugin Shipping Simulator for WooCommerce. Instale-o para usar a calculadora de frete nas páginas de produto e carrinho, frete grátis e demais recursos.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                        <?php esc_html_e('Os recursos da Calculadora de Frete agora fazem parte do plugin Simulador de Frete para WooCommerce. Instale-o para usar a calculadora de frete nas páginas de produto e carrinho, frete grátis e demais recursos.', 'woo-better-shipping-calculator-for-brazil'); ?>
                     <?php endif; ?>
                 </p>
                 <button type="button" class="button button-primary woo-better-shipping-install-button" data-install-action="<?php echo $is_installed ? 'activate' : 'install'; ?>">
@@ -716,19 +716,19 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         ?>
         <div class="notice notice-warning is-dismissible woo-better-notice woo-better-notice--update" data-dismissible="woo-better-shipping-update" data-action="<?php echo esc_attr(self::AJAX_SHIPPING_UPDATE_ACTION); ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
             <div class="woo-better-notice__icon">
-                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Brazilian Checkout Fields for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?>">
+                <img src="<?php echo esc_url($icon_url); ?>" alt="<?php esc_attr_e('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?>">
             </div>
             <div class="woo-better-notice__content">
                 <p class="woo-better-notice__title">
-                    <strong><?php esc_html_e('Brazilian Checkout Fields for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
+                    <strong><?php esc_html_e('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
                     <span class="woo-better-notice__badge"><?php esc_html_e('Atualização', 'woo-better-shipping-calculator-for-brazil'); ?></span>
                 </p>
                 <p>
-                    <?php esc_html_e('O plugin Shipping Simulator for WooCommerce está desatualizado. Atualize-o para ter acesso aos novos recursos da calculadora de frete.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                    <?php esc_html_e('O plugin Simulador de Frete para WooCommerce está desatualizado. Atualize-o para ter acesso aos novos recursos da calculadora de frete.', 'woo-better-shipping-calculator-for-brazil'); ?>
                 </p>
                 <button type="button" class="button button-primary woo-better-shipping-install-button" data-install-action="upgrade">
                     <span class="woo-better-shipping-install-button__bar" aria-hidden="true"></span>
-                    <span class="woo-better-shipping-install-button__text"><?php esc_html_e('Atualizar Shipping Simulator for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></span>
+                    <span class="woo-better-shipping-install-button__text"><?php esc_html_e('Atualizar Simulador de Frete para WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></span>
                 </button>
             </div>
             <button type="button" class="notice-dismiss"><span class="screen-reader-text"><?php esc_html_e('Dispensar este aviso.', 'woo-better-shipping-calculator-for-brazil'); ?></span></button>

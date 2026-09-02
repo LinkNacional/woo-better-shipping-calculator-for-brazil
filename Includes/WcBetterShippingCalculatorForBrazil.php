@@ -278,7 +278,7 @@ class WcBetterShippingCalculatorForBrazil
             ?>
             <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
                 <div style="height: 100%; padding: 10px;">
-                    <strong style="font-size: 18px;">🚀 <?php esc_html_e('Brazilian Checkout Fields for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
+                    <strong style="font-size: 18px;">🚀 <?php esc_html_e('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
                     
                     <p style="font-size: 14px; margin-top: 10px;">
                         <strong>Agora é oficial:</strong> somos a melhor alternativa ao "Brazilian Fields"! Nossos campos de checkout agora são compatíveis com shortcodes e temas em blocos, com integração total ao Melhor Envio, Correios, entre outros.
@@ -306,7 +306,11 @@ class WcBetterShippingCalculatorForBrazil
             ?>
             <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
                 <div style="height: 100%; padding: 10px;">
-                    <strong style="font-size: 18px;">🚀 <?php echo esc_html( sprintf( __( 'Brazilian Checkout Fields for WooCommerce — Atualização v%s', 'woo-better-shipping-calculator-for-brazil' ), $version ) ); ?></strong>
+                    <strong style="font-size: 18px;">🚀 <?php echo esc_html( sprintf(
+                        /* translators: %s: versão do plugin */
+                        __( 'Campos Checkout Brasileiro para WooCommerce — Atualização v%s', 'woo-better-shipping-calculator-for-brazil' ),
+                        $version
+                    ) ); ?></strong>
 
                     <div style="margin-top: 10px;">
                         <p style="font-size: 14px; margin-top: 8px;">
@@ -2039,7 +2043,7 @@ class WcBetterShippingCalculatorForBrazil
         if (!$this->validate_cnpj($clean)) {
             throw new \Automattic\WooCommerce\StoreApi\Exceptions\RouteException(
                 'woo_better_calc_cnpj_invalid',
-                __('CNPJ inválido. Verifique os números informados.', 'woo-better-shipping-calculator-for-brazil'),
+                esc_html__('CNPJ inválido. Verifique os números informados.', 'woo-better-shipping-calculator-for-brazil'),
                 400
             );
         }
@@ -2049,7 +2053,7 @@ class WcBetterShippingCalculatorForBrazil
         if (!empty($api_error)) {
             throw new \Automattic\WooCommerce\StoreApi\Exceptions\RouteException(
                 'woo_better_calc_cnpj_invalid',
-                $api_error,
+                esc_html($api_error),
                 400
             );
         }

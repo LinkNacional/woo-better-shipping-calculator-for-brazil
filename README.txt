@@ -1,4 +1,4 @@
-=== Brazilian Checkout Fields for WooCommerce ===
+=== Campos Checkout Brasileiro para WooCommerce ===
 Contributors: LinkNacional, luizbills
 Donate link:
 Tags: woocommerce, checkout, CPF, CNPJ, CEP

@@ -2,7 +2,7 @@
     <img src="Includes/assets/images/icon-256x256.gif" alt="Logo do Projeto" width="200" />
 </div>
 
-# Brazilian Checkout Fields for WooCommerce
+# Campos Checkout Brasileiro para WooCommerce
 
 * Contribuidores: LinkNacional, luizbills
 * Link para doações: [LinkNacional](https://www.linknacional.com.br/)
