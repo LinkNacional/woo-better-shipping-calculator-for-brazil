@@ -2,7 +2,7 @@
     <img src="Includes/assets/images/icon-256x256.gif" alt="Logo do Projeto" width="200" />
 </div>
 
-# Fields for Brazilian Checkout for WooCommerce
+# Brazilian Checkout Fields for WooCommerce
 
 * Contribuidores: LinkNacional, luizbills
 * Link para doações: [LinkNacional](https://www.linknacional.com.br/)
@@ -43,7 +43,7 @@ Plugin de **campos brasileiros para o checkout do WooCommerce**, facilitando e m
 ## Como instalar?
 
 1. Acesse o painel de administração do WordPress e vá para **Plugins > Adicionar Novo**.
-2. Pesquise por "Fields for Brazilian Checkout for WooCommerce".
+2. Pesquise por "Brazilian Checkout Fields for WooCommerce".
 3. Encontre o plugin, clique em **Instalar Agora** e depois em **Ativar**.
 4. Pronto! Nenhuma configuração adicional é necessária.
 

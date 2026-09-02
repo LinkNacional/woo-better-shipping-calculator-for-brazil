@@ -8,8 +8,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilCheckoutSettings;
+use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilShippingCalculatorSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdmin;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilShippingMigration;
+use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller;
+use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilMigrationEmail;
 use Lkn\WcBetterShippingCalculatorForBrazil\PublicView\WcBetterShippingCalculatorForBrazilPublic;
 use Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema;
 use Automattic\WooCommerce\StoreApi\Schemas\V1\CartSchema;
@@ -151,6 +154,16 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('admin_notices', $shipping_migration, 'maybe_show_shipping_update_notice');
         $this->loader->add_action('wp_ajax_woo_better_calc_dismiss_shipping_update', $shipping_migration, 'dismiss_shipping_update_notice');
 
+        // Instala/atualiza/ativa o Shipping Simulator via AJAX (card "Calculadora de Frete").
+        $shipping_installer = new WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller();
+        $this->loader->add_action('admin_enqueue_scripts', $shipping_installer, 'enqueue_assets');
+        $this->loader->add_action('wp_ajax_' . WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::AJAX_ACTION, $shipping_installer, 'handle');
+
+        // E-mail de aviso de migração (disparado via cron após detecção no init).
+        $migration_email = new WcBetterShippingCalculatorForBrazilMigrationEmail();
+        $this->loader->add_action('init', $migration_email, 'maybe_schedule_email');
+        $this->loader->add_action(WcBetterShippingCalculatorForBrazilMigrationEmail::CRON_HOOK, $migration_email, 'send_migration_email');
+
         // detect state from postcode
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100, 1);
 
@@ -199,10 +212,26 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_loaded', $this, 'register_funnelkit_stub_class', PHP_INT_MAX);
     }
 
+    /**
+     * Verifica se a página admin atual é de atualização/instalação de plugins.
+     *
+     * @return bool
+     */
+    private function is_plugin_update_page()
+    {
+        $pagenow = isset($GLOBALS['pagenow']) ? $GLOBALS['pagenow'] : '';
+        return in_array($pagenow, array('update.php', 'update-core.php', 'update-core-network.php'), true);
+    }
+
     public function lkn_show_admin_notice()
     {
         // Verifica se é a área admin
         if (!is_admin()) {
+            return;
+        }
+
+        // Não exibe notificações na página de atualização/instalação de plugins.
+        if ($this->is_plugin_update_page()) {
             return;
         }
 
@@ -249,7 +278,7 @@ class WcBetterShippingCalculatorForBrazil
             ?>
             <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
                 <div style="height: 100%; padding: 10px;">
-                    <strong style="font-size: 18px;">🚀 Fields for Brazilian Checkout for WooCommerce</strong>
+                    <strong style="font-size: 18px;">🚀 <?php esc_html_e('Brazilian Checkout Fields for WooCommerce', 'woo-better-shipping-calculator-for-brazil'); ?></strong>
                     
                     <p style="font-size: 14px; margin-top: 10px;">
                         <strong>Agora é oficial:</strong> somos a melhor alternativa ao "Brazilian Fields"! Nossos campos de checkout agora são compatíveis com shortcodes e temas em blocos, com integração total ao Melhor Envio, Correios, entre outros.
@@ -277,7 +306,7 @@ class WcBetterShippingCalculatorForBrazil
             ?>
             <div class="notice notice-info is-dismissible" data-dismissible="woo-better-calc-notice">
                 <div style="height: 100%; padding: 10px;">
-                    <strong style="font-size: 18px;">🚀 Fields for Brazilian Checkout for WooCommerce — Atualização v<?php echo esc_html( $version ); ?></strong>
+                    <strong style="font-size: 18px;">🚀 <?php echo esc_html( sprintf( __( 'Brazilian Checkout Fields for WooCommerce — Atualização v%s', 'woo-better-shipping-calculator-for-brazil' ), $version ) ); ?></strong>
 
                     <div style="margin-top: 10px;">
                         <p style="font-size: 14px; margin-top: 8px;">
@@ -465,6 +494,8 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_add_woo_better_checkout_settings_page($settings)
     {
+        // Aba "Calculadora de Frete" deve vir antes de "Campos Brasileiros".
+        $settings[] = new WcBetterShippingCalculatorForBrazilShippingCalculatorSettings();
         $settings[] = new WcBetterShippingCalculatorForBrazilCheckoutSettings();
         return $settings;
     }
