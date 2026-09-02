@@ -489,10 +489,15 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
 
         $on_migration_screen = $this->is_migration_screen();
 
+        $success = get_transient('woo_better_calc_shipping_update_success');
+        $error   = get_transient(WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::ERROR_TRANSIENT);
+
         $show_notice = $on_migration_screen
             || $this->should_show_final_notice()
             || $this->should_show_suggestion()
-            || $this->should_show_shipping_update_notice();
+            || $this->should_show_shipping_update_notice()
+            || false !== $success
+            || false !== $error;
 
         if ( ! $show_notice ) {
             return;
@@ -514,18 +519,36 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             true
         );
 
+        // Consome os transients imediatamente: a mensagem aparece uma única vez
+        // e some ao recarregar (F5).
+        $show_on_load  = '';
+        $error_message = '';
+        if (false !== $error) {
+            $show_on_load  = 'error';
+            $error_message = (string) $error;
+            delete_transient(WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::ERROR_TRANSIENT);
+        } elseif (false !== $success) {
+            $show_on_load = (string) $success;
+            delete_transient('woo_better_calc_shipping_update_success');
+        }
+
         wp_localize_script('woo-better-shipping-install', 'WooBetterShippingInstall', array(
             'ajaxurl'      => admin_url('admin-ajax.php'),
             'action'       => WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::AJAX_ACTION,
             'nonce'        => wp_create_nonce(WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::NONCE_ACTION),
             'fallback_url' => admin_url('plugins.php'),
+            'show_on_load' => $show_on_load,
+            'error_message' => $error_message,
             'success'      => array(
-                'title'    => __('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
-                'badge'    => __('Sucesso', 'woo-better-shipping-calculator-for-brazil'),
-                'close'    => __('Fechar', 'woo-better-shipping-calculator-for-brazil'),
-                'install'  => __('O plugin Simulador de Frete para WooCommerce foi instalado e ativado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
-                'upgrade'  => __('O plugin Simulador de Frete para WooCommerce foi atualizado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
-                'activate' => __('O plugin Simulador de Frete para WooCommerce foi ativado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+                'title'   => __('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
+                'badge'   => __('Sucesso', 'woo-better-shipping-calculator-for-brazil'),
+                'close'   => __('Fechar', 'woo-better-shipping-calculator-for-brazil'),
+                'upgrade' => __('O plugin Campos Checkout Brasileiro para WooCommerce foi atualizado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+            ),
+            'error'        => array(
+                'title' => __('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
+                'badge' => __('Erro', 'woo-better-shipping-calculator-for-brazil'),
+                'close' => __('Fechar', 'woo-better-shipping-calculator-for-brazil'),
             ),
         ));
 
