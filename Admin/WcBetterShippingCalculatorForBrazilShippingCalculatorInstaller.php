@@ -111,6 +111,7 @@ class WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller
             'action'       => self::AJAX_ACTION,
             'nonce'        => wp_create_nonce(self::NONCE_ACTION),
             'fallback_url' => admin_url('plugins.php'),
+            'icon_url'     => WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.gif',
             'show_on_load' => '',
             'error_message' => '',
             'success'      => array(

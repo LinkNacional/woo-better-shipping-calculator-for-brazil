@@ -17,12 +17,8 @@
         if (!host) {
             return;
         }
+        // O cartão permanece até o usuário clicar no "x" ou recarregar (F5).
         host.insertAdjacentElement('afterend', card);
-
-        // Fecha sozinho após alguns segundos.
-        setTimeout(function () {
-            closeCard(card);
-        }, 3600);
     }
 
     function showSuccessCard(key) {
@@ -34,7 +30,15 @@
         }
 
         var card = document.createElement('div');
-        card.className = 'notice woo-better-notice woo-better-notice--success woo-better-shipping-success-card';
+        card.className = 'notice notice-info is-dismissible woo-better-notice woo-better-notice--success woo-better-shipping-success-card';
+
+        var icon = document.createElement('div');
+        icon.className = 'woo-better-notice__icon';
+        var img = document.createElement('img');
+        img.src = (window.WooBetterShippingInstall && WooBetterShippingInstall.icon_url) || '';
+        img.alt = cfg.title || '';
+        icon.appendChild(img);
+        card.appendChild(icon);
 
         var content = document.createElement('div');
         content.className = 'woo-better-notice__content';
@@ -77,7 +81,15 @@
         }
 
         var card = document.createElement('div');
-        card.className = 'notice woo-better-notice woo-better-notice--error woo-better-shipping-error-card';
+        card.className = 'notice notice-error is-dismissible woo-better-notice woo-better-notice--error woo-better-shipping-error-card';
+
+        var icon = document.createElement('div');
+        icon.className = 'woo-better-notice__icon';
+        var img = document.createElement('img');
+        img.src = (window.WooBetterShippingInstall && WooBetterShippingInstall.icon_url) || '';
+        img.alt = cfg.title || '';
+        icon.appendChild(img);
+        card.appendChild(icon);
 
         var content = document.createElement('div');
         content.className = 'woo-better-notice__content';
