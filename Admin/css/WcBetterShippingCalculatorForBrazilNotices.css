@@ -61,6 +61,19 @@
     color: #1d2327;
 }
 
+.woo-better-notice--success {
+    border-left-color: #2e7d32;
+}
+
+.woo-better-notice--success .woo-better-notice__badge {
+    background: #2e7d32;
+    color: #fff;
+}
+
+.woo-better-shipping-success-card {
+    transition: opacity 0.3s ease;
+}
+
 /* ── Tela de migração (página oculta) ── */
 .woo-better-shipping-migration {
     max-width: 760px;
@@ -170,6 +183,9 @@
 .woo-better-shipping-install-button {
     position: relative !important;
     overflow: hidden !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 .woo-better-shipping-install-button__bar {
@@ -197,7 +213,7 @@
 .woo-better-shipping-install-button.is-success {
     background: #c8e6c9 !important;
     border-color: #2e7d32 !important;
-    color: #1b5e20 !important;
+    color: #ffffff !important;
 }
 
 .woo-better-shipping-install-button.is-error {

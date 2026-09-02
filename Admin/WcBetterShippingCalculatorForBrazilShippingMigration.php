@@ -200,6 +200,11 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             return;
         }
 
+        // Não redireciona na aba "Calculadora de Frete" — o card já cobre a migração.
+        if ( $this->is_shipping_calculator_settings_tab() ) {
+            return;
+        }
+
         // Só exibe a partir de uma versão superior a 4.17.1.
         if ( ! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')
             || ! version_compare(WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION, self::VERSION_THRESHOLD, '>') ) {
@@ -392,6 +397,10 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             return false;
         }
 
+        if ( $this->is_shipping_calculator_settings_tab() ) {
+            return false;
+        }
+
         if ( ! current_user_can('manage_options') ) {
             return false;
         }
@@ -436,6 +445,22 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
     {
         $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
         return self::SCREEN_SLUG === $page;
+    }
+
+    /**
+     * Verifica se a página atual é a aba "Calculadora de Frete" (o card
+     * fake). Nela as notificações de instalar/atualizar não devem aparecer,
+     * pois o próprio card já cobre esses fluxos.
+     *
+     * @since 5.0.0
+     * @return bool
+     */
+    private function is_shipping_calculator_settings_tab(): bool
+    {
+        $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
+        $tab  = isset($_GET['tab']) ? sanitize_text_field(wp_unslash($_GET['tab'])) : '';
+
+        return 'wc-settings' === $page && 'wc-better-calc-shipping-calculator' === $tab;
     }
 
     /**
@@ -494,6 +519,14 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             'action'       => WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::AJAX_ACTION,
             'nonce'        => wp_create_nonce(WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::NONCE_ACTION),
             'fallback_url' => admin_url('plugins.php'),
+            'success'      => array(
+                'title'    => __('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
+                'badge'    => __('Sucesso', 'woo-better-shipping-calculator-for-brazil'),
+                'close'    => __('Fechar', 'woo-better-shipping-calculator-for-brazil'),
+                'install'  => __('O plugin Simulador de Frete para WooCommerce foi instalado e ativado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+                'upgrade'  => __('O plugin Simulador de Frete para WooCommerce foi atualizado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+                'activate' => __('O plugin Simulador de Frete para WooCommerce foi ativado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+            ),
         ));
 
         // A tela de migração não tem aviso dispensável.
@@ -671,6 +704,10 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             return false;
         }
 
+        if ( $this->is_shipping_calculator_settings_tab() ) {
+            return false;
+        }
+
         if ( ! current_user_can('manage_options') ) {
             return false;
         }
@@ -767,6 +804,10 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         }
 
         if ( $this->is_plugin_update_page() ) {
+            return false;
+        }
+
+        if ( $this->is_shipping_calculator_settings_tab() ) {
             return false;
         }
 
