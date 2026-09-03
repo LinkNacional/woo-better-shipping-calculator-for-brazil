@@ -1,4 +1,4 @@
-name: Beta release - deploy to WordPress.org (manual)
+name: Release v4 - deploy to WordPress.org (manual)
 
 on:
   workflow_dispatch:

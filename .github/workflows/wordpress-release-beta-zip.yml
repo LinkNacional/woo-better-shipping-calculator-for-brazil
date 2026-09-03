@@ -1,10 +1,10 @@
-name: Beta release - build zip (manual)
+name: Release v4 - build zip (manual)
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Versão/tag da release beta (ex.: 4.17.2)'
+        description: 'Versão/tag da release (ex.: 4.17.2)'
         required: true
         default: '4.17.2'
 
