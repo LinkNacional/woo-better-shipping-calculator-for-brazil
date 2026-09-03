@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilWcSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilCheckoutSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdmin;
+use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilBetaNotice;
 use Lkn\WcBetterShippingCalculatorForBrazil\PublicView\WcBetterShippingCalculatorForBrazilPublic;
 use Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema;
 use Automattic\WooCommerce\StoreApi\Schemas\V1\CartSchema;
@@ -110,7 +111,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '4.17.1';
+            $this->version = '4.17.2';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -206,6 +207,13 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_woo_better_calc_dismiss_notice', $this, 'lkn_dismiss_admin_notice');
         $this->loader->add_action('wp_ajax_woo_better_calc_update_cache_token', $this, 'lkn_update_cache_token');
 
+        // Aviso de lançamento da versão beta (instala a v5.0.0 a partir do GitHub).
+        $beta_notice = new WcBetterShippingCalculatorForBrazilBetaNotice();
+        $this->loader->add_action('admin_enqueue_scripts', $beta_notice, 'enqueue_assets');
+        $this->loader->add_action('admin_notices', $beta_notice, 'maybe_render_notice');
+        $this->loader->add_action('wp_ajax_woo_better_calc_dismiss_beta_notice', $beta_notice, 'dismiss_notice');
+        $this->loader->add_action('wp_ajax_woo_better_calc_install_beta', $beta_notice, 'install_beta');
+
         // Remover erros de validação de CPF/CNPJ quando país não é BR
         $this->loader->add_action('woocommerce_after_checkout_validation', $this, 'lkn_disabled_require_field', 10, 2);
 
@@ -275,7 +283,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '4.17.0', '4.16.12', '4.16.11', '4.16.10', '4.16.9', '4.16.8', '4.16.7', '4.16.6', '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1', '4.16.0' );
+            $old_versions   = array( '4.17.1', '4.17.0', '4.16.12', '4.16.11', '4.16.10', '4.16.9', '4.16.8', '4.16.7', '4.16.6', '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {

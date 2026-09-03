@@ -1,0 +1,26 @@
+.woo-better-beta-notice{align-items:flex-start;border-left:4px solid transparent;display:flex;gap:14px;padding:16px}
+.woo-better-beta-notice--brand{border-left-color:#5f3dc4}
+.woo-better-beta-notice__icon{flex:0 0 auto;height:40px;width:40px}
+.woo-better-beta-notice__icon img{display:block;height:40px;width:40px}
+.woo-better-beta-notice__content{flex:1 1 auto}
+.woo-better-beta-notice__content p{margin:0 0 12px}
+.woo-better-beta-notice__title{align-items:center;display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px}
+.woo-better-beta-notice__badge{border-radius:10px;display:inline-block;font-size:11px;font-weight:600;padding:2px 8px}
+.woo-better-beta-notice--brand .woo-better-beta-notice__badge{background:#5f3dc4;color:#fff}
+.woo-better-beta-notice__beta-note{color:#6c757d;font-size:12px}
+.woo-better-beta-notice__beta-note a{color:#2271b1;text-decoration:underline}
+.woo-better-beta-notice__features{margin:0 0 32px;padding-left:20px}
+.woo-better-beta-notice__features li{margin:0 0 4px}
+
+.woo-better-beta-install-button{align-items:center!important;display:inline-flex!important;justify-content:center!important;overflow:hidden!important;position:relative!important}
+.woo-better-beta-install-button__bar{background:#2e7d32;bottom:0;left:0;position:absolute;top:0;width:0;z-index:0}
+.woo-better-beta-install-button__text{position:relative;z-index:1}
+.woo-better-beta-install-button.is-loading{background:#e8f5e9!important;border-color:#2e7d32!important;color:#1e4620!important;cursor:progress!important}
+.woo-better-beta-install-button.is-success{background:#c8e6c9!important;border-color:#2e7d32!important;color:#fff!important}
+.woo-better-beta-install-button.is-error{background:#ffebee!important;border-color:#c62828!important;color:#b71c1c!important}
+
+.woo-better-beta-card--success{border-left-color:#2e7d32}
+.woo-better-beta-card--success .woo-better-beta-notice__badge{background:#2e7d32;color:#fff}
+.woo-better-beta-card--error{border-left-color:#d63638}
+.woo-better-beta-card--error .woo-better-beta-notice__badge{background:#d63638;color:#fff}
+.woo-better-beta-success-card,.woo-better-beta-error-card{position:relative;transition:opacity .3s ease}

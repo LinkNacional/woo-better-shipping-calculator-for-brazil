@@ -1,23 +1,28 @@
-name: Generate new release for plugin
+name: Beta release - build zip (manual)
 
 on:
-  pull_request:
-    types: [ closed ]
-    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão/tag da release beta (ex.: 4.17.2)'
+        required: true
+        default: '4.17.2'
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
   PHP_VERSION: "7.4"
-  DEPLOY_TAG: "4.17.2"
+
 jobs:
-  release-build:
+  build-zip:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout branch release-candidate-beta-test
+      uses: actions/checkout@v3
+      with:
+        ref: release-candidate-beta-test
 
-    # Run composer install and generate vendor
     - name: Run composer install
       uses: php-actions/composer@v6
       with:
@@ -27,7 +32,6 @@ jobs:
         command: install
         dev: no
 
-    # Add plugin files to a root directory
     - name: Prepare plugin folder
       run: |
         mkdir -p dist
@@ -51,22 +55,12 @@ jobs:
       run: |
         mv ./build/${{ env.PLUGIN_NAME }}.zip ./dist/
 
-    # Update version tag
-    - name: Bump version and push tag
-      id: tag_version
-      uses: mathieudutour/github-tag-action@v6.2
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        custom_tag: ${{ env.DEPLOY_TAG }} # // TODO caso necessário definir a tag da release manualmente
-
-    # Generate new release
-    - name: Generate new Release
+    - name: Generate new Release (draft)
       uses: ncipollo/release-action@v1
       with:
         artifacts: "dist/${{ env.PLUGIN_NAME }}.zip"
         token: ${{ secrets.GITHUB_TOKEN }}
-        commit: "main"
+        commit: "release-candidate-beta-test"
         draft: true
-        tag: ${{ steps.tag_version.outputs.new_tag }}
-        name: Release ${{ steps.tag_version.outputs.new_tag }}
-        
+        tag: ${{ github.event.inputs.version }}
+        name: Release ${{ github.event.inputs.version }}

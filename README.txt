@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 4.17.1
+Stable tag: 4.17.2
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -148,6 +148,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 4.17.2 - 2026-09-03
+* Fix: Corrected the plugin update notification informing about a new important update scheduled for 2026-09-01.
 
 # 4.17.1 - 2026-08-21
 * Fix: CNPJ now validated for active registration status (situação cadastral ATIVA) against the Federal Revenue (BrasilAPI and ReceitaWS).

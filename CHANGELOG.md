@@ -1,3 +1,6 @@
+# 4.17.2 - 03/09/26
+* Correção: notificação de atualização do plugin informando sobre uma nova atualização importante que ocorrerá em 01/09/2026.
+
 # 4.17.1 - 21/08/26
 * Correção: CNPJ agora é validado pela situação cadastral (ATIVA) na Receita Federal (BrasilAPI e ReceitaWS).
 * Correção: CNPJ alfanumérico (IN RFB 2.229/2024) passou a ser validado pela API (fail-closed) em vez de ser aceito só pelo dígito verificador.
