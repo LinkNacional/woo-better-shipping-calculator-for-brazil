@@ -1,0 +1,66 @@
+name: Release v4 - build zip (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão/tag da release (ex.: 4.17.2)'
+        required: true
+        default: '4.17.2'
+
+env:
+  PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
+  PHP_VERSION: "7.4"
+
+jobs:
+  build-zip:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout branch release-candidate-beta-test
+      uses: actions/checkout@v3
+      with:
+        ref: release-candidate-beta-test
+
+    - name: Run composer install
+      uses: php-actions/composer@v6
+      with:
+        php_version: ${{ env.PHP_VERSION }}
+        working_dir: "."
+        args: --ignore-platform-reqs
+        command: install
+        dev: no
+
+    - name: Prepare plugin folder
+      run: |
+        mkdir -p dist
+        mkdir -p build/${{ env.PLUGIN_NAME }}
+        mv ./Admin ./Includes ./languages ./Public *.php *.txt ./build/${{ env.PLUGIN_NAME }}
+        rm -f ./build/${{ env.PLUGIN_NAME }}/wp-tests-config.php ./build/${{ env.PLUGIN_NAME }}/psalm-stubs.php
+        cp -r vendor build/${{ env.PLUGIN_NAME }}/vendor
+        find ./build -type f -exec chmod 0644 {} +
+        find ./build -type d -exec chmod 0755 {} +
+
+    - name: Archive Release
+      uses: thedoctor0/zip-release@master
+      with:
+        type: 'zip'
+        path: '.'
+        directory: 'build'
+        filename: '${{ env.PLUGIN_NAME }}.zip'
+        exclusions: '*.git* /*node_modules/* .editorconfig'
+
+    - name: Move .zip to custom location
+      run: |
+        mv ./build/${{ env.PLUGIN_NAME }}.zip ./dist/
+
+    - name: Generate new Release (draft)
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "dist/${{ env.PLUGIN_NAME }}.zip"
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit: "release-candidate-beta-test"
+        draft: true
+        tag: ${{ github.event.inputs.version }}
+        name: Release ${{ github.event.inputs.version }}
