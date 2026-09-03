@@ -17,8 +17,9 @@
         if (!host) {
             return;
         }
-        // O cartão permanece até o usuário clicar no "x" ou recarregar (F5).
-        host.insertAdjacentElement('afterend', card);
+        // Insere ANTES do .wp-header-end (junto das demais notices do admin),
+        // fora de qualquer card/wrap de conteúdo.
+        host.insertAdjacentElement('beforebegin', card);
     }
 
     function showSuccessCard(key) {

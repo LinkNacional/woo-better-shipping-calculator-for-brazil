@@ -36,6 +36,15 @@ delete_option('woo_better_calc_shipping_migration_dismissed');
 delete_option('woo_better_calc_install_suggestion_dismissed');
 delete_option('woo_better_calc_shipping_update_dismissed');
 
+// Opções do fluxo beta/rollback (4.17.x <-> 5.0.0). Removê-las na
+// desinstalação permite que uma reinstalação seja tratada como um fluxo limpo,
+// sem herdar a flag de "já dispensado" nem o estado de beta-tester.
+delete_option('woo_better_calc_beta_notice_dismissed');
+delete_option('woo_better_calc_updated_via_beta');
+delete_option('woo_better_calc_is_beta_tester');
+delete_option('woo_better_calc_rollback_result');
+delete_option('woo_better_calc_migration_email_sent');
+
 // Opções legadas da "Calculadora de Frete" (migradas para o
 // shipping-simulator-for-woocommerce). Removê-las na desinstalação garante
 // que uma reinstalação seja tratada como "usuário novo" (sugestão) em vez de
