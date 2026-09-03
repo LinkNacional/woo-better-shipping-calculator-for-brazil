@@ -10,7 +10,7 @@
 
 	function buildCard(kind, title, badge, text, closeLabel) {
 		var card = document.createElement('div');
-		card.className = 'notice is-dismissible woo-better-beta-notice woo-better-beta-card--' + kind + ' woo-better-beta-' + kind + '-card';
+		card.className = 'notice woo-better-beta-notice woo-better-beta-card--' + kind + ' woo-better-beta-' + kind + '-card';
 
 		var icon = document.createElement('div');
 		icon.className = 'woo-better-beta-notice__icon';
@@ -38,17 +38,8 @@
 		content.appendChild(titleEl);
 		content.appendChild(msg);
 
-		var close = document.createElement('button');
-		close.type = 'button';
-		close.className = 'notice-dismiss woo-better-beta-' + kind + '-card__close';
-		var sr = document.createElement('span');
-		sr.className = 'screen-reader-text';
-		sr.textContent = closeLabel || 'Fechar';
-		close.appendChild(sr);
-
 		card.appendChild(icon);
 		card.appendChild(content);
-		card.appendChild(close);
 
 		return card;
 	}
@@ -80,17 +71,6 @@
 					.catch(function () { wrapper.remove(); });
 			}
 			return;
-		}
-
-		// Fecha os cards de sucesso/erro.
-		var cardClose = target.closest('.woo-better-beta-success-card__close, .woo-better-beta-error-card__close');
-		if (cardClose) {
-			var card = cardClose.closest('.woo-better-beta-success-card, .woo-better-beta-error-card');
-			if (card && !card.classList.contains('is-closing')) {
-				card.classList.add('is-closing');
-				card.style.opacity = '0';
-				setTimeout(function () { card.remove(); }, 300);
-			}
 		}
 	});
 

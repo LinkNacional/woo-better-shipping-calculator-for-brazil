@@ -49,6 +49,13 @@ final class WcBetterShippingCalculatorForBrazilBetaNotice
     /** Transient de erro (exibido após o reload). */
     private const ERROR_TRANSIENT = 'woo_better_calc_beta_error';
 
+    /**
+     * Opção gravada pela versão 5.0.0 antes do rollback (retorno à versão
+     * anterior). Valores: 'success' ou 'error:<mensagem>'. Consumida uma única
+     * vez para exibir o cartão de sucesso/erro.
+     */
+    private const OPTION_ROLLBACK_RESULT = 'woo_better_calc_rollback_result';
+
     /** URL do zip da versão beta no GitHub. */
     private const ZIP_URL = 'https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil/releases/download/v5.0.0/woo-better-shipping-calculator-for-brazil.zip';
 
@@ -66,7 +73,11 @@ final class WcBetterShippingCalculatorForBrazilBetaNotice
         $success = get_transient(self::SUCCESS_TRANSIENT);
         $error   = get_transient(self::ERROR_TRANSIENT);
 
-        if (! $this->should_show() && false === $success && false === $error) {
+        // Resultado de um rollback concluído na requisição anterior (gravado
+        // pela 5.0.0 antes de se substituir pela 4.17.x).
+        $rollback_result = get_option(self::OPTION_ROLLBACK_RESULT, '');
+
+        if (! $this->should_show() && false === $success && false === $error && '' === $rollback_result) {
             return;
         }
 
@@ -89,14 +100,25 @@ final class WcBetterShippingCalculatorForBrazilBetaNotice
             true
         );
 
-        // Consome os transients imediatamente: o card aparece uma única vez
-        // e some ao recarregar (F5).
+        // Consome os transients e a opção de rollback imediatamente: o card
+        // aparece uma única vez e some ao recarregar (F5).
         $show_on_load  = '';
         $error_message = '';
+        $success_text  = __('A nova versão foi instalada e ativada com sucesso.', 'woo-better-shipping-calculator-for-brazil');
+
         if (false !== $error) {
             $show_on_load  = 'error';
             $error_message = (string) $error;
             delete_transient(self::ERROR_TRANSIENT);
+        } elseif ('' !== $rollback_result) {
+            if (0 === strpos($rollback_result, 'error:')) {
+                $show_on_load  = 'error';
+                $error_message = substr($rollback_result, 6);
+            } else {
+                $show_on_load = 'success';
+                $success_text = __('O plugin retornou para a versão anterior com sucesso.', 'woo-better-shipping-calculator-for-brazil');
+            }
+            delete_option(self::OPTION_ROLLBACK_RESULT);
         } elseif (false !== $success) {
             $show_on_load = 'success';
             delete_transient(self::SUCCESS_TRANSIENT);
@@ -116,7 +138,7 @@ final class WcBetterShippingCalculatorForBrazilBetaNotice
                 'title' => __('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'),
                 'badge' => __('Sucesso', 'woo-better-shipping-calculator-for-brazil'),
                 'close' => __('Fechar', 'woo-better-shipping-calculator-for-brazil'),
-                'text'  => __('A nova versão foi instalada e ativada com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+                'text'  => $success_text,
             ),
             'error' => array(
                 'title' => __('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'),
