@@ -133,7 +133,7 @@ final class WcBetterShippingCalculatorForBrazilBetaNotice
             'fallback_url'   => admin_url('plugins.php'),
             'show_on_load'   => $show_on_load,
             'error_message'  => $error_message,
-            'icon_url'       => WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.png',
+            'icon_url'       => WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/wordpressAssets/icon-256x256.gif',
             'success'        => array(
                 'title' => __('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'),
                 'badge' => __('Sucesso', 'woo-better-shipping-calculator-for-brazil'),
@@ -161,7 +161,7 @@ final class WcBetterShippingCalculatorForBrazilBetaNotice
 
         $nonce       = wp_create_nonce(self::NONCE_DISMISS);
         $plugin_name = __('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil');
-        $icon_url    = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/images/icon-256x256.png';
+        $icon_url    = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/wordpressAssets/icon-256x256.gif';
         ?>
         <div class="notice notice-info is-dismissible woo-better-beta-notice woo-better-beta-notice--brand" data-dismissible="woo-better-beta-notice" data-action="<?php echo esc_attr(self::AJAX_DISMISS); ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
             <div class="woo-better-beta-notice__icon">
