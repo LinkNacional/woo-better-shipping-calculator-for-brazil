@@ -154,6 +154,11 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('admin_notices', $shipping_migration, 'maybe_show_shipping_update_notice');
         $this->loader->add_action('wp_ajax_woo_better_calc_dismiss_shipping_update', $shipping_migration, 'dismiss_shipping_update_notice');
 
+        // Rollback para a versão anterior (apenas beta-testers).
+        $this->loader->add_filter('plugin_action_links_' . WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_BASENAME, $shipping_migration, 'add_rollback_action_link', 11, 1);
+        $this->loader->add_action('admin_enqueue_scripts', $shipping_migration, 'enqueue_rollback_assets');
+        $this->loader->add_action('wp_ajax_woo_better_calc_rollback', $shipping_migration, 'rollback');
+
         // Instala/atualiza/ativa o Shipping Simulator via AJAX (card "Calculadora de Frete").
         $shipping_installer = new WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller();
         $this->loader->add_action('admin_enqueue_scripts', $shipping_installer, 'enqueue_assets');

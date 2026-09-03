@@ -164,6 +164,62 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
     private const NONCE_SHIPPING_UPDATE_ACTION = 'woo_better_calc_dismiss_shipping_update_nonce';
 
     /**
+     * Opção setada pela versão 4.17.x (fluxo beta) antes de instalar a 5.0.0.
+     *
+     * Quando 'yes', exibe o cartão de sucesso de atualização uma única vez e
+     * reverte para 'no' imediatamente, para não ser exibida novamente.
+     *
+     * @var string
+     */
+    private const OPTION_BETA_UPDATED = 'woo_better_calc_updated_via_beta';
+
+    /**
+     * Opção persistente que marca o usuário como beta-tester (veio da 4.17.x
+     * via fluxo beta). Enquanto 'yes', exibe o link "Retornar a versão anterior"
+     * na linha de ações do plugin.
+     *
+     * @var string
+     */
+    private const OPTION_BETA_TESTER = 'woo_better_calc_is_beta_tester';
+
+    /**
+     * Ação AJAX para retornar à versão anterior (downgrade para a última
+     * versão estável do WordPress.org).
+     *
+     * @var string
+     */
+    private const AJAX_ROLLBACK = 'woo_better_calc_rollback';
+
+    /**
+     * Ação do nonce para o rollback.
+     *
+     * @var string
+     */
+    private const NONCE_ROLLBACK = 'woo_better_calc_rollback_nonce';
+
+    /**
+     * Opção que sinaliza o resultado do rollback para exibição do cartão de
+     * sucesso/erro após o redirect. Valores: 'success' ou 'error:<mensagem>'.
+     *
+     * @var string
+     */
+    private const OPTION_ROLLBACK_RESULT = 'woo_better_calc_rollback_result';
+
+    /**
+     * URL do zip da última versão estável (linha v4) no WordPress.org.
+     *
+     * @var string
+     */
+    private const ROLLBACK_PACKAGE_URL = 'https://downloads.wordpress.org/plugin/woo-better-shipping-calculator-for-brazil.zip';
+
+    /**
+     * Basename do próprio plugin (usado para reativar após o downgrade).
+     *
+     * @var string
+     */
+    private const PLUGIN_BASENAME = 'woo-better-shipping-calculator-for-brazil/wc-better-shipping-calculator-for-brazil.php';
+
+    /**
      * Registra a página de aviso como uma página admin oculta.
      *
      * @since 4.18.0
@@ -498,12 +554,21 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         $success = get_transient(WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::SUCCESS_TRANSIENT);
         $error   = get_transient(WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::ERROR_TRANSIENT);
 
+        // Flag gravada pela 4.17.x ao instalar a versão beta (5.0.0): deve
+        // exibir o cartão de sucesso de atualização uma única vez.
+        $beta_updated = 'yes' === get_option(self::OPTION_BETA_UPDATED, 'no');
+
+        // Resultado de um rollback concluído na requisição anterior.
+        $rollback_result = get_option(self::OPTION_ROLLBACK_RESULT, '');
+
         $show_notice = $on_migration_screen
             || $this->should_show_final_notice()
             || $this->should_show_suggestion()
             || $this->should_show_shipping_update_notice()
             || false !== $success
-            || false !== $error;
+            || false !== $error
+            || $beta_updated
+            || '' !== $rollback_result;
 
         if ( ! $show_notice ) {
             return;
@@ -525,14 +590,27 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             true
         );
 
-        // Consome os transients imediatamente: a mensagem aparece uma única vez
-        // e some ao recarregar (F5).
+        // Consome os transients e a flag do beta imediatamente: a mensagem
+        // aparece uma única vez e some ao recarregar (F5).
         $show_on_load  = '';
         $error_message = '';
         if (false !== $error) {
             $show_on_load  = 'error';
             $error_message = (string) $error;
             delete_transient(WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::ERROR_TRANSIENT);
+        } elseif ($beta_updated) {
+            $show_on_load = 'beta';
+            update_option(self::OPTION_BETA_UPDATED, 'no');
+            // Marca o usuário como beta-tester para exibir o link de rollback.
+            update_option(self::OPTION_BETA_TESTER, 'yes');
+        } elseif ('' !== $rollback_result) {
+            if (0 === strpos($rollback_result, 'error:')) {
+                $show_on_load  = 'error';
+                $error_message = substr($rollback_result, 6);
+            } else {
+                $show_on_load = 'rollback';
+            }
+            delete_option(self::OPTION_ROLLBACK_RESULT);
         } elseif (false !== $success) {
             $show_on_load = (string) $success;
             delete_transient(WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller::SUCCESS_TRANSIENT);
@@ -553,6 +631,8 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
                 'install'  => __('O plugin Simulador de Frete para WooCommerce foi instalado e ativado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
                 'upgrade'  => __('O plugin Simulador de Frete para WooCommerce foi atualizado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
                 'activate' => __('O plugin Simulador de Frete para WooCommerce foi ativado com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+                'beta'     => __('O plugin Campos Checkout Brasileiro para WooCommerce foi atualizado para a nova versão com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
+                'rollback' => __('O plugin Campos Checkout Brasileiro para WooCommerce retornou para a versão anterior com sucesso.', 'woo-better-shipping-calculator-for-brazil'),
             ),
             'error'        => array(
                 'title' => __('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
@@ -909,5 +989,123 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         }
 
         return version_compare($version, self::SHIPPING_PLUGIN_UPDATE_THRESHOLD, '<');
+    }
+
+    /**
+     * Verifica se o usuário é um beta-tester (veio do fluxo beta da 4.17.x).
+     *
+     * @since 5.0.0
+     * @return bool
+     */
+    private function is_beta_tester(): bool
+    {
+        return 'yes' === get_option(self::OPTION_BETA_TESTER, 'no');
+    }
+
+    /**
+     * Adiciona o link "Retornar a versão anterior" à linha de ações do plugin,
+     * apenas para usuários beta-testers.
+     *
+     * @since 5.0.0
+     * @param array $links Links de ação atuais.
+     * @return array
+     */
+    public function add_rollback_action_link($links)
+    {
+        if ( ! $this->is_beta_tester() ) {
+            return $links;
+        }
+
+        $links[] = sprintf(
+            '<a href="#" class="woo-better-rollback-link">%s</a>',
+            esc_html__('Retornar a versão anterior', 'woo-better-shipping-calculator-for-brazil')
+        );
+
+        return $links;
+    }
+
+    /**
+     * Enfileira o JS do link de rollback apenas para beta-testers.
+     *
+     * @since 5.0.0
+     * @return void
+     */
+    public function enqueue_rollback_assets(): void
+    {
+        if ( ! is_admin() || ! $this->is_beta_tester() ) {
+            return;
+        }
+
+        $version = defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')
+            ? WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION
+            : '';
+
+        wp_enqueue_script(
+            'woo-better-rollback',
+            WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/js/WcBetterShippingCalculatorForBrazilRollback.js',
+            array(),
+            $version,
+            true
+        );
+
+        wp_localize_script('woo-better-rollback', 'WooBetterRollback', array(
+            'ajaxurl'      => admin_url('admin-ajax.php'),
+            'action'       => self::AJAX_ROLLBACK,
+            'nonce'        => wp_create_nonce(self::NONCE_ROLLBACK),
+            'redirect_url' => admin_url('plugins.php'),
+            'confirm'      => __('Tem certeza que deseja retornar à versão anterior?', 'woo-better-shipping-calculator-for-brazil'),
+            'loading'      => __('Carregando...', 'woo-better-shipping-calculator-for-brazil'),
+        ));
+    }
+
+    /**
+     * Retorna à versão anterior (downgrade para a última versão estável do
+     * WordPress.org) e devolve a URL de redirecionamento.
+     *
+     * @since 5.0.0
+     * @return void
+     */
+    public function rollback(): void
+    {
+        check_ajax_referer(self::NONCE_ROLLBACK, 'nonce');
+
+        if ( ! current_user_can('install_plugins') ) {
+            wp_send_json_error(array('message' => 'Unauthorized'), 403);
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader-skins.php';
+        require_once ABSPATH . 'wp-admin/includes/misc.php';
+
+        $skin     = new \Automatic_Upgrader_Skin();
+        $upgrader = new \Plugin_Upgrader($skin);
+
+        $result = $upgrader->install(self::ROLLBACK_PACKAGE_URL, array('overwrite_package' => true));
+
+        if (is_wp_error($result) || false === $result) {
+            $message = is_wp_error($result)
+                ? $result->get_error_message()
+                : __('Falha ao retornar à versão anterior.', 'woo-better-shipping-calculator-for-brazil');
+
+            update_option(self::OPTION_ROLLBACK_RESULT, 'error:' . $message);
+
+            wp_send_json_error(array('message' => $message), 400);
+        }
+
+        if ( ! is_plugin_active(self::PLUGIN_BASENAME) ) {
+            $activation = activate_plugin(self::PLUGIN_BASENAME);
+            if (is_wp_error($activation)) {
+                update_option(self::OPTION_ROLLBACK_RESULT, 'error:' . $activation->get_error_message());
+                wp_send_json_error(array('message' => $activation->get_error_message()), 400);
+            }
+        }
+
+        update_option(self::OPTION_ROLLBACK_RESULT, 'success');
+
+        wp_send_json_success(array(
+            'redirect_url' => admin_url('plugins.php'),
+        ));
     }
 }
