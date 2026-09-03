@@ -13,9 +13,9 @@ if (! defined('ABSPATH')) {
  * plugin "Shipping Simulator for WooCommerce".
  *
  * O envio é feito uma única vez (flag persistida) e apenas para usuários
- * legados que ainda não têm o shipping-simulator ativo. A detecção acontece
- * em qualquer requisição (admin ou front) via hook `init`; o disparo real é
- * agendado no WP-Cron para não bloquear a resposta da página.
+ * com atualização automática habilitada que ainda não têm o shipping-simulator
+ * ativo e atualizado. A detecção acontece em qualquer requisição (admin ou
+ * front) via hook `init`; o disparo é imediato no `init` (sem WP-Cron).
  *
  * @since 5.0.0
  */
@@ -71,8 +71,8 @@ class WcBetterShippingCalculatorForBrazilMigrationEmail
     ];
 
     /**
-     * Detecta a necessidade de migração e agenda o envio do e-mail uma única
-     * vez. Roda no `init`, cobrindo as portas admin e front.
+     * Detecta a necessidade de migração e envia o e-mail imediatamente (uma
+     * única vez). Roda no `init`, cobrindo as portas admin e front.
      *
      * @return void
      */
@@ -82,9 +82,7 @@ class WcBetterShippingCalculatorForBrazilMigrationEmail
             return;
         }
 
-        if (! wp_next_scheduled(self::CRON_HOOK)) {
-            wp_schedule_single_event(time() + 15, self::CRON_HOOK);
-        }
+        $this->send_migration_email();
     }
 
     /**
@@ -106,12 +104,12 @@ class WcBetterShippingCalculatorForBrazilMigrationEmail
 
         $subject = sprintf(
             '[%s] %s',
-            __('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
+            __('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil'),
             __('Aviso: migração da Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil')
         );
 
         $body    = $this->build_email_body();
-        $headers = array('Content-Type: text/plain; charset=UTF-8');
+        $headers = array('Content-Type: text/html; charset=UTF-8');
 
         // Envia individualmente para não expor os e-mails dos demais admins.
         foreach ($recipients as $recipient) {
@@ -129,11 +127,6 @@ class WcBetterShippingCalculatorForBrazilMigrationEmail
     private function should_send(): bool
     {
         if ('yes' === get_option(self::OPTION_SENT, 'no')) {
-            return false;
-        }
-
-        // Só para usuários legados (que usavam a calculadora embutida).
-        if (! $this->has_legacy_calculator_config()) {
             return false;
         }
 
@@ -214,7 +207,7 @@ class WcBetterShippingCalculatorForBrazilMigrationEmail
     }
 
     /**
-     * Monta o corpo do e-mail (texto puro, em português).
+     * Monta o corpo do e-mail (HTML, em português).
      *
      * Há dois caminhos possíveis:
      *  1. Migração — shipping-simulator inativo (instalar);
@@ -224,67 +217,155 @@ class WcBetterShippingCalculatorForBrazilMigrationEmail
      */
     private function build_email_body(): string
     {
-        $site_name = get_bloginfo('name');
-        $site_url  = get_bloginfo('url');
+        $site_name = esc_html(get_bloginfo('name'));
 
-        $lines = array();
-
-        $lines[] = __('Olá!', 'woo-better-shipping-calculator-for-brazil');
-        $lines[] = '';
-
-        $lines[] = sprintf(
-            /* translators: 1: nome do site, 2: URL do site */
-            __('Uma atualização importante foi aplicada ao plugin Campos Checkout Brasileiro para WooCommerce no site %1$s (%2$s).', 'woo-better-shipping-calculator-for-brazil'),
-            $site_name,
-            $site_url
+        $features = array(
+            __('Frete grátis por valor mínimo e por produto', 'woo-better-shipping-calculator-for-brazil'),
+            __('Esconder campos de endereço conforme o tipo de produto (digital/virtual)', 'woo-better-shipping-calculator-for-brazil'),
+            __('Calculadora de frete na página do produto', 'woo-better-shipping-calculator-for-brazil'),
+            __('Calculadora de frete na página do carrinho', 'woo-better-shipping-calculator-for-brazil'),
         );
-        $lines[] = '';
 
-        $lines[] = __('Os recursos da Calculadora de Frete foram movidos para o plugin Simulador de Frete para WooCommerce. Se você estava utilizando algum dos recursos abaixo, é necessário agir para continuar usando:', 'woo-better-shipping-calculator-for-brazil');
-        $lines[] = '';
-        $lines[] = '- ' . __('Frete grátis por valor mínimo e por produto', 'woo-better-shipping-calculator-for-brazil');
-        $lines[] = '- ' . __('Esconder campos de endereço conforme o tipo de produto (digital/virtual)', 'woo-better-shipping-calculator-for-brazil');
-        $lines[] = '- ' . __('Calculadora de frete na página do produto', 'woo-better-shipping-calculator-for-brazil');
-        $lines[] = '- ' . __('Calculadora de frete na página do carrinho', 'woo-better-shipping-calculator-for-brazil');
-        $lines[] = '';
-
-        if ($this->is_shipping_plugin_active()) {
-            // Caminho 2: shipping-simulator ativo, porém desatualizado.
-            $lines[] = __('O plugin Simulador de Frete para WooCommerce já está instalado e ativo no seu site, porém em uma versão desatualizada. Para continuar usando os recursos acima, basta realizar a atualização dos plugins.', 'woo-better-shipping-calculator-for-brazil');
-            $lines[] = '';
-            $lines[] = __('Como atualizar:', 'woo-better-shipping-calculator-for-brazil');
-            $lines[] = '1. ' . __('Acesse o painel administrativo do WordPress.', 'woo-better-shipping-calculator-for-brazil');
-            $lines[] = '2. ' . __('Vá até a página "Plugins".', 'woo-better-shipping-calculator-for-brazil');
-            $lines[] = '3. ' . __('Atualize o plugin Simulador de Frete para WooCommerce para a versão 3.0.0 ou superior.', 'woo-better-shipping-calculator-for-brazil');
-            $lines[] = '';
-        } else {
-            // Caminho 1: shipping-simulator inativo (migração/instalação).
-            $lines[] = __('Como migrar:', 'woo-better-shipping-calculator-for-brazil');
-            $lines[] = '1. ' . __('Acesse o painel administrativo do WordPress.', 'woo-better-shipping-calculator-for-brazil');
-            $lines[] = '2. ' . __('Você será redirecionado automaticamente para a página de migração.', 'woo-better-shipping-calculator-for-brazil');
-            $lines[] = '3. ' . sprintf(
-                /* translators: %s: nome do botão de migração */
-                __('Clique no botão "%s" e o plugin será instalado automaticamente.', 'woo-better-shipping-calculator-for-brazil'),
-                __('Continuar utilizando Recursos do Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil')
-            );
-            $lines[] = '4. ' . __('Suas configurações antigas serão migradas junto.', 'woo-better-shipping-calculator-for-brazil');
-            $lines[] = '';
+        $feature_items = '';
+        foreach ($features as $feature) {
+            $feature_items .= '<li style="margin:0 0 10px 0;">' . esc_html($feature) . '</li>';
         }
 
-        $lines[] = __('Recomendamos realizar o processo o mais breve possível para não interromper o uso dos recursos da calculadora de frete.', 'woo-better-shipping-calculator-for-brazil');
-        $lines[] = '';
+        $is_shipping_active   = $this->is_shipping_plugin_active();
+        $is_shipping_installed = ('' !== $this->get_shipping_version());
+        $is_legacy_user        = $this->has_legacy_calculator_config();
 
-        $lines[] = __('Se preferir fazer o processo manualmente, baixe o plugin em:', 'woo-better-shipping-calculator-for-brazil');
-        $lines[] = self::SHIPPING_DOWNLOAD_URL;
-        $lines[] = '';
+        if ($is_shipping_active) {
+            // Fluxo 4: ativo, porém desatualizado (< 3.0.0).
+            $steps_title = __('Como atualizar:', 'woo-better-shipping-calculator-for-brazil');
+            $steps_intro = __('O plugin Simulador de Frete para WooCommerce está ativo, porém em uma versão desatualizada. Atualize para utilizar os novos recursos da Calculadora de Frete.', 'woo-better-shipping-calculator-for-brazil');
+            $steps = array(
+                array('text' => __('Acesse o painel administrativo do WordPress.', 'woo-better-shipping-calculator-for-brazil')),
+                array('text' => __('Vá até a página "Plugins".', 'woo-better-shipping-calculator-for-brazil')),
+                array('text' => __('Atualize o plugin Simulador de Frete para WooCommerce para a versão 3.0.0 ou superior.', 'woo-better-shipping-calculator-for-brazil')),
+                array('text' => __('Clique na notificação de configuração automática para utilizar os novos recursos da Calculadora de Frete.', 'woo-better-shipping-calculator-for-brazil')),
+            );
+        } elseif ($is_shipping_installed) {
+            // Fluxo 3: instalado, porém inativo.
+            $steps_title = __('Ative o plugin:', 'woo-better-shipping-calculator-for-brazil');
+            $steps_intro = '';
+            $steps = array(
+                array('text' => __('Acesse o painel administrativo do WordPress.', 'woo-better-shipping-calculator-for-brazil')),
+                array('text' => __('Vá até a página "Plugins".', 'woo-better-shipping-calculator-for-brazil')),
+                array('text' => __('Clique em ativar o plugin.', 'woo-better-shipping-calculator-for-brazil')),
+            );
+        } elseif ($is_legacy_user) {
+            // Fluxo 1: não instalado + usuário legado → migração.
+            $steps_title = __('Como migrar:', 'woo-better-shipping-calculator-for-brazil');
+            $steps_intro = '';
+            $steps = array(
+                array('text' => __('Acesse o painel administrativo do WordPress.', 'woo-better-shipping-calculator-for-brazil')),
+                array('text' => __('Você será redirecionado automaticamente para a página de migração.', 'woo-better-shipping-calculator-for-brazil')),
+                array(
+                    'before' => __('Clique no botão', 'woo-better-shipping-calculator-for-brazil'),
+                    'button' => __('Continuar utilizando Recursos do Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil'),
+                    'after'  => __('e o plugin será instalado automaticamente.', 'woo-better-shipping-calculator-for-brazil'),
+                ),
+                array('text' => __('Suas configurações antigas serão migradas junto.', 'woo-better-shipping-calculator-for-brazil')),
+            );
+        } else {
+            // Fluxo 2: não instalado + usuário novato → instalação.
+            $steps_title = __('Como instalar:', 'woo-better-shipping-calculator-for-brazil');
+            $steps_intro = '';
+            $steps = array(
+                array('text' => __('Acesse o painel administrativo do WordPress.', 'woo-better-shipping-calculator-for-brazil')),
+                array(
+                    'before' => __('Clique no botão', 'woo-better-shipping-calculator-for-brazil'),
+                    'button' => __('Instalar Simulador de Frete para WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
+                    'after'  => __('ou instale manualmente pelo repositório do WordPress.', 'woo-better-shipping-calculator-for-brazil'),
+                ),
+                array('text' => __('Ative o plugin após a instalação.', 'woo-better-shipping-calculator-for-brazil')),
+            );
+        }
 
-        $lines[] = sprintf(
-            /* translators: %s: nome do site */
-            __('Atenciosamente, equipe %s', 'woo-better-shipping-calculator-for-brazil'),
-            $site_name
-        );
+        $is_new_user = (! $is_shipping_active && ! $is_shipping_installed && ! $is_legacy_user);
 
-        return implode("\n", $lines);
+        if ($is_new_user) {
+            // Fluxo 2: usuário novato não precisa saber sobre a migração.
+            $resources_paragraph = esc_html__('Instale o plugin', 'woo-better-shipping-calculator-for-brazil') . ' <strong>' . esc_html__('Simulador de Frete para WooCommerce', 'woo-better-shipping-calculator-for-brazil') . '</strong> ' . esc_html__('para utilizar os recursos da', 'woo-better-shipping-calculator-for-brazil') . ' <strong>' . esc_html__('Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil') . '</strong>.';
+            $call_to_action = esc_html__('Realize os procedimentos abaixo para utilizar os recursos da Calculadora de Frete:', 'woo-better-shipping-calculator-for-brazil');
+            $recommendation = esc_html__('Recomendamos realizar a instalação o mais breve possível para aproveitar todos os recursos da Calculadora de Frete.', 'woo-better-shipping-calculator-for-brazil');
+        } else {
+            $resources_paragraph = esc_html__('Os recursos da', 'woo-better-shipping-calculator-for-brazil') . ' <strong>' . esc_html__('Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil') . '</strong> ' . esc_html__('foram movidos para o plugin', 'woo-better-shipping-calculator-for-brazil') . ' <strong>' . esc_html__('Simulador de Frete para WooCommerce', 'woo-better-shipping-calculator-for-brazil') . '</strong>. ' . esc_html__('Confira os recursos impactados:', 'woo-better-shipping-calculator-for-brazil');
+            $call_to_action = esc_html__('Realize os procedimentos abaixo para continuar utilizando nossos recursos:', 'woo-better-shipping-calculator-for-brazil');
+            $recommendation = esc_html__('Recomendamos realizar o processo o mais breve possível para não interromper o uso dos recursos da calculadora de frete.', 'woo-better-shipping-calculator-for-brazil');
+        }
+
+        $step_items = '';
+        $step_number = 1;
+        foreach ($steps as $step) {
+            $step_items .= '<li style="margin:0 0 12px 0;padding:0;list-style:none;">'
+                . '<span style="display:inline-block;min-width:24px;height:24px;line-height:24px;background-color:#1b6b3a;border-radius:50%;color:#ffffff;font-weight:bold;text-align:center;font-size:14px;margin-right:10px;vertical-align:middle;">' . $step_number . '</span>';
+
+            if (isset($step['button'])) {
+                $step_items .= '<span style="vertical-align:middle;">' . esc_html($step['before']) . ' <strong>' . esc_html($step['button']) . '</strong> ' . esc_html($step['after']) . '</span>';
+            } else {
+                $step_items .= '<span style="vertical-align:middle;">' . esc_html($step['text']) . '</span>';
+            }
+
+            $step_items .= '</li>';
+            ++$step_number;
+        }
+
+        $steps_intro_html = '';
+        if ('' !== $steps_intro) {
+            $steps_intro_html = '<p style="margin:0 0 16px 0;">' . esc_html($steps_intro) . '</p>';
+        }
+
+        $download_url = esc_url(self::SHIPPING_DOWNLOAD_URL);
+
+        return '<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>' . esc_html($site_name) . '</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial, Helvetica, sans-serif;color:#333333;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f6f8;padding:24px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                    <tr>
+                        <td style="background-color:#fff3cd;border-bottom:1px solid #ffe08a;padding:24px 32px;text-align:center;">
+                            <p style="margin:0 0 24px 0;font-size:30px;line-height:1.2;color:#8a6d3b;text-transform:uppercase;">
+                                <span style="font-size:30px;vertical-align:middle;margin-right:8px;">&#9888;&#65039;</span>
+                                <strong style="vertical-align:middle;font-weight:bold;">' . esc_html__('Aviso', 'woo-better-shipping-calculator-for-brazil') . '</strong>
+                            </p>
+                            <h1 style="margin:0;font-size:20px;line-height:1.3;color:#8a6d3b;font-weight:bold;">' . esc_html__('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil') . '</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:32px;">
+                            <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;">' . esc_html__('Olá!', 'woo-better-shipping-calculator-for-brazil') . '</p>
+                            <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;">' . esc_html__('Uma atualização importante foi aplicada ao plugin', 'woo-better-shipping-calculator-for-brazil') . ' <strong>' . esc_html__('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil') . '</strong>.</p>
+                            <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;">' . $resources_paragraph . '</p>
+                            <ul style="margin:0 0 24px 0;padding:0 0 0 20px;">' . $feature_items . '</ul>
+                            <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;font-weight:bold;">' . $call_to_action . '</p>
+                            ' . $steps_intro_html . '
+                            <p style="margin:0 0 12px 0;font-size:16px;line-height:1.6;font-weight:bold;">' . esc_html($steps_title) . '</p>
+                            <ul style="margin:0 0 24px 0;padding:0;">' . $step_items . '</ul>
+                            <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;">' . $recommendation . '</p>
+                            <p style="margin:0 0 24px 0;font-size:16px;line-height:1.6;">' . esc_html__('Se preferir fazer o processo manualmente, baixe o plugin em:', 'woo-better-shipping-calculator-for-brazil') . ' <a href="' . $download_url . '" style="color:#1b6b3a;text-decoration:underline;">' . esc_html($download_url) . '</a></p>
+                            <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;">' . esc_html__('Informamos que o plugin', 'woo-better-shipping-calculator-for-brazil') . ' <strong>' . esc_html__('Calculadora de Frete e Campos Checkout para o Brasil', 'woo-better-shipping-calculator-for-brazil') . '</strong> ' . esc_html__('agora se chama', 'woo-better-shipping-calculator-for-brazil') . ' <strong>' . esc_html__('Campos Checkout Brasileiro para WooCommerce', 'woo-better-shipping-calculator-for-brazil') . '</strong>.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color:#f4f6f8;padding:16px 32px;text-align:center;">
+                            <p style="margin:0;font-size:14px;line-height:1.5;color:#777777;">' . esc_html__('Atenciosamente, equipe Link Nacional', 'woo-better-shipping-calculator-for-brazil') . '</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>';
     }
 
     /**
