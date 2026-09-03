@@ -323,11 +323,11 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
                 <div class="woo-better-shipping-migration__badge" aria-hidden="true">🚚</div>
 
                 <h1 class="woo-better-shipping-migration__title">
-                    <?php esc_html_e('Agora a Calculadora de Frete se chama Simulador de Frete.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                    <?php esc_html_e('Agora a Calculadora de Frete se chama Simulador de Frete', 'woo-better-shipping-calculator-for-brazil'); ?>
                 </h1>
 
                 <p class="woo-better-shipping-migration__lead">
-                    <?php esc_html_e('Essa nova versão do seu plugin faz uma divisão importante entre campos brasileiros e o cálculo de frete. O plugin atual será exclusivo para os Campos de Checkout Brasileiros.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                    <?php esc_html_e('Essa nova versão do seu plugin faz uma divisão importante entre campos brasileiros e o cálculo de frete. O plugin atual será exclusivo para os Campos de Checkout Brasileiros', 'woo-better-shipping-calculator-for-brazil'); ?>
                 </p>
 
                 <div class="woo-better-shipping-migration__body">

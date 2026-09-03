@@ -92,15 +92,15 @@ class WcBetterShippingCalculatorForBrazilShippingCalculatorSettings extends \WC_
 
         if (! $is_installed) {
             if ($this->has_legacy_calculator_config()) {
-                $title = __('Agora a Calculadora de Frete se chama Simulador de Frete.', 'woo-better-shipping-calculator-for-brazil');
-                $lead  = __('Essa nova versão do seu plugin faz uma divisão importante entre campos brasileiros e o cálculo de frete. O plugin atual será exclusivo para os Campos de Checkout Brasileiros.', 'woo-better-shipping-calculator-for-brazil');
+                $title = __('Agora a Calculadora de Frete se chama Simulador de Frete', 'woo-better-shipping-calculator-for-brazil');
+                $lead  = __('Essa nova versão do seu plugin faz uma divisão importante entre campos brasileiros e o cálculo de frete. O plugin atual será exclusivo para os Campos de Checkout Brasileiros', 'woo-better-shipping-calculator-for-brazil');
                 $body  = __('Para continuar usando os recursos abaixo, clique no botão "Continuar utilizando os recursos da Calculadora de Frete".', 'woo-better-shipping-calculator-for-brazil');
                 $action_label = __('Continuar utilizando Recursos do Calculadora de Frete', 'woo-better-shipping-calculator-for-brazil');
                 $install_action = 'install';
                 $show_features = true;
             } else {
-                $title = __('A Calculadora de Frete agora é um plugin separado.', 'woo-better-shipping-calculator-for-brazil');
-                $lead  = __('A partir desta versão, o cálculo de frete passou a fazer parte do plugin Simulador de Frete para WooCommerce.', 'woo-better-shipping-calculator-for-brazil');
+                $title = __('A Calculadora de Frete agora é um plugin separado', 'woo-better-shipping-calculator-for-brazil');
+                $lead  = __('A partir desta versão, o cálculo de frete passou a fazer parte do plugin Simulador de Frete para WooCommerce', 'woo-better-shipping-calculator-for-brazil');
                 $body  = __('Instale o plugin abaixo para usar a calculadora de frete nas páginas de produto e carrinho, frete grátis e demais recursos.', 'woo-better-shipping-calculator-for-brazil');
                 $action_label = __('Instalar Simulador de Frete para WooCommerce', 'woo-better-shipping-calculator-for-brazil');
                 $install_action = 'install';
@@ -108,13 +108,13 @@ class WcBetterShippingCalculatorForBrazilShippingCalculatorSettings extends \WC_
             }
         } elseif ($is_outdated) {
             $title = __('Atualize o Simulador de Frete para WooCommerce', 'woo-better-shipping-calculator-for-brazil');
-            $lead  = __('A versão instalada do Simulador de Frete para WooCommerce não possui os novos recursos da calculadora de frete.', 'woo-better-shipping-calculator-for-brazil');
+            $lead  = __('A versão instalada do Simulador de Frete para WooCommerce não possui os novos recursos da calculadora de frete', 'woo-better-shipping-calculator-for-brazil');
             $body  = __('Atualize o plugin para a versão mais recente para ter acesso aos recursos da calculadora de frete nas páginas de produto e carrinho, frete grátis e demais opções.', 'woo-better-shipping-calculator-for-brazil');
             $action_label = __('Atualizar Simulador de Frete para WooCommerce', 'woo-better-shipping-calculator-for-brazil');
             $install_action = 'upgrade';
         } else {
             $title = __('Ative o Simulador de Frete para WooCommerce', 'woo-better-shipping-calculator-for-brazil');
-            $lead  = __('O plugin Simulador de Frete para WooCommerce está instalado, mas desativado.', 'woo-better-shipping-calculator-for-brazil');
+            $lead  = __('O plugin Simulador de Frete para WooCommerce está instalado, mas desativado', 'woo-better-shipping-calculator-for-brazil');
             $body  = __('Ative o plugin para utilizar os recursos da calculadora de frete nas páginas de produto e carrinho, frete grátis e demais opções.', 'woo-better-shipping-calculator-for-brazil');
             $action_label = __('Ativar Simulador de Frete para WooCommerce', 'woo-better-shipping-calculator-for-brazil');
             $install_action = 'activate';

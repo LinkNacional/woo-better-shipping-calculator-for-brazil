@@ -43,6 +43,7 @@ delete_option('woo_better_calc_beta_notice_dismissed');
 delete_option('woo_better_calc_updated_via_beta');
 delete_option('woo_better_calc_is_beta_tester');
 delete_option('woo_better_calc_rollback_result');
+delete_option('woo_better_calc_migration_email_sent');
 
 // Opções legadas da "Calculadora de Frete" (migradas para o
 // shipping-simulator-for-woocommerce). Removê-las na desinstalação garante
