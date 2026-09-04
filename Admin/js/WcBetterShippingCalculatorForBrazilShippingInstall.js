@@ -31,7 +31,7 @@
         }
 
         var card = document.createElement('div');
-        card.className = 'notice notice-info is-dismissible woo-better-notice woo-better-notice--success woo-better-shipping-success-card';
+        card.className = 'notice notice-info inline is-dismissible woo-better-notice woo-better-notice--success woo-better-shipping-success-card';
 
         var icon = document.createElement('div');
         icon.className = 'woo-better-notice__icon';
@@ -82,7 +82,7 @@
         }
 
         var card = document.createElement('div');
-        card.className = 'notice notice-error is-dismissible woo-better-notice woo-better-notice--error woo-better-shipping-error-card';
+        card.className = 'notice notice-error inline is-dismissible woo-better-notice woo-better-notice--error woo-better-shipping-error-card';
 
         var icon = document.createElement('div');
         icon.className = 'woo-better-notice__icon';
