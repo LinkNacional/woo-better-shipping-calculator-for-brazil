@@ -117,6 +117,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 # 5.0.0 - 2026-08-27
 * Major: Migrated the shipping calculator resources to shipping-simulation.
 
+# 4.17.2 - 2026-09-03
+* Fix: Corrected the plugin update notification informing about a new important update scheduled for 2026-09-01.
+* Fix: "S/N" (no number) option now saves immediately in the block checkout.
+
 # 4.17.1 - 2026-08-21
 * Fix: CNPJ now validated for active registration status (situação cadastral ATIVA) against the Federal Revenue (BrasilAPI and ReceitaWS).
 * Fix: Alphanumeric CNPJ (IN RFB 2.229/2024) now goes through the API (fail-closed) instead of being accepted by check digit only.
