@@ -1,5 +1,6 @@
 # 4.17.2 - 03/09/26
 * Correção: notificação de atualização do plugin informando sobre uma nova atualização importante que ocorrerá em 01/09/2026.
+* Correção: opção "S/N" (sem número) do campo de endereço agora salva imediatamente no checkout em blocos.
 
 # 4.17.1 - 21/08/26
 * Correção: CNPJ agora é validado pela situação cadastral (ATIVA) na Receita Federal (BrasilAPI e ReceitaWS).
