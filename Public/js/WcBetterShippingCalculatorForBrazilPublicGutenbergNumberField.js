@@ -239,26 +239,27 @@ document.addEventListener("DOMContentLoaded", function () {
                         checkboxInput.addEventListener('change', function (event) {
                             event.stopPropagation();
                             let val = this.checked ? 'S/N' : '';
+                            let data = { shipping_number: val, billing_number: '' };
+                            const billingNumberInput = document.getElementById('billing-number');
+                            if (!billingNumberInput) {
+                                data.billing_number = val;
+                            } else {
+                                data.billing_number = billingNumberInput.value;
+                            }
+
+                            // Atualiza o store local imediatamente (síncrono) para o
+                            // pedido capturar o "S/N" mesmo sem esperar o fetch.
+                            if (window.wp && window.wp.data && window.wp.data.dispatch) {
+                                try {
+                                    window.wp.data.dispatch('wc/store/checkout').setExtensionData('woo_better_number_validation', data);
+                                } catch (e) { /* silenciar */ }
+                            }
+
                             if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-                                // Cancela timeout anterior se existir
-                                if (shippingExtensionTimeout) {
-                                    clearTimeout(shippingExtensionTimeout);
-                                }
-                                
-                                // Define novo timeout de 1 segundo
-                                shippingExtensionTimeout = setTimeout(() => {
-                                    let data = { shipping_number: val, billing_number: '' };
-                                    const billingNumberInput = document.getElementById('billing-number');
-                                    if (!billingNumberInput) {
-                                        data.billing_number = val;
-                                    } else {
-                                        data.billing_number = billingNumberInput.value;
-                                    }
-                                    window.wc.blocksCheckout.extensionCartUpdate({
-                                        namespace: 'woo_better_number_validation',
-                                        data: data
-                                    });
-                                }, 1000);
+                                window.wc.blocksCheckout.extensionCartUpdate({
+                                    namespace: 'woo_better_number_validation',
+                                    data: data
+                                });
                             }
                         });
 
@@ -667,26 +668,27 @@ document.addEventListener("DOMContentLoaded", function () {
                 checkboxInput.addEventListener('change', function (event) {
                     event.stopPropagation();
                     let val = this.checked ? 'S/N' : '';
+                    let data = { shipping_number: '', billing_number: val };
+                    const shippingNumberInput = document.getElementById('shipping-number');
+                    if (!shippingNumberInput) {
+                        data.shipping_number = val;
+                    } else {
+                        data.shipping_number = shippingNumberInput.value;
+                    }
+
+                    // Atualiza o store local imediatamente (síncrono) para o
+                    // pedido capturar o "S/N" mesmo sem esperar o fetch.
+                    if (window.wp && window.wp.data && window.wp.data.dispatch) {
+                        try {
+                            window.wp.data.dispatch('wc/store/checkout').setExtensionData('woo_better_number_validation', data);
+                        } catch (e) { /* silenciar */ }
+                    }
+
                     if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-                        // Cancela timeout anterior se existir
-                        if (billingExtensionTimeout) {
-                            clearTimeout(billingExtensionTimeout);
-                        }
-                        
-                        // Define novo timeout de 1 segundo
-                        billingExtensionTimeout = setTimeout(() => {
-                            let data = { shipping_number: '', billing_number: val };
-                            const shippingNumberInput = document.getElementById('shipping-number');
-                            if (!shippingNumberInput) {
-                                data.shipping_number = val;
-                            } else {
-                                data.shipping_number = shippingNumberInput.value;
-                            }
-                            window.wc.blocksCheckout.extensionCartUpdate({
-                                namespace: 'woo_better_number_validation',
-                                data: data
-                            });
-                        }, 1000);
+                        window.wc.blocksCheckout.extensionCartUpdate({
+                            namespace: 'woo_better_number_validation',
+                            data: data
+                        });
                     }
                 });
 
