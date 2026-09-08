@@ -73,11 +73,6 @@
       '<strong>NOVO:</strong> Formato para o CNPJ alfanumérico.'
     ]);
 
-    // Cria o segundo bloco de mensagem
-    const featureMessage2 = createFeatureMessage('✔️', [
-      '<strong>AJUSTE:</strong> Novo sistema de frete por produto, prazos e comportamentos para frete grátis, além de ajustes na calculadora e no campo de número do Gutenberg.'
-    ]);
-
     // Cria o cartão promocional do Plugin Link de Pagamento
     const promotionalCard = document.createElement('div');
     promotionalCard.className = 'woo-better-promotional-card';
@@ -234,7 +229,6 @@
       stickyContainer.appendChild(settingsCard);
 
       stickyContainer.appendChild(featureMessage1);
-      stickyContainer.appendChild(featureMessage2);
       stickyContainer.appendChild(promotionalCard);
 
       sideContainer.appendChild(stickyContainer);
