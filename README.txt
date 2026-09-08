@@ -9,7 +9,7 @@ Stable tag: 5.0.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
-Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce.
+Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce. Check also the plugin [Shipping Simulator for WooCommerce](/plugins/shipping-simulator-for-woocommerce/).
 
 == Description ==
 
