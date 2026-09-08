@@ -321,9 +321,6 @@ class WcBetterShippingCalculatorForBrazil
                         <p style="font-size: 14px; margin-top: 8px;">
                             ✨ <strong>Novo:</strong> Formato para o CNPJ alfanumérico (IN RFB 2.229/2024).
                         </p>
-                        <p style="font-size: 14px; margin-top: 6px;">
-                            🔧 <strong>Ajuste:</strong> Novo sistema de frete por produto, prazos e comportamentos para frete grátis, além de ajustes na calculadora e no campo de número do Gutenberg.
-                        </p>
                     </div>
 
                     <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
