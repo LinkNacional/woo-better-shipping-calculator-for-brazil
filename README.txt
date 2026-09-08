@@ -1,7 +1,7 @@
 === Campos Checkout Brasileiro para WooCommerce ===
 Contributors: LinkNacional, luizbills
 Donate link:
-Tags: woocommerce, checkout, CPF, CNPJ, CEP
+Tags: cep, checkout, CPF, CNPJ, Brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
