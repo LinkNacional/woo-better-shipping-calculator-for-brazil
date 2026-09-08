@@ -24,7 +24,7 @@
 
 ## Descrição
 
-Plugin de **campos brasileiros para o checkout do WooCommerce**, facilitando e melhorando o fluxo de preenchimento dos dados nas páginas de checkout.
+Plugin de **campos brasileiros para o checkout do WooCommerce**, facilitando e melhorando o fluxo de preenchimento dos dados nas páginas de checkout. Integrado opcionalmente com o plugin [calculadora de Frete](https://br.wordpress.org/plugins/shipping-simulator-for-woocommerce/)
 
 > Campos de Checkout:
 
