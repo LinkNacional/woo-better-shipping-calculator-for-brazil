@@ -1,7 +1,7 @@
 === Campos Checkout Brasileiro para WooCommerce ===
 Contributors: LinkNacional, luizbills
 Donate link:
-Tags: woocommerce, checkout, CPF, CNPJ, CEP
+Tags: cep, checkout, CPF, CNPJ, Brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
@@ -9,7 +9,7 @@ Stable tag: 5.0.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
-Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce.
+Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce. Check also the plugin [Shipping Simulator for WooCommerce](/plugins/shipping-simulator-for-woocommerce/).
 
 == Description ==
 
@@ -114,8 +114,12 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
-# 5.0.0 - 2026-08-27
+# 5.0.0 - 2026-10-01
 * Major: Migrated the shipping calculator resources to shipping-simulation.
+
+# 4.17.3 - 2026-09-09
+* Fix: The "Ship to a different address?" checkbox no longer appears on the classic/shortcode checkout when "Force shipping to the billing address" is enabled.
+* Fix: The "State Registration (IE)" field is no longer required on the "My Account > Edit Address" page when the entered document is a CPF.
 
 # 4.17.2 - 2026-09-03
 * Fix: Corrected the plugin update notification informing about a new important update scheduled for 2026-09-01.
