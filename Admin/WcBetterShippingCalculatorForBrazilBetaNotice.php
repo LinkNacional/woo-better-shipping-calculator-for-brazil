@@ -10,7 +10,7 @@ if (! defined('ABSPATH')) {
 /**
  * Aviso de lançamento da próxima versão (beta).
  *
- * Exibe uma notificação para os administradores informando que em 01/09/2026
+ * Exibe uma notificação para os administradores informando que em 01/10/2026
  * será lançada uma nova versão em que os recursos da Calculadora de Frete
  * migrarão para o plugin "Simulador de Frete para WooCommerce". Oferece um
  * botão "Testar a nova versão" que baixa e instala a versão v5.0.0
@@ -173,7 +173,7 @@ final class WcBetterShippingCalculatorForBrazilBetaNotice
                     <span class="woo-better-beta-notice__badge"><?php esc_html_e('Beta', 'woo-better-shipping-calculator-for-brazil'); ?></span>
                 </p>
                 <p>
-                    <?php esc_html_e('A partir de', 'woo-better-shipping-calculator-for-brazil'); ?> <strong><?php esc_html_e('01/09/2026', 'woo-better-shipping-calculator-for-brazil'); ?></strong>, <?php esc_html_e('os recursos da Calculadora de Frete serão transferidos para o plugin Simulador de Frete para WooCommerce. O processo de migração será realizado de forma automática, sem necessidade de ação manual.', 'woo-better-shipping-calculator-for-brazil'); ?>
+                    <?php esc_html_e('A partir de', 'woo-better-shipping-calculator-for-brazil'); ?> <strong><?php esc_html_e('01/10/2026', 'woo-better-shipping-calculator-for-brazil'); ?></strong>, <?php esc_html_e('os recursos da Calculadora de Frete serão transferidos para o plugin Simulador de Frete para WooCommerce. O processo de migração será realizado de forma automática, sem necessidade de ação manual.', 'woo-better-shipping-calculator-for-brazil'); ?>
                 </p>
                 <p>
                     <?php esc_html_e('Recursos que serão migrados:', 'woo-better-shipping-calculator-for-brazil'); ?>
