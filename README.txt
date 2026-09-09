@@ -151,6 +151,7 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 # 4.17.3 - 2026-09-09
 * Fix: The "Ship to a different address?" checkbox no longer appears on the classic/shortcode checkout when "Force shipping to the billing address" is enabled.
+* Fix: The "State Registration (IE)" field is no longer required on the "My Account > Edit Address" page when the entered document is a CPF.
 
 # 4.17.2 - 2026-09-03
 * Fix: Corrected the plugin update notification informing about a new important update scheduled for 2026-09-01.

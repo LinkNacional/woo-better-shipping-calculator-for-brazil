@@ -1,5 +1,6 @@
 # 4.17.3 - 09/09/26
 * Correção: checkbox "Entregar em um endereço diferente?" deixou de aparecer no checkout clássico/shortcode quando a opção "Forçar entrega para o endereço de cobrança" está ativa.
+* Correção: campo "Inscrição Estadual (IE)" não é mais exigido na página "minha conta > editar endereço" quando o documento informado é CPF.
 
 # 4.17.2 - 03/09/26
 * Correção: notificação de atualização do plugin informando sobre uma nova atualização importante que ocorrerá em 01/09/2026.
