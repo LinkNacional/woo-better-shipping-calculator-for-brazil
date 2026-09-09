@@ -268,7 +268,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '4.17.1', '4.17.0', '4.16.12', '4.16.11', '4.16.10', '4.16.9', '4.16.8', '4.16.7', '4.16.6', '4.16.5', '4.16.4', '4.16.3', '4.16.2', '4.16.1' );
+            $old_versions   = array( '4.17.2', '4.17.1', '4.17.0', '4.16.12', '4.16.11', '4.16.10', '4.16.9', '4.16.8', '4.16.7', '4.16.6', '4.16.5', '4.16.4', '4.16.3', '4.16.2' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -680,6 +680,12 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_billing_fields', $this, 'add_edit_address_billing_fields');
         $this->loader->add_filter('woocommerce_shipping_fields', $this, 'add_edit_address_shipping_fields');
         $this->loader->add_action('woocommerce_customer_save_address', $this, 'save_edit_address_custom_fields', 10, 2);
+
+        // Remove a obrigatoriedade da IE no envio da página "minha conta > editar
+        // endereço" quando o documento informado for CPF. O campo é gerado como
+        // required=true (acima) e o JS só cuida do visual; esta é a remoção real
+        // da validação no servidor (WC_Form_Handler::save_address).
+        $this->loader->add_filter('woocommerce_billing_fields', $this, 'disable_ie_required_on_edit_address_submit', 20, 1);
         
         // Hook para formatação de endereço na página Minha Conta
         $this->loader->add_filter('woocommerce_my_account_my_address_formatted_address', $this, 'my_account_formatted_address', 10, 3);
@@ -5517,6 +5523,43 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
         
+        return $fields;
+    }
+
+    /**
+     * Remove a obrigatoriedade da IE no envio da página "editar endereço"
+     * quando o documento enviado é um CPF.
+     *
+     * O WooCommerce valida campos obrigatórios em WC_Form_Handler::save_address
+     * lendo `required` do array retornado por `woocommerce_billing_fields`.
+     * Como esse filtro roda novamente durante o save (com prioridade menor que
+     * este), só ajustamos o required aqui quando é um POST de edição de endereço.
+     *
+     * @param array $fields
+     * @return array
+     */
+    public function disable_ie_required_on_edit_address_submit($fields)
+    {
+        // Apenas no submit do formulário "editar endereço" da Minha Conta.
+        if (! isset($_POST['action']) || 'edit_address' !== $_POST['action']) {
+            return $fields;
+        }
+
+        if (! isset($fields['billing_ie'])) {
+            return $fields;
+        }
+
+        $document = isset($_POST['billing_document']) ? sanitize_text_field(wp_unslash($_POST['billing_document'])) : '';
+        $clean_document = preg_replace('/[^0-9A-Z]/', '', strtoupper($document));
+        $is_cpf_document = strlen($clean_document) === 11;
+
+        // REASON: IE é obrigatória apenas para CNPJ. Se o documento é CPF,
+        // remove o required para o WC_Form_Handler::save_address não acusar
+        // "Inscrição Estadual (IE) é um campo obrigatório.".
+        if ($is_cpf_document) {
+            $fields['billing_ie']['required'] = false;
+        }
+
         return $fields;
     }
 
