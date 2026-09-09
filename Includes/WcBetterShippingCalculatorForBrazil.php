@@ -645,9 +645,7 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_formatted_address_replacements', $this, 'add_neighborhood_replacement', 10, 2);
         $this->loader->add_filter('woocommerce_localisation_address_formats', $this, 'add_neighborhood_to_address_format', 10, 1);
         $this->loader->add_filter('woocommerce_order_formatted_billing_address', $this, 'add_neighborhood_to_billing_address', 10, 2);
-        $this->loader->add_filter('woocommerce_order_formatted_billing_address', $this, 'change_company_to_billing_address', 10, 2);
         $this->loader->add_filter('woocommerce_order_formatted_shipping_address', $this, 'add_neighborhood_to_shipping_address', 10, 2);
-        $this->loader->add_filter('woocommerce_order_formatted_shipping_address', $this, 'change_company_to_shipping_address', 10, 2);
         
         // Hooks para formatação de telefone no pedido final
         $this->loader->add_filter('woocommerce_order_get_billing_phone', $this, 'format_order_billing_phone', 10, 2);
@@ -1286,38 +1284,6 @@ class WcBetterShippingCalculatorForBrazil
             if (!empty($shipping_number)) {
                 $address['number'] = $shipping_number;
             }
-        }
-        
-        return $address;
-    }
-
-    /**
-     * Remove o campo company quando for "woonomedaempresa" no endereço de cobrança
-     *
-     * @param array $address
-     * @param WC_Order $order
-     * @return array
-     */
-    public function change_company_to_billing_address($address, $order)
-    {
-        if (isset($address['company']) && $address['company'] === 'woonomedaempresa') {
-            unset($address['company']);
-        }
-        
-        return $address;
-    }
-
-    /**
-     * Remove o campo company quando for "woonomedaempresa" no endereço de entrega
-     *
-     * @param array $address
-     * @param WC_Order $order
-     * @return array
-     */
-    public function change_company_to_shipping_address($address, $order)
-    {
-        if (isset($address['company']) && $address['company'] === 'woonomedaempresa') {
-            unset($address['company']);
         }
         
         return $address;
@@ -4813,9 +4779,10 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        // Se for CPF, IE não é obrigatório.
+        // Se for CPF, IE e empresa não são obrigatórios.
         if ( $is_cpf ) {
             $errors->remove( 'billing_ie_required' );
+            $errors->remove( 'billing_company_required' );
         }
     }
 
@@ -5435,10 +5402,17 @@ class WcBetterShippingCalculatorForBrazil
             
             // Campo empresa para pessoa jurídica
             if ($person_type === 'legal' || $person_type === 'both') {
+                // REASON: espelha o comportamento do IE. No modo "dynamic" o campo
+                // nasce obrigatório (required => true) e a obrigação é removida no
+                // submit quando o documento é CPF (ver disable_ie_required_on_edit_address_submit).
+                // Nos modos "required"/"optional" respeitamos a configuração do lojista.
+                $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
+                $company_required = ($company_behavior === 'required' || $company_behavior === 'dynamic');
+
                 $fields['billing_company'] = array(
                     'label'       => __('Empresa', 'woo-better-shipping-calculator-for-brazil'),
                     'placeholder' => __('Nome da empresa', 'woo-better-shipping-calculator-for-brazil'),
-                    'required'    => false,
+                    'required'    => $company_required,
                     'class'       => array('form-row-wide'),
                     'priority'    => 28,
                     'type'        => 'text'
@@ -5581,10 +5555,6 @@ class WcBetterShippingCalculatorForBrazil
             return $fields;
         }
 
-        if (! isset($fields['billing_ie'])) {
-            return $fields;
-        }
-
         $document = isset($_POST['billing_document']) ? sanitize_text_field(wp_unslash($_POST['billing_document'])) : '';
         $clean_document = preg_replace('/[^0-9A-Z]/', '', strtoupper($document));
         $is_cpf_document = strlen($clean_document) === 11;
@@ -5593,7 +5563,16 @@ class WcBetterShippingCalculatorForBrazil
         // remove o required para o WC_Form_Handler::save_address não acusar
         // "Inscrição Estadual (IE) é um campo obrigatório.".
         if ($is_cpf_document) {
-            $fields['billing_ie']['required'] = false;
+            if (isset($fields['billing_ie'])) {
+                $fields['billing_ie']['required'] = false;
+            }
+
+            // Empresa no modo "dynamic" também é obrigatória apenas para CNPJ.
+            // Nos modos "required"/"optional" a decisão do lojista é preservada.
+            $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
+            if ($company_behavior === 'dynamic' && isset($fields['billing_company'])) {
+                $fields['billing_company']['required'] = false;
+            }
         }
 
         return $fields;
@@ -5804,14 +5783,43 @@ class WcBetterShippingCalculatorForBrazil
         
         // Salvar campo empresa
         if ($person_type === 'legal' || $person_type === 'both') {
+            // Determina se o documento submetido é CPF para limpar a empresa.
+            // Espelha o comportamento do checkout: CPF não tem empresa.
+            $is_cpf_document = false;
+            if ($load_address === 'billing' && isset($_POST['billing_document'])) {
+                $document_for_company = preg_replace('/[^0-9A-Z]/', '', strtoupper(sanitize_text_field(wp_unslash($_POST['billing_document']))));
+                $is_cpf_document = strlen($document_for_company) === 11;
+            }
+
             if ($load_address === 'billing' && isset($_POST['billing_company'])) {
                 $company = sanitize_text_field(wp_unslash($_POST['billing_company']));
+
+                // CPF não tem empresa: limpa o campo.
+                if ($is_cpf_document) {
+                    $company = '';
+                }
+
                 update_user_meta($user_id, 'billing_company', $company);
+
+                // Sincroniza sessão/customer para o valor antigo não ressuscitar.
+                if (function_exists('WC') && WC()->session) {
+                    WC()->session->set('billing_company', $company);
+                }
+                if (function_exists('WC') && WC()->customer) {
+                    WC()->customer->set_billing_company($company);
+                }
             }
-            
+
             if ($load_address === 'shipping' && isset($_POST['shipping_company'])) {
                 $company = sanitize_text_field(wp_unslash($_POST['shipping_company']));
                 update_user_meta($user_id, 'shipping_company', $company);
+
+                if (function_exists('WC') && WC()->session) {
+                    WC()->session->set('shipping_company', $company);
+                }
+                if (function_exists('WC') && WC()->customer) {
+                    WC()->customer->set_shipping_company($company);
+                }
             }
         }
         
