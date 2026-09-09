@@ -83,7 +83,7 @@ final class WcBetterShippingCalculatorForBrazilBetaNotice
 
         $version = defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')
             ? WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION
-            : '4.17.2';
+            : '4.17.3';
 
         wp_enqueue_style(
             'woo-better-calc-beta-notice',
