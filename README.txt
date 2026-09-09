@@ -114,7 +114,7 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
-# 5.0.0 - 2026-08-27
+# 5.0.0 - 2026-10-01
 * Major: Migrated the shipping calculator resources to shipping-simulation.
 
 # 4.17.3 - 2026-09-09

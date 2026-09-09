@@ -1,4 +1,4 @@
-# 5.0.0 - 27/08/26
+# 5.0.0 - 01/10/26
 * Novo: Migração dos recursos da calculadora de frete para o shipping-simulation.
 
 # 4.17.3 - 09/09/26
