@@ -782,7 +782,7 @@ class WcBetterShippingCalculatorForBrazil
         return $rates;
     }
 
-    public function lkn_custom_disable_shipping()
+    public function lkn_custom_disable_shipping($needs_shipping)
     {
         $disable_shipping_option = get_option('woo_better_calc_disabled_shipping', 'default');
 
@@ -801,10 +801,19 @@ class WcBetterShippingCalculatorForBrazil
 
         if ($disable_shipping_option === 'all' || ($only_virtual && $disable_shipping_option === 'digital')) {
             return false;
-        } else {
-            // Se todos forem virtuais, não precisa de frete
-            return $only_virtual ? false : true;
         }
+
+        // Se todos forem virtuais, não precisa de frete
+        if ($only_virtual) {
+            return false;
+        }
+
+        // REASON: Preserva a decisão nativa do WooCommerce quando o plugin não desabilita
+        // o frete. Retornar `true` incondicional aqui sobrescrevia o filtro
+        // woocommerce_cart_needs_shipping_address e fazia o checkout clássico exibir o
+        // checkbox "Entregar em um endereço diferente?" mesmo com a opção
+        // "Forçar entrega para o endereço de cobrança" (woocommerce_ship_to_destination=billing_only).
+        return $needs_shipping;
     }
 
     public function lkn_set_country_brasil()
