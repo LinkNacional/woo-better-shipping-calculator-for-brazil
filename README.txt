@@ -117,6 +117,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 # 5.0.0 - 2026-10-01
 * Major: Migrated the shipping calculator resources to shipping-simulation.
 
+# 4.17.4 - 2026-09-09
+* Fix: "Company" and "State Registration (IE)" fields no longer reappear pre-filled in the block and shortcode checkout after an order placed with a CPF — the WooCommerce session is now cleared alongside the user metadata.
+
 # 4.17.3 - 2026-09-09
 * Fix: The "Ship to a different address?" checkbox no longer appears on the classic/shortcode checkout when "Force shipping to the billing address" is enabled.
 * Fix: The "State Registration (IE)" field is no longer required on the "My Account > Edit Address" page when the entered document is a CPF.
