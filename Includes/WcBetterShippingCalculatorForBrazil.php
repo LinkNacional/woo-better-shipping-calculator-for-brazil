@@ -3927,6 +3927,18 @@ class WcBetterShippingCalculatorForBrazil
                     update_user_meta(get_current_user_id(), 'billing_company', '');
                     update_user_meta(get_current_user_id(), 'shipping_company', '');
                 }
+
+                // REASON: limpa também a sessão, senão o valor antigo de empresa
+                // "ressuscita" ao voltar ao checkout (o preenchimento lê user_meta
+                // e, quando vazio, cai no fallback da sessão).
+                if (function_exists('WC') && WC()->session) {
+                    WC()->session->set('billing_company', '');
+                    WC()->session->set('shipping_company', '');
+                }
+                if (function_exists('WC') && WC()->customer) {
+                    WC()->customer->set_billing_company('');
+                    WC()->customer->set_shipping_company('');
+                }
             }
         }
     }
@@ -4045,6 +4057,18 @@ class WcBetterShippingCalculatorForBrazil
                 if (is_user_logged_in()) {
                     update_user_meta(get_current_user_id(), 'billing_company', '');
                     update_user_meta(get_current_user_id(), 'shipping_company', '');
+                }
+
+                // REASON: limpa também a sessão, senão o valor antigo de empresa
+                // "ressuscita" ao voltar ao checkout (o preenchimento lê user_meta
+                // e, quando vazio, cai no fallback da sessão).
+                if (function_exists('WC') && WC()->session) {
+                    WC()->session->set('billing_company', '');
+                    WC()->session->set('shipping_company', '');
+                }
+                if (function_exists('WC') && WC()->customer) {
+                    WC()->customer->set_billing_company('');
+                    WC()->customer->set_shipping_company('');
                 }
             }
         }
@@ -6449,6 +6473,12 @@ class WcBetterShippingCalculatorForBrazil
             if (is_user_logged_in()) {
                 update_user_meta(get_current_user_id(), 'billing_ie', '');
             }
+
+            // REASON: limpa também a sessão, senão o valor antigo de IE volta
+            // ao checkout (o preenchimento lê user_meta e, vazio, usa a sessão).
+            if (function_exists('WC') && WC()->session) {
+                WC()->session->set('billing_ie', '');
+            }
             return;
         }
 
@@ -6494,6 +6524,12 @@ class WcBetterShippingCalculatorForBrazil
             $order->update_meta_data('_billing_ie', '');
             if (is_user_logged_in()) {
                 update_user_meta(get_current_user_id(), 'billing_ie', '');
+            }
+
+            // REASON: limpa também a sessão, senão o valor antigo de IE volta
+            // ao checkout (o preenchimento lê user_meta e, vazio, usa a sessão).
+            if (function_exists('WC') && WC()->session) {
+                WC()->session->set('billing_ie', '');
             }
             return;
         }
