@@ -1,3 +1,6 @@
+# 4.17.4 - 09/09/26
+* Correção: campos "Empresa" e "Inscrição Estadual (IE)" não voltam mais preenchidos no checkout (blocos e shortcode) após um pedido feito com CPF — a sessão do WooCommerce agora é limpa junto com os metadados do usuário.
+
 # 4.17.3 - 09/09/26
 * Correção: checkbox "Entregar em um endereço diferente?" deixou de aparecer no checkout clássico/shortcode quando a opção "Forçar entrega para o endereço de cobrança" está ativa.
 * Correção: campo "Inscrição Estadual (IE)" não é mais exigido na página "minha conta > editar endereço" quando o documento informado é CPF.

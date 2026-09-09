@@ -6,7 +6,7 @@ on:
       version:
         description: 'Versão/tag para o deploy (ex.: 4.17.3)'
         required: true
-        default: '4.17.3'
+        default: '4.17.4'
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil
