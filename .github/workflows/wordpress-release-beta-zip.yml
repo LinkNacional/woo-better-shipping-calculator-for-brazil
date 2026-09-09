@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Versão/tag da release (ex.: 4.17.4)'
+        description: 'Versão/tag da release (ex.: 4.17.5)'
         required: true
-        default: '4.17.4'
+        default: '4.17.5'
 
 env:
   PLUGIN_NAME: woo-better-shipping-calculator-for-brazil

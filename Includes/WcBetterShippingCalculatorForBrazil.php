@@ -268,7 +268,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '4.17.3', '4.17.2', '4.17.1', '4.17.0', '4.16.12', '4.16.11', '4.16.10', '4.16.9', '4.16.8', '4.16.7', '4.16.6', '4.16.5', '4.16.4', '4.16.3' );
+            $old_versions   = array( '4.17.4', '4.17.3', '4.17.2', '4.17.1', '4.17.0', '4.16.12', '4.16.11', '4.16.10', '4.16.9', '4.16.8', '4.16.7', '4.16.6', '4.16.5', '4.16.4' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {

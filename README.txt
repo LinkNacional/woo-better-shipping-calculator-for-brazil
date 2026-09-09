@@ -117,6 +117,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 # 5.0.0 - 2026-10-01
 * Major: Migrated the shipping calculator resources to shipping-simulation.
 
+# 4.17.5 - 2026-09-09
+* Fix: The "Company" field is no longer saved with the internal "woonomedaempresa" value when editing the address with a CPF.
+* Tweak: The "Company" field now behaves like the "State Registration (IE)" field in "Dynamic" mode — required for CNPJ and ignored for CPF, while respecting the "Optional" and "Required" options.
+
 # 4.17.4 - 2026-09-09
 * Fix: "Company" and "State Registration (IE)" fields no longer reappear pre-filled in the block and shortcode checkout after an order placed with a CPF — the WooCommerce session is now cleared alongside the user metadata.
 
