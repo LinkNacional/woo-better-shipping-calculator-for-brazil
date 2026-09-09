@@ -1,3 +1,7 @@
+# 4.17.5 - 09/09/26
+* Correção: campo "Empresa" não é mais salvo com o valor interno "woonomedaempresa" ao editar o endereço com CPF.
+* Ajuste: campo "Empresa" agora se comporta como a "Inscrição Estadual (IE)" no modo "Dinâmico" — obrigatório para CNPJ e ignorado para CPF, respeitando as opções "Opcional" e "Obrigatório".
+
 # 4.17.4 - 09/09/26
 * Correção: campos "Empresa" e "Inscrição Estadual (IE)" não voltam mais preenchidos no checkout (blocos e shortcode) após um pedido feito com CPF — a sessão do WooCommerce agora é limpa junto com os metadados do usuário.
 

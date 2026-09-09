@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 4.17.4
+Stable tag: 4.17.5
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -148,6 +148,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 4.17.5 - 2026-09-09
+* Fix: The "Company" field is no longer saved with the internal "woonomedaempresa" value when editing the address with a CPF.
+* Tweak: The "Company" field now behaves like the "State Registration (IE)" field in "Dynamic" mode — required for CNPJ and ignored for CPF, while respecting the "Optional" and "Required" options.
 
 # 4.17.4 - 2026-09-09
 * Fix: "Company" and "State Registration (IE)" fields no longer reappear pre-filled in the block and shortcode checkout after an order placed with a CPF — the WooCommerce session is now cleared alongside the user metadata.

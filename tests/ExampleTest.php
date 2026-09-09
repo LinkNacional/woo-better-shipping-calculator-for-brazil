@@ -50,6 +50,6 @@ class ExampleTest extends WP_UnitTestCase {
      */
     public function test_plugin_constants_are_defined(): void {
         $this->assertTrue( defined( 'WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION' ) );
-        $this->assertEquals( '4.17.4', WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION );
+        $this->assertEquals( '4.17.5', WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION );
     }
 }
