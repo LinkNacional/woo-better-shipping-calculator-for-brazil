@@ -394,6 +394,25 @@ document.addEventListener("DOMContentLoaded", function () {
         // Se não for dinâmico, não mexe no campo (deixa como está configurado no WooCommerce)
     }
 
+    function setCompanyRequired(isRequired) {
+        const companyInput = document.getElementById('billing_company');
+        const companyField = document.getElementById('billing_company_field');
+
+        if (!companyInput || !companyField) {
+            return;
+        }
+
+        if (isRequired) {
+            companyInput.setAttribute('required', 'required');
+            companyField.classList.add('validate-required');
+            companyField.classList.remove('optional');
+        } else {
+            companyInput.removeAttribute('required');
+            companyField.classList.remove('validate-required');
+            companyField.classList.add('optional');
+        }
+    }
+
     function hideCompanyField() {
         // Verificar se a configuração do campo empresa permite mudanças dinâmicas
         const companyBehavior = typeof WooBetterPersonTypeConfig !== 'undefined' ? 
@@ -410,15 +429,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 companyField.style.height = '0px';
                 companyField.style.overflow = 'hidden';
                 
-                // Definir valor específico apenas se campo estiver vazio
+                // CPF não tem empresa: limpa o campo (sem sentinela).
                 const companyInput = document.getElementById('billing_company');
                 if (companyInput) {
-                    const currentValue = companyInput.value.trim();
-                    if (!currentValue) {
-                        companyInput.value = 'woonomedaempresa';
-                    }
-                    // Se já tem valor, não mexe nele
+                    companyInput.value = '';
                 }
+
+                // Remove obrigatoriedade (ignora como o campo IE no CPF).
+                setCompanyRequired(false);
                 
                 // Remover classes de erro se existirem
                 companyField.classList.remove('woocommerce-invalid');
@@ -438,15 +456,14 @@ document.addEventListener("DOMContentLoaded", function () {
             companyField.style.height = '0px';
             companyField.style.overflow = 'hidden';
             
-            // Definir valor específico apenas se campo estiver vazio
+            // CPF não tem empresa: limpa o campo (sem sentinela).
             const companyInput = document.getElementById('billing_company');
             if (companyInput) {
-                const currentValue = companyInput.value.trim();
-                if (!currentValue) {
-                    companyInput.value = 'woonomedaempresa';
-                }
-                // Se já tem valor, não mexe nele
+                companyInput.value = '';
             }
+
+            // Remove obrigatoriedade (ignora como o campo IE no CPF).
+            setCompanyRequired(false);
             
             // Remover classes de erro se existirem
             companyField.classList.remove('woocommerce-invalid');
@@ -470,12 +487,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 companyField.style.height = '';
                 companyField.style.overflow = '';
                 
-                // Limpar apenas se tiver o valor específico (campo que estava vazio)
-                const companyInput = document.getElementById('billing_company');
-                if (companyInput && companyInput.value === 'woonomedaempresa') {
-                    companyInput.value = '';
-                }
-                // Se tiver qualquer outro valor, mantém como está
+                // CNPJ exige empresa: torna o campo obrigatório (como o IE).
+                setCompanyRequired(true);
             }
         }
         // Se não for dinâmico, não mexe no campo (deixa como está configurado no WooCommerce)
