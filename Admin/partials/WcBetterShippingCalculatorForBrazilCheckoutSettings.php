@@ -222,6 +222,40 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('No checkout, o campo de telefone receberá formatação e passará a incluir o código de país (DDI).', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+                'show_phone_country_code' => array(
+                    'title'    => __('Exibir Código do País (DDI)', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_show_phone_country_code',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-subtitle' => __('Exibir Código do País (DDI) no Telefone', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Mostra o código do país (DDI) ao lado da bandeira no campo de telefone.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Requer que a opção "Telefone com Máscara e DDI" esteja habilitada. Quando ativada, o campo exibe a bandeira e o código do país (DDI) do país selecionado.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Exibe o código do país (DDI) junto à bandeira no campo de telefone.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
+                'validate_ddd' => array(
+                    'title'    => __('Validar Número de Telefone', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_validate_ddd',
+                    'desc_tip' => false,
+                    'default'  => 'yes',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-subtitle' => __('Validar o número de telefone no checkout', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Valida se o número de telefone informado é válido.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Requer que a opção "Telefone com Máscara e DDI" esteja habilitada. Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Valida o número de telefone no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
                 'contact_required' => array(
                     'title'    => __('Telefone (Contato) Obrigatório', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_contact_required',
