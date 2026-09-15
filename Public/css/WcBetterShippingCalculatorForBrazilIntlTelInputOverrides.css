@@ -1,0 +1,11 @@
+/* Overrides do campo de telefone (intl-tel-input). Importado nos bundles JS
+   do telefone para ficar empacotado junto do CSS da própria biblioteca. */
+
+.iti .iti__selected-dial-code {
+  padding-right: 10px;
+}
+
+.iti--allow-dropdown .iti__country-container:not(:has(+ input[disabled])):not(:has(+ input[readonly])) button.iti__selected-country {
+  cursor: pointer;
+  border-radius: 8px 0 0 8px;
+}
