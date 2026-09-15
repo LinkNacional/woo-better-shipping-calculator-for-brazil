@@ -21,6 +21,9 @@
         }
     ],
     "minimum-stability": "stable",
+    "require": {
+        "giggsey/libphonenumber-for-php": "^9.0"
+    },
     "require-dev": {
         "phan/phan": "5.4.1",
         "phpunit/phpunit": "^9.6",

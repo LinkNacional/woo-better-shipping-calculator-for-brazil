@@ -540,6 +540,8 @@
               //Checkout
               'woo_better_calc_enable_auto_address_fill': 'woo_better_calc_cep_field_position',
               'woo_better_calc_enable_silent_address_fill': 'woo_better_calc_cep_field_position',
+              'woo_better_calc_show_phone_country_code': 'woo_better_calc_apply_phone_mask',
+              'woo_better_calc_validate_ddd': 'woo_better_calc_apply_phone_mask',
               'woo_better_calc_contact_required': 'woo_better_calc_apply_phone_mask',
               'woo_better_calc_contact_field_position': 'woo_better_calc_apply_phone_mask',
             };
@@ -654,6 +656,41 @@
     }
 
     handleAddressFillMutualExclusion();
+
+    const applyPhoneMaskRadios = document.querySelectorAll('input[name="woo_better_calc_apply_phone_mask"]');
+    const showCountryCodeRadios = document.querySelectorAll('input[name="woo_better_calc_show_phone_country_code"]');
+    const validateDddRadios = document.querySelectorAll('input[name="woo_better_calc_validate_ddd"]');
+
+    function updatePhoneChildState() {
+      // Considera habilitado se algum radio do pai (máscara) estiver marcado como 'yes'
+      const enabled = Array.from(applyPhoneMaskRadios).some(radio => radio.checked && radio.value === 'yes');
+
+      // show_phone_country_code: desabilita e força 'no' quando a máscara está off.
+      showCountryCodeRadios.forEach(radio => {
+        radio.disabled = !enabled;
+        radio.style.cursor = enabled ? '' : 'not-allowed';
+        if (!enabled) {
+          // Se desabilitar o pai, marca 'no' no filho
+          if (radio.value === 'no') {
+            radio.checked = true;
+          } else if (radio.value === 'yes') {
+            radio.checked = false;
+          }
+        }
+      });
+
+      // validate_ddd: apenas desabilita, preservando o default 'yes'.
+      validateDddRadios.forEach(radio => {
+        radio.disabled = !enabled;
+        radio.style.cursor = enabled ? '' : 'not-allowed';
+      });
+    }
+    if (applyPhoneMaskRadios.length > 0) {
+      updatePhoneChildState(); // Estado inicial
+      applyPhoneMaskRadios.forEach(radio => {
+        radio.addEventListener('change', updatePhoneChildState);
+      });
+    }
 
     // Função para mostrar/esconder tabelas dinamicamente
     function showTable(activeIdx) {

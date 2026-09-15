@@ -106,6 +106,26 @@ class WcBetterShippingCalculatorForBrazilPublic
     }
 
     /**
+     * Enfileira o sanitizador universal de campos de telefone.
+     *
+     * Remove imediatamente caracteres inválidos (ex.: letras) nos campos de
+     * telefone, tanto no campo próprio do plugin quanto no nativo do WooCommerce,
+     * em todos os cenários (blocos, clássico/shortcode e edição de endereço).
+     *
+     * @since    5.0.0
+     */
+    private function enqueue_phone_sanitizer()
+    {
+        wp_enqueue_script(
+            $this->plugin_name . '-phone-sanitizer',
+            plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicPhoneSanitizer.COMPILED.js',
+            array(),
+            $this->version,
+            false
+        );
+    }
+
+    /**
      * Register the stylesheets for the public-facing side of the site.
      *
      * @since    1.0.0
@@ -307,6 +327,7 @@ class WcBetterShippingCalculatorForBrazilPublic
         $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
         $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
         $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
+
         if (has_block('woocommerce/checkout')) {
             $number_field = get_option('woo_better_calc_number_required', 'no');
 
@@ -855,6 +876,9 @@ class WcBetterShippingCalculatorForBrazilPublic
 
 
         if ($is_checkout_page) {
+            // Sanitizador universal de telefone (campo próprio + nativo, todos os cenários).
+            $this->enqueue_phone_sanitizer();
+
             $number_field = get_option('woo_better_calc_number_required', 'no');
             $billing_number = '';
             $shipping_number = '';
@@ -924,8 +948,10 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
-            // Scripts para máscara de telefone (DDI + formatação)
-            if(($phone_mask_enabled === 'yes' || $phone_highlight === 'yes') && !$is_checkout_classic) {
+            // Máscara de telefone (DDI + formatação) no checkout em blocos. Roda
+            // quando a máscara está ativa OU quando há destaque (o destaque usa o
+            // modo `#custom-phone` do mesmo script).
+            if (($phone_mask_enabled === 'yes' || $phone_highlight === 'yes') && !$is_checkout_classic) {
                 wp_enqueue_style(
                     $this->plugin_name . '-checkout-phone-mask',
                     plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.css',
@@ -961,10 +987,17 @@ class WcBetterShippingCalculatorForBrazilPublic
                 }
 
                 $custom_country = '+55';
+                $billing_country = '+55';
+                $shipping_country = '+55';
                 if (function_exists('WC') && WC()->session) {
                     $custom_country = WC()->session->get('billing_phone_country_code', '');
+                    $billing_country = WC()->session->get('billing_phone_country_code', '');
+                    $shipping_country = WC()->session->get('shipping_phone_country_code', '');
                 }
-                
+                $custom_country = $custom_country ? $custom_country : '+55';
+                $billing_country = $billing_country ? $billing_country : '+55';
+                $shipping_country = $shipping_country ? $shipping_country : '+55';
+
                 wp_localize_script(
                     $this->plugin_name . '-checkout-phone-mask',
                     'wc_better_checkout_phone_mask_vars',
@@ -972,13 +1005,18 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'highlightPhone' => $phone_highlight === 'yes' ? 'true' : 'false',
                         'phoneMaskEnabled' => $phone_mask_enabled === 'yes' ? 'true' : 'false',
                         'phoneRequired' => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false',
+                        'showCountryCode' => get_option('woo_better_calc_show_phone_country_code', 'no') === 'yes' ? 'true' : 'false',
+                        'validateDdd' => get_option('woo_better_calc_validate_ddd', 'yes') === 'yes' ? 'true' : 'false',
                         'customPhone' => $custom_phone,
-                        'customCountry' => $custom_country
+                        'customCountry' => $custom_country,
+                        'billingCountry' => $billing_country,
+                        'shippingCountry' => $shipping_country
                     )
                 );
             }
 
-            if($phone_mask_enabled === 'yes' && $is_checkout_classic) {
+            // Máscara de telefone no checkout clássico/shortcode.
+            if ($phone_mask_enabled === 'yes' && $is_checkout_classic) {
                 wp_enqueue_style(
                     $this->plugin_name . '-checkout-phone-mask-shortcode',
                     plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.css',
@@ -995,13 +1033,29 @@ class WcBetterShippingCalculatorForBrazilPublic
                     false
                 );
                 
+                // DDI salvo em sessão (mesma fonte usada no checkout em blocos).
+                // O checkout clássico/shortcode precisa disso para restaurar a
+                // bandeira correta quando o número não traz o DDI explícito.
+                $shortcode_billing_country = '+55';
+                $shortcode_shipping_country = '+55';
+                if (function_exists('WC') && WC()->session) {
+                    $shortcode_billing_country = WC()->session->get('billing_phone_country_code', '');
+                    $shortcode_shipping_country = WC()->session->get('shipping_phone_country_code', '');
+                }
+                $shortcode_billing_country = $shortcode_billing_country ? $shortcode_billing_country : '+55';
+                $shortcode_shipping_country = $shortcode_shipping_country ? $shortcode_shipping_country : '+55';
+
                 wp_localize_script(
                     $this->plugin_name . '-checkout-phone-mask-shortcode',
                     'wc_better_checkout_phone_mask_vars',
                     array(
                         'highlightPhone' => $phone_highlight === 'yes' ? 'true' : 'false',
                         'phoneMaskEnabled' => $phone_mask_enabled === 'yes' ? 'true' : 'false',
-                        'phoneRequired' => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false'
+                        'phoneRequired' => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false',
+                        'showCountryCode' => get_option('woo_better_calc_show_phone_country_code', 'no') === 'yes' ? 'true' : 'false',
+                        'validateDdd' => get_option('woo_better_calc_validate_ddd', 'yes') === 'yes' ? 'true' : 'false',
+                        'billingCountry' => $shortcode_billing_country,
+                        'shippingCountry' => $shortcode_shipping_country
                     )
                 );
             }
@@ -1036,6 +1090,9 @@ class WcBetterShippingCalculatorForBrazilPublic
         }
 
         if ($is_edit_address) {
+            // Sanitizador universal de telefone (edição de endereço da conta).
+            $this->enqueue_phone_sanitizer();
+
             // Scripts de pessoa física/jurídica
             $person_type = get_option('woo_better_calc_person_type_select', 'none');
             
@@ -1178,6 +1235,16 @@ class WcBetterShippingCalculatorForBrazilPublic
                     array(),
                     $this->version,
                     'all'
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-phone-mask',
+                    'wc_better_checkout_phone_mask_vars',
+                    array(
+                        'phoneMaskEnabled' => 'true',
+                        'showCountryCode' => get_option('woo_better_calc_show_phone_country_code', 'no') === 'yes' ? 'true' : 'false',
+                        'validateDdd' => get_option('woo_better_calc_validate_ddd', 'yes') === 'yes' ? 'true' : 'false'
+                    )
                 );
             }
 

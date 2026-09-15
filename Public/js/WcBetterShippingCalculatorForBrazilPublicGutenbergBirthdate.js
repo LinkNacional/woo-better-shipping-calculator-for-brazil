@@ -234,7 +234,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Criar o campo após o last_name (seguindo padrão do PersonType)
         const lastInsertedElement = lastNameField.parentElement; // Div pai do last_name
-        const birthdateContainer = createBirthdateFieldContainer(initialValue, containerType);
+        const birthdateContainer = createBirthdateFieldContainer(initialValue);
         
         if (!birthdateContainer) {
             return;
@@ -370,7 +370,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return null;
     }
 
-    function createBirthdateFieldContainer(initialValue = '', containerType = 'billing') {
+    function createBirthdateFieldContainer(initialValue = '') {
         // Criar container seguindo o padrão dos campos do checkout
         const fieldContainer = document.createElement('div');
         fieldContainer.className = 'wc-block-components-text-input wc-block-components-address-form__birthdate is-active';
@@ -396,20 +396,16 @@ document.addEventListener("DOMContentLoaded", function () {
         input.setAttribute('min', minDate);
         input.setAttribute('max', maxDate); // Data máxima é hoje
 
-        // Capturar dimensões do campo lastname para manter consistência visual
-        const lastNameDimensions = getLastNameFieldDimensions(containerType);
-        if (lastNameDimensions && lastNameDimensions.height && lastNameDimensions.height !== 'auto') {
-            // Aplicar apenas a altura do lastname ao birthdate
-            input.style.height = lastNameDimensions.height;
-        }
-
-        // Aplicar padding dos inputs existentes do WooCommerce
-        const existingInputPadding = getWooCommerceInputPadding();
-        if (existingInputPadding) {
-            input.style.padding = existingInputPadding;
-        }
-
+        // Estilos fixos do campo, alinhados ao layout do checkout em blocos:
+        // altura de 50px (com min/max travados para não herdar o tema), padding
+        // do rótulo flutuante (espaço no topo) e box-sizing.
+        input.style.height = '50px';
+        input.style.setProperty('min-height', '50px', 'important');
+        input.style.setProperty('max-height', '50px', 'important');
+        input.style.padding = '18px 8px 0px 8px';
         input.style.lineHeight = '1';
+        input.style.setProperty('width', 'stretch', 'important');
+        input.style.boxSizing = 'border-box';
 
         // Preencher com valor inicial se existir
         if (initialValue) {

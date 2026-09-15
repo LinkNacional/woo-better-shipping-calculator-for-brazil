@@ -1,3 +1,8 @@
+# 5.0.1 - 15/09/26
+* Novo: O DDI do campo de telefone agora pode ser customizado — antes o select exibia apenas as bandeiras; agora o usuário pode exibir também o número do DDI, se desejar.
+* Novo: Validação do campo de telefone, para atender lojas que precisam dessa informação preenchida corretamente.
+* Correção: Ajustes de CSS/estilo no campo de data de nascimento.
+
 # 5.0.0 - 01/10/26
 * Novo: Migração dos recursos da calculadora de frete para o shipping-simulation.
 
