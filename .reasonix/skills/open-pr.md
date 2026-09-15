@@ -1,6 +1,6 @@
 ---
 name: open-pr
-description: Abre PR da branch dev para main no padrão Link Nacional (título VERSION - repo - resumo; corpo com readme/metadados)
+description: Abre PR da branch dev para main no padrão Link Nacional (título VERSION - repo - resumo; corpo com readme/metadados e resumo copiado do changelog)
 ---
 
 # open-pr
@@ -14,7 +14,7 @@ O usuário pode passar: `version=5.0.0 tested_up=7.1 php=8.2 summary=Migração 
 - **version** — versão da release (Stable tag / cabeçalho PHP)
 - **tested_up** — WP testado até
 - **php** — PHP mínimo requerido
-- **summary** — resumo CURTO das mudanças (usado no TÍTULO). Se ausente, derive do git log.
+- **summary** — resumo CURTO das mudanças (usado no TÍTULO). Se ausente, derive da entrada mais recente do changelog (NÃO do git log).
 
 ## Fluxo de execução
 
@@ -34,18 +34,21 @@ grep -m1 -i "^Stable tag:" README.txt
 REPO_NAME=$(basename "$PWD")
 ```
 
-### 2. Capturar git log (para o resumo, se `summary` não foi dado)
+### 2. Ler o changelog da versão atual (fonte do resumo e dos bullets)
+
+⚠️ **Regra anti-redundância.** NÃO use `git log` para gerar o resumo — o range de commits está dessincronizado (tags antigas/ausentes, branches de beta) e traz itens de versões já publicadas. Em vez disso, leia a entrada mais recente do changelog:
 
 ```bash
-LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
-if [ -z "$LAST_TAG" ]; then
-    git log -n 15 --oneline
-else
-    git log "${LAST_TAG}..HEAD" --oneline
-fi
+# Preferir CHANGELOG.md (português). Fallback: README.txt, seção == Changelog ==.
+head -n 30 CHANGELOG.md
+# ou
+grep -A 20 "^== Changelog ==" README.txt
 ```
 
-Transforme os commits em uma frase curta (≤ ~12 palavras) para o TÍTULO e em bullet points limpos (sem hash) para o corpo.
+A entrada mais recente tem o formato `# VERSION - DD/MM/AA` seguido de bullets `* ...`.
+
+- **TÍTULO**: resuma esses bullets em uma frase curta (≤ ~12 palavras).
+- **CORPO**: copie os bullets tal como estão no changelog (sem hash, sem reescrever).
 
 ### 3. Montar TÍTULO
 
@@ -98,7 +101,7 @@ Este plugin utiliza um fluxo de desenvolvimento automatizado com:
 
 ## 📋 Resumo da Versão {VERSION}
 
-{BULLETS baseados no git log — limpos, sem hashes. Ex.: "* Novo: Migração dos recursos da calculadora de frete para o shipping-simulation."}
+{BULLETS copiados da entrada mais recente do CHANGELOG.md (ou do README.txt, seção == Changelog ==). NÃO invente a partir do git log.}
 ```
 
 ### 5. Abrir o PR
@@ -127,3 +130,4 @@ Mostre a URL retornada pelo `gh` e o comando usado. Se o PR já existir para `de
 - Corpo SEMPRE com Testado até, Requer PHP, Tag estável, Resumo da Versão e a própria versão.
 - Se `version`, `tested_up` ou `php` estiverem divergindo entre header PHP e README.txt, use o **header PHP** e avise.
 - Nunca inclua hashes de commit no corpo.
+- Resumo e bullets do corpo SEMPRE vindos do changelog da versão atual — nunca do `git log`.
