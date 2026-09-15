@@ -5,7 +5,7 @@ Tags: cep, checkout, CPF, CNPJ, Brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.0.0
+Stable tag: 5.0.1
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -113,6 +113,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.0.1 - 2026-09-15
+* New: The phone field DDI (country code) can now be customized — the select previously only showed the flags, and the user can now also display the DDI number.
+* New: Phone field validation, to help stores that need this data filled in correctly.
+* Fix: CSS/style adjustments on the birth date field.
 
 # 5.0.0 - 2026-10-01
 * Major: Migrated the shipping calculator resources to shipping-simulation.

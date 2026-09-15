@@ -1,6 +1,6 @@
 ---
 name: prepare-release
-description: Prepara release: atualiza readme.txt, readme.md, CHANGELOG.md, cabeçalho PHP, constante VERSION, fallback, testes, .yml workflows baseado no git log
+description: Prepara release: atualiza readme.txt, readme.md, CHANGELOG.md, cabeçalho PHP, constante VERSION, fallback, testes, .yml workflows. Changelog baseado nos highlights do usuário (git log é só dica).
 ---
 
 # prepare-release
@@ -14,7 +14,7 @@ O usuário pode passar os valores diretamente: `"version=1.4.0 tested_up=6.5 php
 - **version** — nova versão (Stable tag)
 - **tested_up** — versão do WP testada (Tested up to)
 - **php** — versão mínima do PHP (Requires PHP)
-- **highlights** — resumo da versão (opcional, usa git log se vazio)
+- **highlights** — resumo da versão (itens de mudança). É a **fonte primária** do changelog. Se vazio, **pergunte obrigatoriamente** ao usuário o que mudou — NÃO invente a partir do git log.
 
 ## Fluxo de execução
 
@@ -24,8 +24,17 @@ Se não recebidos via arguments, pergunte ao usuário um por um. Detecte a vers�
 grep -E "Version:|Requires PHP:" *.php
 ```
 
-### 2. Capturar git log
+### 2. Levantar o contexto das mudanças (changelog)
+
+⚠️ **Regra anti-redundância.** O changelog NUNCA deve listar itens que já pertencem a versões anteriores. Antes de escrever qualquer entrada:
+
+1. **Pergunte ao usuário** o que mudou nesta versão (se `highlights` não veio nos arguments). A resposta dele é a fonte da verdade.
+2. O `git log` é **apenas uma dica** para o usuário lembrar — não gera os bullets sozinho. O range de commits costuma estar dessincronizado (tags antigas/ausentes, branches de beta) e pode trazer commits de releases já publicadas.
+3. **Leia o topo do changelog atual** (`readme.txt` e `CHANGELOG.md`) e **descarte** qualquer item já descrito nas entradas anteriores.
+4. Escreva os bullets **somente** com o que o usuário confirmou como novo.
+
 ```bash
+# dica opcional — jamais usar como fonte única
 LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
 if [ -z "$LAST_TAG" ]; then
     git log -n 10 --oneline
@@ -44,7 +53,7 @@ A versão aparece em **11 locais** espalhados por **8 arquivos**. Atualize todos
 - Adicionar entrada no `== Changelog ==` (topo da seção), **sempre em inglês**, usando a **data de hoje** (obtida via `date +%Y-%m-%d`). Deixar uma **linha em branco** entre a nova entrada e a anterior:
   ```
   # VERSION - YYYY-MM-DD
-  * Item baseado nos commits
+  * Item (escrito a partir do `highlights` do usuário, NÃO do git log)
 
   # VERSAO_ANTERIOR - YYYY-MM-DD
   ```
@@ -54,7 +63,7 @@ A versão aparece em **11 locais** espalhados por **8 arquivos**. Atualize todos
 - Adicionar entrada no topo do arquivo, **em português**, usando a **data de hoje** (obtida via `date +%d/%m/%y`):
   ```
   # VERSION - DD/MM/AA
-  * Item baseado nos commits
+  * Item (escrito a partir do `highlights` do usuário, NÃO do git log)
   ```
 
 #### 3c. `README.md`
