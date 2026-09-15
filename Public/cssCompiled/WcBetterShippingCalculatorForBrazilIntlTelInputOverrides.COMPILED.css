@@ -1,0 +1,1 @@
+.iti .iti__selected-dial-code{padding-right:10px}.iti--allow-dropdown .iti__country-container:not(:has(+input[disabled])):not(:has(+input[readonly])) button.iti__selected-country{border-radius:8px 0 0 8px;cursor:pointer}

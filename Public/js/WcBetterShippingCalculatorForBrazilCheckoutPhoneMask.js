@@ -1,5 +1,6 @@
 import intlTelInput from 'intl-tel-input';
 import 'intl-tel-input/build/css/intlTelInput.css';
+import '../css/WcBetterShippingCalculatorForBrazilIntlTelInputOverrides.css';
 import intlTelInputUtils from 'intl-tel-input/build/js/utils.js';
 import { pt } from 'intl-tel-input/i18n';
 
