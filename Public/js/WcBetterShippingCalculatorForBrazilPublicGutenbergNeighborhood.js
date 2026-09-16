@@ -33,6 +33,15 @@ document.addEventListener("DOMContentLoaded", function () {
         return isBrazilSelected('billing') || isBrazilSelected('shipping');
     }
 
+    // Verifica se existe algum campo de bairro ativo no DOM.
+    // Usamos a presença real no DOM em vez da flag neighborhoodFieldsActive porque a flag
+    // pode estar defasada: a criação do campo é assíncrona (setTimeout em
+    // billingNeighborhoodHandle/shippingNeighborhoodHandle), então ela nem sempre reflete
+    // que o campo existe — era por isso que a troca de país só escondia no primeiro ciclo.
+    function hasNeighborhoodFields() {
+        return !!document.querySelector('.wc-better-billing-neighborhood, .wc-better-shipping-neighborhood');
+    }
+
     // Função para remover campos de neighborhood
     function removeNeighborhoodFields() {
         const billingNeighborhoodField = document.querySelector('.wc-better-billing-neighborhood');
@@ -85,8 +94,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const observer = new MutationObserver((mutationsList) => {
         // Verificar se pelo menos um país é Brasil antes de processar qualquer lógica
         if (!isAnyCountryBrazil()) {
-            // Se nenhum país for Brasil e temos campos ativos, removê-los
-            if (neighborhoodFieldsActive) {
+            // Se nenhum país for Brasil, remover os campos (checagem por presença real
+            // no DOM, não pela flag que pode estar defasada).
+            if (hasNeighborhoodFields()) {
                 removeNeighborhoodFields();
             }
             return;
@@ -397,8 +407,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function handleCountryChange() {
         if (!isAnyCountryBrazil()) {
-            // Se NENHUM país é Brasil, remover TODOS os campos
-            if (neighborhoodFieldsActive) {
+            // Se NENHUM país é Brasil, remover TODOS os campos (checagem por presença real
+            // no DOM, não pela flag que pode estar defasada).
+            if (hasNeighborhoodFields()) {
                 removeNeighborhoodFields();
             }
             return;

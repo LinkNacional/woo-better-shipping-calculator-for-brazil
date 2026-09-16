@@ -114,13 +114,18 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
-# 5.0.1 - 2026-09-15
+# 5.0.1 - 2026-10-01
 * New: The phone field DDI (country code) can now be customized — the select previously only showed the flags, and the user can now also display the DDI number.
 * New: Phone field validation, to help stores that need this data filled in correctly.
 * Fix: CSS/style adjustments on the birth date field.
 
 # 5.0.0 - 2026-10-01
 * Major: Migrated the shipping calculator resources to shipping-simulation.
+
+# 4.17.6 - 2026-09-16
+* Fix: The "Company" field no longer reverts to "Optional" when the checkout page is saved — the native WooCommerce option and the plugin setting now stay in sync.
+* Tweak: The "Company" field is no longer required for customers outside Brazil.
+* Tweak: The Postal Code (CEP) lookup and the "Neighborhood" field now only activate when the selected country is Brazil, in both the block and shortcode checkouts.
 
 # 4.17.5 - 2026-09-09
 * Fix: The "Company" field is no longer saved with the internal "woonomedaempresa" value when editing the address with a CPF.

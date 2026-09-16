@@ -263,6 +263,13 @@ jQuery(function ($) {
                 $checkboxDiv.css('display', '');
             }
         }
+        // Fora do Brasil, cancela consultas/animações de CEP pendentes: o campo fica sem função.
+        if ($countrySelect.length && $countrySelect.val() !== 'BR') {
+            var fetcher = activeCepFetchers[baseId];
+            if (fetcher && typeof fetcher._resetForNonBrazil === 'function') {
+                fetcher._resetForNonBrazil();
+            }
+        }
     }
 
     // Classe para buscar endereço via CEP e atualizar label do checkbox
@@ -416,9 +423,59 @@ jQuery(function ($) {
             this.addressData = null;
             this._requestInProgress = false;
         }
+
+        // Verifica se o país do contexto é o Brasil (select #<contexto>-country do Blocks).
+        // Sem campo de país presente, preserva o comportamento anterior (assume Brasil).
+        _isBrazilCountry() {
+            var $countrySelect = $('#' + this.context + '-country');
+            if (!$countrySelect.length) {
+                return true;
+            }
+            return $countrySelect.val() === 'BR';
+        }
+
+        // Cancela consulta/animações de CEP pendentes e devolve o campo ao estado neutro.
+        // Usado quando o país deixa de ser o Brasil: o campo CEP fica "sem função" até voltar a BR.
+        _resetForNonBrazil() {
+            if (this._debounceTimer) {
+                clearTimeout(this._debounceTimer);
+                this._debounceTimer = null;
+            }
+            if (this._abortController) {
+                this._abortController.abort();
+                this._abortController = null;
+            }
+            this._requestInProgress = false;
+            this._lastCep = '';
+            this.addressData = null;
+            if (this._loadingPulse) {
+                clearInterval(this._loadingPulse);
+                this._loadingPulse = null;
+            }
+            this._hideBorderSpinner();
+            if (this.input && this.input.length) {
+                this.input.prop('readonly', false).prop('disabled', false);
+            }
+            var $checkboxInput = (this.checkboxLabel && this.checkboxLabel.length)
+                ? this.checkboxLabel.find('input[type="checkbox"]')
+                : $();
+            $checkboxInput.prop('disabled', true).prop('checked', false);
+            var $labelSpan = (this.checkboxLabel && this.checkboxLabel.length)
+                ? this.checkboxLabel.find('.wc-block-components-checkbox__label')
+                : $();
+            if ($labelSpan.length) {
+                $labelSpan.stop(true, true).css('opacity', 1).show();
+            }
+        }
+
         async handleCheckboxChange(event) {
             if (!enableCheckbox) {
                 return; // Não executa requisições nem lógica do checkbox
+            }
+
+            // Só atua com o Brasil selecionado (fora do Brasil o campo CEP fica sem função).
+            if (!this._isBrazilCountry()) {
+                return;
             }
             
             // Se desmarcou o checkbox
@@ -661,6 +718,13 @@ jQuery(function ($) {
             // CEP correto: ignora para não iniciar um novo ciclo de lookup
             if (this._isFillingPostcode) {
                 this._isFillingPostcode = false;
+                return;
+            }
+
+            // Consulta automática de CEP só roda com o Brasil selecionado.
+            // Fora do Brasil o campo fica sem a função; ao voltar ao Brasil, volta a consultar.
+            if (!this._isBrazilCountry()) {
+                this._resetForNonBrazil();
                 return;
             }
 

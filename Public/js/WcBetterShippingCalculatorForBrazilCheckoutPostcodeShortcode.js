@@ -108,6 +108,14 @@ jQuery(function ($) {
         }
     }
 
+    // Verifica se o país selecionado para o contexto é o Brasil.
+    // Sem campo de país no DOM, preserva o comportamento anterior (assume Brasil).
+    function isBrazilCountry(type) {
+        var $countrySelect = $('#' + type + '_country');
+        if (!$countrySelect.length) return true;
+        return $countrySelect.val() === 'BR';
+    }
+
     // Classe para buscar endereço via CEP e atualizar label do checkbox
     class CepAddressFetcher {
         formatCep(cep) {
@@ -715,6 +723,17 @@ jQuery(function ($) {
                 setCheckboxReadonly(false);
             }
             $postcode.on('input', async function (e) {
+                // Consulta automática de CEP só roda com o Brasil selecionado.
+                // Fora do Brasil o campo fica sem a função; ao voltar ao Brasil, volta a consultar.
+                if (!isBrazilCountry(type)) {
+                    if (spinnerState) { hideBorderSpinnerOnInput(spinnerState); spinnerState = null; }
+                    if (loadingPulse) { clearInterval(loadingPulse); loadingPulse = null; }
+                    $postcode.prop('disabled', false);
+                    lastCepRaw = '';
+                    lastValidCep = '';
+                    return;
+                }
+
                 const rawValue = e.target.value;
                 const cep = rawValue.replace(/\D/g, '');
 
@@ -767,6 +786,12 @@ jQuery(function ($) {
                     });
                     await Promise.race([silentAjaxPromise, new Promise(function (r) { setTimeout(r, 5000); })]);
                     if (!silentAjaxDone) { await silentAjaxPromise.catch(function () {}); }
+
+                    // Se o país mudou durante a consulta, não preenche o endereço.
+                    if (!isBrazilCountry(type)) {
+                        $postcode.prop('disabled', false);
+                        return;
+                    }
 
                     fillFields(type, {
                         address: silentAddressObj.address,
@@ -996,6 +1021,20 @@ jQuery(function ($) {
                     }
                 });
             });
+            // Ao trocar o país, cancela consultas/animações pendentes quando sai do Brasil,
+            // para o campo "ficar sem função" fora do Brasil e voltar a funcionar no Brasil.
+            var $countrySelect = $('#' + type + '_country');
+            if ($countrySelect.length) {
+                $countrySelect.on('change', function () {
+                    if (isBrazilCountry(type)) return;
+                    if (spinnerState) { hideBorderSpinnerOnInput(spinnerState); spinnerState = null; }
+                    if (loadingPulse) { clearInterval(loadingPulse); loadingPulse = null; }
+                    $postcode.prop('disabled', false);
+                    lastCepRaw = '';
+                    lastValidCep = '';
+                    addressData = null;
+                });
+            }
             // Estado inicial ao carregar
             const initialCep = $postcode.val().replace(/\D/g, '');
             setCheckboxReadonly(initialCep.length !== 8);

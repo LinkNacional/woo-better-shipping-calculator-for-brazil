@@ -1,10 +1,15 @@
-# 5.0.1 - 15/09/26
+# 5.0.1 - 01/10/26
 * Novo: O DDI do campo de telefone agora pode ser customizado — antes o select exibia apenas as bandeiras; agora o usuário pode exibir também o número do DDI, se desejar.
 * Novo: Validação do campo de telefone, para atender lojas que precisam dessa informação preenchida corretamente.
 * Correção: Ajustes de CSS/estilo no campo de data de nascimento.
 
 # 5.0.0 - 01/10/26
 * Novo: Migração dos recursos da calculadora de frete para o shipping-simulation.
+
+# 4.17.6 - 16/09/26
+* Correção: o campo "Empresa" não volta mais para "Opcional" ao salvar a página de checkout — a option nativa do WooCommerce e a configuração do plugin agora ficam em sincronia.
+* Ajuste: o campo "Empresa" deixou de ser exigido para clientes fora do Brasil.
+* Ajuste: a consulta de CEP e o campo "Bairro" agora só atuam quando o país selecionado é o Brasil, tanto no checkout em blocos quanto no shortcode/classic.
 
 # 4.17.5 - 09/09/26
 * Correção: campo "Empresa" não é mais salvo com o valor interno "woonomedaempresa" ao editar o endereço com CPF.

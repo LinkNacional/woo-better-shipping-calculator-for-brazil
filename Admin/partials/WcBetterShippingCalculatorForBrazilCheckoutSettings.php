@@ -354,6 +354,35 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
         {
             $settings = $this->get_settings();
             \WC_Admin_Settings::save_fields($settings);
+
+            // REASON: o campo "Comportamento do Campo Empresa" é editado NESTA aba
+            // (wc-better-calc-checkout), mas a sincronização com a option nativa do
+            // WooCommerce só existia em WcSettings::save() (aba "Calculadora de frete").
+            // Como apenas o save() da aba ativa é executado, salvar "Dinâmico" aqui nunca
+            // atualizava woocommerce_checkout_company_field (o toggle "Empresa" do editor
+            // de blocos continuava ativo/opcional). Agora mantemos os dois em sincronia.
+            $this->update_woocommerce_company_field_setting();
+        }
+
+        /**
+         * Atualiza a option nativa do WooCommerce conforme o comportamento escolhido.
+         * dynamic → hidden | optional → optional | required → required.
+         */
+        private function update_woocommerce_company_field_setting()
+        {
+            $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
+
+            switch ($company_behavior) {
+                case 'dynamic':
+                    update_option('woocommerce_checkout_company_field', 'hidden');
+                    break;
+                case 'optional':
+                    update_option('woocommerce_checkout_company_field', 'optional');
+                    break;
+                case 'required':
+                    update_option('woocommerce_checkout_company_field', 'required');
+                    break;
+            }
         }
 
         protected function get_default_company_field_behavior()
