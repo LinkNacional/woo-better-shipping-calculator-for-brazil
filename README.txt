@@ -5,7 +5,7 @@ Tags: woocommerce, brasil, calculadora de frete, CEP, entrega
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 4.17.5
+Stable tag: 4.17.6
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -148,6 +148,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 4.17.6 - 2026-09-16
+* Fix: The "Company" field no longer reverts to "Optional" when the checkout page is saved — the native WooCommerce option and the plugin setting now stay in sync.
+* Tweak: The "Company" field is no longer required for customers outside Brazil.
+* Tweak: The Postal Code (CEP) lookup and the "Neighborhood" field now only activate when the selected country is Brazil, in both the block and shortcode checkouts.
 
 # 4.17.5 - 2026-09-09
 * Fix: The "Company" field is no longer saved with the internal "woonomedaempresa" value when editing the address with a CPF.

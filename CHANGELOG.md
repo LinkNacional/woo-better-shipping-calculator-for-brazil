@@ -1,3 +1,8 @@
+# 4.17.6 - 16/09/26
+* Correção: o campo "Empresa" não volta mais para "Opcional" ao salvar a página de checkout — a option nativa do WooCommerce e a configuração do plugin agora ficam em sincronia.
+* Ajuste: o campo "Empresa" deixou de ser exigido para clientes fora do Brasil.
+* Ajuste: a consulta de CEP e o campo "Bairro" agora só atuam quando o país selecionado é o Brasil, tanto no checkout em blocos quanto no shortcode/classic.
+
 # 4.17.5 - 09/09/26
 * Correção: campo "Empresa" não é mais salvo com o valor interno "woonomedaempresa" ao editar o endereço com CPF.
 * Ajuste: campo "Empresa" agora se comporta como a "Inscrição Estadual (IE)" no modo "Dinâmico" — obrigatório para CNPJ e ignorado para CPF, respeitando as opções "Opcional" e "Obrigatório".
