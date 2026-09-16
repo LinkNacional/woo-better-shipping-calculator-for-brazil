@@ -124,7 +124,7 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 # 4.17.6 - 2026-09-16
 * Fix: The "Company" field no longer reverts to "Optional" when the checkout page is saved — the native WooCommerce option and the plugin setting now stay in sync.
-* Tweak: The "Company" field is no longer required for customers outside Brazil.
+* Tweak: In "Dynamic" mode, the "Company" field is no longer displayed for customers outside Brazil; in "Optional" and "Required" modes, the field is handled by WooCommerce.
 * Tweak: The Postal Code (CEP) lookup and the "Neighborhood" field now only activate when the selected country is Brazil, in both the block and shortcode checkouts.
 
 # 4.17.5 - 2026-09-09
