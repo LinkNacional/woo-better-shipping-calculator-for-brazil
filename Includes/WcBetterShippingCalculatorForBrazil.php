@@ -222,8 +222,13 @@ class WcBetterShippingCalculatorForBrazil
         // Hook para atualizar billing_document quando perfil do usuário é atualizado
         $this->loader->add_action('profile_update', $this, 'update_billing_document_on_profile_update', 10, 1);
         
-        // Hook para sincronizar campo empresa quando meta de post é atualizada
-        $this->loader->add_action('updated_post_meta', $this, 'sync_company_field_on_meta_update', 10, 4);
+        // REASON: o campo Empresa nativo do WooCommerce é uma OPTION
+        // (woocommerce_checkout_company_field), não post meta. O hook correto para
+        // detectar mudanças feitas no editor de blocos é 'updated_option'. O hook antigo
+        // ('updated_post_meta', sem filtro) disparava em qualquer edição de meta no admin
+        // — inclusive ao salvar a página de checkout — e sobrescrevia a escolha do lojista
+        // (ex.: "Dinâmico" voltava para "Opcional").
+        $this->loader->add_action('updated_option', $this, 'sync_company_field_on_option_update', 10, 3);
 
         // Hook para adicionar campos customizados na resposta AJAX de detalhes do cliente (admin)
         $this->loader->add_filter('woocommerce_ajax_get_customer_details', $this, 'add_custom_fields_to_customer_details', 10, 3);
@@ -3558,20 +3563,21 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
-     * Sincroniza configuração do campo empresa quando página é salva no admin
-     * 
-     * @param int $post_id ID da página/post
-     * @param WP_Post $post Objeto do post
-     * @param bool $update Se é uma atualização (true) ou novo post (false)
-     * @param WP_Post|null $post_before Objeto do post antes da atualização (null para novos posts)
+     * Sincroniza o comportamento do campo Empresa quando a option nativa do
+     * WooCommerce muda (ex.: toggle "Empresa" no editor de blocos do checkout).
+     *
+     * @param string $option    Nome da option alterada.
+     * @param mixed  $old_value Valor anterior.
+     * @param mixed  $value     Novo valor.
      */
+    public function sync_company_field_on_option_update($option, $old_value, $value) {
+        // Só reage à option do campo Empresa do WooCommerce.
+        if ('woocommerce_checkout_company_field' !== $option) {
+            return;
+        }
 
-    /**
-     * Versão para updated_post_meta
-     */
-    public function sync_company_field_on_meta_update($meta_id, $post_id, $meta_key, $meta_value) {
-        // Verificar se é no admin
-        if (!is_admin()) {
+        // Ignora disparos sem mudança real de valor.
+        if ($old_value === $value) {
             return;
         }
         
@@ -3582,13 +3588,20 @@ class WcBetterShippingCalculatorForBrazil
      * Executa a sincronização do campo empresa
      */
     private function execute_company_field_sync() {
-        // Pegar a configuração do meu campo
         $company_company_field = get_option('woocommerce_checkout_company_field', 'hidden');
 
-        if($company_company_field === 'hidden') {
-            update_option('woo_better_calc_company_field_behavior', 'dynamic');
-        } else {
-            update_option('woo_better_calc_company_field_behavior', $company_company_field);
+        // Mapeamento biunívoco entre a option do WooCommerce e o comportamento do plugin.
+        // Valores desconhecidos/vazios não sobrescrevem a escolha do lojista.
+        switch ($company_company_field) {
+            case 'hidden':
+                update_option('woo_better_calc_company_field_behavior', 'dynamic');
+                break;
+            case 'optional':
+                update_option('woo_better_calc_company_field_behavior', 'optional');
+                break;
+            case 'required':
+                update_option('woo_better_calc_company_field_behavior', 'required');
+                break;
         }
     }
 
@@ -6627,7 +6640,7 @@ class WcBetterShippingCalculatorForBrazil
      * Desabilita erros de required para campos que não se aplicam ao contexto atual.
      *
      * Regras:
-     * - Fora do Brasil, remove required de documento, bairro e IE.
+     * - Fora do Brasil, remove required de documento, bairro, IE e empresa.
      * - No Brasil, se o documento identificado for CPF, remove required de IE.
      * - No Brasil, se for CNPJ, mantém IE obrigatório.
      *
@@ -6657,6 +6670,9 @@ class WcBetterShippingCalculatorForBrazil
             $errors->remove( 'billing_cnpj_required' );
             $errors->remove( 'billing_neighborhood_required' );
             $errors->remove( 'billing_ie_required' );
+            // Em modo "dynamic" o campo "Empresa" só existe no Brasil (depende do CNPJ),
+            // então não deve ser exigido de clientes de outros países.
+            $errors->remove( 'billing_company_required' );
             return;
         }
 
