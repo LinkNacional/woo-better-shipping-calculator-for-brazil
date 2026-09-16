@@ -6663,6 +6663,12 @@ class WcBetterShippingCalculatorForBrazil
         $clean_document = preg_replace( '/[^0-9A-Z]/', '', strtoupper( $billing_document ) );
         $is_cpf = strlen( $clean_document ) === 11;
 
+        // REASON: o campo "Empresa" só é controlado pelo plugin no modo "dynamic".
+        // Nos modos "required"/"optional" a obrigatoriedade é do WooCommerce e não
+        // deve ser desfeita por CPF/CNPJ nem por país.
+        $company_behavior = get_option( 'woo_better_calc_company_field_behavior', 'dynamic' );
+        $controls_company = ( 'dynamic' === $company_behavior );
+
         if ( 'BR' !== $billing_country ) {
             // Remover erros de campos obrigatórios que não se aplicam fora do Brasil.
             $errors->remove( 'billing_document_required' );
@@ -6672,14 +6678,18 @@ class WcBetterShippingCalculatorForBrazil
             $errors->remove( 'billing_ie_required' );
             // Em modo "dynamic" o campo "Empresa" só existe no Brasil (depende do CNPJ),
             // então não deve ser exigido de clientes de outros países.
-            $errors->remove( 'billing_company_required' );
+            if ( $controls_company ) {
+                $errors->remove( 'billing_company_required' );
+            }
             return;
         }
 
         // Se for CPF, IE e empresa não são obrigatórios.
         if ( $is_cpf ) {
             $errors->remove( 'billing_ie_required' );
-            $errors->remove( 'billing_company_required' );
+            if ( $controls_company ) {
+                $errors->remove( 'billing_company_required' );
+            }
         }
     }
 
