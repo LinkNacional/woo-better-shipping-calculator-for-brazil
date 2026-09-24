@@ -98,7 +98,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '5.0.1';
+            $this->version = '5.0.2';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -297,7 +297,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '5.0.0', '4.17.4', '4.17.3', '4.17.2', '4.17.1', '4.17.0', '4.16.12', '4.16.11', '4.16.10', '4.16.9', '4.16.8', '4.16.7', '4.16.6', '4.16.5' );
+            $old_versions   = array( '5.0.1', '5.0.0', '4.17.4', '4.17.3', '4.17.2', '4.17.1', '4.17.0', '4.16.12', '4.16.11', '4.16.10', '4.16.9', '4.16.8', '4.16.7', '4.16.6' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -4043,10 +4043,11 @@ class WcBetterShippingCalculatorForBrazil
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
         $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
 
-        // Ocultar o campo nativo de telefone só faz sentido no checkout em blocos (Gutenberg).
-        // No checkout clássico/shortcode, o reposicionamento é feito via wc_better_calc_checkout_fields
-        // usando priority. Aplicar hidden=true no locale também no clássico causa o campo sumir
-        // a partir do WooCommerce 10.8.1+.
+        // REASON: Ocultar o campo nativo de telefone no locale só faz sentido no
+        // checkout em blocos (Gutenberg). No clássico/shortcode o reposicionamento
+        // é feito via wc_better_calc_checkout_fields usando priority, e aplicar
+        // hidden=true no locale também no clássico faz o campo sumir a partir do
+        // WooCommerce 10.8.1+.
         $is_blocks_checkout = false;
         if ( function_exists( 'has_block' ) ) {
             global $post;
@@ -4055,9 +4056,23 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
+        // REASON: A visibilidade REAL do campo nativo é a fonte de verdade — este
+        // plugin a mantém sincronizada com o "Destaque do Campo Telefone"
+        // (woocommerce_checkout_phone_field = hidden). Não dá para decidir a
+        // obrigatoriedade só por $is_blocks_checkout: em requisições REST
+        // (validação do Store API) não existe $post e has_block() retorna false,
+        // fazendo o plugin marcar 'phone' como obrigatório mesmo com o nativo
+        // oculto. Como o WooCommerce remove 'phone' de get_default_address_fields()
+        // quando ele está oculto, o locale 'default' NÃO contém 'phone' com
+        // 'label'; a entrada então criada pelo plugin ficava sem 'label' e o
+        // OrderController (Store API) emitia "Undefined array key label" (linha
+        // 501) + erro espúrio "<vazio> is required" que bloqueava o pedido.
+        $native_phone_hidden = get_option('woocommerce_checkout_phone_field', 'optional') === 'hidden';
+        $hides_native_phone  = ($phone_highlight === 'yes' && $is_blocks_checkout) || $native_phone_hidden;
+
         // Carrega a lista de códigos de países
         $country_codes = include plugin_dir_path(__FILE__) . 'country-codes.php';
-        
+
         // Aplica as configurações para todos os países da lista
         foreach ($country_codes as $country_code) {
             // Garante que a chave 'phone' exista no array do país para evitar warnings do PHP
@@ -4065,25 +4080,24 @@ class WcBetterShippingCalculatorForBrazil
                 $locale[$country_code]['phone'] = [];
             }
 
-            // O campo nativo de telefone só é usado quando NÃO há destaque. Com o
-            // "Destaque do Campo Telefone" ligado, o campo próprio substitui o
-            // nativo (que fica oculto no checkout em blocos) e a obrigatoriedade
-            // passa a ser cobrada pelo campo próprio. Sem destaque, o nativo
-            // continua visível e obrigatório conforme a opção de contato.
-            $hides_native_phone = ($phone_highlight === 'yes' && $is_blocks_checkout);
+            if ($hides_native_phone) {
+                // Campo nativo oculto (destaque ativo ou ocultado pelo lojista):
+                // nunca exigir no Store API. Evita requerimento sem 'label' no
+                // OrderController. A obrigatoriedade é cobrada pelo campo próprio
+                // (destaque) e/ou pelo JS.
+                $locale[$country_code]['phone']['required'] = false;
 
-            if ($phone_required === 'yes' && ! $hides_native_phone) {
+                // Marca hidden no locale apenas no checkout em blocos.
+                if ($is_blocks_checkout) {
+                    $locale[$country_code]['phone']['hidden'] = true;
+                }
+            } elseif ($phone_required === 'yes') {
+                // Sem destaque, o nativo continua visível e obrigatório conforme
+                // a opção de contato.
                 $locale[$country_code]['phone']['required'] = true;
             }
-
-            // Oculta o campo nativo apenas no checkout em blocos quando o
-            // destaque está ativo.
-            if ($hides_native_phone) {
-                $locale[$country_code]['phone']['hidden'] = true;
-                $locale[$country_code]['phone']['required'] = false;
-            }
         }
-        
+
         return $locale;
     }
 
