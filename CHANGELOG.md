@@ -1,3 +1,6 @@
+# 5.0.2 - 24/09/26
+* Correção: o campo de telefone não é mais marcado incorretamente como obrigatório (sem label) no checkout em blocos (Store API) quando o campo nativo de telefone está oculto.
+
 # 5.0.1 - 01/10/26
 * Novo: O DDI do campo de telefone agora pode ser customizado — antes o select exibia apenas as bandeiras; agora o usuário pode exibir também o número do DDI, se desejar.
 * Novo: Validação do campo de telefone, para atender lojas que precisam dessa informação preenchida corretamente.
