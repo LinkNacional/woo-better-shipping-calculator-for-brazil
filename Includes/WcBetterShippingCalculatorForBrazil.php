@@ -4070,6 +4070,21 @@ class WcBetterShippingCalculatorForBrazil
         $native_phone_hidden = get_option('woocommerce_checkout_phone_field', 'optional') === 'hidden';
         $hides_native_phone  = ($phone_highlight === 'yes' && $is_blocks_checkout) || $native_phone_hidden;
 
+        // REASON: O locale 'phone' serve dois consumidores com necessidades
+        // opostas. No checkout em blocos / Store API (REST) o nativo oculto perde
+        // o 'label' (o WooCommerce o remove de get_default_address_fields()), então
+        // exigir 'phone' gera "Undefined array key label" no OrderController
+        // (linha 501). Já no clássico/shortcode o address-i18n.js aplica o
+        // 'required' do locale ao campo VISÍVEL no cliente, DEPOIS do render do
+        // servidor: se o locale disser required=false o campo vira "(opcional)" na
+        // tela, mesmo com wc_better_calc_checkout_fields marcando-o obrigatório.
+        // Por isso só zeramos 'required' quando o campo é tratado fora do locale
+        // (blocos/REST). O filtro permite simular o contexto do Store API em testes.
+        $phone_handled_outside_locale = $is_blocks_checkout || (bool) apply_filters(
+            'wc_better_calc_is_store_api_request',
+            defined( 'REST_REQUEST' ) && REST_REQUEST
+        );
+
         // Carrega a lista de códigos de países
         $country_codes = include plugin_dir_path(__FILE__) . 'country-codes.php';
 
@@ -4080,9 +4095,9 @@ class WcBetterShippingCalculatorForBrazil
                 $locale[$country_code]['phone'] = [];
             }
 
-            if ($hides_native_phone) {
-                // Campo nativo oculto (destaque ativo ou ocultado pelo lojista):
-                // nunca exigir no Store API. Evita requerimento sem 'label' no
+            if ($hides_native_phone && $phone_handled_outside_locale) {
+                // Campo nativo oculto E tratado fora do locale (blocos/Store API):
+                // nunca exigir no locale. Evita requerimento sem 'label' no
                 // OrderController. A obrigatoriedade é cobrada pelo campo próprio
                 // (destaque) e/ou pelo JS.
                 $locale[$country_code]['phone']['required'] = false;
@@ -4092,8 +4107,9 @@ class WcBetterShippingCalculatorForBrazil
                     $locale[$country_code]['phone']['hidden'] = true;
                 }
             } elseif ($phone_required === 'yes') {
-                // Sem destaque, o nativo continua visível e obrigatório conforme
-                // a opção de contato.
+                // Sem destaque OU checkout clássico/shortcode: o campo visível é
+                // obrigatório conforme a opção de contato. O address-i18n.js usa
+                // este 'required' para manter o campo obrigatório na tela.
                 $locale[$country_code]['phone']['required'] = true;
             }
         }
