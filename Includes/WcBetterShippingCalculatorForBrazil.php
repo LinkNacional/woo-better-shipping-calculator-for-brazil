@@ -319,7 +319,7 @@ class WcBetterShippingCalculatorForBrazil
                     </p>
                     
                     <p style="font-size: 14px;">
-                        Aproveite também o novo recurso de frete grátis por valor, agora integrado aos métodos de entrega do WooCommerce. Precisa de Suporte WordPress? Entre no Grupo do <a href="https://chat.whatsapp.com/IjzHhDXwmzGLDnBfOibJKO" target="_blank" rel="noopener noreferrer">WhatsApp</a> ou <a href="https://t.me/wpprobr" target="_blank" rel="noopener noreferrer">Telegram</a>.
+                        Aproveite também o novo recurso de frete grátis por valor, agora integrado aos métodos de entrega do WooCommerce. Precisa de Suporte WordPress? Entre no Grupo do <a href="https://chat.whatsapp.com/C6S3my9Adr818hbeJphPBm" target="_blank" rel="noopener noreferrer">WhatsApp</a> ou <a href="https://t.me/wpprobr" target="_blank" rel="noopener noreferrer">Telegram</a>.
                     </p>
 
                     <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
