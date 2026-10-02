@@ -1,7 +1,7 @@
 === Campos Checkout Brasileiro para WooCommerce ===
 Contributors: LinkNacional, luizbills
 Donate link:
-Tags: cep, checkout, CPF, CNPJ, Brasil
+Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
@@ -9,7 +9,7 @@ Stable tag: 5.0.3
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
-Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce. Check also the plugin [Shipping Simulator for WooCommerce](/plugins/shipping-simulator-for-woocommerce/).
+Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce.
 
 == Description ==
 
