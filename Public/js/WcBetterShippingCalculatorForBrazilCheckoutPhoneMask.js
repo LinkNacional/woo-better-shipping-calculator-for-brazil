@@ -643,7 +643,17 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        input.addEventListener('input', function () {
+        input.addEventListener('input', function (event) {
+            // Ignora o "input" que o próprio intl-tel-input dispara ao executar
+            // setNumber() (detalhe isSetNumber). Sem esse corte, o handler
+            // reprocessa o valor, chama setNumber() de novo e realimenta o evento
+            // em loop — travando a aba ("Página sem resposta").
+            if (event && event.detail && event.detail.isSetNumber) {
+                return;
+            }
+            if (input.dataset.wcBetterNormalizing === 'true') {
+                return;
+            }
             // Assim que o shopper corrige o valor, remove o estado de erro para
             // o campo não ficar "vermelho travado" parecendo sem solução.
             clearPhoneError(input);

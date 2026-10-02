@@ -291,7 +291,17 @@ jQuery(function ($) {
             $(field).trigger('change');
         });
 
-        field.addEventListener('input', function () {
+        field.addEventListener('input', function (event) {
+            // Ignora o "input" que o próprio intl-tel-input dispara ao executar
+            // setNumber() (detalhe isSetNumber). Sem esse corte, o handler
+            // reprocessa o valor, chama setNumber() de novo e realimenta o evento
+            // em loop — travando a aba ("Página sem resposta").
+            if (event && event.detail && event.detail.isSetNumber) {
+                return;
+            }
+            if (field.dataset.wcBetterNormalizing === 'true') {
+                return;
+            }
             applyInputPadding(field);
             // Autofill/autocomplete dispara "input": normaliza já, sem esperar blur.
             normalizeAutofill(field, iti, storedDial, true);
