@@ -13,7 +13,7 @@ Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) wit
 
 == Description ==
 
-Complete Brazilian checkout fields designed specifically for **WooCommerce stores in Brazil**, making it easier and significantly improving the data entry flow on the checkout pages.
+Complete Brazilian checkout fields designed specifically for **[WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/) stores in Brazil**, making it easier and significantly improving the data entry flow on the checkout pages.
 
 This version includes **full compatibility with Shortcodes and Gutenberg themes**, allowing you to use the Brazilian checkout fields anywhere on your site with maximum flexibility.
 
@@ -35,7 +35,7 @@ We have expanded the plugin capabilities to offer a full checkout solution for t
 This is a major update for store owners who need to issue invoices (Nota Fiscal). The plugin is now fully compatible with the data standards used by the **Brazilian Market on WooCommerce** plugin (by Claudio Sanches).
 
 **Why is this important?**
-1.  **Bling & ERP Integration:** Because we follow the standard meta-keys structure, this plugin is **fully compatible with Bling, Tiny**, and other ERPs that integrate with WooCommerce. You can issue invoices (NFe) seamlessly without data errors.
+1.  **Bling & ERP Integration:** Because we follow the standard meta-keys structure, this plugin is **fully compatible with Bling, Tiny**, and other ERPs that integrate with [WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/). You can issue invoices (NFe) seamlessly without data errors.
 2.  **Standardized Data:** Ensures that CPF, CNPJ, and address data are saved exactly how external integration tools expect them.
 
 ### Watch the Plugin Demo:
@@ -51,7 +51,7 @@ This is a major update for store owners who need to issue invoices (Nota Fiscal)
 * **✨ NEW: Input Validation:** Validates CPF/CNPJ algorithms and applies input masks to prevent typing errors.
 * **✨ NEW: Person Type Selector:** Allows customers to switch between "Person" (Pessoa Física) and "Company" (Pessoa Jurídica) during checkout.
 * **Required Phone Field with DDI:** The phone field is now mandatory and includes a resource to capture the Country Code (DDI), ensuring complete contact information.
-* **Number Field Addition:** Adds the mandatory "Number" field, often missing in standard WooCommerce forms. Includes a `checkbox` option for addresses that are "Sem Número" (No Number).
+* **Number Field Addition:** Adds the mandatory "Number" field, often missing in standard [WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/) forms. Includes a `checkbox` option for addresses that are "Sem Número" (No Number).
 * Dynamic Field Hiding: Option to hide address fields when not needed.
 
 #### **Additional Features:**
@@ -73,7 +73,7 @@ When you need help, please create a topic in the [Plugin Support Forum](https://
 
 == Installation ==
 
-1.  Access your WordPress admin and go to **Plugins > Add New**.
+1.  Access your [WordPress](https://www.linknacional.com.br/wordpress/) admin and go to **Plugins > Add New**.
 2.  Search for "Brazilian Checkout Fields for WooCommerce".
 3.  Find the plugin, click "Install Now" and then "Activate".
 4.  Done! No additional configuration is needed, but we recommend visiting the plugin settings.
