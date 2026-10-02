@@ -5,7 +5,7 @@ Tags: cep, checkout, CPF, CNPJ, Brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.0.2
+Stable tag: 5.0.3
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -113,6 +113,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.0.3 - 2026-10-02
+* Fix: browser freeze when finishing the order on the checkout (shortcode and blocks) caused by an event loop in the masked phone field.
 
 # 5.0.2 - 2026-09-24
 * Fix: The phone field is no longer incorrectly flagged as required (without a label) on the block checkout (Store API) when the native phone field is hidden.

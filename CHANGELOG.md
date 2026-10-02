@@ -1,3 +1,6 @@
+# 5.0.3 - 02/10/26
+* Correção: travamento do navegador ao finalizar a compra no checkout (shortcode e blocos) causado por um loop de eventos no campo de telefone com máscara.
+
 # 5.0.2 - 24/09/26
 * Correção: o campo de telefone não é mais marcado incorretamente como obrigatório (sem label) no checkout em blocos (Store API) quando o campo nativo de telefone está oculto.
 
