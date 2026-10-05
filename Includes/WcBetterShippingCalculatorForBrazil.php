@@ -148,6 +148,12 @@ class WcBetterShippingCalculatorForBrazil
         $shipping_migration = new WcBetterShippingCalculatorForBrazilShippingMigration();
 
         $this->loader->add_action('admin_menu', $shipping_migration, 'register_admin_page');
+        // Compartilha o slug da tela de onboarding com os demais plugins LKN,
+        // para que nenhum redirecione a partir de uma tela de onboarding.
+        $this->loader->add_filter('lkn_admin_onboarding_screens', $shipping_migration, 'register_onboarding_screen');
+        // Trata o ✕ da tela de migração (dismiss permanente) — precisa rodar no
+        // admin_init, antes do admin-header já enviado pelo callback da página.
+        $this->loader->add_action('admin_init', $shipping_migration, 'maybe_handle_dismiss');
         $this->loader->add_action('admin_init', $shipping_migration, 'maybe_redirect');
         $this->loader->add_action('admin_head', $shipping_migration, 'remove_admin_notices', 0);
         $this->loader->add_action('admin_enqueue_scripts', $shipping_migration, 'enqueue_assets');

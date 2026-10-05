@@ -29,6 +29,16 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
     private const SCREEN_SLUG = 'woo-better-shipping-migration';
 
     /**
+     * Filtro compartilhado entre os plugins da família LKN que mapeia as telas
+     * de onboarding/migração (telas cheias ocultas). Cada plugin registra o
+     * próprio slug; qualquer um pula o redirect quando já está numa dessas
+     * telas — evita loop de redirect entre dois plugins desse mesmo padrão.
+     *
+     * @var string
+     */
+    private const ONBOARDING_SCREENS_FILTER = 'lkn_admin_onboarding_screens';
+
+    /**
      * Opção que controla se o aviso já foi exibido.
      *
      * Começa como 'no' (false) e passa a 'yes' (true) quando a página
@@ -237,6 +247,48 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
     }
 
     /**
+     * Registra o slug desta tela na lista compartilhada de telas de onboarding
+     * da família LKN. Outros plugins leem essa lista para não redirecionar a
+     * partir de uma tela de onboarding (evita loop de redirect).
+     *
+     * @since 5.0.0
+     * @param mixed $screens Slugs já registrados por outros plugins LKN.
+     * @return array
+     */
+    public function register_onboarding_screen($screens)
+    {
+        $screens = is_array($screens) ? $screens : array();
+        $screens[] = self::SCREEN_SLUG;
+
+        return array_values(array_unique($screens));
+    }
+
+    /**
+     * A requisição atual já está numa tela de onboarding da família LKN —
+     * própria ou de outro plugin? Enquanto estiver, ninguém redireciona.
+     *
+     * @since 5.0.0
+     * @return bool
+     */
+    private function is_on_lkn_onboarding_screen(): bool
+    {
+        $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
+
+        if ( '' === $page ) {
+            return false;
+        }
+
+        // REASON: filtro de prefixo compartilhado (lkn_) entre os plugins da
+        // família LKN — não segue o prefixo wc_better_shipping_calculator_ do
+        // AGENTS.md por ser um contrato entre plugins, não só deste plugin.
+        $screens = apply_filters(self::ONBOARDING_SCREENS_FILTER, array());
+        $screens = is_array($screens) ? $screens : array();
+        $screens[] = self::SCREEN_SLUG;
+
+        return in_array($page, $screens, true);
+    }
+
+    /**
      * Redireciona para a tela de aviso uma única vez após a atualização.
      *
      * @since 4.18.0
@@ -283,14 +335,54 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
             return;
         }
 
-        // Já está na própria tela: não redireciona (a opção vira 'yes' no render).
-        $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
-
-        if ( self::SCREEN_SLUG === $page ) {
+        // Não redireciona se já estamos numa tela de onboarding LKN — a nossa
+        // ou a de outro plugin. Sem isso, dois plugins que redirecionam para
+        // suas telas cheias entram em loop (A→B→A→B…): o redirect ocorre antes
+        // de qualquer tela renderizar e marcar a option "shown".
+        if ( $this->is_on_lkn_onboarding_screen() ) {
             return;
         }
 
         wp_safe_redirect(admin_url('admin.php?page=' . self::SCREEN_SLUG));
+        exit;
+    }
+
+    /**
+     * Trata o clique no ✕ da tela de aviso: dispensa definitivamente o aviso
+     * final (não volta a aparecer) e devolve o usuário ao painel.
+     *
+     * Roda no `admin_init` (antes de qualquer saída): o callback da página
+     * admin só executa depois do `admin-header.php`, então um redirect ali
+     * falharia com "headers already sent".
+     *
+     * @since 5.0.0
+     */
+    public function maybe_handle_dismiss(): void
+    {
+        if ( ! is_admin() || wp_doing_ajax() ) {
+            return;
+        }
+
+        if ( ! isset($_GET['woo-better-shipping-dismiss']) ) {
+            return;
+        }
+
+        if ( ! current_user_can('manage_options') ) {
+            return;
+        }
+
+        $nonce = isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : '';
+
+        if ( ! wp_verify_nonce($nonce, self::NONCE_ACTION) ) {
+            return;
+        }
+
+        // Marca como exibido E dispensado: o ✕ fecha a tela e o aviso final,
+        // sem depender de a tela ter renderizado antes (ex.: URL re-disparada).
+        update_option(self::OPTION_SHOWN, 'yes');
+        update_option(self::OPTION_DISMISSED, 'yes');
+
+        wp_safe_redirect(admin_url());
         exit;
     }
 
@@ -311,12 +403,16 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
         $shipping_plugin_active    = $this->is_shipping_plugin_active();
         $shipping_plugin_installed = $this->is_shipping_plugin_installed();
 
-        $close_url = admin_url();
+        $close_url   = admin_url();
+        $dismiss_url = wp_nonce_url(
+            admin_url('admin.php?page=' . self::SCREEN_SLUG . '&woo-better-shipping-dismiss=1'),
+            self::NONCE_ACTION
+        );
 
         ?>
         <div class="wrap woo-better-shipping-migration">
             <div class="woo-better-shipping-migration__card">
-                <a href="<?php echo esc_url($close_url); ?>" class="woo-better-shipping-migration__close" aria-label="<?php esc_attr_e('Fechar e não mostrar novamente', 'woo-better-shipping-calculator-for-brazil'); ?>">
+                <a href="<?php echo esc_url($dismiss_url); ?>" class="woo-better-shipping-migration__close" aria-label="<?php esc_attr_e('Fechar e não mostrar novamente', 'woo-better-shipping-calculator-for-brazil'); ?>">
                     <span aria-hidden="true">&times;</span>
                 </a>
 
@@ -379,9 +475,8 @@ class WcBetterShippingCalculatorForBrazilShippingMigration
      */
     public function remove_admin_notices(): void
     {
-        $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
-
-        if ( self::SCREEN_SLUG !== $page ) {
+        // Mantém qualquer tela de onboarding LKN limpa (nossa ou de outro plugin).
+        if ( ! $this->is_on_lkn_onboarding_screen() ) {
             return;
         }
 
