@@ -1,3 +1,7 @@
+# 5.0.4 - 05/10/26
+* Correção: loop infinito de redirecionamento (ERR_TOO_MANY_REDIRECTS) quando outro plugin LKN também abre sua tela de onboarding na mesma requisição.
+* Correção: o botão de fechar (✕) da tela de migração agora dispensa o aviso definitivamente.
+
 # 5.0.3 - 02/10/26
 * Correção: travamento do navegador ao finalizar a compra no checkout (shortcode e blocos) causado por um loop de eventos no campo de telefone com máscara.
 

@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.0.3
+Stable tag: 5.0.4
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -113,6 +113,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.0.4 - 2026-10-05
+* Fix: infinite redirect loop (ERR_TOO_MANY_REDIRECTS) when another LKN plugin also opens its onboarding screen in the same request.
+* Fix: the close button (✕) of the migration screen now permanently dismisses the follow-up notice.
 
 # 5.0.3 - 2026-10-02
 * Fix: browser freeze when finishing the order on the checkout (shortcode and blocks) caused by an event loop in the masked phone field.
