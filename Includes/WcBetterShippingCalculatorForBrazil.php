@@ -98,7 +98,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '5.0.3';
+            $this->version = '5.0.4';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -148,6 +148,12 @@ class WcBetterShippingCalculatorForBrazil
         $shipping_migration = new WcBetterShippingCalculatorForBrazilShippingMigration();
 
         $this->loader->add_action('admin_menu', $shipping_migration, 'register_admin_page');
+        // Compartilha o slug da tela de onboarding com os demais plugins LKN,
+        // para que nenhum redirecione a partir de uma tela de onboarding.
+        $this->loader->add_filter('lkn_admin_onboarding_screens', $shipping_migration, 'register_onboarding_screen');
+        // Trata o ✕ da tela de migração (dismiss permanente) — precisa rodar no
+        // admin_init, antes do admin-header já enviado pelo callback da página.
+        $this->loader->add_action('admin_init', $shipping_migration, 'maybe_handle_dismiss');
         $this->loader->add_action('admin_init', $shipping_migration, 'maybe_redirect');
         $this->loader->add_action('admin_head', $shipping_migration, 'remove_admin_notices', 0);
         $this->loader->add_action('admin_enqueue_scripts', $shipping_migration, 'enqueue_assets');
@@ -297,7 +303,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '5.0.2', '5.0.1', '5.0.0', '4.17.4', '4.17.3', '4.17.2', '4.17.1', '4.17.0', '4.16.12', '4.16.11', '4.16.10', '4.16.9', '4.16.8', '4.16.7' );
+            $old_versions   = array( '5.0.3', '5.0.2', '5.0.1', '5.0.0', '4.17.4', '4.17.3', '4.17.2', '4.17.1', '4.17.0', '4.16.12', '4.16.11', '4.16.10', '4.16.9', '4.16.8' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
