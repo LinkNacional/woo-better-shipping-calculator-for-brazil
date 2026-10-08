@@ -822,6 +822,77 @@ class PhoneModeTest extends WP_UnitTestCase {
         $this->assertSame( '83988888883', WC()->session->get( 'shipping_cellphone' ) );
     }
 
+    // --- Detalhes do pedido: linhas de endereço (Chave: valor) ---------------
+
+    public function test_address_display_rows_billing(): void {
+        $order = new \WC_Order();
+        $order->set_billing_first_name( 'João' );
+        $order->set_billing_last_name( 'Silva' );
+        $order->set_billing_address_1( 'Rua H' );
+        $order->set_billing_city( 'Feira de Santana' );
+        $order->set_billing_state( 'BA' );
+        $order->set_billing_postcode( '44053-762' );
+        $order->set_billing_country( 'BR' );
+        $order->update_meta_data( '_billing_number', '123' );
+        $order->update_meta_data( '_billing_neighborhood', 'Centro' );
+
+        $rows = WcBetterShippingCalculatorForBrazil::address_display_rows( $order, 'billing' );
+
+        $this->assertSame( 'João Silva', $rows['Nome'] );
+        $this->assertSame( 'Rua H', $rows['Endereço'] );
+        $this->assertSame( '123', $rows['Número'] );
+        $this->assertSame( 'Centro', $rows['Bairro'] );
+        $this->assertSame( 'Feira de Santana', $rows['Cidade'] );
+        $this->assertSame( '44053-762', $rows['CEP'] );
+    }
+
+    public function test_address_display_rows_skips_empty_fields(): void {
+        $order = new \WC_Order();
+        $order->set_billing_address_1( 'Rua H' );
+
+        $rows = WcBetterShippingCalculatorForBrazil::address_display_rows( $order, 'billing' );
+
+        $this->assertArrayHasKey( 'Endereço', $rows );
+        $this->assertArrayNotHasKey( 'Número', $rows );
+        $this->assertArrayNotHasKey( 'Bairro', $rows );
+    }
+
+    public function test_address_display_rows_neighborhood_falls_back_to_profile(): void {
+        // O pedido só tem `_<type>_neighborhood` quando o "Campo de Bairro" estava
+        // ligado no checkout; quando vazio, usamos o bairro do perfil do cliente.
+        $uid = $this->factory()->user->create();
+        update_user_meta( $uid, 'billing_neighborhood', 'Centro' );
+
+        $order = new \WC_Order();
+        $order->set_customer_id( $uid );
+        $order->set_billing_address_1( 'Rua H' );
+
+        $rows = WcBetterShippingCalculatorForBrazil::address_display_rows( $order, 'billing' );
+
+        $this->assertSame( 'Centro', $rows['Bairro'] );
+    }
+
+    public function test_address_display_rows_neighborhood_prefers_order_meta(): void {
+        // Se o pedido tem o bairro, ele vence (não usa o do perfil).
+        $uid = $this->factory()->user->create();
+        update_user_meta( $uid, 'billing_neighborhood', 'Perfil' );
+
+        $order = new \WC_Order();
+        $order->set_customer_id( $uid );
+        $order->update_meta_data( '_billing_neighborhood', 'Do Pedido' );
+
+        $rows = WcBetterShippingCalculatorForBrazil::address_display_rows( $order, 'billing' );
+
+        $this->assertSame( 'Do Pedido', $rows['Bairro'] );
+    }
+
+    public function test_address_display_rows_invalid_type_is_empty(): void {
+        $this->assertSame(
+            array(),
+            WcBetterShippingCalculatorForBrazil::address_display_rows( new \WC_Order(), 'nope' )
+        );
+    }
+
     public function test_admin_fields_empty_in_disabled_mode(): void {
         update_option( 'woo_better_calc_phone_mode', 'disabled' );
 

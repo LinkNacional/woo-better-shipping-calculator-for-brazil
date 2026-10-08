@@ -745,7 +745,19 @@ class WcBetterShippingCalculatorForBrazil
         
         // Hooks para formatação de telefone no pedido final
         $this->loader->add_filter('woocommerce_order_get_billing_phone', $this, 'format_order_billing_phone', 10, 2);
-        $this->loader->add_filter('woocommerce_order_get_shipping_phone', $this, 'format_order_shipping_phone', 10, 2);    
+        $this->loader->add_filter('woocommerce_order_get_shipping_phone', $this, 'format_order_shipping_phone', 10, 2);
+        // Exibe o Celular nas páginas de "pedido recebido"/detalhes do pedido. Dispara
+        // no order-received clássico E no de blocos (o WC Blocks usa este hook p/
+        // campos extras).
+        // Reordena os detalhes do cliente: endereço em "Chave: valor" e os dados de
+        // contato (e-mail/telefone/celular) + campos brasileiros no bloco
+        // "Informações adicionais".
+        $this->loader->add_filter('woocommerce_locate_template', $this, 'locate_order_details_customer_template', 20, 3);
+        // Bloco "Informações adicionais" (Contato + CPF/CNPJ/IE/nascimento/gênero/...)
+        // na tela de detalhes do cliente, para o PRÓPRIO cliente conferir após o
+        // pedido. Só existe no template de detalhes (order-received / ver pedido) —
+        // NÃO é enviado em e-mails nem vai para o endereço de entrega.
+        $this->loader->add_action('woocommerce_order_details_after_customer_details', $this, 'render_customer_additional_info', 10, 1);
         // Hook para validação de CPF/CNPJ no checkout
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_person_type_documents');
         
@@ -2046,6 +2058,222 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         return $phone;
+    }
+
+    /**
+     * Monta as linhas "Chave: valor" de um endereço (cobrança ou entrega) para a tela
+     * de detalhes do cliente. Só inclui os campos preenchidos.
+     *
+     * @param WC_Order $order
+     * @param string   $type 'billing' | 'shipping'
+     * @return array<string,string> label => valor
+     */
+    public static function address_display_rows($order, $type)
+    {
+        if (! $order instanceof \WC_Order || ! in_array($type, array('billing', 'shipping'), true)) {
+            return array();
+        }
+
+        $get = function ($prop) use ($order, $type) {
+            $method = "get_{$type}_{$prop}";
+
+            return is_callable(array($order, $method)) ? trim((string) $order->$method()) : '';
+        };
+
+        $country      = $get('country');
+        $state_raw    = $get('state');
+        $state        = $state_raw;
+        $country_name = $country;
+
+        if (function_exists('WC') && WC()->countries) {
+            $base = $country !== '' ? $country : WC()->countries->get_base_country();
+
+            if ($state_raw !== '') {
+                $states = WC()->countries->get_states($base);
+                if (is_array($states) && isset($states[$state_raw])) {
+                    $state = $states[$state_raw];
+                }
+            }
+
+            $countries = WC()->countries->get_countries();
+            if ($country !== '' && isset($countries[$country])) {
+                $country_name = $countries[$country];
+            }
+        }
+
+        $values = array(
+            __('Nome', 'woo-better-shipping-calculator-for-brazil')         => trim($get('first_name') . ' ' . $get('last_name')),
+            __('Empresa', 'woo-better-shipping-calculator-for-brazil')      => $get('company'),
+            __('Endereço', 'woo-better-shipping-calculator-for-brazil')     => $get('address_1'),
+            __('Número', 'woo-better-shipping-calculator-for-brazil')       => (string) $order->get_meta("_{$type}_number"),
+            __('Complemento', 'woo-better-shipping-calculator-for-brazil')  => $get('address_2'),
+            __('Bairro', 'woo-better-shipping-calculator-for-brazil')       => self::order_neighborhood($order, $type),
+            __('Cidade', 'woo-better-shipping-calculator-for-brazil')       => $get('city'),
+            __('Estado', 'woo-better-shipping-calculator-for-brazil')       => $state,
+            __('CEP', 'woo-better-shipping-calculator-for-brazil')          => $get('postcode'),
+            __('País', 'woo-better-shipping-calculator-for-brazil')         => $country_name,
+        );
+
+        $rows = array();
+        foreach ($values as $label => $value) {
+            $value = trim((string) $value);
+            if ('' !== $value) {
+                $rows[$label] = $value;
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Bairro de um endereço do pedido para exibição, com fallback ao perfil do
+     * cliente. O pedido só tem `_<type>_neighborhood` quando o "Campo de Bairro"
+     * estava ligado no checkout; quando vazio, usamos o bairro do cadastro do cliente
+     * (`<type>_neighborhood` no user meta / meta do cliente) — para não exibir vazio.
+     *
+     * @param WC_Order $order
+     * @param string   $type 'billing' | 'shipping'
+     * @return string
+     */
+    public static function order_neighborhood($order, $type)
+    {
+        if (! $order instanceof \WC_Order || ! in_array($type, array('billing', 'shipping'), true)) {
+            return '';
+        }
+
+        $neighborhood = trim((string) $order->get_meta("_{$type}_neighborhood"));
+        if ('' !== $neighborhood) {
+            return $neighborhood;
+        }
+
+        $customer_id = (int) $order->get_customer_id();
+        if ($customer_id > 0) {
+            $neighborhood = trim((string) get_user_meta($customer_id, "{$type}_neighborhood", true));
+        }
+
+        if ('' === $neighborhood && function_exists('WC') && WC()->customer) {
+            $neighborhood = trim((string) WC()->customer->get_meta("{$type}_neighborhood"));
+        }
+
+        return $neighborhood;
+    }
+
+    /**
+     * Bloco "Informações adicionais" na tela de detalhes do cliente (order-received /
+     * ver pedido): exibe, no formato "Chave: valor", o CONTATO (e-mail, telefone,
+     * celular) e os campos brasileiros CONFIGURADOS e preenchidos (tipo de pessoa,
+     * CPF/CNPJ, empresa, Inscrição Estadual, data de nascimento e gênero), para o
+     * próprio cliente conferir após o pedido.
+     *
+     * Lê os metadados `_billing_*` do pedido (mesma fonte da NFe) — é só exibição:
+     * não grava, não move dados para o endereço de entrega e não é enviado em
+     * e-mails (o hook `woocommerce_order_details_after_customer_details` só existe no
+     * template de detalhes do cliente).
+     *
+     * @param WC_Order $order
+     * @return void
+     */
+    public function render_customer_additional_info($order)
+    {
+        if (! $order instanceof \WC_Order) {
+            return;
+        }
+
+        if (get_option('woo_better_calc_enable_order_details', 'yes') !== 'yes') {
+            return;
+        }
+
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+        $phone_mask  = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
+
+        $rows = $this->prepare_billing_display_data(
+            $order,
+            $person_type,
+            $phone_mask,
+            $order->get_meta('_billing_persontype'),
+            $order->get_meta('_billing_cpf'),
+            $order->get_meta('_billing_cnpj'),
+            $order->get_meta('_billing_phone_country_code')
+        );
+
+        // Contato (e-mail, telefone e celular) vem SEMPRE que preenchido — independe
+        // da máscara/DDI e dos campos brasileiros.
+        unset($rows['phone'], $rows['email'], $rows['cellphone']);
+
+        $display = array();
+
+        $email = (string) $order->get_billing_email();
+        if ('' !== $email) {
+            $display[] = array('label' => __('Email', 'woo-better-shipping-calculator-for-brazil'), 'value' => $email);
+        }
+
+        $phone = (string) $order->get_billing_phone();
+        if ('' !== $phone) {
+            // A label do bloco principal segue o "Comportamento do Campo de Telefone"
+            // (ex.: "Celular/Telefone", "Celular", "Telefone").
+            $display[] = array('label' => $this->get_phone_field_label(), 'value' => $phone);
+        }
+
+        $cellphone = (string) $order->get_meta('_billing_cellphone');
+        if ('' !== $cellphone) {
+            $cellphone = $this->format_complete_phone($cellphone, $order->get_meta('_billing_phone_country_code'));
+            // Deduplica quando o celular é o mesmo número do telefone
+            // ("Somente Celular" e espelho do campo único).
+            if ('' !== $cellphone && $cellphone !== $phone) {
+                $display[] = array('label' => __('Celular', 'woo-better-shipping-calculator-for-brazil'), 'value' => $cellphone);
+            }
+        }
+
+        // Campos brasileiros (tipo de pessoa, CPF/CNPJ, empresa, IE, nascimento, gênero).
+        foreach ($rows as $row) {
+            $display[] = $row;
+        }
+
+        // Só exibe se houver algo preenchido.
+        if (empty($display)) {
+            return;
+        }
+        ?>
+        <section class="woo-better-additional-info">
+            <h2 class="woocommerce-column__title"><?php esc_html_e('Informações adicionais', 'woo-better-shipping-calculator-for-brazil'); ?></h2>
+            <div class="woo-better-additional-info__list">
+                <?php foreach ($display as $row) : ?>
+                    <p class="woo-better-additional-info__item">
+                        <strong><?php echo esc_html($row['label']); ?>:</strong>
+                        <?php echo esc_html($row['value']); ?>
+                    </p>
+                <?php endforeach; ?>
+            </div>
+        </section>
+        <?php
+    }
+
+    /**
+     * Carrega o template `order/order-details-customer.php` do plugin (e-mail no
+     * topo + colunas no mesmo padrão), RESPEITANDO um override do tema.
+     *
+     * Só assume quando o tema ainda não sobrescreveu o template — assim um tema que
+     * já customiza o arquivo continua no controle.
+     *
+     * @param string $template      Caminho resolvido do template.
+     * @param string $template_name Nome relativo (ex.: 'order/order-details-customer.php').
+     * @param string $template_path Caminho base (normalmente 'woocommerce/').
+     * @return string
+     */
+    public function locate_order_details_customer_template($template, $template_name, $template_path)
+    {
+        if ('order/order-details-customer.php' !== $template_name) {
+            return $template;
+        }
+
+        // Um tema sobrescrevendo o template tem prioridade — não mexemos.
+        if (function_exists('locate_template') && locate_template(array($template_path . $template_name, $template_name))) {
+            return $template;
+        }
+
+        $plugin_template = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_DIR . 'templates/' . $template_name;
+
+        return file_exists($plugin_template) ? $plugin_template : $template;
     }
     
     /**
