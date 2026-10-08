@@ -205,6 +205,24 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Adiciona o campo de Número, posicionado logo após o campo principal do endereço (Rua).', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+                'phone_mode' => array(
+                    'title'    => __('Comportamento do Campo de Telefone', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_phone_mode',
+                    'desc_tip' => false,
+                    'default'  => 'phone_and_cellphone',
+                    'type'     => 'select',
+                    'options'  => array(
+                        'disabled'            => __('Desabilitar o campo de telefone', 'woo-better-shipping-calculator-for-brazil'),
+                        'phone_and_cellphone' => __('Permitir Telefone Celular e Fixo', 'woo-better-shipping-calculator-for-brazil'),
+                        'cellphone_only'      => __('Permitir somente Telefone Celular', 'woo-better-shipping-calculator-for-brazil'),
+                        'landline_only'       => __('Permitir somente Telefone Fixo', 'woo-better-shipping-calculator-for-brazil'),
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Define como o campo de telefone se comporta no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Define o comportamento do campo de telefone no checkout clássico (shortcode): "Permitir Telefone Celular e Fixo" exibe o telefone e permite adicionar o campo de Celular; "Permitir somente Telefone Celular" usa apenas o celular; "Permitir somente Telefone Fixo" usa apenas o telefone; "Desabilitar o campo de telefone" remove o telefone. No checkout em blocos apenas o telefone nativo é manipulado.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Controla o comportamento do campo de telefone no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
                 'apply_phone_mask' => array(
                     'title'    => __('Telefone com Máscara e DDI', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_apply_phone_mask',
@@ -239,23 +257,6 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Exibe o código do país (DDI) junto à bandeira no campo de telefone.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
-                'validate_ddd' => array(
-                    'title'    => __('Validar Número de Telefone', 'woo-better-shipping-calculator-for-brazil'),
-                    'id'       => 'woo_better_calc_validate_ddd',
-                    'desc_tip' => false,
-                    'default'  => 'yes',
-                    'type'     => 'radio',
-                    'options'  => array(
-                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
-                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
-                    ),
-                    'custom_attributes' => array(
-                        'data-subtitle' => __('Validar o número de telefone no checkout', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-desc-tip' => __('Valida se o número de telefone informado é válido.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Requer que a opção "Telefone com Máscara e DDI" esteja habilitada. Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-title-description' => __('Valida o número de telefone no checkout.', 'woo-better-shipping-calculator-for-brazil')
-                    )
-                ),
                 'contact_required' => array(
                     'title'    => __('Telefone (Contato) Obrigatório', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_contact_required',
@@ -272,6 +273,23 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('No checkout, o campo de telefone torna-se obrigatório.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+                'validate_ddd' => array(
+                    'title'    => __('Validar Número de Telefone', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_validate_ddd',
+                    'desc_tip' => false,
+                    'default'  => 'yes',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-subtitle' => __('Validar o número de telefone no checkout', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Valida se o número de telefone informado é válido.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Requer que a opção "Telefone com Máscara e DDI" esteja habilitada e que o telefone/celular seja obrigatório. Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Valida o número de telefone no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
                 'contact_field_position' => array(
                     'title'    => __('Destaque do Campo Telefone', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_contact_field_position',
@@ -286,6 +304,38 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-desc-tip' => __('Defina as configurações de exibição e funcionalidade para o campo de Telefone (Checkout).', 'woo-better-shipping-calculator-for-brazil'),
                         'data-description' => __('Ao habilitar, o campo Telefone será exibido no topo do formulário de checkout, posicionado imediatamente após o campo de País.', 'woo-better-shipping-calculator-for-brazil'),
                         'data-title-description' => __('Escolha se o campo de Telefone deve ser destacado no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
+                'enable_cellphone_field' => array(
+                    'title'    => __('Campo de Celular', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_enable_cellphone_field',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Adiciona um campo de Celular separado no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Adiciona o campo "Celular" logo abaixo do campo de telefone. Requer que o "Comportamento do Campo de Telefone" permita celular. No modo "Permitir somente Telefone Celular" esta opção fica desabilitada (o campo de celular já é o principal).', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Adiciona o campo de Celular (separado do telefone) no checkout.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
+                'cellphone_required' => array(
+                    'title'    => __('Celular Obrigatório', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_cellphone_required',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Define a obrigatoriedade do campo de Celular no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Quando habilitado, o campo de Celular passa a ser de preenchimento obrigatório.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Torna o campo de Celular obrigatório no checkout.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
                 'enable_birthdate_field' => array(
@@ -362,6 +412,31 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
             // atualizava woocommerce_checkout_company_field (o toggle "Empresa" do editor
             // de blocos continuava ativo/opcional). Agora mantemos os dois em sincronia.
             $this->update_woocommerce_company_field_setting();
+
+            // No modo "Permitir somente Telefone Celular" os radios do bloco "Campo de
+            // Celular" ficam `disabled` no admin (efeito visual) — e inputs `disabled`
+            // NÃO são enviados no submit, deixando o valor antigo salvo. Reforçamos no
+            // servidor para a lógica nunca depender do envio desses campos.
+            self::enforce_cellphone_options_for_mode(get_option('woo_better_calc_phone_mode', 'phone_and_cellphone'));
+        }
+
+        /**
+         * Força o bloco "Campo de Celular" em "Desabilitar" no modo "Somente Celular".
+         *
+         * No modo "Permitir somente Telefone Celular" o campo "Celular" é o principal,
+         * então as opções `enable_cellphone_field`/`cellphone_required` não se aplicam.
+         * Como no admin esses radios ficam `disabled` (e portanto não são enviados no
+         * submit), normalizamos aqui para manter a lógica consistente.
+         *
+         * @param string $mode Modo atual do campo de telefone (woo_better_calc_phone_mode).
+         * @return void
+         */
+        public static function enforce_cellphone_options_for_mode($mode)
+        {
+            if ('cellphone_only' === $mode) {
+                update_option('woo_better_calc_enable_cellphone_field', 'no');
+                update_option('woo_better_calc_cellphone_required', 'no');
+            }
         }
 
         /**

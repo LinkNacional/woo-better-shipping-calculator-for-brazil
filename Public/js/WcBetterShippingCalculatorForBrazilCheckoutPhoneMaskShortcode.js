@@ -29,7 +29,13 @@ jQuery(function ($) {
     // DDI exibido apenas com máscara + "Exibir Código do País (DDI)".
     const dialCodeShown = phoneMaskEnabled && showCountryCode;
 
-    const PHONE_FIELDS = ['#billing_phone', '#shipping_phone', '#billing-phone', '#shipping-phone'];
+    // No modo "apenas celular" o telefone nativo é removido e o campo "Celular"
+    // assume o papel de telefone, então ele recebe a máscara/DDI/validação. Nos
+    // demais modos o campo "Celular" (quando existe) é só um campo extra, sem máscara.
+    const phoneMode = (typeof config.phoneMode !== 'undefined') ? config.phoneMode : '';
+    const PHONE_FIELDS = (phoneMode === 'cellphone_only')
+        ? ['#billing_cellphone', '#shipping_cellphone']
+        : ['#billing_phone', '#shipping_phone', '#billing-phone', '#shipping-phone'];
 
     const DIAL_TO_ISO = {
         '+55': 'br', '+1': 'us', '+44': 'gb', '+33': 'fr', '+49': 'de', '+34': 'es',

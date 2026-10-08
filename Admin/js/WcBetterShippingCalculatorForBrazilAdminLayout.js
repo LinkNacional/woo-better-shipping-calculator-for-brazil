@@ -540,10 +540,12 @@
               //Checkout
               'woo_better_calc_enable_auto_address_fill': 'woo_better_calc_cep_field_position',
               'woo_better_calc_enable_silent_address_fill': 'woo_better_calc_cep_field_position',
-              'woo_better_calc_show_phone_country_code': 'woo_better_calc_apply_phone_mask',
-              'woo_better_calc_validate_ddd': 'woo_better_calc_apply_phone_mask',
-              'woo_better_calc_contact_required': 'woo_better_calc_apply_phone_mask',
-              'woo_better_calc_contact_field_position': 'woo_better_calc_apply_phone_mask',
+              'woo_better_calc_apply_phone_mask': 'woo_better_calc_phone_mode',
+              'woo_better_calc_show_phone_country_code': 'woo_better_calc_phone_mode',
+              'woo_better_calc_validate_ddd': 'woo_better_calc_contact_required',
+              'woo_better_calc_contact_required': 'woo_better_calc_phone_mode',
+              'woo_better_calc_contact_field_position': 'woo_better_calc_phone_mode',
+              'woo_better_calc_cellphone_required': 'woo_better_calc_enable_cellphone_field',
             };
 
             forminp.innerHTML = ''; // Limpa o conteúdo original
@@ -660,17 +662,19 @@
     const applyPhoneMaskRadios = document.querySelectorAll('input[name="woo_better_calc_apply_phone_mask"]');
     const showCountryCodeRadios = document.querySelectorAll('input[name="woo_better_calc_show_phone_country_code"]');
     const validateDddRadios = document.querySelectorAll('input[name="woo_better_calc_validate_ddd"]');
+    const phoneModeSelect = document.querySelector('select[name="woo_better_calc_phone_mode"]');
+    const contactRequiredRadios = document.querySelectorAll('input[name="woo_better_calc_contact_required"]');
+    const contactFieldPositionRadios = document.querySelectorAll('input[name="woo_better_calc_contact_field_position"]');
+    const enableCellphoneRadios = document.querySelectorAll('input[name="woo_better_calc_enable_cellphone_field"]');
+    const cellphoneRequiredRadios = document.querySelectorAll('input[name="woo_better_calc_cellphone_required"]');
 
+    // show_phone_country_code: desabilita e força 'no' quando a máscara está off.
     function updatePhoneChildState() {
-      // Considera habilitado se algum radio do pai (máscara) estiver marcado como 'yes'
       const enabled = Array.from(applyPhoneMaskRadios).some(radio => radio.checked && radio.value === 'yes');
-
-      // show_phone_country_code: desabilita e força 'no' quando a máscara está off.
       showCountryCodeRadios.forEach(radio => {
         radio.disabled = !enabled;
         radio.style.cursor = enabled ? '' : 'not-allowed';
         if (!enabled) {
-          // Se desabilitar o pai, marca 'no' no filho
           if (radio.value === 'no') {
             radio.checked = true;
           } else if (radio.value === 'yes') {
@@ -678,19 +682,111 @@
           }
         }
       });
+    }
 
-      // validate_ddd: apenas desabilita, preservando o default 'yes'.
+    // "Validar Número de Telefone" (filho do "Telefone (Contato) Obrigatório"):
+    // só é habilitado quando a máscara está on, o telefone/celular é obrigatório e o
+    // modo não é "Desabilitar". Só então a validação faz sentido.
+    function updateValidateDddState() {
+      const maskOn = Array.from(applyPhoneMaskRadios).some(radio => radio.checked && radio.value === 'yes');
+      const cellphoneOn = Array.from(enableCellphoneRadios).some(radio => radio.checked && radio.value === 'yes');
+      const requiredOn = Array.from(contactRequiredRadios).some(radio => radio.checked && radio.value === 'yes')
+        || (cellphoneOn && Array.from(cellphoneRequiredRadios).some(radio => radio.checked && radio.value === 'yes'));
+      const modeOk = !phoneModeSelect || phoneModeSelect.value !== 'disabled';
+      const on = maskOn && requiredOn && modeOk;
+
       validateDddRadios.forEach(radio => {
-        radio.disabled = !enabled;
-        radio.style.cursor = enabled ? '' : 'not-allowed';
+        radio.disabled = !on;
+        radio.style.cursor = on ? '' : 'not-allowed';
       });
     }
-    if (applyPhoneMaskRadios.length > 0) {
-      updatePhoneChildState(); // Estado inicial
-      applyPhoneMaskRadios.forEach(radio => {
-        radio.addEventListener('change', updatePhoneChildState);
+
+    // "Celular Obrigatório" só fica ativo quando o "Campo de Celular" está habilitado
+    // e o modo não é "somente Celular".
+    function updateCellphoneRequiredState() {
+      const enableYes = Array.from(enableCellphoneRadios).some(function (radio) {
+        return radio.checked && radio.value === 'yes';
+      });
+      const modeAllows = !phoneModeSelect || phoneModeSelect.value !== 'cellphone_only';
+      const on = enableYes && modeAllows;
+
+      cellphoneRequiredRadios.forEach(function (radio) {
+        radio.disabled = !on;
+        radio.style.cursor = on ? '' : 'not-allowed';
+        // No modo "somente Celular" marca "Desabilitar" (o valor é reforçado no
+        // servidor; o disabled é só visual, pois radios disabled não são enviados).
+        if (!modeAllows && radio.value === 'no') {
+          radio.checked = true;
+        }
       });
     }
+
+    function updatePhoneModeChildState() {
+      if (!phoneModeSelect) {
+        return;
+      }
+      const mode = phoneModeSelect.value;
+      const enabled = mode !== 'disabled';
+
+      // Recursos do bloco de telefone: desabilitados no modo "Desabilitar".
+      [applyPhoneMaskRadios, showCountryCodeRadios, contactRequiredRadios, contactFieldPositionRadios].forEach(function (group) {
+        group.forEach(function (radio) {
+          radio.disabled = !enabled;
+          radio.style.cursor = enabled ? '' : 'not-allowed';
+        });
+      });
+
+      // O bloco "Campo de Celular" fica desabilitado no modo "Permitir somente
+      // Telefone Celular" (o celular já é o campo principal). Marca "Desabilitar":
+      // o disabled é apenas visual — o valor é garantido no servidor.
+      const cellphoneModeBlocked = (mode === 'cellphone_only');
+      enableCellphoneRadios.forEach(function (radio) {
+        radio.disabled = cellphoneModeBlocked;
+        radio.style.cursor = cellphoneModeBlocked ? 'not-allowed' : '';
+        if (cellphoneModeBlocked && radio.value === 'no') {
+          radio.checked = true;
+        }
+      });
+
+      updateCellphoneRequiredState();
+
+      // Reaplica a relação máscara → filhos ao (re)habilitar.
+      if (enabled && typeof updatePhoneChildState === 'function') {
+        updatePhoneChildState();
+      }
+      updateValidateDddState();
+    }
+
+    // Estado inicial + listeners.
+    updatePhoneChildState();
+    updateValidateDddState();
+    updateCellphoneRequiredState();
+    updatePhoneModeChildState();
+
+    applyPhoneMaskRadios.forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        updatePhoneChildState();
+        updateValidateDddState();
+      });
+    });
+    contactRequiredRadios.forEach(function (radio) {
+      radio.addEventListener('change', updateValidateDddState);
+    });
+    cellphoneRequiredRadios.forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        updateCellphoneRequiredState();
+        updateValidateDddState();
+      });
+    });
+    if (phoneModeSelect) {
+      phoneModeSelect.addEventListener('change', updatePhoneModeChildState);
+    }
+    enableCellphoneRadios.forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        updateCellphoneRequiredState();
+        updateValidateDddState();
+      });
+    });
 
     // Função para mostrar/esconder tabelas dinamicamente
     function showTable(activeIdx) {

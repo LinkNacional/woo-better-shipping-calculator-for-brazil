@@ -51,6 +51,18 @@ if ( ! file_exists( $wc_main_file ) ) {
     );
 } else {
     require_once $wc_main_file;
+
+    // O WooCommerce carrega as classes de admin (ex.: WC_Settings_Page) apenas sob
+    // demanda no painel. Nos testes (CLI) ela não é autoloaded, o que faz a classe
+    // de settings do plugin (que estende WC_Settings_Page) não poder ser definida.
+    // Carregamos a base explicitamente para os testes de settings.
+    if ( ! class_exists( 'WC_Settings_Page' ) && defined( 'ABSPATH' ) ) {
+        $wc_settings_page_file = dirname( __DIR__, 2 ) . '/woocommerce/includes/admin/settings/class-wc-settings-page.php';
+
+        if ( file_exists( $wc_settings_page_file ) ) {
+            require_once $wc_settings_page_file;
+        }
+    }
 }
 
 // Nosso plugin: require_once antes do WP carregar.

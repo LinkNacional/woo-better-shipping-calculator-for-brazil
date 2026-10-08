@@ -91,6 +91,36 @@ class WcBetterShippingCalculatorForBrazilPublic
     }
 
     /**
+     * Label do campo de telefone conforme o "Comportamento do Campo de Telefone"
+     * (woo_better_calc_phone_mode). Mantém a mesma nomenclatura usada no PHP do
+     * Includes (get_phone_field_label).
+     *
+     * @return string
+     */
+    private function phone_field_label()
+    {
+        switch ($this->phone_mode()) {
+            case 'landline_only':
+                return __('Telefone', 'woo-better-shipping-calculator-for-brazil');
+            case 'cellphone_only':
+                return __('Celular', 'woo-better-shipping-calculator-for-brazil');
+            default:
+                // "Celular e Fixo": o campo principal aceita os dois tipos.
+                return __('Celular/Telefone', 'woo-better-shipping-calculator-for-brazil');
+        }
+    }
+
+    /**
+     * Modo do "Comportamento do Campo de Telefone" (woo_better_calc_phone_mode).
+     *
+     * @return string
+     */
+    private function phone_mode()
+    {
+        return get_option('woo_better_calc_phone_mode', 'phone_and_cellphone');
+    }
+
+    /**
      * Initialize the class and set its properties.
      *
      * @since    1.0.0
@@ -542,6 +572,92 @@ class WcBetterShippingCalculatorForBrazilPublic
                     )
                 );
             }
+
+            // Campos de telefone/celular no checkout em BLOCOS. O campo nativo do
+            // WooCommerce fica sempre oculto (o plugin assume o controle do telefone) e
+            // os campos são gerados via JS — um script por campo — conforme o
+            // "Comportamento do Campo de Telefone". No clássico/shortcode a criação é
+            // via hook (woocommerce_billing_fields).
+            if ( 'disabled' !== $this->phone_mode() ) {
+                $billing_phone      = '';
+                $shipping_phone     = '';
+                $billing_cellphone  = '';
+                $shipping_cellphone = '';
+
+                if (function_exists('WC') && WC()->session) {
+                    if (is_user_logged_in()) {
+                        $user_id            = get_current_user_id();
+                        $billing_phone      = get_user_meta($user_id, 'billing_phone', true);
+                        $shipping_phone     = get_user_meta($user_id, 'shipping_phone', true);
+                        $billing_cellphone  = get_user_meta($user_id, 'billing_cellphone', true);
+                        $shipping_cellphone = get_user_meta($user_id, 'shipping_cellphone', true);
+                    }
+                    if (empty($billing_phone)) { $billing_phone = WC()->session->get('billing_phone', ''); }
+                    if (empty($shipping_phone)) { $shipping_phone = WC()->session->get('shipping_phone', ''); }
+                    if (empty($billing_cellphone)) { $billing_cellphone = WC()->session->get('billing_cellphone', ''); }
+                    if (empty($shipping_cellphone)) { $shipping_cellphone = WC()->session->get('shipping_cellphone', ''); }
+                }
+
+                $phone_fields_config = array(
+                    'mode'              => $this->phone_mode(),
+                    'namespace'         => \Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazil::CELLPHONE_EXTENSION_NAMESPACE,
+                    'phoneNamespace'    => \Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazil::PHONE_EXTENSION_NAMESPACE,
+                    'cellphoneNamespace' => \Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazil::CELLPHONE_EXTENSION_NAMESPACE,
+                    'phoneLabel'        => $this->phone_field_label(),
+                    'cellphoneLabel'    => __('Celular', 'woo-better-shipping-calculator-for-brazil'),
+                    'maskEnabled'       => $phone_mask_enabled === 'yes' ? 'true' : 'false',
+                    'showCountryCode'   => get_option('woo_better_calc_show_phone_country_code', 'no') === 'yes' ? 'true' : 'false',
+                    'validateDdd'       => get_option('woo_better_calc_validate_ddd', 'yes') === 'yes' ? 'true' : 'false',
+                    'required'          => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false',
+                    'cellphoneRequired' => get_option('woo_better_calc_cellphone_required', 'no') === 'yes' ? 'true' : 'false',
+                    'enableCellphone'   => get_option('woo_better_calc_enable_cellphone_field', 'no') === 'yes' ? 'true' : 'false',
+                    'highlight'         => $phone_highlight === 'yes' ? 'true' : 'false',
+                    'billing_phone'     => $billing_phone,
+                    'shipping_phone'    => $shipping_phone,
+                    'billing_cellphone' => $billing_cellphone,
+                    'shipping_cellphone' => $shipping_cellphone
+                );
+
+                // Um script por campo, conforme o modo.
+                $phone_field_scripts = array();
+                if ('landline_only' === $this->phone_mode()) {
+                    $phone_field_scripts[] = 'WcBetterShippingCalculatorForBrazilPublicGutenbergPhoneFieldLandline';
+                } elseif ('cellphone_only' === $this->phone_mode()) {
+                    $phone_field_scripts[] = 'WcBetterShippingCalculatorForBrazilPublicGutenbergCellphoneFieldOnly';
+                } elseif ('phone_and_cellphone' === $this->phone_mode()) {
+                    $phone_field_scripts[] = 'WcBetterShippingCalculatorForBrazilPublicGutenbergPhoneFieldBoth';
+                    if ('yes' === get_option('woo_better_calc_enable_cellphone_field', 'no')) {
+                        $phone_field_scripts[] = 'WcBetterShippingCalculatorForBrazilPublicGutenbergCellphoneFieldBoth';
+                    }
+                }
+
+                $config_localized = false;
+                foreach ($phone_field_scripts as $script_name) {
+                    $handle = $this->plugin_name . '-field-' . strtolower(preg_replace('/^.*Gutenberg/', '', $script_name));
+
+                    wp_enqueue_style(
+                        $handle,
+                        plugin_dir_url(__FILE__) . 'cssCompiled/' . $script_name . '.COMPILED.css',
+                        array(),
+                        $this->version,
+                        'all'
+                    );
+
+                    wp_enqueue_script(
+                        $handle,
+                        plugin_dir_url(__FILE__) . 'jsCompiled/' . $script_name . '.COMPILED.js',
+                        array(),
+                        $this->version,
+                        false
+                    );
+
+                    // O config é o mesmo p/ todos os scripts; localiza uma vez.
+                    if (!$config_localized) {
+                        wp_localize_script($handle, 'WooBetterPhoneFieldsData', $phone_fields_config);
+                        $config_localized = true;
+                    }
+                }
+            }
             
             // Registrar script para campo de data de nascimento no checkout de blocos
             $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
@@ -948,73 +1064,6 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
-            // Máscara de telefone (DDI + formatação) no checkout em blocos. Roda
-            // quando a máscara está ativa OU quando há destaque (o destaque usa o
-            // modo `#custom-phone` do mesmo script).
-            if (($phone_mask_enabled === 'yes' || $phone_highlight === 'yes') && !$is_checkout_classic) {
-                wp_enqueue_style(
-                    $this->plugin_name . '-checkout-phone-mask',
-                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.css',
-                    array(),
-                    $this->version,
-                    'all'
-                );
-
-                wp_enqueue_script(
-                    $this->plugin_name . '-checkout-phone-mask',
-                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.js',
-                    array('jquery'),
-                    $this->version,
-                    false
-                );
-                
-                // Obter dados de sessão para campo custom phone
-                $custom_phone = '';
-                if (function_exists('WC') && WC()->session) {
-                    $custom_phone = WC()->session->get('custom_phone', '');
-                }
-
-                if(!isset($custom_phone) || empty($custom_phone)) {
-                    // Fallback: tentar pegar do telefone de shipping primeiro
-                    if (function_exists('WC') && WC()->customer) {
-                        $custom_phone = WC()->customer->get_shipping_phone();
-                        
-                        // Se ainda estiver vazio, pegar do telefone de billing
-                        if (empty($custom_phone)) {
-                            $custom_phone = WC()->customer->get_billing_phone();
-                        }
-                    }
-                }
-
-                $custom_country = '+55';
-                $billing_country = '+55';
-                $shipping_country = '+55';
-                if (function_exists('WC') && WC()->session) {
-                    $custom_country = WC()->session->get('billing_phone_country_code', '');
-                    $billing_country = WC()->session->get('billing_phone_country_code', '');
-                    $shipping_country = WC()->session->get('shipping_phone_country_code', '');
-                }
-                $custom_country = $custom_country ? $custom_country : '+55';
-                $billing_country = $billing_country ? $billing_country : '+55';
-                $shipping_country = $shipping_country ? $shipping_country : '+55';
-
-                wp_localize_script(
-                    $this->plugin_name . '-checkout-phone-mask',
-                    'wc_better_checkout_phone_mask_vars',
-                    array(
-                        'highlightPhone' => $phone_highlight === 'yes' ? 'true' : 'false',
-                        'phoneMaskEnabled' => $phone_mask_enabled === 'yes' ? 'true' : 'false',
-                        'phoneRequired' => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false',
-                        'showCountryCode' => get_option('woo_better_calc_show_phone_country_code', 'no') === 'yes' ? 'true' : 'false',
-                        'validateDdd' => get_option('woo_better_calc_validate_ddd', 'yes') === 'yes' ? 'true' : 'false',
-                        'customPhone' => $custom_phone,
-                        'customCountry' => $custom_country,
-                        'billingCountry' => $billing_country,
-                        'shippingCountry' => $shipping_country
-                    )
-                );
-            }
-
             // Máscara de telefone no checkout clássico/shortcode.
             if ($phone_mask_enabled === 'yes' && $is_checkout_classic) {
                 wp_enqueue_style(
@@ -1055,7 +1104,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'showCountryCode' => get_option('woo_better_calc_show_phone_country_code', 'no') === 'yes' ? 'true' : 'false',
                         'validateDdd' => get_option('woo_better_calc_validate_ddd', 'yes') === 'yes' ? 'true' : 'false',
                         'billingCountry' => $shortcode_billing_country,
-                        'shippingCountry' => $shortcode_shipping_country
+                        'shippingCountry' => $shortcode_shipping_country,
+                        'phoneMode' => get_option('woo_better_calc_phone_mode', 'phone_and_cellphone')
                     )
                 );
             }

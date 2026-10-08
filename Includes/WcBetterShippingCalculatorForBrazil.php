@@ -85,6 +85,36 @@ class WcBetterShippingCalculatorForBrazil
     protected static $phone_field_syncing = false;
 
     /**
+     * Marca (atributo data-*) gravada no campo "Celular" (`<billing|shipping>_cellphone`)
+     * criado por este plugin. Serve como identificador do campo para terceiros (e para
+     * depuração), deixando claro que ele foi criado pelo woo-better e não por outro
+     * plugin (ex.: "Brazilian Market on WooCommerce").
+     *
+     * @var string
+     */
+    public const CELLPHONE_FIELD_ATTR = 'data-wc-better-cellphone-field';
+
+    /**
+     * Namespace das extensões do Store API usadas pelo campo "Celular" do checkout
+     * em blocos no modo "Somente Celular". O campo é injetado via JS (como os demais
+     * campos customizados do plugin) e o valor é enviado por `setExtensionData`.
+     *
+     * @var string
+     */
+    public const CELLPHONE_EXTENSION_NAMESPACE = 'woo_better_cellphone';
+
+    /**
+     * Namespace das extensões do Store API usadas pelo campo "Telefone" do checkout
+     * em blocos (modos "Celular e Fixo" e "Somente Fixo"). O campo é injetado via JS
+     * (como os demais campos customizados do plugin) e o valor é enviado por
+     * `setExtensionData`. O namespace é POR TIPO de campo: telefone → este; celular →
+     * `CELLPHONE_EXTENSION_NAMESPACE`.
+     *
+     * @var string
+     */
+    public const PHONE_EXTENSION_NAMESPACE = 'woo_better_phone';
+
+    /**
      * Define the core functionality of the plugin.
      *
      * Set the plugin name and the plugin version that can be used throughout the plugin.
@@ -232,6 +262,10 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('update_option_woo_better_calc_contact_field_position', $this, 'sync_phone_field', 10, 0);
         // Obrigatoriedade (optional x required) ← "Telefone (Contato) Obrigatório".
         $this->loader->add_action('update_option_woo_better_calc_contact_required', $this, 'sync_native_from_contact_required', 10, 0);
+        // Visibilidade do nativo também depende do novo modo de telefone (modos
+        // "Somente Celular" e "Desabilitar" ocultam o telefone nativo).
+        $this->loader->add_action('add_option_woo_better_calc_phone_mode', $this, 'sync_phone_field', 10, 0);
+        $this->loader->add_action('update_option_woo_better_calc_phone_mode', $this, 'sync_phone_field', 10, 0);
         // Ida e volta a partir do editor do checkout em blocos (toggle/radio do telefone).
         $this->loader->add_action('update_option_woocommerce_checkout_phone_field', $this, 'sync_contact_required_from_native', 10, 3);
         // Migração para instalações existentes: cria a opção (default 'yes') se ainda não existir.
@@ -658,7 +692,15 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('wp_ajax_wc_better_insert_address', $this, 'wc_better_insert_address');
         $this->loader->add_action('wp_ajax_nopriv_wc_better_insert_address', $this, 'wc_better_insert_address');
 
-        $this->loader->add_action('woocommerce_get_country_locale', $this, 'wc_better_calc_phone_number', 10, 1);
+        // O filtro do locale do telefone PRECISA rodar DEPOIS do
+        // `address_fields_priority` do plugin "Brazilian Market on WooCommerce"
+        // (woocommerce-extra-checkout-fields-for-brazil), que em `woocommerce_get_country_locale`
+        // (prioridade 10) faz `$locales['BR'] = array( 'postcode' => ... )` — substituindo
+        // o array BR INTEIRO e apagando o nosso `phone` (required/label). Como o
+        // address-i18n.js aplica o `required` do locale no cliente, sem a nossa entrada
+        // o telefone vira "(opcional)" no checkout clássico. Rodamos em prioridade 20
+        // (após os filtros 10/11) para reafirmar a configuração do woo-better.
+        $this->loader->add_action('woocommerce_get_country_locale', $this, 'wc_better_calc_phone_number', 20, 1);
         $this->loader->add_filter('woocommerce_get_country_locale', $this, 'lkn_checkout_fields_locale_priority', 11, 1);
 
         $this->loader->add_action('woocommerce_init', $this, 'init_woocommerce');
@@ -668,10 +710,29 @@ class WcBetterShippingCalculatorForBrazil
 
         $this->loader->add_action('woocommerce_admin_order_data_after_billing_address', $this, 'woo_better_billing_customer_data');
         $this->loader->add_action('woocommerce_admin_order_data_after_shipping_address', $this, 'woo_better_shipping_customer_data');
+
+        // O woo-better assume o bloco "Dados do Cliente" no admin do pedido; desativa
+        // o bloco equivalente do plugin "Brazilian Market on WooCommerce" (o nosso é
+        // mais completo). Roda no `init` (depois de todos os plugins carregarem).
+        $this->loader->add_action('init', $this, 'suppress_brazilian_customer_block', 99);
         
         // Hooks para customizar campos do admin
         $this->loader->add_filter('woocommerce_admin_billing_fields', $this, 'customize_admin_billing_fields');
         $this->loader->add_filter('woocommerce_admin_shipping_fields', $this, 'customize_admin_shipping_fields');
+
+        // Garante Telefone + Celular nos campos EDITÁVEIS do admin do pedido
+        // (billing e shipping). Roda em prioridade alta (99) e apenas ADICIONA os
+        // campos que faltarem — sem reconstruir o array —, então convive com o
+        // plugin "Brazilian Market on WooCommerce" (que preenche o billing mas
+        // remove o telefone do shipping) e com o nosso próprio customize_admin_*.
+        $this->loader->add_filter('woocommerce_admin_billing_fields', $this, 'ensure_admin_phone_fields_billing', 99, 1);
+        $this->loader->add_filter('woocommerce_admin_shipping_fields', $this, 'ensure_admin_phone_fields_shipping', 99, 1);
+
+        // Preenche o "Celular" ao usar "Carregar endereço de cobrança/entrega" no
+        // admin do pedido (o WooCommerce só traz os campos nativos; o celular é o
+        // nosso campo extra). O JS do WC faz `#_<tipo>_<chave>` para cada chave
+        // devolvida, então basta acrescentar `cellphone` às duas.
+        $this->loader->add_filter('woocommerce_ajax_get_customer_details', $this, 'add_cellphone_to_customer_details', 10, 3);
         
         // Hook para salvar campos brasileiros
         $this->loader->add_action('woocommerce_process_shop_order_meta', $this, 'save_brazilian_fields');
@@ -697,8 +758,11 @@ class WcBetterShippingCalculatorForBrazil
         // Hook para validação de DDD do telefone no checkout clássico
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_phone_ddd_classic');
         
+        // Detecta o plugin oficial "Brazilian Market on WooCommerce" uma única vez.
+        $brazilian_plugin_active = $this->is_brazilian_plugin_active();
+
         // Hooks para compatibilidade com APIs REST (conversão F/J) - apenas se plugin oficial não estiver ativo
-        if (!$this->is_brazilian_plugin_active()) {
+        if (!$brazilian_plugin_active) {
             // Legacy REST API
             $this->loader->add_filter('woocommerce_api_order_response', $this, 'legacy_orders_response', 90, 4);
             $this->loader->add_filter('woocommerce_api_customer_response', $this, 'legacy_customers_response', 90, 4);
@@ -708,6 +772,46 @@ class WcBetterShippingCalculatorForBrazil
             $this->loader->add_filter('woocommerce_rest_prepare_shop_order', $this, 'orders_v1_response', 90, 2);
             $this->loader->add_filter('woocommerce_rest_prepare_shop_order_object', $this, 'orders_response', 90, 2);
         }
+
+        // REASON: quando o woo-better gerencia os campos de pessoa física/jurídica,
+        // o campo Empresa é decidido pelo próprio plugin (modo Dinâmico) ou pelo
+        // WooCommerce (modos Opcional/Obrigatório). O plugin "Brazilian Market on
+        // WooCommerce" (woocommerce-extra-checkout-fields-for-brazil), porém, força
+        // "Company is a required field" no checkout clássico/shortcode via
+        // wc_add_notice() no hook woocommerce_checkout_process sempre que o documento
+        // for CNPJ — fora do objeto $errors tratado em lkn_disabled_require_field(),
+        // o que bloqueava o envio mesmo com o campo Empresa configurado como Opcional.
+        // Removemos esse aviso do session na prioridade 11 (depois do Brazilian, 10)
+        // para dar prioridade à configuração do woo-better (o Brazilian está sem
+        // manutenção há anos). Só age quando o recurso de tipo de pessoa está ativo;
+        // do contrário o Brazilian segue no comando.
+        if ($brazilian_plugin_active) {
+            $this->loader->add_action('woocommerce_checkout_process', $this, 'guard_brazilian_company_required', 11, 1);
+        }
+
+        // Campos de telefone conforme o "Comportamento do Campo de Telefone" (woo_better_calc_phone_mode).
+        // Nos modos "Celular e Fixo" e "Somente Celular" registramos um campo "Celular"
+        // (`*_cellphone`) logo abaixo do bloco de telefone. A prioridade 99 roda ANTES de
+        // outros plugins (ex.: PagBank, que usa 100) e que só inserem o `billing_cellphone`
+        // deles quando `!isset` — como o nosso já existe, evita telefone duplicado.
+        // Em "Somente Celular" o telefone nativo fica oculto e o TELEFONE do pedido fica
+        // VAZIO (o número é guardado em `*_cellphone`); o recibo exibe o celular no lugar
+        // do telefone.
+        $this->loader->add_filter('woocommerce_billing_fields', $this, 'add_cellphone_billing_fields', 99, 1);
+        $this->loader->add_filter('woocommerce_shipping_fields', $this, 'add_cellphone_shipping_fields', 99, 1);
+        $this->loader->add_filter('woocommerce_checkout_posted_data', $this, 'handle_cellphone_posted_data', 10, 1);
+
+        // REASON: o JS de front-end do plugin "Brazilian Market on WooCommerce"
+        // (assets/js/frontend/frontend.js) esconde TODOS os elementos .person-type-field
+        // quando o tipo de pessoa é CPF e, para CNPJ, re-adiciona 'validate-required' ao
+        // campo Empresa — fazendo o campo sumir nos modos Opcional/Obrigatório e bloquear
+        // o envio em "Opcional + CNPJ vazio". Como o woo-better substitui os recursos do
+        // Brazilian no checkout (máscaras, tipo de pessoa, IE, bairro), desenfileiramos o
+        // script dele no checkout clássico/shortcode para que a configuração do woo-better
+        // prevaleça. A classe 'person-type-field' é PRESERVADA no HTML (não removemos a
+        // classe) para não quebrar outros consumidores. O callback só age quando o
+        // woo-better gerencia os campos de pessoa.
+        $this->loader->add_action('woocommerce_after_checkout_form', $this, 'dequeue_brazilian_checkout_scripts', 20, 0);
         
         // Hook para adicionar campos personalizados na página de perfil do usuário
         $this->loader->add_filter('woocommerce_customer_meta_fields', $this, 'add_customer_meta_fields');
@@ -1071,7 +1175,123 @@ class WcBetterShippingCalculatorForBrazil
         return $fields;
     }
 
-    
+    /**
+     * Garante o campo "Telefone" (e "Celular") nos campos de COBRANÇA editáveis do
+     * admin do pedido.
+     *
+     * @param array $fields
+     * @return array
+     */
+    public function ensure_admin_phone_fields_billing($fields)
+    {
+        return $this->ensure_admin_phone_fields($fields);
+    }
+
+    /**
+     * Garante o campo "Telefone" (e "Celular") nos campos de ENTREGA editáveis do
+     * admin do pedido.
+     *
+     * @param array $fields
+     * @return array
+     */
+    public function ensure_admin_phone_fields_shipping($fields)
+    {
+        return $this->ensure_admin_phone_fields($fields);
+    }
+
+    /**
+     * Adiciona "Telefone"/"Celular" aos campos do pedido (admin) SE faltarem.
+     *
+     * Roda em prioridade alta (99) e é puramente ADITIVO — nunca reconstrói nem
+     * reordena o array recebido —, para conviver com o plugin "Brazilian Market on
+     * WooCommerce" (que remove o telefone do bloco de entrega) e com o nosso próprio
+     * `customize_admin_*_fields`. Só age quando o plugin gerencia o telefone.
+     *
+     * @param array $fields
+     * @return array
+     */
+    private function ensure_admin_phone_fields($fields)
+    {
+        if (! is_array($fields)) {
+            return $fields;
+        }
+
+        // Respeita "Exibir detalhes do pedido" e o modo "Desabilitar".
+        if (get_option('woo_better_calc_enable_order_details', 'yes') !== 'yes') {
+            return $fields;
+        }
+        if ('disabled' === $this->get_phone_mode()) {
+            return $fields;
+        }
+
+        // A label do telefone SEGUE o "Comportamento do Campo de Telefone" (ex.:
+        // "Celular/Telefone"), mesmo quando o campo já veio de outro plugin (ex.:
+        // Brazilian) ou do padrão do WooCommerce.
+        $phone = array(
+            'label' => $this->get_phone_field_label(),
+            'type'  => 'tel',
+            'show'  => false,
+        );
+        if (isset($fields['phone']) && is_array($fields['phone'])) {
+            $fields['phone'] = array_merge($fields['phone'], $phone);
+        } else {
+            $fields['phone'] = $phone;
+        }
+
+        // Celular só quando o recurso está ativo (modo "Somente Celular" OU
+        // "Campo de Celular" habilitado).
+        if ($this->phone_mode_adds_cellphone_field()) {
+            $cellphone = array(
+                'label' => __('Celular (secundário)', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'tel',
+                'show'  => false,
+            );
+            if (isset($fields['cellphone']) && is_array($fields['cellphone'])) {
+                $fields['cellphone'] = array_merge($fields['cellphone'], $cellphone);
+            } else {
+                $fields['cellphone'] = $cellphone;
+            }
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Acrescenta o "Celular" ao retorno do AJAX "Carregar endereço" do admin do
+     * pedido, para os campos de cobrança e entrega.
+     *
+     * O JS do WooCommerce (`meta-boxes-order.js`) preenche `#_<tipo>_<chave>` para
+     * cada chave devolvida em `billing`/`shipping`. Como o celular é um campo extra
+     * do plugin (não nativo), precisamos devolvê-lo aqui.
+     *
+     * @param array       $data     Dados do cliente (billing/shipping + extras).
+     * @param \WC_Customer $customer Cliente.
+     * @param int         $user_id
+     * @return array
+     */
+    public function add_cellphone_to_customer_details($data, $customer, $user_id = 0)
+    {
+        if (! is_array($data) || ! $customer instanceof \WC_Customer) {
+            return $data;
+        }
+
+        if (! $this->phone_mode_adds_cellphone_field()) {
+            return $data;
+        }
+
+        if (! isset($data['billing']) || ! is_array($data['billing'])) {
+            $data['billing'] = array();
+        }
+        if (! isset($data['shipping']) || ! is_array($data['shipping'])) {
+            $data['shipping'] = array();
+        }
+
+        $data['billing']['cellphone']  = $this->format_complete_phone( (string) $customer->get_meta('billing_cellphone') );
+        $data['shipping']['cellphone'] = $this->format_complete_phone( (string) $customer->get_meta('shipping_cellphone') );
+
+        return $data;
+    }
+
     /**
      * Salva os campos brasileiros quando o pedido é editado
      * 
@@ -1339,18 +1559,10 @@ class WcBetterShippingCalculatorForBrazil
         if ($enable_order_details !== 'yes') {
             return;
         }
-        
-        // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
-        if (!function_exists('is_plugin_active')) {
-            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
-        }
-        
-        // Só não exibe os dados se o plugin Brazilian Market on WooCommerce estiver ativo E a classe de pedidos dele estiver carregada.
-        // Dessa forma, um plugin fake (mesmo slug, sem a classe) não impede a exibição do bloco.
-        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')
-            && class_exists('Extra_Checkout_Fields_For_Brazil_Order')) {
-            return;
-        }
+
+        // O woo-better exibe o SEU bloco de dados do cliente mesmo com o plugin
+        // "Brazilian Market on WooCommerce" ativo (o nosso é mais completo). O bloco
+        // do Brazilian é desativado em `suppress_brazilian_customer_block()`.
         
         // Get plugin settings
         $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
@@ -1394,6 +1606,19 @@ class WcBetterShippingCalculatorForBrazil
                 ];
             }
         }
+
+        // Celular (quando o recurso de celular está ativo). O número é guardado na
+        // meta `_shipping_cellphone`.
+        if ($this->phone_mode_adds_cellphone_field()) {
+            $cellphone = $order->get_meta('_shipping_cellphone');
+            if (!empty($cellphone)) {
+                $display_data['cellphone'] = [
+                    'label' => __('Celular', 'woo-better-shipping-calculator-for-brazil'),
+                    'value' => $this->format_complete_phone($cellphone, $shipping_phone_country_code),
+                    'is_link' => true
+                ];
+            }
+        }
         
         return $display_data;
     }
@@ -1410,18 +1635,10 @@ class WcBetterShippingCalculatorForBrazil
         if ($enable_order_details !== 'yes') {
             return;
         }
-        
-        // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
-        if (!function_exists('is_plugin_active')) {
-            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
-        }
-        
-        // Só não exibe os dados se o plugin Brazilian Market on WooCommerce estiver ativo E a classe de pedidos dele estiver carregada.
-        // Dessa forma, um plugin fake (mesmo slug, sem a classe) não impede a exibição do bloco.
-        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')
-            && class_exists('Extra_Checkout_Fields_For_Brazil_Order')) {
-            return;
-        }
+
+        // O woo-better exibe o SEU bloco de dados do cliente mesmo com o plugin
+        // "Brazilian Market on WooCommerce" ativo (o nosso é mais completo). O bloco
+        // do Brazilian é desativado em `suppress_brazilian_customer_block()`.
         
         // Get plugin settings
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
@@ -1583,6 +1800,19 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
+        // 7b. Celular (quando o recurso de celular está ativo). O número é guardado
+        // na meta `_billing_cellphone`.
+        if ($this->phone_mode_adds_cellphone_field()) {
+            $cellphone = $order->get_meta('_billing_cellphone');
+            if (!empty($cellphone)) {
+                $display_data['cellphone'] = [
+                    'label' => __('Celular', 'woo-better-shipping-calculator-for-brazil'),
+                    'value' => $this->format_complete_phone($cellphone, $billing_phone_country_code),
+                    'is_link' => true
+                ];
+            }
+        }
+
         // 8. Email
         $email = $order->get_billing_email();
         if (!empty($email)) {
@@ -1596,6 +1826,51 @@ class WcBetterShippingCalculatorForBrazil
         return $display_data;
     }
     
+    /**
+     * Desativa o bloco "Informações do cliente" do plugin "Brazilian Market on
+     * WooCommerce" para que o woo-better assuma a exibição (o nosso bloco é mais
+     * completo). Só age quando a exibição de detalhes do pedido está habilitada.
+     *
+     * O bloco do Brazilian é registrado em
+     * `woocommerce_admin_order_data_after_billing_address` pela classe
+     * `Extra_Checkout_Fields_For_Brazil_Order` (instanciada sem referência global),
+     * então localizamos o callback pelo objeto e o removemos.
+     *
+     * @return void
+     */
+    public function suppress_brazilian_customer_block()
+    {
+        if (get_option('woo_better_calc_enable_order_details', 'yes') !== 'yes') {
+            return;
+        }
+
+        if (! class_exists('Extra_Checkout_Fields_For_Brazil_Order')) {
+            return;
+        }
+
+        global $wp_filter;
+
+        $hook = 'woocommerce_admin_order_data_after_billing_address';
+        if (! isset($wp_filter[$hook]) || ! is_object($wp_filter[$hook]) || empty($wp_filter[$hook]->callbacks)) {
+            return;
+        }
+
+        foreach ($wp_filter[$hook]->callbacks as $priority => $callbacks) {
+            foreach ($callbacks as $callback) {
+                $fn = isset($callback['function']) ? $callback['function'] : null;
+
+                if (
+                    is_array($fn)
+                    && isset($fn[0])
+                    && is_object($fn[0])
+                    && $fn[0] instanceof \Extra_Checkout_Fields_For_Brazil_Order
+                ) {
+                    remove_action($hook, $fn, $priority);
+                }
+            }
+        }
+    }
+
     /**
      * Check if should show physical person data
      */
@@ -1712,6 +1987,19 @@ class WcBetterShippingCalculatorForBrazil
     }
     
     /**
+     * Indica se estamos exibindo o pedido para o CLIENTE na página de recibo
+     * ("Order received"/obrigado). Usado para o celular substituir o telefone no
+     * recibo sem afetar o admin — onde o telefone deve aparecer VAZIO e o celular
+     * preenchido (modo "Somente Celular").
+     *
+     * @return bool
+     */
+    private function is_order_receipt_context()
+    {
+        return function_exists('is_order_received_page') && is_order_received_page();
+    }
+
+    /**
      * Formatar telefone de cobrança no pedido final
      *
      * @param string $phone
@@ -1721,12 +2009,18 @@ class WcBetterShippingCalculatorForBrazil
     public function format_order_billing_phone($phone, $order)
     {
         $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
-        
+
+        // "Somente Celular": o telefone do pedido fica VAZIO (o número é o celular).
+        // No recibo o celular aparece no lugar do telefone — ele "substitui" o telefone.
+        if (empty($phone) && 'cellphone_only' === $this->get_phone_mode() && $this->is_order_receipt_context()) {
+            $phone = $order->get_meta('_billing_cellphone');
+        }
+
         if ($phone_mask_enabled === 'yes' && !empty($phone)) {
             $country_code = $order->get_meta('_billing_phone_country_code');
             return $this->format_complete_phone($phone, $country_code);
         }
-        
+
         return $phone;
     }
     
@@ -1740,12 +2034,17 @@ class WcBetterShippingCalculatorForBrazil
     public function format_order_shipping_phone($phone, $order)
     {
         $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
-        
+
+        // "Somente Celular": idem billing — no recibo o celular substitui o telefone.
+        if (empty($phone) && 'cellphone_only' === $this->get_phone_mode() && $this->is_order_receipt_context()) {
+            $phone = $order->get_meta('_shipping_cellphone');
+        }
+
         if ($phone_mask_enabled === 'yes' && !empty($phone)) {
             $country_code = $order->get_meta('_shipping_phone_country_code');
             return $this->format_complete_phone($phone, $country_code);
         }
-        
+
         return $phone;
     }
     
@@ -2287,9 +2586,10 @@ class WcBetterShippingCalculatorForBrazil
      *
      * @param string $phone        Telefone (pode vir com ou sem DDI/formatação)
      * @param string $country_code Ex.: '+55' (vazio = assume Brasil)
+     * @param string $kind         'phone' (fixo) | 'cellphone' (celular)
      * @return string|null
      */
-    private function phone_validation_error($phone, $country_code = '') {
+    private function phone_validation_error($phone, $country_code = '', $kind = 'phone') {
         // Normaliza para E.164 (+DDInúmero) usando a rotina existente do plugin.
         $normalized = $this->format_complete_phone($phone, $country_code);
         if ('' === $normalized) {
@@ -2320,13 +2620,24 @@ class WcBetterShippingCalculatorForBrazil
             return 'ddd';
         }
 
-        // Aceita fixo + celular; rejeita toll-free/premium/etc.
+        // Aceita o tipo certo: o campo "Celular" aceita MOBILE. O campo "Telefone"
+        // só restringe a FIXED_LINE no modo "Somente Fixo"; no "Celular e Fixo" ele é
+        // "Celular/Telefone" e aceita tanto fixo quanto celular (MOBILE). Em todos,
+        // FIXED_LINE_OR_MOBILE entra porque o intl-tel-input (cliente) também o
+        // considera válido (números ambíguos, comuns fora do BR). Rejeita
+        // toll-free/premium/etc.
         $type = $phone_util->getNumberType($number);
-        $allowed = array(
-            \libphonenumber\PhoneNumberType::FIXED_LINE,
-            \libphonenumber\PhoneNumberType::MOBILE,
-            \libphonenumber\PhoneNumberType::FIXED_LINE_OR_MOBILE
-        );
+        if ('cellphone' === $kind) {
+            $allowed = array( \libphonenumber\PhoneNumberType::MOBILE, \libphonenumber\PhoneNumberType::FIXED_LINE_OR_MOBILE );
+        } elseif ('landline_only' === $this->get_phone_mode()) {
+            $allowed = array( \libphonenumber\PhoneNumberType::FIXED_LINE, \libphonenumber\PhoneNumberType::FIXED_LINE_OR_MOBILE );
+        } else {
+            $allowed = array(
+                \libphonenumber\PhoneNumberType::FIXED_LINE,
+                \libphonenumber\PhoneNumberType::MOBILE,
+                \libphonenumber\PhoneNumberType::FIXED_LINE_OR_MOBILE
+            );
+        }
         if (! in_array($type, $allowed, true)) {
             return 'invalid';
         }
@@ -2353,10 +2664,27 @@ class WcBetterShippingCalculatorForBrazil
         $billing_phone = isset($_POST['billing_phone']) ? sanitize_text_field(wp_unslash($_POST['billing_phone'])) : '';
         $billing_country = isset($_POST['billing_phone_country']) ? sanitize_text_field(wp_unslash($_POST['billing_phone_country'])) : '';
 
-        $billing_error = ('' !== trim($billing_phone)) ? $this->phone_validation_error($billing_phone, $billing_country) : null;
-        if ($billing_error !== null) {
+        // Só valida (tipo/DDD) quando o campo é OBRIGATÓRIO. Campo opcional não é
+        // validado, mesmo preenchido.
+        $phone_required     = get_option('woo_better_calc_contact_required', 'no') === 'yes';
+        $cellphone_required = get_option('woo_better_calc_cellphone_required', 'no') === 'yes';
+
+        // No modo "Somente Celular" o campo billing_phone carrega o celular; nos
+        // demais, é o telefone fixo.
+        $billing_kind = ('cellphone_only' === $this->get_phone_mode()) ? 'cellphone' : 'phone';
+
+        if ($phone_required && '' !== trim($billing_phone) && null !== $this->phone_validation_error($billing_phone, $billing_country, $billing_kind)) {
             wc_add_notice(__('Número de telefone inválido.', 'woo-better-shipping-calculator-for-brazil'), 'error');
             return;
+        }
+
+        // Campo "Celular" separado (modo "Celular e Fixo"): valida como MOBILE.
+        if ($cellphone_required && isset($_POST['billing_cellphone'])) {
+            $billing_cellphone = sanitize_text_field(wp_unslash($_POST['billing_cellphone']));
+            if ('' !== trim($billing_cellphone) && null !== $this->phone_validation_error($billing_cellphone, $billing_country, 'cellphone')) {
+                wc_add_notice(__('Número de celular inválido.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+                return;
+            }
         }
 
         $ship_to_different = isset($_POST['ship_to_different_address']) ? sanitize_text_field(wp_unslash($_POST['ship_to_different_address'])) : '';
@@ -2364,9 +2692,15 @@ class WcBetterShippingCalculatorForBrazil
             $shipping_phone = isset($_POST['shipping_phone']) ? sanitize_text_field(wp_unslash($_POST['shipping_phone'])) : '';
             $shipping_country = isset($_POST['shipping_phone_country']) ? sanitize_text_field(wp_unslash($_POST['shipping_phone_country'])) : '';
 
-            $shipping_error = ('' !== trim($shipping_phone)) ? $this->phone_validation_error($shipping_phone, $shipping_country) : null;
-            if ($shipping_error !== null) {
+            if ($phone_required && '' !== trim($shipping_phone) && null !== $this->phone_validation_error($shipping_phone, $shipping_country, $billing_kind)) {
                 wc_add_notice(__('Número de telefone de entrega inválido.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+            }
+
+            if ($cellphone_required && isset($_POST['shipping_cellphone'])) {
+                $shipping_cellphone = sanitize_text_field(wp_unslash($_POST['shipping_cellphone']));
+                if ('' !== trim($shipping_cellphone) && null !== $this->phone_validation_error($shipping_cellphone, $shipping_country, 'cellphone')) {
+                    wc_add_notice(__('Número de celular de entrega inválido.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+                }
             }
         }
     }
@@ -2751,6 +3085,121 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Verifica se a opção "Celular Obrigatório" está ativa.
+     *
+     * @return bool
+     */
+    private function is_cellphone_required() {
+        return get_option('woo_better_calc_cellphone_required', 'no') === 'yes';
+    }
+
+    /**
+     * Verifica se a opção "Campo de Celular" (habilitar o campo separado) está ativa.
+     *
+     * @return bool
+     */
+    private function is_cellphone_field_enabled() {
+        return get_option('woo_better_calc_enable_cellphone_field', 'no') === 'yes';
+    }
+
+    /**
+     * Retorna a label do campo de telefone conforme o "Comportamento do Campo de Telefone".
+     *
+     * Usada no telefone nativo (locale → checkout em blocos e clássico) e no campo de
+     * destaque, mantendo o nome consistente entre os checkouts.
+     *
+     * @return string
+     */
+    public function get_phone_field_label() {
+        switch ($this->get_phone_mode()) {
+            case 'landline_only':
+                return __('Telefone', 'woo-better-shipping-calculator-for-brazil');
+            case 'cellphone_only':
+                return __('Celular', 'woo-better-shipping-calculator-for-brazil');
+            default:
+                // "Celular e Fixo": o campo principal aceita os dois tipos.
+                return __('Celular/Telefone', 'woo-better-shipping-calculator-for-brazil');
+        }
+    }
+
+    /**
+     * Retorna o modo de campos de telefone configurado.
+     *
+     * Valores possíveis:
+     * - 'disabled'            → nenhum campo de telefone.
+     * - 'phone_and_cellphone' → telefone nativo (fixo) + campo "Celular" (padrão).
+     * - 'cellphone_only'      → só um campo "Celular" (nativo oculto no clássico).
+     * - 'landline_only'       → só o telefone nativo (fixo).
+     *
+     * @return string
+     */
+    public function get_phone_mode() {
+        $mode    = get_option('woo_better_calc_phone_mode', 'phone_and_cellphone');
+        $allowed = array('disabled', 'phone_and_cellphone', 'cellphone_only', 'landline_only');
+
+        return in_array($mode, $allowed, true) ? $mode : 'phone_and_cellphone';
+    }
+
+    /**
+     * Indica se o modo atual oculta o telefone nativo no ÂMBITO DA OPÇÃO nativa
+     * (woocommerce_checkout_phone_field = hidden), afetando clássico E blocos.
+     *
+     * Os modos "Desabilitar" e "Somente Celular" fazem isso: no bloco o telefone nativo
+     * precisa ficar oculto (a option é o mecanismo canônico do checkout em blocos) e, no
+     * clássico, ele também é removido do array de campos.
+     *
+     * @return bool
+     */
+    private function phone_mode_hides_native_option() {
+        // O plugin assume o controle do telefone nos modos gerenciados (tudo exceto
+        // "Desabilitar"): o campo nativo do WooCommerce fica oculto. No modo
+        // "Desabilitar" NÃO mexemos — o sync restaura o estado original guardado em
+        // woo_better_calc_phone_field_previous.
+        return 'disabled' !== $this->get_phone_mode();
+    }
+
+    /**
+     * Indica se o modo atual oculta o campo nativo de telefone no checkout clássico.
+     *
+     * @return bool
+     */
+    private function phone_mode_hides_native_field() {
+        return in_array($this->get_phone_mode(), array('disabled', 'cellphone_only'), true);
+    }
+
+    /**
+     * Indica se o modo/opções atuais devem adicionar o campo "Celular" (billing + shipping).
+     *
+     * No modo "Somente Celular" o campo é o principal (sempre existe). Nos demais
+     * modos depende da opção "Campo de Celular" (enable_cellphone_field).
+     *
+     * @return bool
+     */
+    private function phone_mode_adds_cellphone_field() {
+        if ( 'cellphone_only' === $this->get_phone_mode() ) {
+            return true;
+        }
+
+        return $this->is_cellphone_field_enabled();
+    }
+
+    /**
+     * Indica se o modo/opções atuais devem adicionar o campo `*_cellphone` ESCONDIDO
+     * (shim) para compatibilidade com plugins que esperam `billing_cellphone`
+     * (PagBank, NFe, Asaas...).
+     *
+     * Só no modo "Celular e Fixo" e quando o "Campo de Celular" está DESLIGADO —
+     * nesse caso o woo-better não exibe um campo de celular próprio, mas ainda assim
+     * registra um campo oculto e espelha o telefone unificado em `_<type>_cellphone`,
+     * para que os outros plugins não criem o campo deles nem fiquem sem o valor.
+     *
+     * @return bool
+     */
+    private function phone_mode_adds_cellphone_shim() {
+        return 'phone_and_cellphone' === $this->get_phone_mode() && ! $this->is_cellphone_field_enabled();
+    }
+
+    /**
      * Sincroniza a VISIBILIDADE do campo de telefone nativo com o "Destaque do
      * Campo Telefone" (woo_better_calc_contact_field_position).
      *
@@ -2779,8 +3228,9 @@ class WcBetterShippingCalculatorForBrazil
             $target_visible = $this->is_phone_required() ? 'required' : 'optional';
 
             // 'yes' (Destaque do Campo Telefone) usa o campo próprio e oculta o
-            // nativo; caso contrário o telefone é o campo nativo do WooCommerce.
-            $should_hide = $this->is_phone_highlight();
+            // nativo; os modos "Somente Celular"/"Desabilitar" também ocultam; caso
+            // contrário o telefone é o campo nativo do WooCommerce.
+            $should_hide = $this->is_phone_highlight() || $this->phone_mode_hides_native_option();
 
             if ($should_hide) {
                 // Destaque ativo: o nativo precisa ficar oculto.
@@ -2821,8 +3271,8 @@ class WcBetterShippingCalculatorForBrazil
         self::$phone_field_syncing = true;
 
         try {
-            if ($this->is_phone_highlight()) {
-                return; // destaque ativo: o nativo está oculto, não mexe
+            if ($this->is_phone_highlight() || $this->phone_mode_hides_native_option()) {
+                return; // destaque/modo oculta o nativo: não mexe na obrigatoriedade dele
             }
 
             $native_phone = get_option('woocommerce_checkout_phone_field', 'optional');
@@ -2868,8 +3318,9 @@ class WcBetterShippingCalculatorForBrazil
                 update_option('woo_better_calc_contact_required', 'no');
             }
 
-            // Destaque ativo → o nativo precisa permanecer oculto.
-            if ($new_value !== 'hidden' && $this->is_phone_highlight()) {
+            // Destaque ativo → o nativo precisa permanecer oculto. O mesmo vale
+            // para os modos "Somente Celular"/"Desabilitar".
+            if ($new_value !== 'hidden' && ($this->is_phone_highlight() || $this->phone_mode_hides_native_option())) {
                 update_option('woocommerce_checkout_phone_field', 'hidden');
             }
         } finally {
@@ -2908,6 +3359,10 @@ class WcBetterShippingCalculatorForBrazil
         
         // Processa dados de telefone formatado
         $this->process_phone_formatter_from_request($order, $request);
+
+        // Modo "Somente Celular": mapeia o campo "Celular" (additional checkout field
+        // do bloco) para billing_phone/_billing_cellphone e shipping.
+        $this->process_cellphone_from_request($order, $request);
         
         // Processa dados de "usar mesmo endereço para faturamento"
         $this->process_shipping_as_billing_from_request($order, $request);
@@ -2974,7 +3429,7 @@ class WcBetterShippingCalculatorForBrazil
         if (!empty($shipping_country_code)) {
             $order->update_meta_data('_shipping_phone_country_code', $shipping_country_code);
         }
-        
+
         $order->save();
     }
 
@@ -3339,6 +3794,12 @@ class WcBetterShippingCalculatorForBrazil
      */
     private function detect_same_address_usage($order, $data)
     {
+        // "Forçar entrega para o endereço de cobrança" → existe um só endereço
+        // (billing), então é o mesmo endereço por definição.
+        if ('billing_only' === get_option('woocommerce_ship_to_destination', 'shipping')) {
+            return true;
+        }
+
         // PRIORIDADE: Verifica primeiro o campo ship_to_different_address do checkout
         if (isset($data['ship_to_different_address'])) {
             // false = usar mesmo endereço, true = endereços diferentes
@@ -3477,6 +3938,46 @@ class WcBetterShippingCalculatorForBrazil
                     ];
                 },
             ]);
+
+            // Registra os campos de telefone/celular (injetados via JS no bloco).
+            // São DUAS namespaces, uma por TIPO de campo, e CADA UMA declara apenas
+            // as SUAS chaves. Isso é essencial: o `setExtensionData` do checkout faz
+            // MERGE por namespace, então um `data_callback`/schema com as 4 chaves
+            // (compartilhado) faria o `woo_better_cellphone` vazar para dentro de
+            // `woo_better_phone` (e vice-versa), quebrando a validação do Store API.
+            woocommerce_store_api_register_endpoint_data( [
+                'endpoint'        => 'checkout',
+                'namespace'       => self::PHONE_EXTENSION_NAMESPACE,
+                'schema_callback' => function() {
+                    return [
+                        'billing_phone'  => [ 'type' => 'string', 'readonly' => true ],
+                        'shipping_phone' => [ 'type' => 'string', 'readonly' => true ],
+                    ];
+                },
+                'data_callback' => function() {
+                    return [
+                        'billing_phone'  => '',
+                        'shipping_phone' => '',
+                    ];
+                },
+            ] );
+
+            woocommerce_store_api_register_endpoint_data( [
+                'endpoint'        => 'checkout',
+                'namespace'       => self::CELLPHONE_EXTENSION_NAMESPACE,
+                'schema_callback' => function() {
+                    return [
+                        'billing_cellphone'  => [ 'type' => 'string', 'readonly' => true ],
+                        'shipping_cellphone' => [ 'type' => 'string', 'readonly' => true ],
+                    ];
+                },
+                'data_callback' => function() {
+                    return [
+                        'billing_cellphone'  => '',
+                        'shipping_cellphone' => '',
+                    ];
+                },
+            ] );
             
             // Registra campos para data de nascimento
             if (get_option('woo_better_calc_enable_birthdate_field', 'no') === 'yes') {
@@ -3611,6 +4112,18 @@ class WcBetterShippingCalculatorForBrazil
             woocommerce_store_api_register_update_callback([
                 'namespace' => 'woo_better_neighborhood',
                 'callback'  => [ $this, 'handle_neighborhood_update' ],
+            ]);
+
+            // Callback para o "Telefone" (campos injetados via JS no bloco)
+            woocommerce_store_api_register_update_callback([
+                'namespace' => self::PHONE_EXTENSION_NAMESPACE,
+                'callback'  => [ $this, 'handle_phone_update' ],
+            ]);
+
+            // Callback para o "Celular" (campos injetados via JS no bloco)
+            woocommerce_store_api_register_update_callback([
+                'namespace' => self::CELLPHONE_EXTENSION_NAMESPACE,
+                'callback'  => [ $this, 'handle_cellphone_update' ],
             ]);
             
             // Callback para data de nascimento
@@ -4074,7 +4587,10 @@ class WcBetterShippingCalculatorForBrazil
         // OrderController (Store API) emitia "Undefined array key label" (linha
         // 501) + erro espúrio "<vazio> is required" que bloqueava o pedido.
         $native_phone_hidden = get_option('woocommerce_checkout_phone_field', 'optional') === 'hidden';
-        $hides_native_phone  = ($phone_highlight === 'yes' && $is_blocks_checkout) || $native_phone_hidden;
+        // No modo "Somente Celular" o checkout em blocos exibe o campo "Celular"
+        // (additional checkout field) e oculta o telefone nativo do WooCommerce.
+        $cellphone_only_blocks = ('cellphone_only' === $this->get_phone_mode()) && $is_blocks_checkout;
+        $hides_native_phone  = ($phone_highlight === 'yes' && $is_blocks_checkout) || $native_phone_hidden || $cellphone_only_blocks;
 
         // REASON: O locale 'phone' serve dois consumidores com necessidades
         // opostas. No checkout em blocos / Store API (REST) o nativo oculto perde
@@ -4118,6 +4634,11 @@ class WcBetterShippingCalculatorForBrazil
                 // este 'required' para manter o campo obrigatório na tela.
                 $locale[$country_code]['phone']['required'] = true;
             }
+
+            // Label do telefone nativo conforme o "Comportamento do Campo de Telefone".
+            // Vale para o checkout em blocos (countryData → defaultFields) e para o
+            // clássico (address-i18n.js aplica o label do locale ao trocar de país).
+            $locale[$country_code]['phone']['label'] = $this->get_phone_field_label();
         }
 
         return $locale;
@@ -4225,8 +4746,17 @@ class WcBetterShippingCalculatorForBrazil
                         $fields['billing']['billing_company']['required'] = true;
                         $fields['billing']['billing_company']['label'] = __('Nome da Empresa', 'woo-better-shipping-calculator-for-brazil');
                         $fields['billing']['billing_company']['placeholder'] = __('Digite o nome da empresa', 'woo-better-shipping-calculator-for-brazil');
-                        $fields['billing']['billing_company']['priority'] = 31;
-                        $fields['billing']['billing_company']['class'] = array('form-row-wide');
+
+                        // Preserva as classes existentes (ex.: 'person-type-field', que
+                        // outros consumidores podem usar) e apenas garante o
+                        // 'form-row-wide' — sem remover nenhuma classe.
+                        $company_classes = isset($fields['billing']['billing_company']['class'])
+                            ? (array) $fields['billing']['billing_company']['class']
+                            : array();
+                        if (!in_array('form-row-wide', $company_classes, true)) {
+                            $company_classes[] = 'form-row-wide';
+                        }
+                        $fields['billing']['billing_company']['class'] = array_values($company_classes);
                     } else {
                         // Se não existir, criar o campo
                         $fields['billing']['billing_company'] = array(
@@ -4243,6 +4773,27 @@ class WcBetterShippingCalculatorForBrazil
                     if (isset($fields['shipping']['shipping_company'])) {
                         unset($fields['shipping']['shipping_company']);
                     }
+                } else if (isset($fields['billing']['billing_company'])) {
+                    // REASON: nos modos Opcional/Obrigatório o required do campo Empresa
+                    // deve seguir a escolha do lojista no woo-better — e não a option
+                    // nativa (woocommerce_checkout_company_field) nem o plugin "Brazilian
+                    // Market on WooCommerce", que não raro deixam o campo como
+                    // obrigatório. Sem isso, o campo aparecia como requerido mesmo com a
+                    // configuração em "Opcional". Como este filtro roda por último
+                    // (prioridade 999), nossa decisão prevalece.
+                    $fields['billing']['billing_company']['required'] = ('required' === $company_field_behavior);
+                }
+
+                // REASON: o plugin "Brazilian Market on WooCommerce" redefine a
+                // prioridade do campo Empresa no filtro woocommerce_billing_fields
+                // (billing_company = 25), colocando-o ACIMA do campo unificado de
+                // CPF/CNPJ (billing_document = 27) no checkout clássico/shortcode.
+                // Como este filtro (woocommerce_checkout_fields, prioridade 999) roda
+                // DEPOIS do Brazilian, reafirmamos aqui a posição do campo Empresa
+                // logo abaixo do CPF/CNPJ em TODOS os modos — não só no "Dinâmico" —
+                // para dar prioridade à configuração do woo-better.
+                if (isset($fields['billing']['billing_company'])) {
+                    $fields['billing']['billing_company']['priority'] = 31;
                 }
             }
         }
@@ -4298,7 +4849,7 @@ class WcBetterShippingCalculatorForBrazil
                 );
                 $fields['billing']['billing_phone'] = array(
                     'type'        => 'tel',
-                    'label'       => __('Celular/Telefone', 'woo-better-shipping-calculator-for-brazil'),
+                    'label'       => $this->get_phone_field_label(),
                     'placeholder' => __('Digite o telefone', 'woo-better-shipping-calculator-for-brazil'),
                     'required'    => ($phone_required === 'yes'),
                     'class'       => array('form-row-wide'),
@@ -4320,7 +4871,7 @@ class WcBetterShippingCalculatorForBrazil
                 );
                 $fields['shipping']['shipping_phone'] = array(
                     'type'        => 'tel',
-                    'label'       => __('Celular/Telefone', 'woo-better-shipping-calculator-for-brazil'),
+                    'label'       => $this->get_phone_field_label(),
                     'placeholder' => __('Digite o telefone', 'woo-better-shipping-calculator-for-brazil'),
                     'required'    => ($phone_required === 'yes'),
                     'class'       => array('form-row-wide'),
@@ -4336,12 +4887,51 @@ class WcBetterShippingCalculatorForBrazil
 
 
             if (isset($fields['billing']['billing_phone'])) {
-                $fields['billing']['billing_phone']['label'] = __('Celular/Telefone', 'woo-better-shipping-calculator-for-brazil');
+                $fields['billing']['billing_phone']['label'] = $this->get_phone_field_label();
                 $fields['billing']['billing_phone']['required'] = ($phone_required === 'yes');
             }
             if (isset($fields['shipping']['shipping_phone'])) {
-                $fields['shipping']['shipping_phone']['label'] = __('Celular/Telefone', 'woo-better-shipping-calculator-for-brazil');
+                $fields['shipping']['shipping_phone']['label'] = $this->get_phone_field_label();
                 $fields['shipping']['shipping_phone']['required'] = ($phone_required === 'yes');
+            }
+        }
+
+        // Modos de telefone (select "Comportamento do Campo de Telefone").
+        // "Somente Celular"/"Desabilitar" ocultam o telefone nativo no clássico; o
+        // modo "Somente Celular" adiciona um campo "Celular" no lugar (registrado em
+        // maybe_add_cellphone_field, prioridade 99). No modo "Desabilitar" nenhum
+        // campo de telefone é exibido. "Celular e Fixo" mantém o nativo e adiciona o
+        // campo "Celular" logo abaixo.
+        if ($this->phone_mode_hides_native_field()) {
+            // Remove apenas o input visível do telefone. No modo "Somente Celular"
+            // mantemos o hidden `*_phone_country` (DDI): o campo "Celular" assume o
+            // papel de telefone e usa esse hidden para capturar o código do país.
+            unset(
+                $fields['billing']['billing_phone'],
+                $fields['shipping']['shipping_phone']
+            );
+        }
+        if ('disabled' === $this->get_phone_mode()) {
+            // Modo "Desabilitar": nenhum telefone/celular — remove também o DDI.
+            unset(
+                $fields['billing']['billing_phone_country'],
+                $fields['shipping']['shipping_phone_country']
+            );
+        }
+
+        // O campo "Celular" SECUNDÁRIO (modo "Celular e Fixo" com o "Campo de
+        // Celular" ligado) fica no FIM do formulário de endereço, e não colado ao
+        // telefone. Só há reposicionamento quando existem os DOIS campos: no modo
+        // "Somente Celular" o telefone é removido e o celular assume a posição do
+        // telefone (não entra aqui).
+        foreach (array('billing', 'shipping') as $fieldset) {
+            $phone_key = $fieldset . '_phone';
+            $cell_key  = $fieldset . '_cellphone';
+            if (!isset($fields[$fieldset])) {
+                continue;
+            }
+            if (isset($fields[$fieldset][$cell_key]) && isset($fields[$fieldset][$phone_key])) {
+                $fields[$fieldset][$cell_key]['priority'] = 200;
             }
         }
 
@@ -5113,6 +5703,170 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Processa o telefone/celular do checkout em BLOCOS (campos gerados via JS).
+     *
+     * O campo nativo do WooCommerce fica oculto; os valores chegam no namespace
+     * `woo_better_cellphone` do request. O que é salvo depende do modo:
+     *  - `phone_and_cellphone`: telefone → `billing_phone`/`shipping_phone` e
+     *    celular → metas `_billing_cellphone`/`_shipping_cellphone`;
+     *  - `cellphone_only`: só o celular (metas); o TELEFONE fica VAZIO;
+     *  - `landline_only`: só o telefone; o celular fica vazio.
+     *
+     * @param WC_Order $order
+     * @param WP_REST_Request $request
+     * @return void
+     */
+    private function process_cellphone_from_request($order, $request)
+    {
+        $mode = $this->get_phone_mode();
+        if ( ! in_array($mode, array('phone_and_cellphone', 'cellphone_only', 'landline_only'), true)) {
+            return;
+        }
+
+        $extensions = $request->get_param('extensions') ?? [];
+        $phone_data     = isset($extensions[self::PHONE_EXTENSION_NAMESPACE]) ? $extensions[self::PHONE_EXTENSION_NAMESPACE] : [];
+        $cellphone_data = isset($extensions[self::CELLPHONE_EXTENSION_NAMESPACE]) ? $extensions[self::CELLPHONE_EXTENSION_NAMESPACE] : [];
+
+        // Cada TIPO de campo envia a sua extensão: telefone → `woo_better_phone`,
+        // celular → `woo_better_cellphone`. Mesclamos as duas (o telefone tem
+        // prioridade) para ler as 4 chaves de forma uniforme.
+        $data = array_merge((array) $cellphone_data, (array) $phone_data);
+
+        $values = array(
+            'billing_phone'      => isset($data['billing_phone']) ? sanitize_text_field($data['billing_phone']) : '',
+            'shipping_phone'     => isset($data['shipping_phone']) ? sanitize_text_field($data['shipping_phone']) : '',
+            'billing_cellphone'  => isset($data['billing_cellphone']) ? sanitize_text_field($data['billing_cellphone']) : '',
+            'shipping_cellphone' => isset($data['shipping_cellphone']) ? sanitize_text_field($data['shipping_cellphone']) : '',
+        );
+
+        // Fallback: sessão (valor salvo pelo callback do Store API) — apenas para as
+        // chaves do FLUXO atual, para não vazar um valor do outro tipo (ex.: um
+        // celular antigo guardado na sessão entrando no fluxo de telefone).
+        $flow_keys = ('cellphone_only' === $mode)
+            ? array('billing_cellphone', 'shipping_cellphone')
+            : array('billing_phone', 'shipping_phone');
+        if ('phone_and_cellphone' === $mode && $this->is_cellphone_field_enabled()) {
+            $flow_keys = array('billing_phone', 'shipping_phone', 'billing_cellphone', 'shipping_cellphone');
+        }
+        if (function_exists('WC') && WC()->session) {
+            foreach ($flow_keys as $key) {
+                if (empty($values[$key])) {
+                    $values[$key] = (string) WC()->session->get($key, '');
+                }
+            }
+        }
+
+        // Respeita a opção de endereço do WooCommerce: em "billing_only" só o billing
+        // vale (espelha nos dois); nos demais, mantém o que veio de cada endereço e
+        // preenche o lado vazio pelo outro (mesmo endereço para cobrança/entrega).
+        $force_billing = ('billing_only' === get_option('woocommerce_ship_to_destination', 'shipping'));
+        foreach (array('phone', 'cellphone') as $kind) {
+            $b = 'billing_' . $kind;
+            $s = 'shipping_' . $kind;
+            if ($force_billing) {
+                $values[$s] = $values[$b];
+            } elseif (empty($values[$b]) && ! empty($values[$s])) {
+                $values[$b] = $values[$s];
+            } elseif (empty($values[$s]) && ! empty($values[$b])) {
+                $values[$s] = $values[$b];
+            }
+        }
+
+        // "Somente Celular": só o celular é salvo — o telefone do pedido fica VAZIO
+        // (o recibo exibe o celular no lugar do telefone via format_order_*_phone).
+        if ('cellphone_only' === $mode) {
+            $order->set_billing_phone('');
+            $order->set_shipping_phone('');
+
+            if (! empty($values['billing_cellphone'])) {
+                $order->update_meta_data('_billing_cellphone', $this->format_complete_phone($values['billing_cellphone']));
+            }
+            if (! empty($values['shipping_cellphone'])) {
+                $order->update_meta_data('_shipping_cellphone', $this->format_complete_phone($values['shipping_cellphone']));
+            }
+
+            return;
+        }
+
+        // Telefone → billing_phone/shipping_phone.
+        if (! empty($values['billing_phone'])) {
+            $order->set_billing_phone($this->format_complete_phone($values['billing_phone']));
+        }
+        if (! empty($values['shipping_phone'])) {
+            $order->set_shipping_phone($this->format_complete_phone($values['shipping_phone']));
+        }
+
+        // "Fixo": o celular fica vazio (nenhuma meta é gravada).
+        if ('landline_only' === $mode) {
+            return;
+        }
+
+        // "Celular e Fixo": celular → metas _billing_cellphone/_shipping_cellphone.
+        if (! empty($values['billing_cellphone'])) {
+            $order->update_meta_data('_billing_cellphone', $this->format_complete_phone($values['billing_cellphone']));
+        }
+        if (! empty($values['shipping_cellphone'])) {
+            $order->update_meta_data('_shipping_cellphone', $this->format_complete_phone($values['shipping_cellphone']));
+        }
+    }
+
+    /**
+     * Callback do Store API para o campo "Telefone" do bloco.
+     *
+     * O telefone chega no namespace `woo_better_phone`. O mapeamento para o pedido
+     * acontece em `process_cellphone_from_request`.
+     *
+     * @param array $data
+     * @return void
+     */
+    public function handle_phone_update($data)
+    {
+        $this->persist_phone_values($data);
+    }
+
+    /**
+     * Callback do Store API para o campo "Celular" do bloco.
+     *
+     * @param array $data
+     * @return void
+     */
+    public function handle_cellphone_update($data)
+    {
+        $this->persist_phone_values($data);
+    }
+
+    /**
+     * Grava os valores de telefone/celular na sessão e no perfil do usuário.
+     *
+     * Grava na sessão/perfil as chaves de telefone/celular presentes no payload do
+     * namespace (cada tipo envia as suas 2 chaves).
+     *
+     * @param array $data Dados vindos do namespace do Store API.
+     * @return void
+     */
+    private function persist_phone_values($data)
+    {
+        if (! function_exists('WC') || ! WC()->session) {
+            return;
+        }
+
+        foreach (array('billing_phone', 'shipping_phone', 'billing_cellphone', 'shipping_cellphone') as $key) {
+            if (isset($data[$key])) {
+                // Normaliza no MESMO padrão dos demais campos (+DDInúmero, sem
+                // máscara). O valor pode chegar formatado do input (ex.: resíduo
+                // antigo ou o intl-tel-input do campo principal), o que deixaria o
+                // perfil/sessão divergente do pedido.
+                $value = $this->format_complete_phone(sanitize_text_field($data[$key]));
+                WC()->session->set($key, $value);
+                // Sincroniza com o perfil do usuário (como os demais campos customizados).
+                if (is_user_logged_in()) {
+                    update_user_meta(get_current_user_id(), $key, $value);
+                }
+            }
+        }
+    }
+
+    /**
      * Processa o extension data de "usar mesmo endereço para faturamento"
      * e copia dados do shipping para billing quando ativo
      *
@@ -5228,6 +5982,263 @@ class WcBetterShippingCalculatorForBrazil
                 $errors->remove( 'billing_company_required' );
             }
         }
+    }
+
+    /**
+     * Remove o aviso "Company is a required field" que o plugin
+     * "Brazilian Market on WooCommerce" (woocommerce-extra-checkout-fields-for-brazil)
+     * adiciona no checkout clássico/shortcode.
+     *
+     * O Brazilian força esse erro em valid_checkout_fields() (hook
+     * woocommerce_checkout_process, prioridade 10) sempre que o documento identificado
+     * for CNPJ, ignorando a configuração do woo-better. Como ele usa wc_add_notice()
+     * diretamente, o aviso não passa pelo objeto $errors e não pode ser removido em
+     * lkn_disabled_require_field().
+     *
+     * Este callback roda na prioridade 11 — depois do Brazilian (10) e ANTES de o
+     * WooCommerce despejar os erros nativos do seu próprio $errors no session
+     * (process_checkout) — removendo apenas o aviso exato do campo Empresa, sem tocar
+     * em nenhum erro nativo do WooCommerce.
+     *
+     * Só age quando o woo-better gerencia os campos de pessoa
+     * (woo_better_calc_person_type_select !== 'none') e o comportamento do campo
+     * Empresa NÃO é "required" — ou seja, quando o próprio woo-better (modo Dinâmico)
+     * ou o WooCommerce (modo Opcional) decide a obrigatoriedade. No modo "required" o
+     * WooCommerce já exige o campo, então deixamos o aviso original passar.
+     *
+     * @return void
+     */
+    public function guard_brazilian_company_required() {
+        if ( 'none' === get_option( 'woo_better_calc_person_type_select', 'none' ) ) {
+            return;
+        }
+
+        if ( 'required' === get_option( 'woo_better_calc_company_field_behavior', 'dynamic' ) ) {
+            return;
+        }
+
+        if ( ! function_exists( 'WC' ) || ! WC()->session ) {
+            return;
+        }
+
+        $notices = WC()->session->get( 'wc_notices', array() );
+        if ( empty( $notices['error'] ) || ! is_array( $notices['error'] ) ) {
+            return;
+        }
+
+        // Monta a mensagem idêntica à gerada pelo Brazilian (mesmo text domain e
+        // estrutura), garantindo o match inclusive quando traduzida (ex.: pt_BR).
+        $company_required = sprintf(
+            '<strong>%s</strong> %s.',
+            __( 'Company', 'woocommerce-extra-checkout-fields-for-brazil' ),
+            __( 'is a required field', 'woocommerce-extra-checkout-fields-for-brazil' )
+        );
+
+        $changed = false;
+        foreach ( $notices['error'] as $index => $notice ) {
+            if ( isset( $notice['notice'] ) && trim( (string) $notice['notice'] ) === $company_required ) {
+                unset( $notices['error'][ $index ] );
+                $changed = true;
+            }
+        }
+
+        if ( $changed ) {
+            $notices['error'] = array_values( $notices['error'] );
+            WC()->session->set( 'wc_notices', $notices );
+        }
+    }
+
+    /**
+     * Desenfileira o script de front-end do plugin "Brazilian Market on WooCommerce"
+     * no checkout clássico/shortcode.
+     *
+     * O JS desse plugin (assets/js/frontend/frontend.js) executa, no checkout, um
+     * handleFields() que esconde TODOS os elementos .person-type-field sempre que o
+     * tipo de pessoa é CPF — escondendo o campo Empresa nos modos Opcional e
+     * Obrigatório — e, quando o tipo é CNPJ, re-adiciona 'validate-required' ao campo
+     * Empresa (bloqueando o envio com Empresa vazia mesmo em modo Opcional). Como o
+     * woo-better substitui os recursos do Brazilian no checkout, desenfileiramos o
+     * script para que a visibilidade/obrigatoriedade sigam a configuração do
+     * woo-better. A classe 'person-type-field' permanece no HTML para não afetar
+     * outros consumidores.
+     *
+     * No checkout em blocos o Brazilian não enfileira esse script, então já é
+     * controlado normalmente pelo woo-better.
+     *
+     * @return void
+     */
+    public function dequeue_brazilian_checkout_scripts() {
+        // Só age quando o woo-better gerencia os campos de pessoa.
+        if ( 'none' === get_option( 'woo_better_calc_person_type_select', 'none' ) ) {
+            return;
+        }
+
+        // Desenfileira o script de front-end do Brazilian (se enfileirado).
+        // Dequeue apenas do SCRIPT: o estilo (-front CSS) pode permanecer, pois só
+        // oculta o texto "(opcional)" de alguns campos do próprio Brazilian — não do
+        // campo Empresa.
+        wp_dequeue_script( 'woocommerce-extra-checkout-fields-for-brazil-front' );
+    }
+
+    /**
+     * Adiciona o campo "Celular" (billing) conforme o modo de telefone configurado.
+     *
+     * Presente apenas nos modos "Celular e Fixo" e "Somente Celular". O campo é um
+     * `tel` simples, logo abaixo do bloco de telefone, e só recebe a obrigatoriedade
+     * (sem máscara/DDI/validação). Não sobrescreve um campo já existente (ex.: o
+     * "Brazilian Market on WooCommerce" com celular separado).
+     *
+     * @param  array $fields Campos de cobrança.
+     * @return array         Campos de cobrança (com o campo de celular, se aplicável).
+     */
+    public function add_cellphone_billing_fields( $fields ) {
+        return $this->maybe_add_cellphone_field( $fields, 'billing' );
+    }
+
+    /**
+     * Idem ao billing, para o campo `shipping_cellphone`.
+     *
+     * @param  array $fields Campos de entrega.
+     * @return array         Campos de entrega (com o campo de celular, se aplicável).
+     */
+    public function add_cellphone_shipping_fields( $fields ) {
+        return $this->maybe_add_cellphone_field( $fields, 'shipping' );
+    }
+
+    /**
+     * Adiciona o campo "Celular" (`*_cellphone`) se ele ainda não existir.
+     *
+     * - modo "Somente Celular": campo VISÍVEL (é o principal);
+     * - modo "Celular e Fixo" com o "Campo de Celular" ligado: campo VISÍVEL;
+     * - modo "Celular e Fixo" com o "Campo de Celular" desligado: campo ESCONDIDO
+     *   (shim) para compatibilidade com plugins que esperam `billing_cellphone`.
+     *
+     * O campo é um `tel` simples (sem máscara/DDI/validação). Se já existir um campo
+     * do próprio plugin/terceiro (ex.: "Brazilian Market on WooCommerce" com celular
+     * separado), NÃO mexemos. Não atua na edição de endereço da conta.
+     *
+     * @param  array  $fields Campos.
+     * @param  string $type   'billing' ou 'shipping'.
+     * @return array          Campos.
+     */
+    private function maybe_add_cellphone_field( $fields, $type ) {
+        $adds_visible = $this->phone_mode_adds_cellphone_field();
+        $adds_shim    = $this->phone_mode_adds_cellphone_shim();
+
+        if ( ! is_array( $fields ) || ( ! $adds_visible && ! $adds_shim ) ) {
+            return $fields;
+        }
+
+        // Não interfere na edição de endereço da conta: ali o campo seria salvo como
+        // user meta e poderia sobrescrever um valor real.
+        if ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url( 'edit-address' ) ) {
+            return $fields;
+        }
+
+        $key = $type . '_cellphone';
+        if ( isset( $fields[ $key ] ) ) {
+            return $fields;
+        }
+
+        // Shim escondido (compatibilidade): campo oculto, sem obrigatoriedade.
+        if ( $adds_shim ) {
+            $fields[ $key ] = array(
+                'type'              => 'hidden',
+                'required'          => false,
+                'custom_attributes' => array( self::CELLPHONE_FIELD_ATTR => '1' ),
+            );
+
+            return $fields;
+        }
+
+        // Campo visível. No modo "Somente Celular" o celular substitui o telefone,
+        // então herda a obrigatoriedade do "Telefone (Contato) Obrigatório"; nos
+        // demais vale a opção dedicada "Celular Obrigatório".
+        $required = ( 'cellphone_only' === $this->get_phone_mode() )
+            ? $this->is_phone_required()
+            : $this->is_cellphone_required();
+
+        $fields[ $key ] = array(
+            'type'              => 'tel',
+            'label'             => __( 'Celular', 'woo-better-shipping-calculator-for-brazil' ),
+            'placeholder'       => __( '(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil' ),
+            'required'          => $required,
+            'class'             => array( 'form-row-wide' ),
+            'priority'          => 93,
+            'custom_attributes' => array( self::CELLPHONE_FIELD_ATTR => '1' ),
+        );
+
+        return $fields;
+    }
+
+    /**
+     * Ajusta os dados postados do checkout conforme o modo de telefone.
+     *
+     * - "Somente Celular" (ou "Desabilitar" com o campo de celular ligado): o telefone
+     *   nativo está oculto e o celular é o campo principal. O TELEFONE é deixado VAZIO
+     *   (o número fica em `*_cellphone`); o recibo exibe o celular no lugar do telefone.
+     * - "Celular e Fixo" com o "Campo de Celular" desligado (shim escondido): espelha
+     *   o telefone unificado → `*_cellphone` (herança do Brazilian p/ NFe/PagBank).
+     * - Demais modos: nada é alterado.
+     *
+     * @param  array $data Dados postados do checkout.
+     * @return array       Dados postados.
+     */
+    public function handle_cellphone_posted_data( $data ) {
+        if ( ! is_array( $data ) ) {
+            return $data;
+        }
+
+        // "Somente Celular" (ou "Desabilitar" com o Campo de Celular ligado): o
+        // telefone nativo não existe e o celular é o campo principal. O TELEFONE
+        // fica VAZIO — o número é guardado na meta `*_cellphone` e o recibo exibe o
+        // celular no lugar do telefone (format_order_*_phone). Não promovemos o
+        // celular para `*_phone`.
+        if ( $this->phone_mode_hides_native_field() && $this->phone_mode_adds_cellphone_field() ) {
+            unset( $data['billing_phone'], $data['shipping_phone'] );
+
+            return $data;
+        }
+
+        // "Celular e Fixo" com o campo de celular DESLIGADO (shim escondido): espelha o
+        // telefone unificado → `*_cellphone` (herança do Brazilian p/ NFe/PagBank).
+        if ( $this->phone_mode_adds_cellphone_shim() ) {
+            $data = $this->mirror_one_cellphone( $data, 'billing' );
+            $data = $this->mirror_one_cellphone( $data, 'shipping' );
+        }
+
+        return $data;
+    }
+
+    /**
+     * Espelha o telefone unificado (`*_phone`) no campo de celular (`*_cellphone`),
+     * normalizado. Usado no modo "Celular e Fixo" com o campo de celular escondido.
+     *
+     * @param  array  $data Dados postados.
+     * @param  string $type 'billing' ou 'shipping'.
+     * @return array       Dados postados.
+     */
+    private function mirror_one_cellphone( $data, $type ) {
+        $phone_key = $type . '_phone';
+        $cell_key  = $type . '_cellphone';
+
+        // Se outro plugin já preencheu um celular próprio, respeita.
+        if ( ! empty( $data[ $cell_key ] ) ) {
+            return $data;
+        }
+
+        if ( empty( $data[ $phone_key ] ) ) {
+            return $data;
+        }
+
+        $country_code = isset( $data[ $type . '_phone_country' ] ) ? $data[ $type . '_phone_country' ] : '';
+
+        $data[ $cell_key ] = $this->format_complete_phone(
+            sanitize_text_field( wp_unslash( $data[ $phone_key ] ) ),
+            sanitize_text_field( wp_unslash( (string) $country_code ) )
+        );
+
+        return $data;
     }
 
     /**
