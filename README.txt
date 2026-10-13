@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.0.4
+Stable tag: 5.1.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -113,6 +113,17 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.1.0 - 2026-10-13
+* New: new flow for the Phone and Cellphone fields on checkout (classic and blocks) — 4 behavior modes, country code/mask, validation and a hidden compatibility field for PagBank/Asaas/NFe.
+* New: "Cellphone" field on the account's edit-address page, mirroring the phone.
+* New: Municipal Registration (IM) field on checkout for Legal Person.
+* New: customer details (CPF/CNPJ, person type, IE/IM, birthdate, gender, contact) on the order-received page via hook — works on classic themes and block checkout.
+* Tweak: the "Cellphone" field now appears on both billing and shipping on the order admin; the phone label follows the configured mode.
+* Tweak: Municipal Registration (IM) is now required for Legal Person (removed the "Exempt" option).
+* Fix: with "use the same address for billing" (blocks), phone/cellphone now follow the address.
+* Fix: when switching CPF to CNPJ, the document no longer reverts to the old CPF (blocks).
+* Fix: 404 of the phone mask CSS on the edit-address page.
 
 # 5.0.4 - 2026-10-05
 * Fix: infinite redirect loop (ERR_TOO_MANY_REDIRECTS) when another LKN plugin also opens its onboarding screen in the same request.
