@@ -43,4 +43,24 @@ class PhoneModeSettingsTest extends WP_UnitTestCase {
 
         $this->assertSame( 'yes', get_option( 'woo_better_calc_enable_cellphone_field' ) );
     }
+
+    public function test_cellphone_shim_forced_off_outside_phone_and_cellphone(): void {
+        // "Celular Oculto" só vale no modo "Celular e Fixo"; nos demais é forçado a "no".
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        WcBetterShippingCalculatorForBrazilCheckoutSettings::enforce_cellphone_options_for_mode( 'cellphone_only' );
+        $this->assertSame( 'no', get_option( 'woo_better_calc_enable_cellphone_shim' ) );
+
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+        WcBetterShippingCalculatorForBrazilCheckoutSettings::enforce_cellphone_options_for_mode( 'landline_only' );
+        $this->assertSame( 'no', get_option( 'woo_better_calc_enable_cellphone_shim' ) );
+    }
+
+    public function test_cellphone_shim_preserved_in_phone_and_cellphone(): void {
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        WcBetterShippingCalculatorForBrazilCheckoutSettings::enforce_cellphone_options_for_mode( 'phone_and_cellphone' );
+
+        $this->assertSame( 'yes', get_option( 'woo_better_calc_enable_cellphone_shim' ) );
+    }
 }

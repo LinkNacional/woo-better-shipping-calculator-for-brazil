@@ -133,9 +133,38 @@ class PhoneModeTest extends WP_UnitTestCase {
 
     // --- Shim escondido (Celular e Fixo com o campo de celular desligado) -----
 
+    public function test_no_shim_by_default(): void {
+        // "Celular Oculto" DESLIGADO (padrão): NENHUM campo de celular é gerado —
+        // evita conflito. (Celular e Fixo + Campo de Celular desligado.)
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'no' );
+
+        $this->assertArrayNotHasKey( 'billing_cellphone', $this->billing_fields_with_cellphone() );
+        $this->assertArrayNotHasKey( 'shipping_cellphone', $this->plugin()->add_cellphone_shipping_fields( array( 'shipping_phone' => array( 'type' => 'tel' ) ) ) );
+    }
+
+    public function test_no_shim_mirror_by_default(): void {
+        // Sem o "Celular Oculto", não espelha o telefone no `*_cellphone`.
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'no' );
+
+        $data = array(
+            'billing_phone'         => '(11) 99999-8888',
+            'billing_phone_country' => '+55',
+            'billing_cellphone'     => '',
+        );
+
+        $result = $this->plugin()->handle_cellphone_posted_data( $data );
+
+        $this->assertSame( '', (string) ( $result['billing_cellphone'] ?? '' ) );
+    }
+
     public function test_hidden_shim_when_cellphone_field_disabled(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $fields = $this->billing_fields_with_cellphone();
 
@@ -147,6 +176,7 @@ class PhoneModeTest extends WP_UnitTestCase {
     public function test_hidden_shim_shipping_when_cellphone_field_disabled(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $fields = $this->plugin()->add_cellphone_shipping_fields( array( 'shipping_phone' => array( 'type' => 'tel' ) ) );
 
@@ -180,6 +210,7 @@ class PhoneModeTest extends WP_UnitTestCase {
     public function test_shim_mirrors_phone_into_cellphone_meta_data(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $data = array(
             'billing_phone'         => '(11) 99999-8888',
@@ -195,6 +226,7 @@ class PhoneModeTest extends WP_UnitTestCase {
     public function test_shim_respects_existing_cellphone_value(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $data = array(
             'billing_phone'     => '(11) 99999-8888',
@@ -209,6 +241,7 @@ class PhoneModeTest extends WP_UnitTestCase {
     public function test_shim_renormalizes_cellphone_mirrored_by_the_classic_script(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         // O script do checkout clássico copia o telefone (mesmo número) para o campo
         // escondido de celular. O servidor deve re-normalizar para o padrão (+DDInúmero)
@@ -586,6 +619,7 @@ class PhoneModeTest extends WP_UnitTestCase {
     public function test_shim_mirrors_shipping_phone_into_shipping_cellphone(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $data = array(
             'shipping_phone'         => '(21) 98888-7777',
@@ -734,6 +768,7 @@ class PhoneModeTest extends WP_UnitTestCase {
         // campo "Celular" deve aparecer no admin em COBRANÇA e ENTREGA (consistência).
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $plugin = $this->plugin();
         $billing  = $plugin->ensure_admin_phone_fields_billing( array() );
@@ -833,6 +868,7 @@ class PhoneModeTest extends WP_UnitTestCase {
         // "Celular" do admin deve ser preenchido no "Carregar endereço".
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $customer = new \WC_Customer();
         $customer->update_meta_data( 'billing_cellphone', '83988888885' );
@@ -1048,6 +1084,7 @@ class PhoneModeTest extends WP_UnitTestCase {
         // espelho do telefone — uma única linha "Celular/Telefone" (sem o secundário).
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
         update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
 
         $order = new \WC_Order();

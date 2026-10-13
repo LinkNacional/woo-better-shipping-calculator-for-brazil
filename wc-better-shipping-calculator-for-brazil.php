@@ -80,7 +80,7 @@ if (! defined('WC_BETTER_SHIPPING_PRODUCT_QUANTITY')) {
 // Define se esta versão contém novas funcionalidades (true) ou apenas correções de bug (false).
 // Quando false, o notice de atualização não é exibido para usuários veteranos.
 if (! defined('WC_BETTER_SHIPPING_NEW_FEATURES')) {
-    define('WC_BETTER_SHIPPING_NEW_FEATURES', false);
+    define('WC_BETTER_SHIPPING_NEW_FEATURES', true);
 }
 
 /**

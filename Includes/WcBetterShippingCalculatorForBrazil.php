@@ -388,7 +388,13 @@ class WcBetterShippingCalculatorForBrazil
 
                     <div style="margin-top: 10px;">
                         <p style="font-size: 14px; margin-top: 8px;">
-                            ✨ <strong>Novo:</strong> Formato para o CNPJ alfanumérico (IN RFB 2.229/2024).
+                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Campo de Inscrição Municipal (IM) no checkout, exibido para Pessoa Jurídica (CNPJ) e obrigatório quando preenchido.', 'woo-better-shipping-calculator-for-brazil' ); ?>
+                        </p>
+                    </div>
+
+                    <div style="margin-top: 10px;">
+                        <p style="font-size: 14px; margin-top: 8px;">
+                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Novo fluxo dos campos de Telefone e Celular no checkout (clássico e blocos): modos de comportamento, máscara/DDI, validação e campo de celular opcional.', 'woo-better-shipping-calculator-for-brazil' ); ?>
                         </p>
                     </div>
 
@@ -3607,19 +3613,32 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Indica se o campo `*_cellphone` ESCONDIDO (shim) está habilitado pela opção
+     * "Celular Oculto" (woo_better_calc_enable_cellphone_shim). Default DESLIGADO —
+     * só gera o `billing_cellphone`/`shipping_cellphone` oculto se o lojista ligar.
+     *
+     * @return bool
+     */
+    private function is_cellphone_shim_enabled() {
+        return get_option('woo_better_calc_enable_cellphone_shim', 'no') === 'yes';
+    }
+
+    /**
      * Indica se o modo/opções atuais devem adicionar o campo `*_cellphone` ESCONDIDO
      * (shim) para compatibilidade com plugins que esperam `billing_cellphone`
      * (PagBank, NFe, Asaas...).
      *
-     * Só no modo "Celular e Fixo" e quando o "Campo de Celular" está DESLIGADO —
-     * nesse caso o woo-better não exibe um campo de celular próprio, mas ainda assim
-     * registra um campo oculto e espelha o telefone unificado em `_<type>_cellphone`,
-     * para que os outros plugins não criem o campo deles nem fiquem sem o valor.
+     * Só no modo "Celular e Fixo", quando o "Campo de Celular" está DESLIGADO (não há
+     * campo visível próprio) E o lojista habilitou "Celular Oculto"
+     * (`woo_better_calc_enable_cellphone_shim`). Desabilitado (padrão), NENHUM campo
+     * `*_cellphone` é gerado — evita conflito com outros plugins.
      *
      * @return bool
      */
     private function phone_mode_adds_cellphone_shim() {
-        return 'phone_and_cellphone' === $this->get_phone_mode() && ! $this->is_cellphone_field_enabled();
+        return 'phone_and_cellphone' === $this->get_phone_mode()
+            && ! $this->is_cellphone_field_enabled()
+            && $this->is_cellphone_shim_enabled();
     }
 
     /**
@@ -3640,7 +3659,7 @@ class WcBetterShippingCalculatorForBrazil
      * @return bool
      */
     private function phone_mode_stores_cellphone() {
-        return in_array($this->get_phone_mode(), array('phone_and_cellphone', 'cellphone_only'), true);
+        return $this->phone_mode_adds_cellphone_field() || $this->phone_mode_adds_cellphone_shim();
     }
 
     /**

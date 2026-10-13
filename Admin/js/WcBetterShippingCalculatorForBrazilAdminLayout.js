@@ -70,7 +70,8 @@
     }
 
     const featureMessage1 = createFeatureMessage('✔️', [
-      '<strong>NOVO:</strong> Formato para o CNPJ alfanumérico.'
+      '<strong>NOVO:</strong> Campo de Inscrição Municipal (IM) no checkout, exibido para Pessoa Jurídica (CNPJ).',
+      '<strong>NOVO:</strong> Novo fluxo dos campos de Telefone e Celular no checkout (clássico e blocos).'
     ]);
 
     // Cria o cartão promocional do Plugin Link de Pagamento
@@ -545,6 +546,7 @@
               'woo_better_calc_validate_ddd': 'woo_better_calc_contact_required',
               'woo_better_calc_contact_required': 'woo_better_calc_phone_mode',
               'woo_better_calc_contact_field_position': 'woo_better_calc_phone_mode',
+              'woo_better_calc_enable_cellphone_shim': 'woo_better_calc_phone_mode',
               'woo_better_calc_cellphone_required': 'woo_better_calc_enable_cellphone_field',
             };
 
@@ -667,6 +669,7 @@
     const contactFieldPositionRadios = document.querySelectorAll('input[name="woo_better_calc_contact_field_position"]');
     const enableCellphoneRadios = document.querySelectorAll('input[name="woo_better_calc_enable_cellphone_field"]');
     const cellphoneRequiredRadios = document.querySelectorAll('input[name="woo_better_calc_cellphone_required"]');
+    const cellphoneShimRadios = document.querySelectorAll('input[name="woo_better_calc_enable_cellphone_shim"]');
 
     // show_phone_country_code: desabilita e força 'no' quando a máscara está off.
     function updatePhoneChildState() {
@@ -747,6 +750,25 @@
           radio.checked = true;
         }
       });
+
+      // "Celular Oculto" só existe no modo "Permitir Telefone Celular e Fixo". Nos
+      // demais, o bloco é ESCONDIDO e o valor forçado a "Desabilitar" (o `hidden`
+      // ainda seria enviado no submit — por isso forçamos o valor e reforçamos no
+      // servidor em enforce_cellphone_options_for_mode()).
+      const shimShown = (mode === 'phone_and_cellphone');
+      cellphoneShimRadios.forEach(function (radio) {
+        if (!shimShown && radio.value === 'no') {
+          radio.checked = true;
+        }
+      });
+      if (cellphoneShimRadios.length) {
+        const shimBlock = cellphoneShimRadios[0].closest('.forminp');
+        if (shimBlock) {
+          // O layout do plugin define `.forminp { display:flex }` — restauramos esse
+          // valor (não `''`) para não quebrar o alinhamento ao reexibir.
+          shimBlock.style.display = shimShown ? 'flex' : 'none';
+        }
+      }
 
       updateCellphoneRequiredState();
 

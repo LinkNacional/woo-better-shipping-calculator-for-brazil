@@ -122,6 +122,7 @@ class ProfileFieldsTest extends WP_UnitTestCase {
         update_option( 'woo_better_calc_person_type_select', 'both' );
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         foreach ( array( 'billing', 'shipping' ) as $type ) {
             $fields = $this->apply()[ $type ]['fields'];

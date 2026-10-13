@@ -141,9 +141,11 @@ class WcBetterShippingCalculatorForBrazilPublic
      * @param  string $enable_cellphone_field   Valor de `woo_better_calc_enable_cellphone_field` ('yes'/'no').
      * @return bool
      */
-    public static function cellphone_mirror_required($phone_mode, $enable_cellphone_field)
+    public static function cellphone_mirror_required($phone_mode, $enable_cellphone_field, $enable_cellphone_shim = 'no')
     {
-        return 'phone_and_cellphone' === $phone_mode && 'yes' !== $enable_cellphone_field;
+        return 'phone_and_cellphone' === $phone_mode
+            && 'yes' !== $enable_cellphone_field
+            && 'yes' === $enable_cellphone_shim;
     }
 
     /**
@@ -284,7 +286,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             // espaço vertical do `.form-row` do campo oculto. Só no modo shim.
             if (
                 $is_checkout_classic
-                && self::cellphone_mirror_required($this->phone_mode(), get_option('woo_better_calc_enable_cellphone_field', 'no'))
+                && self::cellphone_mirror_required($this->phone_mode(), get_option('woo_better_calc_enable_cellphone_field', 'no'), get_option('woo_better_calc_enable_cellphone_shim', 'no'))
             ) {
                 wp_enqueue_style(
                     $this->plugin_name . '-cellphone-shim',
@@ -359,7 +361,7 @@ class WcBetterShippingCalculatorForBrazilPublic
 
             // Campo "Celular" ESCONDIDO (shim): zera o espaço vertical do `.form-row`
             // do campo oculto na edição de endereço. Só no modo shim.
-            if (self::cellphone_mirror_required($this->phone_mode(), get_option('woo_better_calc_enable_cellphone_field', 'no'))) {
+            if (self::cellphone_mirror_required($this->phone_mode(), get_option('woo_better_calc_enable_cellphone_field', 'no'), get_option('woo_better_calc_enable_cellphone_shim', 'no'))) {
                 wp_enqueue_style(
                     $this->plugin_name . '-edit-address-cellphone-shim',
                     plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCellphoneShim.COMPILED.css',
@@ -709,6 +711,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'required'          => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false',
                     'cellphoneRequired' => get_option('woo_better_calc_cellphone_required', 'no') === 'yes' ? 'true' : 'false',
                     'enableCellphone'   => get_option('woo_better_calc_enable_cellphone_field', 'no') === 'yes' ? 'true' : 'false',
+                    'enableCellphoneShim' => get_option('woo_better_calc_enable_cellphone_shim', 'no') === 'yes' ? 'true' : 'false',
                     'highlight'         => $phone_highlight === 'yes' ? 'true' : 'false',
                     'billing_phone'     => $billing_phone,
                     'shipping_phone'    => $shipping_phone,
@@ -1264,7 +1267,8 @@ class WcBetterShippingCalculatorForBrazilPublic
             // nem é enfileirado (ver cellphone_mirror_required()).
             $is_cellphone_shim = self::cellphone_mirror_required(
                 $this->phone_mode(),
-                get_option('woo_better_calc_enable_cellphone_field', 'no')
+                get_option('woo_better_calc_enable_cellphone_field', 'no'),
+                get_option('woo_better_calc_enable_cellphone_shim', 'no')
             );
 
             if ($is_cellphone_shim && $is_checkout_classic) {
@@ -1525,7 +1529,8 @@ class WcBetterShippingCalculatorForBrazilPublic
             // save_edit_address_custom_fields é a rede de segurança).
             $is_cellphone_shim = self::cellphone_mirror_required(
                 $this->phone_mode(),
-                get_option('woo_better_calc_enable_cellphone_field', 'no')
+                get_option('woo_better_calc_enable_cellphone_field', 'no'),
+                get_option('woo_better_calc_enable_cellphone_shim', 'no')
             );
 
             if ($is_cellphone_shim) {

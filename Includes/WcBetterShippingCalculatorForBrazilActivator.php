@@ -89,6 +89,7 @@ class WcBetterShippingCalculatorForBrazilActivator {
 			'woo_better_calc_validate_ddd' => 'yes',
 			'woo_better_calc_apply_phone_mask' => get_option('woo_better_calc_contact_required', 'no'),
 			'woo_better_calc_enable_neighborhood_field' => 'no',
+			'woo_better_calc_enable_cellphone_shim' => 'no',
 			'woo_better_calc_enable_order_details' => 'yes',
 			'woo_better_calc_cep_field_position' => 'no',
 			'woo_better_calc_enable_auto_address_fill' => 'no',

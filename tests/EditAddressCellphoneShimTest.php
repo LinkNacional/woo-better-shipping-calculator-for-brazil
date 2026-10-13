@@ -53,6 +53,7 @@ class EditAddressCellphoneShimTest extends WP_UnitTestCase {
     public function test_edit_address_adds_hidden_shim_cellphone(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $this->set_edit_address_endpoint();
 
@@ -65,6 +66,7 @@ class EditAddressCellphoneShimTest extends WP_UnitTestCase {
     public function test_edit_address_shipping_also_gets_hidden_shim_cellphone(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $this->set_edit_address_endpoint();
 
@@ -91,6 +93,7 @@ class EditAddressCellphoneShimTest extends WP_UnitTestCase {
         // Fora do edit-address o comportamento do checkout não muda.
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         global $wp;
         unset( $wp->query_vars['edit-address'] );
@@ -106,6 +109,7 @@ class EditAddressCellphoneShimTest extends WP_UnitTestCase {
     public function test_save_mirrors_billing_phone_into_cellphone(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $user_id = $this->create_br_customer( '11999990000', '11988880000' );
 
@@ -120,6 +124,7 @@ class EditAddressCellphoneShimTest extends WP_UnitTestCase {
     public function test_save_mirrors_shipping_phone_into_cellphone(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $user_id = self::factory()->user->create();
         update_user_meta( $user_id, 'shipping_country', 'BR' );

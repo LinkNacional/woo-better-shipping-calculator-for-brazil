@@ -134,6 +134,7 @@ class CustomerDetailsTemplateTest extends WP_UnitTestCase {
         update_option( 'woo_better_calc_person_type_select', 'none' );
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $order = new \WC_Order();
         $order->set_billing_phone( '+5583988888882' );

@@ -98,7 +98,7 @@ function phonePayload() {
  */
 function cellphonePayload() {
     var mode = cfg.mode || 'phone_and_cellphone';
-    if (mode === 'phone_and_cellphone' && !truthy(cfgValue('enableCellphone'))) {
+    if (mode === 'phone_and_cellphone' && !truthy(cfgValue('enableCellphone')) && truthy(cfgValue('enableCellphoneShim'))) {
         return {
             billing_cellphone: strVal('billing_phone'),
             shipping_cellphone: strVal('shipping_phone')
@@ -112,8 +112,9 @@ function cellphonePayload() {
 
 /**
  * Extensões que um TIPO de campo grava (o que ele deve enviar ao store):
- *  - `phone` → `woo_better_phone`; no "Celular e Fixo" SEM o 2º campo também
- *    espelha no celular (`woo_better_cellphone`), p/ NFe/Brazilian.
+ *  - `phone` → `woo_better_phone`; no "Celular e Fixo" SEM o 2º campo E com o
+ *    "Celular Oculto" ligado, também espelha no celular (`woo_better_cellphone`),
+ *    p/ NFe/Brazilian. Desligado (padrão), NADA é enviado ao celular.
  *  - `cellphone` → `woo_better_cellphone` (no "Celular e Fixo" com o 2º campo ou
  *    no "Somente Celular").
  *
@@ -128,7 +129,7 @@ function payloadsForKind(kind) {
         if (mode === 'phone_and_cellphone' || mode === 'landline_only') {
             out.push({ namespace: phoneNamespace(), data: phonePayload() });
         }
-        if (mode === 'phone_and_cellphone' && !truthy(cfgValue('enableCellphone'))) {
+        if (mode === 'phone_and_cellphone' && !truthy(cfgValue('enableCellphone')) && truthy(cfgValue('enableCellphoneShim'))) {
             out.push({ namespace: cellphoneNamespace(), data: cellphonePayload() });
         }
         return out;

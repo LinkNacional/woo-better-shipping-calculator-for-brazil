@@ -236,6 +236,7 @@ class BrazilianFieldsPrecedenceTest extends WP_UnitTestCase {
     public function test_cellphone_shim_overrides_brazilian(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $fields = array( 'billing_cellphone' => $this->brazilian_cellphone_field() );
 

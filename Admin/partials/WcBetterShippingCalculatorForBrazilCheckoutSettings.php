@@ -239,6 +239,23 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Controla o comportamento do campo de telefone no checkout.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+                'enable_cellphone_shim' => array(
+                    'title'    => __('Celular Oculto', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_enable_cellphone_shim',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-subtitle' => __('Gerar o campo de Celular oculto', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Gera o campo de celular OCULTO (billing_cellphone/shipping_cellphone) para compatibilidade com gateways (PagBank, Asaas, NFe).', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Ao habilitar, o plugin gera um campo de celular OCULTO espelhando o telefone, para plugins que esperam "billing_cellphone"/"shipping_cellphone". Ao desabilitar (padrão), NENHUM campo de celular é gerado — evitando conflitos. Aplica-se apenas ao modo "Permitir Telefone Celular e Fixo" com o "Campo de Celular" desligado.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Gera o campo de celular oculto (compatibilidade com gateways).', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
                 'apply_phone_mask' => array(
                     'title'    => __('Telefone com Máscara e DDI', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_apply_phone_mask',
@@ -452,6 +469,13 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
             if ('cellphone_only' === $mode) {
                 update_option('woo_better_calc_enable_cellphone_field', 'no');
                 update_option('woo_better_calc_cellphone_required', 'no');
+            }
+
+            // "Celular Oculto" só se aplica ao modo "Permitir Telefone Celular e Fixo".
+            // Nos demais modos o campo é forçado a "Desabilitar" (no admin ele fica
+            // escondido; como `hidden` ainda seria enviado, reforçamos no servidor).
+            if ('phone_and_cellphone' !== $mode) {
+                update_option('woo_better_calc_enable_cellphone_shim', 'no');
             }
         }
 
