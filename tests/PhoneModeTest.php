@@ -785,9 +785,26 @@ class PhoneModeTest extends WP_UnitTestCase {
 
         update_option( 'woo_better_calc_phone_mode', 'landline_only' );
         $this->assertSame( 'Telefone', $this->plugin()->ensure_admin_phone_fields_billing( array() )['phone']['label'] );
+    }
 
+    public function test_admin_cellphone_only_shows_single_celular_field(): void {
+        // Modo "Somente Celular": só existe o campo Celular (o telefone fica vazio por
+        // design). O admin deve mostrar UM campo "Celular" (com o valor) e NÃO o
+        // `_billing_phone` vazio rotulado "Celular".
         update_option( 'woo_better_calc_phone_mode', 'cellphone_only' );
-        $this->assertSame( 'Celular', $this->plugin()->ensure_admin_phone_fields_billing( array() )['phone']['label'] );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+
+        $plugin = $this->plugin();
+
+        foreach ( array( 'billing', 'shipping' ) as $type ) {
+            $fields = ( 'billing' === $type )
+                ? $plugin->ensure_admin_phone_fields_billing( array( 'first_name' => array( 'label' => 'Nome' ) ) )
+                : $plugin->ensure_admin_phone_fields_shipping( array( 'first_name' => array( 'label' => 'Nome' ) ) );
+
+            $this->assertArrayNotHasKey( 'phone', $fields, "No modo Somente Celular não deve haver campo de telefone ($type)." );
+            $this->assertArrayHasKey( 'cellphone', $fields );
+            $this->assertSame( 'Celular', $fields['cellphone']['label'], "O campo deve ser rotulado 'Celular' ($type)." );
+        }
     }
 
     public function test_customer_details_ajax_includes_cellphone(): void {
@@ -965,7 +982,8 @@ class PhoneModeTest extends WP_UnitTestCase {
     // --- Bloco "Dados do Cliente" vs. plugin Brazilian -----------------------
 
     public function test_customer_block_includes_cellphone(): void {
-        // O bloco do woo-better deve exibir Telefone E Celular (o Brazilian exibia).
+        // O bloco do woo-better deve exibir Telefone/Celular (principal) E Celular
+        // (secundário) quando AMBOS foram preenchidos, com labels derivadas dos metadados.
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
         update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
@@ -982,7 +1000,68 @@ class PhoneModeTest extends WP_UnitTestCase {
 
         $this->assertArrayHasKey( 'phone', $data );
         $this->assertArrayHasKey( 'cellphone', $data );
+        $this->assertSame( 'Celular/Telefone', $data['phone']['label'] );
         $this->assertSame( 'Celular', $data['cellphone']['label'] );
+    }
+
+    public function test_customer_block_landline_only_labels_telefone(): void {
+        // Só telefone (ex.: modo "Somente Fixo"): label "Telefone".
+        update_option( 'woo_better_calc_phone_mode', 'landline_only' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '1133334444' );
+
+        $plugin = $this->plugin();
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'prepare_billing_display_data' );
+        $ref->setAccessible( true );
+        $data = $ref->invoke( $plugin, $order, 'none', 'yes', '', '', '', '' );
+
+        $this->assertArrayHasKey( 'phone', $data );
+        $this->assertSame( 'Telefone', $data['phone']['label'] );
+        $this->assertArrayNotHasKey( 'cellphone', $data );
+    }
+
+    public function test_customer_block_only_cellphone_label_derives_from_meta(): void {
+        // Pedido feito SÓ com celular (phone vazio, `_billing_cellphone` preenchido) e
+        // depois a config virou "Celular e Fixo". A label deve sair dos METADADOS: só
+        // "Celular" (não "Telefone"/"Celular/Telefone").
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+
+        $order = new \WC_Order();
+        // phone fica vazio (o pedido foi só-celular).
+        $order->update_meta_data( '_billing_cellphone', '83988888885' );
+
+        $plugin = $this->plugin();
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'prepare_billing_display_data' );
+        $ref->setAccessible( true );
+        $data = $ref->invoke( $plugin, $order, 'none', 'yes', '', '', '', '' );
+
+        $this->assertArrayNotHasKey( 'phone', $data, 'Sem telefone no pedido, não deve haver linha Telefone.' );
+        $this->assertArrayHasKey( 'cellphone', $data );
+        $this->assertSame( 'Celular', $data['cellphone']['label'] );
+        $this->assertSame( '83988888885', $data['cellphone']['value'] );
+    }
+
+    public function test_customer_block_mirrored_cellphone_shows_single_combined_row(): void {
+        // "Celular e Fixo" com o "Campo de Celular" DESLIGADO (shim): o cellphone é o
+        // espelho do telefone — uma única linha "Celular/Telefone" (sem o secundário).
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '83988888882' );
+        $order->update_meta_data( '_billing_cellphone', '83988888882' );
+
+        $plugin = $this->plugin();
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'prepare_billing_display_data' );
+        $ref->setAccessible( true );
+        $data = $ref->invoke( $plugin, $order, 'none', 'yes', '', '', '', '' );
+
+        $this->assertArrayHasKey( 'phone', $data );
+        $this->assertSame( 'Celular/Telefone', $data['phone']['label'] );
+        $this->assertArrayNotHasKey( 'cellphone', $data );
     }
 
     public function test_suppress_brazilian_customer_block_removes_callback(): void {

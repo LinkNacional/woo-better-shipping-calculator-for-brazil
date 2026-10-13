@@ -112,6 +112,23 @@ class ProfileFieldsTest extends WP_UnitTestCase {
         $this->assertArrayHasKey( 'shipping_phone', $shipping, 'Entrega deve ter telefone (Brazilian não adiciona).' );
         $this->assertArrayHasKey( 'shipping_cellphone', $shipping, 'Entrega deve ter celular.' );
         $this->assertSame( 'Celular/Telefone', $shipping['shipping_phone']['label'] );
+        $this->assertSame( 'Celular (secundário)', $shipping['shipping_cellphone']['label'] );
+    }
+
+    public function test_cellphone_present_in_shim_mode(): void {
+        // "Celular e Fixo" + "Campo de Celular" DESLIGADO (shim): o plugin ARMAZENA a
+        // meta `*_cellphone`, então o campo secundário deve aparecer no perfil (igual
+        // ao admin do pedido) — antes sumia.
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+
+        foreach ( array( 'billing', 'shipping' ) as $type ) {
+            $fields = $this->apply()[ $type ]['fields'];
+            $this->assertArrayHasKey( "{$type}_phone", $fields );
+            $this->assertArrayHasKey( "{$type}_cellphone", $fields, "No shim o celular ($type) deve aparecer no perfil." );
+            $this->assertSame( 'Celular (secundário)', $fields["{$type}_cellphone"]['label'] );
+        }
     }
 
     public function test_phone_label_follows_mode(): void {
@@ -123,6 +140,7 @@ class ProfileFieldsTest extends WP_UnitTestCase {
         // "Somente Celular": telefone nativo não aparece; celular é o principal.
         $this->assertArrayNotHasKey( 'billing_phone', $billing );
         $this->assertArrayHasKey( 'billing_cellphone', $billing );
+        $this->assertSame( 'Celular', $billing['billing_cellphone']['label'] );
     }
 
     public function test_disabled_phone_removes_phone_fields(): void {

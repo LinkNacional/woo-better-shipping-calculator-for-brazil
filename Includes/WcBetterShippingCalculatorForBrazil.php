@@ -1267,7 +1267,31 @@ class WcBetterShippingCalculatorForBrazil
         if (get_option('woo_better_calc_enable_order_details', 'yes') !== 'yes') {
             return $fields;
         }
-        if ('disabled' === $this->get_phone_mode()) {
+
+        $mode = $this->get_phone_mode();
+        if ('disabled' === $mode) {
+            return $fields;
+        }
+
+        // Modo "Somente Celular": existe APENAS o campo Celular (o telefone fica vazio
+        // por design — o número vai para `_billing_cellphone`). Mostramos só o celular
+        // (com o valor) rotulado "Celular" e REMOVEMOS o `_billing_phone` vazio, que só
+        // confundiria. Aqui o "Campo de Celular" secundário é forçado a desligar, então
+        // o celular É o campo principal.
+        if ('cellphone_only' === $mode) {
+            unset($fields['phone']);
+
+            $cellphone = array(
+                'label' => __('Celular', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'tel',
+                'show'  => false,
+            );
+            if (isset($fields['cellphone']) && is_array($fields['cellphone'])) {
+                $fields['cellphone'] = array_merge($fields['cellphone'], $cellphone);
+            } else {
+                $fields['cellphone'] = $cellphone;
+            }
+
             return $fields;
         }
 
@@ -1634,6 +1658,94 @@ class WcBetterShippingCalculatorForBrazil
     }
     
     /**
+     * Monta as linhas de TELEFONE/CELULAR de um endereço do pedido a partir dos
+     * METADADOS (não da configuração atual do modo).
+     *
+     * A configuração de telefone pode mudar DEPOIS do pedido, então a label precisa
+     * refletir o que foi realmente SALVO no pedido:
+     *  - só celular (`_<type>_cellphone` preenchido, `_<type>_phone` vazio) → "Celular"
+     *    (ex.: pedido feito no modo "Somente Celular", depois a config virou "Celular e
+     *    Fixo");
+     *  - só telefone (`_<type>_phone` preenchido, celular vazio) → "Telefone";
+     *  - celular == telefone (shim/espelho do campo único) → "Celular/Telefone";
+     *  - ambos, DIFERENTES → "Celular/Telefone" (campo principal) + "Celular" (secundário).
+     *
+     * @param WC_Order $order
+     * @param string   $type 'billing' | 'shipping'
+     * @return array   Rows no formato dos displays do admin (key => [label,value,is_link]).
+     */
+    private function phone_display_rows($order, $type)
+    {
+        $rows = array();
+
+        if (! $order instanceof \WC_Order || ! in_array($type, array('billing', 'shipping'), true)) {
+            return $rows;
+        }
+
+        $country_code = $order->get_meta("_{$type}_phone_country_code");
+        // Usa os getters (não `get_meta('_*_phone')`, que é internal meta). No
+        // order-received o getter pode já refletir o celular no lugar do telefone
+        // (fallback de exibição) — o que é o MESMO valor que o WC exibe no endereço.
+        $phone        = trim((string) $order->{"get_{$type}_phone"}());
+        $cellphone    = trim((string) $order->get_meta("_{$type}_cellphone"));
+
+        $phone_digits = preg_replace('/\D/', '', $phone);
+        $cell_digits  = preg_replace('/\D/', '', $cellphone);
+
+        if ('' === $phone_digits && '' === $cell_digits) {
+            return $rows;
+        }
+
+        $label_both  = __('Celular/Telefone', 'woo-better-shipping-calculator-for-brazil');
+        $label_cell  = __('Celular', 'woo-better-shipping-calculator-for-brazil');
+        $label_phone = __('Telefone', 'woo-better-shipping-calculator-for-brazil');
+
+        // Só celular: o celular é o campo principal (a meta `*_phone` fica vazia).
+        if ('' === $phone_digits) {
+            $rows['cellphone'] = array(
+                'label'   => $label_cell,
+                'value'   => $this->format_complete_phone($cellphone, $country_code),
+                'is_link' => true,
+            );
+            return $rows;
+        }
+
+        // Só telefone.
+        if ('' === $cell_digits) {
+            $rows['phone'] = array(
+                'label'   => $label_phone,
+                'value'   => $this->format_complete_phone($phone, $country_code),
+                'is_link' => true,
+            );
+            return $rows;
+        }
+
+        // Celular == telefone: campo único (aceita fixo e celular).
+        if ($cell_digits === $phone_digits) {
+            $rows['phone'] = array(
+                'label'   => $label_both,
+                'value'   => $this->format_complete_phone($phone, $country_code),
+                'is_link' => true,
+            );
+            return $rows;
+        }
+
+        // Ambos preenchidos e DIFERENTES: principal (fixo/celular) + secundário (celular).
+        $rows['phone'] = array(
+            'label'   => $label_both,
+            'value'   => $this->format_complete_phone($phone, $country_code),
+            'is_link' => true,
+        );
+        $rows['cellphone'] = array(
+            'label'   => $label_cell,
+            'value'   => $this->format_complete_phone($cellphone, $country_code),
+            'is_link' => true,
+        );
+
+        return $rows;
+    }
+
+    /**
      * Prepare shipping display data
      * 
      * @param WC_Order $order
@@ -1643,37 +1755,9 @@ class WcBetterShippingCalculatorForBrazil
      */
     private function prepare_shipping_display_data($order, $phone_mask_enabled, $shipping_phone_country_code)
     {
-        $display_data = [];
-        
-        // Phone data
-        if ($phone_mask_enabled === 'yes') {
-            $phone = $order->get_shipping_phone();
-            if (!empty($phone)) {
-                // Formatar telefone completo
-                $formatted_phone = $this->format_complete_phone($phone, $shipping_phone_country_code);
-                
-                $display_data['phone'] = [
-                    'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => $formatted_phone,
-                    'is_link' => true
-                ];
-            }
-        }
-
-        // Celular (quando o recurso de celular está ativo). O número é guardado na
-        // meta `_shipping_cellphone`.
-        if ($this->phone_mode_adds_cellphone_field()) {
-            $cellphone = $order->get_meta('_shipping_cellphone');
-            if (!empty($cellphone)) {
-                $display_data['cellphone'] = [
-                    'label' => __('Celular', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => $this->format_complete_phone($cellphone, $shipping_phone_country_code),
-                    'is_link' => true
-                ];
-            }
-        }
-        
-        return $display_data;
+        // Telefone/celular derivados dos METADADOS (label segue o que foi salvo, não a
+        // config atual — que pode ter mudado depois do pedido).
+        return $this->phone_display_rows($order, 'shipping');
     }
 
     /**
@@ -1851,30 +1935,11 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // 7. Telefone
-        if ($phone_mask_enabled === 'yes') {
-            $phone = $order->get_billing_phone();
-            if (!empty($phone)) {
-                $formatted_phone = $this->format_complete_phone($phone, $billing_phone_country_code);
-                $display_data['phone'] = [
-                    'label' => __('Telefone', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => $formatted_phone,
-                    'is_link' => true
-                ];
-            }
-        }
-
-        // 7b. Celular (quando o recurso de celular está ativo). O número é guardado
-        // na meta `_billing_cellphone`.
-        if ($this->phone_mode_adds_cellphone_field()) {
-            $cellphone = $order->get_meta('_billing_cellphone');
-            if (!empty($cellphone)) {
-                $display_data['cellphone'] = [
-                    'label' => __('Celular', 'woo-better-shipping-calculator-for-brazil'),
-                    'value' => $this->format_complete_phone($cellphone, $billing_phone_country_code),
-                    'is_link' => true
-                ];
-            }
-        }
+        // 7. Telefone / Celular — derivados dos METADADOS (label segue o que foi salvo
+        // no pedido, não a config atual, que pode ter mudado depois). Contempla:
+        // só celular → "Celular"; só telefone → "Telefone"; campo único → "Celular/
+        // Telefone"; ambos distintos → "Celular/Telefone" + "Celular".
+        $display_data = array_merge($display_data, $this->phone_display_rows($order, 'billing'));
 
         // 8. Email
         $email = $order->get_billing_email();
@@ -2219,10 +2284,13 @@ class WcBetterShippingCalculatorForBrazil
 
     /**
      * Bloco "Informações adicionais" na tela de detalhes do cliente (order-received /
-     * ver pedido): exibe, no formato "Chave: valor", o CONTATO (e-mail, telefone,
-     * celular) e os campos brasileiros CONFIGURADOS e preenchidos (tipo de pessoa,
-     * CPF/CNPJ, empresa, Inscrição Estadual/Municipal, data de nascimento e gênero),
-     * para o próprio cliente conferir após o pedido.
+     * ver pedido): exibe, no formato "Chave: valor", o CELULAR e os campos brasileiros
+     * CONFIGURADOS e preenchidos (tipo de pessoa, CPF/CNPJ, empresa, Inscrição
+     * Estadual/Municipal, data de nascimento e gênero), para o próprio cliente conferir
+     * após o pedido.
+     *
+     * NÃO inclui e-mail nem telefone: o WooCommerce já os exibe (e-mail no resumo do
+     * pedido e telefone no bloco de endereço). Só o celular é exclusivo do plugin.
      *
      * Lê os metadados `_billing_*` do pedido (mesma fonte da NFe) — é só exibição:
      * não grava, não move dados para o endereço de entrega e não é enviado em e-mails.
@@ -2273,45 +2341,34 @@ class WcBetterShippingCalculatorForBrazil
             $order->get_meta('_billing_phone_country_code')
         );
 
-        // Contato (e-mail, telefone e celular) vem SEMPRE que preenchido — independe
-        // da máscara/DDI e dos campos brasileiros.
+        // Remove do array os campos que não entram no bloco (contato/bairro/etc. são
+        // tratados adiante).
         unset($rows['phone'], $rows['email'], $rows['cellphone']);
 
         $display = array();
 
-        $email = (string) $order->get_billing_email();
-        if ('' !== $email) {
-            $display[] = array('label' => __('Email', 'woo-better-shipping-calculator-for-brazil'), 'value' => $email);
+        // E-mail e Telefone NÃO entram aqui: o WooCommerce já os exibe (o e-mail no
+        // resumo do pedido / bloco de endereço e o telefone no bloco de endereço).
+        // Repeti-los duplicaria. Só o CELULAR é exclusivo do plugin (o WC não mostra
+        // `_billing_cellphone`) — mostrado quando for DIFERENTE do telefone do WC,
+        // pelos METADADOS (independe do modo atual; cobre o pedido feito no modo
+        // "Somente Celular" cuja config mudou depois).
+        $phone_rows = $this->phone_display_rows($order, 'billing');
+        if (isset($phone_rows['cellphone'])) {
+            $display[] = $phone_rows['cellphone'];
         }
 
-        $phone = (string) $order->get_billing_phone();
-        if ('' !== $phone) {
-            // A label do bloco principal segue o "Comportamento do Campo de Telefone"
-            // (ex.: "Celular/Telefone", "Celular", "Telefone").
-            $display[] = array('label' => $this->get_phone_field_label(), 'value' => $phone);
-        }
+        // Campos brasileiros (tipo de pessoa, CPF/CNPJ, empresa, IE, IM, gênero) e, por
+        // ÚLTIMO, a Data de Nascimento.
+        $birthdate_row = isset($rows['birthdate']) ? $rows['birthdate'] : null;
+        unset($rows['birthdate']);
 
-        // Celular como campo próprio SÓ quando é um campo VISÍVEL do woo-better
-        // ("Somente Celular" ou "Campo de Celular" ligado). No modo "Celular e Fixo"
-        // com o campo desligado, o `_billing_cellphone` é apenas o SHIM escondido
-        // (espelho do telefone para pagbank/asaas) e NÃO deve aparecer aqui — mesma
-        // regra do bloco admin "Dados do Cliente". Assim, no recibo fica só o
-        // Telefone/Celular (o campo principal).
-        if ($this->phone_mode_adds_cellphone_field()) {
-            $cellphone = (string) $order->get_meta('_billing_cellphone');
-            if ('' !== $cellphone) {
-                $cellphone = $this->format_complete_phone($cellphone, $order->get_meta('_billing_phone_country_code'));
-                // Deduplica quando o celular é o mesmo número do telefone
-                // ("Somente Celular" e espelho do campo único).
-                if ('' !== $cellphone && $cellphone !== $phone) {
-                    $display[] = array('label' => __('Celular', 'woo-better-shipping-calculator-for-brazil'), 'value' => $cellphone);
-                }
-            }
-        }
-
-        // Campos brasileiros (tipo de pessoa, CPF/CNPJ, empresa, IE, nascimento, gênero).
         foreach ($rows as $row) {
             $display[] = $row;
+        }
+
+        if (null !== $birthdate_row) {
+            $display[] = $birthdate_row;
         }
 
         /**
@@ -2337,7 +2394,20 @@ class WcBetterShippingCalculatorForBrazil
                 .woo-better-additional-info__item { margin: 0 0 2px; line-height: 1.4; }
                 .woo-better-additional-info__item:last-child { margin-bottom: 0; }
             </style>
-            <h2 class="wp-block-heading"><?php esc_html_e('Informações adicionais', 'woo-better-shipping-calculator-for-brazil'); ?></h2>
+            <?php
+            // Título renderizado como HEADING BLOCK (igual aos títulos nativos do
+            // order-confirmation, ex.: "Endereço de cobrança"). Passar pelo `do_blocks`
+            // faz o WordPress aplicar a MESMA tipografia fluida (converte o `font-size`
+            // em clamp conforme o tema), então o tamanho casa com os nativos em
+            // qualquer tema — sem hardcode de CSS.
+            echo do_blocks(
+                '<!-- wp:heading {"level":2,"style":{"typography":{"fontSize":"24px"}}} -->'
+                . '<h2 class="wp-block-heading" style="font-size:24px">'
+                . esc_html__('Informações adicionais', 'woo-better-shipping-calculator-for-brazil')
+                . '</h2>'
+                . '<!-- /wp:heading -->'
+            ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML de bloco do core.
+            ?>
             <div class="woo-better-additional-info__list">
                 <?php foreach ($display as $row) : ?>
                     <p class="woo-better-additional-info__item">
@@ -7257,9 +7327,19 @@ class WcBetterShippingCalculatorForBrazil
             return $fields;
         }
 
-        // Telefone/Celular seguem o "Comportamento do Campo de Telefone".
-        $shows_phone = ! $this->phone_mode_hides_native_field();
-        $shows_cellphone = $this->phone_mode_adds_cellphone_field();
+        // Telefone/Celular seguem o "Comportamento do Campo de Telefone", espelhando o
+        // admin do pedido (`ensure_admin_phone_fields`):
+        //  - "Somente Celular": só o campo Celular (label "Celular");
+        //  - "Celular e Fixo": telefone (principal) + Celular (secundário) — aparece
+        //    SEMPRE que o plugin ARMAZENA a meta (inclui o modo shim, `enable_cellphone
+        //    _field=no`), não só quando o campo é visível no checkout;
+        //  - "Somente Fixo": só telefone;  "Desabilitar": nenhum.
+        $phone_mode = $this->get_phone_mode();
+        $shows_phone = ! in_array($phone_mode, array('cellphone_only', 'disabled'), true);
+        $shows_cellphone = $this->phone_mode_stores_cellphone();
+        $cellphone_label = ('cellphone_only' === $phone_mode)
+            ? __('Celular', 'woo-better-shipping-calculator-for-brazil')
+            : __('Celular (secundário)', 'woo-better-shipping-calculator-for-brazil');
 
         // Documento unificado (CPF/CNPJ) conforme "Tipo de Cliente".
         $document_label = __('CPF/CNPJ', 'woo-better-shipping-calculator-for-brazil');
@@ -7344,7 +7424,7 @@ class WcBetterShippingCalculatorForBrazil
             $billing['billing_phone'] = array('label' => $this->get_phone_field_label(), 'description' => '');
         }
         if ($shows_cellphone) {
-            $billing['billing_cellphone'] = array('label' => __('Celular', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
+            $billing['billing_cellphone'] = array('label' => $cellphone_label, 'description' => '');
         }
 
         $fields['billing']['fields'] = $billing;
@@ -7374,7 +7454,7 @@ class WcBetterShippingCalculatorForBrazil
             $shipping['shipping_phone'] = array('label' => $this->get_phone_field_label(), 'description' => '');
         }
         if ($shows_cellphone) {
-            $shipping['shipping_cellphone'] = array('label' => __('Celular', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
+            $shipping['shipping_cellphone'] = array('label' => $cellphone_label, 'description' => '');
         }
 
         $fields['shipping']['fields'] = $shipping;
