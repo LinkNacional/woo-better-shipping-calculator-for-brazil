@@ -1,0 +1,1 @@
+#billing_cellphone_field,#shipping_cellphone_field,.form-row:has(>.woocommerce-input-wrapper>input[type=hidden][data-wc-better-cellphone-field="1"]){margin-bottom:0!important;padding-bottom:0!important}

@@ -380,10 +380,15 @@ document.addEventListener("DOMContentLoaded", function () {
 		errorDiv.appendChild(errorParagraph)
 
 		fieldMainWrapper.appendChild(input)
-		fieldMainWrapper.appendChild(label)
 		fieldMainWrapper.appendChild(isentoOverlay)
 
+		// O LABEL precisa ser filho DIRETO do container (e não do wrapper) para
+		// herdar as regras de tema que usam combinador de FILHO DIRETO — ex.:
+		// Woodmart `… .wc-block-components-text-input>label{top:21px;line-height:1}`.
+		// É assim que os campos nativos e o CPF/CNPJ ficam alinhados no repouso;
+		// com o label dentro do wrapper ele não recebia a regra e ficava ~4px baixo.
 		container.appendChild(fieldMainWrapper)
+		container.appendChild(label)
 		container.appendChild(errorDiv)
 
 		referenceElement.insertAdjacentElement('afterend', container)

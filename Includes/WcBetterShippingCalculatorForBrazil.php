@@ -746,17 +746,18 @@ class WcBetterShippingCalculatorForBrazil
         // Hooks para formatação de telefone no pedido final
         $this->loader->add_filter('woocommerce_order_get_billing_phone', $this, 'format_order_billing_phone', 10, 2);
         $this->loader->add_filter('woocommerce_order_get_shipping_phone', $this, 'format_order_shipping_phone', 10, 2);
-        // Exibe o Celular nas páginas de "pedido recebido"/detalhes do pedido. Dispara
-        // no order-received clássico E no de blocos (o WC Blocks usa este hook p/
-        // campos extras).
-        // Reordena os detalhes do cliente: endereço em "Chave: valor" e os dados de
-        // contato (e-mail/telefone/celular) + campos brasileiros no bloco
-        // "Informações adicionais".
-        $this->loader->add_filter('woocommerce_locate_template', $this, 'locate_order_details_customer_template', 20, 3);
-        // Bloco "Informações adicionais" (Contato + CPF/CNPJ/IE/nascimento/gênero/...)
-        // na tela de detalhes do cliente, para o PRÓPRIO cliente conferir após o
-        // pedido. Só existe no template de detalhes (order-received / ver pedido) —
-        // NÃO é enviado em e-mails nem vai para o endereço de entrega.
+        // Bloco "Informações adicionais" (contato + campos brasileiros) na tela de
+        // detalhes do cliente. Renderizado via DOIS hooks para cobrir TODOS os temas:
+        //  - `woocommerce_thankyou`: disparado pelo checkout em BLOCOS (pelo bloco
+        //    "order-confirmation-additional-information") e pelo clássico;
+        //  - `woocommerce_order_details_after_customer_details`: disparado pelo
+        //    template CLÁSSICO (order-received e "ver pedido" da conta).
+        // O método é IDEMPOTENTE (renderiza uma vez por pedido), então não duplica
+        // quando os dois hooks disparam para o mesmo pedido. Só existe na tela de
+        // detalhes do pedido — NÃO é enviado em e-mails nem vai para o endereço de
+        // entrega. As linhas passam pelo filtro `woo_better_customer_details_rows`
+        // (padrão: só os campos do woo-better) para permitir extensão.
+        $this->loader->add_action('woocommerce_thankyou', $this, 'render_customer_additional_info', 10, 1);
         $this->loader->add_action('woocommerce_order_details_after_customer_details', $this, 'render_customer_additional_info', 10, 1);
         // Hook para validação de CPF/CNPJ no checkout
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_person_type_documents');
@@ -766,6 +767,9 @@ class WcBetterShippingCalculatorForBrazil
 
         // Hook para validação de Inscrição Estadual (IE) no checkout clássico
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_ie_field_value_classic');
+
+        // Hook para validação de Inscrição Municipal (IM) no checkout clássico
+        $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_im_field_value_classic');
 
         // Hook para validação de DDD do telefone no checkout clássico
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_phone_ddd_classic');
@@ -825,19 +829,41 @@ class WcBetterShippingCalculatorForBrazil
         // woo-better gerencia os campos de pessoa.
         $this->loader->add_action('woocommerce_after_checkout_form', $this, 'dequeue_brazilian_checkout_scripts', 20, 0);
         
-        // Hook para adicionar campos personalizados na página de perfil do usuário
-        $this->loader->add_filter('woocommerce_customer_meta_fields', $this, 'add_customer_meta_fields');
+        // Campos personalizados na página de perfil (wp-admin/profile.php) e de
+        // edição de usuário (user-edit.php). REASON: o plugin "Brazilian Market on
+        // WooCommerce" registra o callback dele em woocommerce_customer_meta_fields
+        // na prioridade 10 e REConstrói o array do zero, apagando os campos do
+        // woo-better (documento unificado, IM) e derrubando o telefone no bloco de
+        // entrega. Como o Brazilian carrega DEPOIS do woo-better, no empate ele
+        // venceria; por isso rodamos em prioridade 99 (após o Brazilian) para o
+        // woo-better prevalecer também no perfil.
+        $this->loader->add_filter('woocommerce_customer_meta_fields', $this, 'add_customer_meta_fields', 99);
+
+        // Salva (e normaliza) os campos do woo-better no perfil. O WooCommerce salva
+        // os campos nativos em personal_options_update/edit_user_profile_update
+        // (prioridade 10); rodamos depois (20) para dividir o documento unificado em
+        // CPF/CNPJ/persontype e gravar os telefones no formato E.164 (+55 + dígitos).
+        $this->loader->add_action('personal_options_update', $this, 'save_customer_meta_fields_extra', 20, 1);
+        $this->loader->add_action('edit_user_profile_update', $this, 'save_customer_meta_fields_extra', 20, 1);
+
         
-        // Hooks para adicionar campos personalizados na página de edição de endereço da conta
-        $this->loader->add_filter('woocommerce_billing_fields', $this, 'add_edit_address_billing_fields');
-        $this->loader->add_filter('woocommerce_shipping_fields', $this, 'add_edit_address_shipping_fields');
+        // Hooks para adicionar campos personalizados na página de edição de endereço da conta.
+        // REASON: o plugin "Brazilian Market on WooCommerce" registra os campos dele em
+        // woocommerce_billing_fields/woocommerce_shipping_fields na prioridade 10 e REConstrói
+        // o array do zero. Como o Brazilian carrega DEPOIS do woo-better, no empate de
+        // prioridade ele vence e o woo-better some da tela "Minha conta > editar endereço".
+        // No checkout clássico isso não ocorre porque reafirmamos em woocommerce_checkout_fields
+        // (prio 999), hook que o edit-address NÃO dispara. Rodamos aqui em prioridade 99
+        // (após o Brazilian) para o woo-better prevalecer também no edit-address.
+        $this->loader->add_filter('woocommerce_billing_fields', $this, 'add_edit_address_billing_fields', 99);
+        $this->loader->add_filter('woocommerce_shipping_fields', $this, 'add_edit_address_shipping_fields', 99);
         $this->loader->add_action('woocommerce_customer_save_address', $this, 'save_edit_address_custom_fields', 10, 2);
 
         // Remove a obrigatoriedade da IE no envio da página "minha conta > editar
         // endereço" quando o documento informado for CPF. O campo é gerado como
         // required=true (acima) e o JS só cuida do visual; esta é a remoção real
         // da validação no servidor (WC_Form_Handler::save_address).
-        $this->loader->add_filter('woocommerce_billing_fields', $this, 'disable_ie_required_on_edit_address_submit', 20, 1);
+        $this->loader->add_filter('woocommerce_billing_fields', $this, 'disable_ie_required_on_edit_address_submit', 100, 1);
         
         // Hook para formatação de endereço na página Minha Conta
         $this->loader->add_filter('woocommerce_my_account_my_address_formatted_address', $this, 'my_account_formatted_address', 10, 3);
@@ -967,6 +993,15 @@ class WcBetterShippingCalculatorForBrazil
         if ($ie_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
             $fields['ie'] = array(
                 'label' => __('Inscrição Estadual', 'woo-better-shipping-calculator-for-brazil'),
+                'type'  => 'text',
+                'show'  => false
+            );
+        }
+
+        $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
+        if ($im_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+            $fields['im'] = array(
+                'label' => __('Inscrição Municipal', 'woo-better-shipping-calculator-for-brazil'),
                 'type'  => 'text',
                 'show'  => false
             );
@@ -1250,9 +1285,10 @@ class WcBetterShippingCalculatorForBrazil
             $fields['phone'] = $phone;
         }
 
-        // Celular só quando o recurso está ativo (modo "Somente Celular" OU
-        // "Campo de Celular" habilitado).
-        if ($this->phone_mode_adds_cellphone_field()) {
+        // Celular quando o modo GERA a meta de celular (campo visível OU shim
+        // escondido), para cobrança e entrega ficarem consistentes. Nos modos
+        // "Somente Fixo"/"Desabilitar" não há celular a exibir.
+        if ($this->phone_mode_stores_cellphone()) {
             $cellphone = array(
                 'label' => __('Celular (secundário)', 'woo-better-shipping-calculator-for-brazil'),
                 'type'  => 'tel',
@@ -1287,7 +1323,7 @@ class WcBetterShippingCalculatorForBrazil
             return $data;
         }
 
-        if (! $this->phone_mode_adds_cellphone_field()) {
+        if (! $this->phone_mode_stores_cellphone()) {
             return $data;
         }
 
@@ -1340,6 +1376,11 @@ class WcBetterShippingCalculatorForBrazil
         if (isset($_POST['_billing_ie'])) {
             $ie_value = strtoupper(sanitize_text_field(wp_unslash($_POST['_billing_ie'])));
             $order->update_meta_data('_billing_ie', $ie_value);
+        }
+
+        if (isset($_POST['_billing_im'])) {
+            $im_value = strtoupper(sanitize_text_field(wp_unslash($_POST['_billing_im'])));
+            $order->update_meta_data('_billing_im', $im_value);
         }
         
         if (isset($_POST['_billing_number'])) {
@@ -1688,6 +1729,7 @@ class WcBetterShippingCalculatorForBrazil
     {
         $display_data = [];
         $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+        $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
 
         // Convert numeric persontype to string (1 = physical, 2 = legal)
         if (is_numeric($billing_persontype)) {
@@ -1763,6 +1805,15 @@ class WcBetterShippingCalculatorForBrazil
                         $display_data['ie'] = [
                             'label' => __('Inscrição Estadual (IE)', 'woo-better-shipping-calculator-for-brazil'),
                             'value' => $billing_ie
+                        ];
+                    }
+                }
+                if ($im_field_enabled === 'yes') {
+                    $billing_im = $order->get_meta('_billing_im');
+                    if (!empty($billing_im)) {
+                        $display_data['im'] = [
+                            'label' => __('Inscrição Municipal (IM)', 'woo-better-shipping-calculator-for-brazil'),
+                            'value' => $billing_im
                         ];
                     }
                 }
@@ -2159,28 +2210,54 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Controla a renderização única por pedido (o bloco dispara por DOIS hooks —
+     * `woocommerce_thankyou` e `woocommerce_order_details_after_customer_details`).
+     *
+     * @var array<int,bool>
+     */
+    private static $customer_details_rendered = array();
+
+    /**
      * Bloco "Informações adicionais" na tela de detalhes do cliente (order-received /
      * ver pedido): exibe, no formato "Chave: valor", o CONTATO (e-mail, telefone,
      * celular) e os campos brasileiros CONFIGURADOS e preenchidos (tipo de pessoa,
-     * CPF/CNPJ, empresa, Inscrição Estadual, data de nascimento e gênero), para o
-     * próprio cliente conferir após o pedido.
+     * CPF/CNPJ, empresa, Inscrição Estadual/Municipal, data de nascimento e gênero),
+     * para o próprio cliente conferir após o pedido.
      *
      * Lê os metadados `_billing_*` do pedido (mesma fonte da NFe) — é só exibição:
-     * não grava, não move dados para o endereço de entrega e não é enviado em
-     * e-mails (o hook `woocommerce_order_details_after_customer_details` só existe no
-     * template de detalhes do cliente).
+     * não grava, não move dados para o endereço de entrega e não é enviado em e-mails.
      *
-     * @param WC_Order $order
+     * Renderizada por dois hooks (ver o registro em `define_public_hooks`), é
+     * IDEMPOTENTE: renderiza uma vez por pedido, para não duplicar quando ambos
+     * disparam. As linhas passam pelo filtro `woo_better_customer_details_rows`
+     * (padrão: só os campos do woo-better) — cada item é `array('label' => ..., 'value' => ...)`.
+     *
+     * Aceita o `WC_Order` OU o ID do pedido (o hook `woocommerce_thankyou` passa o ID).
+     *
+     * @param WC_Order|int $order Pedido ou ID do pedido.
      * @return void
      */
     public function render_customer_additional_info($order)
     {
+        if (is_numeric($order)) {
+            $order = wc_get_order((int) $order);
+        }
+
         if (! $order instanceof \WC_Order) {
             return;
         }
 
         if (get_option('woo_better_calc_enable_order_details', 'yes') !== 'yes') {
             return;
+        }
+
+        // Renderiza uma vez por pedido (o bloco dispara por dois hooks no mesmo pedido).
+        $order_id = $order->get_id();
+        if ($order_id && isset(self::$customer_details_rendered[$order_id])) {
+            return;
+        }
+        if ($order_id) {
+            self::$customer_details_rendered[$order_id] = true;
         }
 
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
@@ -2214,13 +2291,21 @@ class WcBetterShippingCalculatorForBrazil
             $display[] = array('label' => $this->get_phone_field_label(), 'value' => $phone);
         }
 
-        $cellphone = (string) $order->get_meta('_billing_cellphone');
-        if ('' !== $cellphone) {
-            $cellphone = $this->format_complete_phone($cellphone, $order->get_meta('_billing_phone_country_code'));
-            // Deduplica quando o celular é o mesmo número do telefone
-            // ("Somente Celular" e espelho do campo único).
-            if ('' !== $cellphone && $cellphone !== $phone) {
-                $display[] = array('label' => __('Celular', 'woo-better-shipping-calculator-for-brazil'), 'value' => $cellphone);
+        // Celular como campo próprio SÓ quando é um campo VISÍVEL do woo-better
+        // ("Somente Celular" ou "Campo de Celular" ligado). No modo "Celular e Fixo"
+        // com o campo desligado, o `_billing_cellphone` é apenas o SHIM escondido
+        // (espelho do telefone para pagbank/asaas) e NÃO deve aparecer aqui — mesma
+        // regra do bloco admin "Dados do Cliente". Assim, no recibo fica só o
+        // Telefone/Celular (o campo principal).
+        if ($this->phone_mode_adds_cellphone_field()) {
+            $cellphone = (string) $order->get_meta('_billing_cellphone');
+            if ('' !== $cellphone) {
+                $cellphone = $this->format_complete_phone($cellphone, $order->get_meta('_billing_phone_country_code'));
+                // Deduplica quando o celular é o mesmo número do telefone
+                // ("Somente Celular" e espelho do campo único).
+                if ('' !== $cellphone && $cellphone !== $phone) {
+                    $display[] = array('label' => __('Celular', 'woo-better-shipping-calculator-for-brazil'), 'value' => $cellphone);
+                }
             }
         }
 
@@ -2229,13 +2314,30 @@ class WcBetterShippingCalculatorForBrazil
             $display[] = $row;
         }
 
+        /**
+         * Filtra as linhas do bloco "Informações adicionais" da tela de detalhes do
+         * pedido. Por padrão contém SÓ os campos do woo-better; use este filtro para
+         * acrescentar/remover linhas (ex.: dados de outro plugin). Cada item é
+         * `array('label' => string, 'value' => string)`.
+         *
+         * @param array    $display Linhas já formatadas (label/value).
+         * @param WC_Order $order   Pedido exibido.
+         */
+        $display = apply_filters('woo_better_customer_details_rows', $display, $order);
+
         // Só exibe se houver algo preenchido.
         if (empty($display)) {
             return;
         }
         ?>
         <section class="woo-better-additional-info">
-            <h2 class="woocommerce-column__title"><?php esc_html_e('Informações adicionais', 'woo-better-shipping-calculator-for-brazil'); ?></h2>
+            <style>
+                /* Aproxima as linhas "Chave: valor" (o tema dá margens grandes aos <p>). */
+                .woo-better-additional-info__list { margin: 0; }
+                .woo-better-additional-info__item { margin: 0 0 2px; line-height: 1.4; }
+                .woo-better-additional-info__item:last-child { margin-bottom: 0; }
+            </style>
+            <h2 class="wp-block-heading"><?php esc_html_e('Informações adicionais', 'woo-better-shipping-calculator-for-brazil'); ?></h2>
             <div class="woo-better-additional-info__list">
                 <?php foreach ($display as $row) : ?>
                     <p class="woo-better-additional-info__item">
@@ -2248,34 +2350,6 @@ class WcBetterShippingCalculatorForBrazil
         <?php
     }
 
-    /**
-     * Carrega o template `order/order-details-customer.php` do plugin (e-mail no
-     * topo + colunas no mesmo padrão), RESPEITANDO um override do tema.
-     *
-     * Só assume quando o tema ainda não sobrescreveu o template — assim um tema que
-     * já customiza o arquivo continua no controle.
-     *
-     * @param string $template      Caminho resolvido do template.
-     * @param string $template_name Nome relativo (ex.: 'order/order-details-customer.php').
-     * @param string $template_path Caminho base (normalmente 'woocommerce/').
-     * @return string
-     */
-    public function locate_order_details_customer_template($template, $template_name, $template_path)
-    {
-        if ('order/order-details-customer.php' !== $template_name) {
-            return $template;
-        }
-
-        // Um tema sobrescrevendo o template tem prioridade — não mexemos.
-        if (function_exists('locate_template') && locate_template(array($template_path . $template_name, $template_name))) {
-            return $template;
-        }
-
-        $plugin_template = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_DIR . 'templates/' . $template_name;
-
-        return file_exists($plugin_template) ? $plugin_template : $template;
-    }
-    
     /**
      * Valida CPF usando algoritmo matemático
      * @param string $cpf - CPF apenas com números
@@ -2806,6 +2880,54 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Valida o preenchimento da Inscrição Municipal (IM) no checkout clássico (shortcode).
+     *
+     * Espelha `validate_ie_field_value_classic`, porém a IM é SEMPRE obrigatória
+     * (não há opção "Isento" como no IE): exige um valor preenchido quando o
+     * documento é CNPJ (ou o Tipo de Cliente é exclusivamente jurídico). Não aplica
+     * cálculo de dígito verificador — a IM não tem padrão nacional (regra municipal).
+     *
+     * @return void
+     */
+    public function validate_im_field_value_classic() {
+        $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+
+        if ($im_field_enabled !== 'yes' || ($person_type !== 'legal' && $person_type !== 'both')) {
+            return;
+        }
+
+        $billing_document = isset($_POST['billing_document']) ? sanitize_text_field(wp_unslash($_POST['billing_document'])) : '';
+        $billing_cpf = isset($_POST['billing_cpf']) ? sanitize_text_field(wp_unslash($_POST['billing_cpf'])) : '';
+        $billing_cnpj = isset($_POST['billing_cnpj']) ? sanitize_text_field(wp_unslash($_POST['billing_cnpj'])) : '';
+
+        if (empty($billing_document)) {
+            if (!empty($billing_cpf)) {
+                $billing_document = $billing_cpf;
+            } elseif (!empty($billing_cnpj)) {
+                $billing_document = $billing_cnpj;
+            }
+        }
+
+        $clean_document = preg_replace('/[^0-9A-Z]/', '', strtoupper($billing_document));
+        $is_cpf_document = strlen($clean_document) === 11;
+        $is_cnpj_document = strlen($clean_document) === 14;
+
+        // IM só é obrigatória quando for CNPJ (ou quando a configuração for jurídica).
+        $should_require_im = ($person_type === 'legal') || $is_cnpj_document;
+
+        if ($is_cpf_document || !$should_require_im) {
+            return;
+        }
+
+        $billing_im = isset($_POST['billing_im']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['billing_im']))) : '';
+
+        if ('' === trim($billing_im)) {
+            wc_add_notice(__('Por favor, preencha a Inscrição Municipal (IM).', 'woo-better-shipping-calculator-for-brazil'), 'error');
+        }
+    }
+
+    /**
      * Retorna o tipo de erro do telefone, usando o libphonenumber (~300 países).
      *
      * - null     : válido
@@ -3141,6 +3263,9 @@ class WcBetterShippingCalculatorForBrazil
         // Processa dados de Inscrição Estadual (IE)
         $this->process_ie_from_data($order, $data);
 
+        // Processa dados de Inscrição Municipal (IM)
+        $this->process_im_from_data($order, $data);
+
         $billing_country_code = '';
         $shipping_country_code = '';
         
@@ -3428,6 +3553,27 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Indica se o modo atual GERA a meta de celular (`*_cellphone`) no pedido.
+     *
+     * Diferente de `phone_mode_adds_cellphone_field()` (campo VISÍVEL no checkout),
+     * aqui é qualquer modo em que o plugin grava `_billing_cellphone`/
+     * `_shipping_cellphone` — seja pelo campo VISÍVEL ("Somente Celular" ou "Campo
+     * de Celular" ligado) seja pelo SHIM ESCONDIDO ("Celular e Fixo" com o "Campo de
+     * Celular" desligado, espelho do telefone p/ PagBank/Asaas/NFe).
+     *
+     * Usado nos campos EDITÁVEIS do ADMIN do pedido, para exibir o "Celular" em
+     * COBRANÇA **e** EM ENTREGA sempre que houver uma meta para ver/editar. Sem isso,
+     * o plugin "Brazilian Market on WooCommerce" injeta um "Celular" só na cobrança
+     * (o builder de entrega dele não inclui o campo), deixando cobrança e entrega
+     * inconsistentes.
+     *
+     * @return bool
+     */
+    private function phone_mode_stores_cellphone() {
+        return in_array($this->get_phone_mode(), array('phone_and_cellphone', 'cellphone_only'), true);
+    }
+
+    /**
      * Sincroniza a VISIBILIDADE do campo de telefone nativo com o "Destaque do
      * Campo Telefone" (woo_better_calc_contact_field_position).
      *
@@ -3584,6 +3730,9 @@ class WcBetterShippingCalculatorForBrazil
         
         // Processa dados de Inscrição Estadual (IE)
         $this->process_ie_from_request($order, $request);
+        
+        // Processa dados de Inscrição Municipal (IM)
+        $this->process_im_from_request($order, $request);
         
         // Processa dados de telefone formatado
         $this->process_phone_formatter_from_request($order, $request);
@@ -4268,6 +4417,25 @@ class WcBetterShippingCalculatorForBrazil
                 },
             ]);
 
+            // Registra campos para Inscrição Municipal (IM)
+            woocommerce_store_api_register_endpoint_data( [
+                'endpoint'        => 'checkout',
+                'namespace'       => 'woo_better_im_field',
+                'schema_callback' => function() {
+                    return [
+                        'billing_im' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                    ];
+                },
+                'data_callback' => function() {
+                    return [
+                        'billing_im'  => '',
+                    ];
+                },
+            ]);
+
             // Registra campos para telefone formatado
             woocommerce_store_api_register_endpoint_data( [
                 'endpoint'        => 'checkout',
@@ -4374,6 +4542,12 @@ class WcBetterShippingCalculatorForBrazil
             woocommerce_store_api_register_update_callback([
                 'namespace' => 'woo_better_ie_field',
                 'callback'  => [ $this, 'handle_ie_update' ],
+            ]);
+
+            // Callback para Inscrição Municipal (IM)
+            woocommerce_store_api_register_update_callback([
+                'namespace' => 'woo_better_im_field',
+                'callback'  => [ $this, 'handle_im_update' ],
             ]);
 
             // Callback para telefone formatado
@@ -4655,6 +4829,21 @@ class WcBetterShippingCalculatorForBrazil
 
             if (is_user_logged_in()) {
                 update_user_meta( get_current_user_id(), 'billing_ie', $billing_ie );
+            }
+        }
+    }
+
+    public function handle_im_update( $data ) {
+        if (! function_exists('WC') || ! WC()->session ) {
+            return;
+        }
+
+        if ( isset( $data['billing_im'] ) ) {
+            $billing_im = strtoupper(sanitize_text_field( (string) $data['billing_im'] ));
+            WC()->session->set( 'billing_im', $billing_im );
+
+            if (is_user_logged_in()) {
+                update_user_meta( get_current_user_id(), 'billing_im', $billing_im );
             }
         }
     }
@@ -5040,6 +5229,26 @@ class WcBetterShippingCalculatorForBrazil
                 'custom_attributes' => array(
                     'maxlength' => '14',
                     'data-ie-field' => '1'
+                )
+            );
+        }
+
+        // Campo de Inscrição Municipal (IM) - somente para Pessoa Jurídica.
+        // Espelha o IE (mesmo gate/obrigatoriedade). O limite de 15 caracteres
+        // segue o schema da NF-e (dest/IM: TString, maxLength 15).
+        $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
+        if ($im_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+            $fields['billing']['billing_im'] = array(
+                'label'       => __('Inscrição Municipal (IM)', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Digite a Inscrição Municipal (IM)', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => true,
+                'class'       => array('form-row-wide', 'woo-better-im-field'),
+                'priority'    => 33,
+                'type'        => 'text',
+                'autocomplete' => 'off',
+                'custom_attributes' => array(
+                    'maxlength' => '15',
+                    'data-im-field' => '1'
                 )
             );
         }
@@ -5874,6 +6083,115 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Processa os dados de Inscrição Municipal (IM) no checkout de BLOCOS.
+     *
+     * Espelha `process_ie_from_request`: só age quando o campo está habilitado e o
+     * documento é CNPJ; caso contrário limpa a meta/sessão/user_meta.
+     *
+     * @param WC_Order $order
+     * @param WP_REST_Request $request
+     * @return void
+     */
+    private function process_im_from_request($order, $request)
+    {
+        $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+
+        if ($im_field_enabled !== 'yes' || ($person_type !== 'legal' && $person_type !== 'both')) {
+            return;
+        }
+
+        $extensions = $request->get_param('extensions') ?? [];
+
+        // Determina se o documento submetido é um CNPJ (14 dígitos)
+        $billing_cnpj = '';
+        if (isset($extensions['woo_better_person_type']['billing_cnpj'])) {
+            $billing_cnpj = sanitize_text_field($extensions['woo_better_person_type']['billing_cnpj']);
+        }
+        if (empty($billing_cnpj) && isset($_POST['billing_cnpj'])) {
+            $billing_cnpj = sanitize_text_field(wp_unslash($_POST['billing_cnpj']));
+        }
+        if (empty($billing_cnpj) && isset($_POST['billing_document'])) {
+            $billing_cnpj = sanitize_text_field(wp_unslash($_POST['billing_document']));
+        }
+        $is_cnpj = strlen(preg_replace('/[^0-9A-Z]/', '', strtoupper($billing_cnpj))) === 14;
+
+        if (!$is_cnpj) {
+            $order->update_meta_data('_billing_im', '');
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'billing_im', '');
+            }
+
+            // Limpa também a sessão, senão o valor antigo de IM volta ao checkout.
+            if (function_exists('WC') && WC()->session) {
+                WC()->session->set('billing_im', '');
+            }
+            return;
+        }
+
+        if (isset($extensions['woo_better_im_field'])) {
+            $im_data = $extensions['woo_better_im_field'];
+            if (isset($im_data['billing_im'])) {
+                $billing_im = strtoupper(sanitize_text_field($im_data['billing_im']));
+                $order->update_meta_data('_billing_im', $billing_im);
+
+                if (is_user_logged_in()) {
+                    update_user_meta(get_current_user_id(), 'billing_im', $billing_im);
+                }
+            }
+        }
+    }
+
+    /**
+     * Processa os dados de Inscrição Municipal (IM) no checkout clássico.
+     *
+     * Espelha `process_ie_from_data`.
+     *
+     * @param WC_Order $order
+     * @param array $data
+     * @return void
+     */
+    private function process_im_from_data($order, $data)
+    {
+        $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+
+        if ($im_field_enabled !== 'yes' || ($person_type !== 'legal' && $person_type !== 'both')) {
+            return;
+        }
+
+        // Determina se o documento submetido é um CNPJ (14 dígitos)
+        $billing_document = '';
+        if (!empty($data['billing_cnpj'])) {
+            $billing_document = sanitize_text_field(wp_unslash($data['billing_cnpj']));
+        } elseif (!empty($data['billing_document'])) {
+            $billing_document = sanitize_text_field(wp_unslash($data['billing_document']));
+        }
+        $is_cnpj = strlen(preg_replace('/[^0-9A-Z]/', '', strtoupper($billing_document))) === 14;
+
+        if (!$is_cnpj) {
+            $order->update_meta_data('_billing_im', '');
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'billing_im', '');
+            }
+
+            // Limpa também a sessão, senão o valor antigo de IM volta ao checkout.
+            if (function_exists('WC') && WC()->session) {
+                WC()->session->set('billing_im', '');
+            }
+            return;
+        }
+
+        $billing_im = isset($data['billing_im']) ? strtoupper(sanitize_text_field(wp_unslash($data['billing_im']))) : '';
+
+        $order->update_meta_data('_billing_im', $billing_im);
+
+        if (is_user_logged_in()) {
+            update_user_meta(get_current_user_id(), 'billing_im', $billing_im);
+        }
+    }
+
+    /**
      * Processa os dados de telefone formatado no checkout de blocos
      *
      * @param WC_Order $order
@@ -6150,8 +6468,55 @@ class WcBetterShippingCalculatorForBrazil
                         $order->update_meta_data($billing_meta, $shipping_value);
                     }
                 }
-                
+
+                // Espelha TELEFONE e CELULAR entre cobrança e entrega. O endereço já é
+                // copiado acima, mas o telefone/celular ficavam de fora — com "usar o
+                // mesmo endereço para cobrança" os dois números devem ser o MESMO.
+                // Prefere o shipping (é o endereço exibido quando "shipping as
+                // billing"); se ele estiver vazio, cai no billing — para nunca zerar.
+                $this->mirror_same_address_phone(
+                    $order,
+                    array($order, 'set_billing_phone'),
+                    array($order, 'set_shipping_phone'),
+                    array($order, 'get_billing_phone'),
+                    array($order, 'get_shipping_phone')
+                );
+                $this->mirror_same_address_phone(
+                    $order,
+                    function ($v) use ($order) { $order->update_meta_data('_billing_cellphone', $v); },
+                    function ($v) use ($order) { $order->update_meta_data('_shipping_cellphone', $v); },
+                    function () use ($order) { return (string) $order->get_meta('_billing_cellphone'); },
+                    function () use ($order) { return (string) $order->get_meta('_shipping_cellphone'); }
+                );
+
             }
+        }
+    }
+
+    /**
+     * Espelha um valor de telefone/celular entre cobrança e entrega quando o
+     * cliente marca "usar o mesmo endereço para cobrança" (checkout em BLOCOS).
+     *
+     * Prefere o valor de SHIPPING (o endereço exibido no modo "shipping as
+     * billing"); se estiver vazio, usa o de billing — para nunca zerar. Se ambos
+     * estiverem vazios, não faz nada.
+     *
+     * @param \WC_Order $order
+     * @param callable  $set_billing  Recebe o valor e grava no billing.
+     * @param callable  $set_shipping Recebe o valor e grava no shipping.
+     * @param callable  $get_billing  Retorna o valor do billing.
+     * @param callable  $get_shipping Retorna o valor do shipping.
+     * @return void
+     */
+    private function mirror_same_address_phone($order, $set_billing, $set_shipping, $get_billing, $get_shipping)
+    {
+        $shipping = trim((string) call_user_func($get_shipping));
+        $billing  = trim((string) call_user_func($get_billing));
+
+        if ('' !== $shipping) {
+            call_user_func($set_billing, $shipping);
+        } elseif ('' !== $billing) {
+            call_user_func($set_shipping, $billing);
         }
     }
 
@@ -6195,6 +6560,7 @@ class WcBetterShippingCalculatorForBrazil
             $errors->remove( 'billing_cnpj_required' );
             $errors->remove( 'billing_neighborhood_required' );
             $errors->remove( 'billing_ie_required' );
+            $errors->remove( 'billing_im_required' );
             // Em modo "dynamic" o campo "Empresa" só existe no Brasil (depende do CNPJ),
             // então não deve ser exigido de clientes de outros países.
             if ( $controls_company ) {
@@ -6206,6 +6572,7 @@ class WcBetterShippingCalculatorForBrazil
         // Se for CPF, IE e empresa não são obrigatórios.
         if ( $is_cpf ) {
             $errors->remove( 'billing_ie_required' );
+            $errors->remove( 'billing_im_required' );
             if ( $controls_company ) {
                 $errors->remove( 'billing_company_required' );
             }
@@ -6334,16 +6701,18 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
-     * Adiciona o campo "Celular" (`*_cellphone`) se ele ainda não existir.
+     * Adiciona o campo "Celular" (`*_cellphone`).
      *
      * - modo "Somente Celular": campo VISÍVEL (é o principal);
      * - modo "Celular e Fixo" com o "Campo de Celular" ligado: campo VISÍVEL;
      * - modo "Celular e Fixo" com o "Campo de Celular" desligado: campo ESCONDIDO
      *   (shim) para compatibilidade com plugins que esperam `billing_cellphone`.
      *
-     * O campo é um `tel` simples (sem máscara/DDI/validação). Se já existir um campo
-     * do próprio plugin/terceiro (ex.: "Brazilian Market on WooCommerce" com celular
-     * separado), NÃO mexemos. Não atua na edição de endereço da conta.
+     * O campo é um `tel` simples (sem máscara/DDI/validação). A definição do
+     * woo-better SOBREPÕE um `*_cellphone` já existente — inclusive o do plugin
+     * "Brazilian Market on WooCommerce" (ver comentário no corpo). Assim, quando os
+     * dois plugins competem pelo campo de celular, o woo-better vence. Não atua na
+     * edição de endereço da conta.
      *
      * @param  array  $fields Campos.
      * @param  string $type   'billing' ou 'shipping'.
@@ -6357,16 +6726,31 @@ class WcBetterShippingCalculatorForBrazil
             return $fields;
         }
 
-        // Não interfere na edição de endereço da conta: ali o campo seria salvo como
-        // user meta e poderia sobrescrever um valor real.
-        if ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url( 'edit-address' ) ) {
+        // Na edição de endereço da conta (minha-conta) só o SHIM ESCONDIDO é criado:
+        // ali o `*_cellphone` é salvo como user meta e precisa acompanhar o telefone
+        // (o espelho do servidor vive em save_edit_address_custom_fields e o JS de
+        // espelho também roda nesta tela). O campo VISÍVEL não é criado aqui — não
+        // queremos introduzir um campo editável novo na conta.
+        if (
+            function_exists( 'is_wc_endpoint_url' )
+            && is_wc_endpoint_url( 'edit-address' )
+            && ! $adds_shim
+        ) {
             return $fields;
         }
 
         $key = $type . '_cellphone';
-        if ( isset( $fields[ $key ] ) ) {
-            return $fields;
-        }
+
+        // Precedência sobre o "Brazilian Market on WooCommerce": quando o woo-better
+        // gera o campo de celular (VISÍVEL ou shim escondido), a SUA definição
+        // prevalece mesmo que já exista um `*_cellphone`. O Brazilian registra o
+        // campo dele em `woocommerce_billing_fields` (prioridade 10, ANTES da gente),
+        // então sem esta sobreposição ele venceria no checkout clássico — o que não
+        // queremos, já que ele está sem manutenção. Quando o woo-better NÃO gera
+        // celular (modos "Somente Fixo"/"Desabilitar"), o retorno acima acontece e o
+        // campo do Brazilian permanece: com o recurso desligado no woo-better, o
+        // Brazilian manda. É o mesmo critério de precedência já aplicado a CPF/CNPJ,
+        // Empresa, IE, Bairro e Número neste plugin.
 
         // Shim escondido (compatibilidade): campo oculto, sem obrigatoriedade.
         if ( $adds_shim ) {
@@ -6442,6 +6826,11 @@ class WcBetterShippingCalculatorForBrazil
      * Espelha o telefone unificado (`*_phone`) no campo de celular (`*_cellphone`),
      * normalizado. Usado no modo "Celular e Fixo" com o campo de celular escondido.
      *
+     * Quando o checkout clássico tem o script de espelho (`...CellphoneMirrorShortcode`),
+     * o `*_cellphone` já chega preenchido com o PRÓPRIO telefone (mesmo número, sem
+     * normalizar) — nesse caso re-normalizamos. Um valor PRÓPRIO de outro plugin
+     * (número diferente do telefone) é respeitado.
+     *
      * @param  array  $data Dados postados.
      * @param  string $type 'billing' ou 'shipping'.
      * @return array       Dados postados.
@@ -6450,21 +6839,31 @@ class WcBetterShippingCalculatorForBrazil
         $phone_key = $type . '_phone';
         $cell_key  = $type . '_cellphone';
 
-        // Se outro plugin já preencheu um celular próprio, respeita.
-        if ( ! empty( $data[ $cell_key ] ) ) {
-            return $data;
-        }
-
         if ( empty( $data[ $phone_key ] ) ) {
             return $data;
         }
 
         $country_code = isset( $data[ $type . '_phone_country' ] ) ? $data[ $type . '_phone_country' ] : '';
 
-        $data[ $cell_key ] = $this->format_complete_phone(
+        $mirrored = $this->format_complete_phone(
             sanitize_text_field( wp_unslash( $data[ $phone_key ] ) ),
             sanitize_text_field( wp_unslash( (string) $country_code ) )
         );
+
+        // Se outro plugin já preencheu um celular PRÓPRIO (número diferente do
+        // telefone), respeita. Se o valor presente é só o espelho do próprio
+        // telefone (ex.: o script do checkout clássico copiou o telefone), segue
+        // para gravá-lo na forma normalizada.
+        if ( ! empty( $data[ $cell_key ] ) ) {
+            $existing_digits = preg_replace( '/\D/', '', (string) $data[ $cell_key ] );
+            $phone_digits    = preg_replace( '/\D/', '', (string) $data[ $phone_key ] );
+
+            if ( $existing_digits !== $phone_digits ) {
+                return $data;
+            }
+        }
+
+        $data[ $cell_key ] = $mirrored;
 
         return $data;
     }
@@ -6804,189 +7203,258 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
-     * Adiciona campos personalizados nas seções de endereço de cobrança e entrega na página de perfil do usuário
+     * Indica se o woo-better gerencia a tela de perfil do usuário (ao menos um
+     * recurso de campo ativo). Usado tanto para montar (add_customer_meta_fields)
+     * quanto para salvar (save_customer_meta_fields_extra).
      *
-     * @param array $fields Array de campos do WooCommerce
+     * @return bool
+     */
+    private function profile_manages_fields()
+    {
+        return (get_option('woo_better_calc_person_type_select', 'none') !== 'none')
+            || (get_option('woo_better_calc_number_required', 'no') === 'yes')
+            || (get_option('woo_better_calc_enable_neighborhood_field', 'no') === 'yes')
+            || (get_option('woo_better_calc_enable_ie_field', 'no') === 'yes')
+            || (get_option('woo_better_calc_enable_im_field', 'no') === 'yes')
+            || (get_option('woo_better_calc_enable_birthdate_field', 'no') === 'yes')
+            || (get_option('woo_better_calc_enable_gender_field', 'no') === 'yes');
+    }
+
+    /**
+     * Campos personalizados nas seções de endereço de cobrança e entrega da página
+     * de perfil do usuário (wp-admin/profile.php / user-edit.php).
+     *
+     * O woo-better ASSUME esta tela (roda na prioridade 99, após o plugin "Brazilian
+     * Market on WooCommerce"): monta o documento unificado (CPF/CNPJ), IE/IM, número,
+     * bairro, nascimento e gênero, além do Telefone/Celular em COBRANÇA E ENTREGA —
+     * substituindo o array do Brazilian (que some com o telefone no bloco de entrega).
+     * O RG (exclusivo do Brazilian) é preservado quando existe.
+     *
+     * Quando NENHUM recurso de campo do woo-better está ativo, não reestrutura a tela:
+     * devolve os campos como estão (o Brazilian/nativo assume), respeitando a regra de
+     * precedência "recurso desligado no woo-better → Brazilian manda".
+     *
+     * @param array $fields Array de campos do WooCommerce.
      * @return array
      */
     public function add_customer_meta_fields($fields)
     {
-        // Verifica se o WooCommerce está ativo
-        if (!class_exists('\WC_Customer')) {
+        if (!class_exists('\WC_Customer') || !is_array($fields)
+            || !isset($fields['billing']['fields']) || !isset($fields['shipping']['fields'])) {
             return $fields;
         }
-        
-        // Verifica se a exibição dos campos está habilitada
+
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
         $number_field = get_option('woo_better_calc_number_required', 'no');
         $neighborhood_field = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+        $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
         $birthdate_field = get_option('woo_better_calc_enable_birthdate_field', 'no');
         $gender_field = get_option('woo_better_calc_enable_gender_field', 'no');
-        
-        // Se nenhum campo está habilitado, não adiciona nada
-        if ($person_type === 'none' && $number_field === 'no' && $neighborhood_field === 'no' && $ie_field_enabled === 'no' && $birthdate_field === 'no' && $gender_field === 'no') {
-            return $fields;
-        }
-        
-        // Verifica se o plugin woocommerce-extra-checkout-fields-for-brazil está ativo
-        if (!function_exists('is_plugin_active')) {
-            include_once(ABSPATH . 'wp-admin/includes/plugin.php');
-        }
-        
-        // Se o plugin estiver ativo, não adiciona os campos para evitar duplicação
-        if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
-            return $fields;
-        }
-        
-        // Adiciona campos na seção de cobrança
-        if ($person_type !== 'none' || $birthdate_field === 'yes' || $gender_field === 'yes') {
-            // Encontra a posição do campo last_name para inserir após ele
-            $billing_fields = $fields['billing']['fields'];
-            $new_billing_fields = array();
-            
-            foreach ($billing_fields as $key => $field) {
-                $new_billing_fields[$key] = $field;
-                
-                // Após o campo billing_last_name, adiciona os campos de pessoa, birthdate e gender
-                if ($key === 'billing_last_name') {
-                    if ($person_type !== 'none') {
-                        $new_billing_fields['billing_persontype'] = array(
-                            'label'       => __('Tipo de Pessoa', 'woo-better-shipping-calculator-for-brazil'),
-                            'type'        => 'select',
-                            'options'     => array(
-                                ''  => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
-                                '0' => __('Nenhum', 'woo-better-shipping-calculator-for-brazil'),
-                                '1' => __('Pessoa Física', 'woo-better-shipping-calculator-for-brazil'),
-                                '2' => __('Pessoa Jurídica', 'woo-better-shipping-calculator-for-brazil'),
-                            ),
-                            'description' => '',
-                        );
-                        
-                        $new_billing_fields['billing_cpf'] = array(
-                            'label'       => __('CPF', 'woo-better-shipping-calculator-for-brazil'),
-                            'description' => '',
-                        );
-                        
-                        $new_billing_fields['billing_cnpj'] = array(
-                            'label'       => __('CNPJ', 'woo-better-shipping-calculator-for-brazil'),
-                            'description' => '',
-                        );
 
-                        if ($ie_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
-                            $new_billing_fields['billing_ie'] = array(
-                                'label'       => __('Inscrição Estadual (IE)', 'woo-better-shipping-calculator-for-brazil'),
-                                'description' => '',
-                            );
-                        }
-                    }
-                    
-                    // Adiciona campo de data de nascimento se habilitado
-                    if ($birthdate_field === 'yes') {
-                        $new_billing_fields['billing_birthdate'] = array(
-                            'label'       => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
-                            'type'        => 'date',
-                            'description' => '',
-                        );
-                    }
-                    
-                    // Adiciona campo de gênero se habilitado
-                    if ($gender_field === 'yes') {
-                        $new_billing_fields['billing_gender'] = array(
-                            'label'       => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
-                            'type'        => 'select',
-                            'options'     => array(
-                                ''                                                    => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
-                                __('Masculino', 'woo-better-shipping-calculator-for-brazil')      => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
-                                __('Feminino', 'woo-better-shipping-calculator-for-brazil')       => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
-                                __('Não-binário', 'woo-better-shipping-calculator-for-brazil')    => __('Não-binário', 'woo-better-shipping-calculator-for-brazil'),
-                                __('Outro', 'woo-better-shipping-calculator-for-brazil')          => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
-                                __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
-                            ),
-                            'description' => '',
-                        );
-                    }
-                }
-            }
-            
-            $fields['billing']['fields'] = $new_billing_fields;
+        // Sem nenhum recurso de campo ativo, deixa a tela como está (Brazilian/nativo).
+        if (!$this->profile_manages_fields()) {
+            return $fields;
         }
-        
-        // Adiciona campo de número após address_1 (no lugar do bairro)
+
+        // Telefone/Celular seguem o "Comportamento do Campo de Telefone".
+        $shows_phone = ! $this->phone_mode_hides_native_field();
+        $shows_cellphone = $this->phone_mode_adds_cellphone_field();
+
+        // Documento unificado (CPF/CNPJ) conforme "Tipo de Cliente".
+        $document_label = __('CPF/CNPJ', 'woo-better-shipping-calculator-for-brazil');
+        if ($person_type === 'physical') {
+            $document_label = __('CPF', 'woo-better-shipping-calculator-for-brazil');
+        } elseif ($person_type === 'legal') {
+            $document_label = __('CNPJ', 'woo-better-shipping-calculator-for-brazil');
+        }
+
+        $incoming_billing = $fields['billing']['fields'];
+        $incoming_shipping = $fields['shipping']['fields'];
+
+        // Reaproveita o campo recebido (nativo/Brazilian) — preserva type/options, no
+        // caso de País/Estado (select). Se não existir, cria um campo de texto padrão.
+        $take = function ($source, $key, $label) {
+            if (isset($source[$key])) {
+                return $source[$key];
+            }
+            return array('label' => $label, 'description' => '');
+        };
+
+        // ── Cobrança ─────────────────────────────────────────────────────────
+        $billing = array();
+        $billing['billing_first_name'] = $take($incoming_billing, 'billing_first_name', __('Nome', 'woo-better-shipping-calculator-for-brazil'));
+        $billing['billing_last_name']  = $take($incoming_billing, 'billing_last_name', __('Sobrenome', 'woo-better-shipping-calculator-for-brazil'));
+
+        if ($person_type !== 'none') {
+            $billing['billing_document'] = array('label' => $document_label, 'description' => '');
+        }
+
+        if ($person_type === 'legal' || $person_type === 'both' || isset($incoming_billing['billing_company'])) {
+            $billing['billing_company'] = $take($incoming_billing, 'billing_company', __('Empresa', 'woo-better-shipping-calculator-for-brazil'));
+        }
+
+        if ($ie_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+            $billing['billing_ie'] = array('label' => __('Inscrição Estadual (IE)', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
+        }
+
+        if ($im_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+            $billing['billing_im'] = array('label' => __('Inscrição Municipal (IM)', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
+        }
+
+        // RG é exclusivo do Brazilian: preserva se existir para não perder o dado.
+        if (isset($incoming_billing['billing_rg'])) {
+            $billing['billing_rg'] = $incoming_billing['billing_rg'];
+        }
+
+        if ($birthdate_field === 'yes') {
+            $billing['billing_birthdate'] = array('label' => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
+        }
+
+        if ($gender_field === 'yes') {
+            $billing['billing_gender'] = array(
+                'label'       => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
+                'type'        => 'select',
+                'options'     => array(
+                    '' => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Masculino', 'woo-better-shipping-calculator-for-brazil')      => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Feminino', 'woo-better-shipping-calculator-for-brazil')       => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Não-binário', 'woo-better-shipping-calculator-for-brazil')    => __('Não-binário', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Outro', 'woo-better-shipping-calculator-for-brazil')          => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
+                    __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
+                ),
+                'description' => '',
+            );
+        }
+
+        $billing['billing_address_1'] = $take($incoming_billing, 'billing_address_1', __('Endereço', 'woo-better-shipping-calculator-for-brazil'));
         if ($number_field === 'yes') {
-            // Billing
-            $billing_fields = $fields['billing']['fields'];
-            $new_billing_fields = array();
-            
-            foreach ($billing_fields as $key => $field) {
-                $new_billing_fields[$key] = $field;
-                
-                if ($key === 'billing_address_1') {
-                    $new_billing_fields['billing_number'] = array(
-                        'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
-                        'description' => '',
-                    );
-                }
-            }
-            
-            $fields['billing']['fields'] = $new_billing_fields;
-            
-            // Shipping
-            $shipping_fields = $fields['shipping']['fields'];
-            $new_shipping_fields = array();
-            
-            foreach ($shipping_fields as $key => $field) {
-                $new_shipping_fields[$key] = $field;
-                
-                if ($key === 'shipping_address_1') {
-                    $new_shipping_fields['shipping_number'] = array(
-                        'label'       => __('Número', 'woo-better-shipping-calculator-for-brazil'),
-                        'description' => '',
-                    );
-                }
-            }
-            
-            $fields['shipping']['fields'] = $new_shipping_fields;
+            $billing['billing_number'] = array('label' => __('Número', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
         }
-        
-        // Adiciona campo de bairro antes da cidade (após address_2)
+        $billing['billing_address_2'] = $take($incoming_billing, 'billing_address_2', __('Complemento', 'woo-better-shipping-calculator-for-brazil'));
         if ($neighborhood_field === 'yes') {
-            // Billing
-            $billing_fields = $fields['billing']['fields'];
-            $new_billing_fields = array();
-            
-            foreach ($billing_fields as $key => $field) {
-                $new_billing_fields[$key] = $field;
-                
-                if ($key === 'billing_address_2') {
-                    $new_billing_fields['billing_neighborhood'] = array(
-                        'label'       => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
-                        'description' => '',
-                    );
-                }
-            }
-            
-            $fields['billing']['fields'] = $new_billing_fields;
-            
-            // Shipping
-            $shipping_fields = $fields['shipping']['fields'];
-            $new_shipping_fields = array();
-            
-            foreach ($shipping_fields as $key => $field) {
-                $new_shipping_fields[$key] = $field;
-                
-                if ($key === 'shipping_address_2') {
-                    $new_shipping_fields['shipping_neighborhood'] = array(
-                        'label'       => __('Bairro', 'woo-better-shipping-calculator-for-brazil'),
-                        'description' => '',
-                    );
-                }
-            }
-            
-            $fields['shipping']['fields'] = $new_shipping_fields;
+            $billing['billing_neighborhood'] = array('label' => __('Bairro', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
         }
-        
+        $billing['billing_city']     = $take($incoming_billing, 'billing_city', __('Cidade', 'woo-better-shipping-calculator-for-brazil'));
+        $billing['billing_postcode'] = $take($incoming_billing, 'billing_postcode', __('CEP', 'woo-better-shipping-calculator-for-brazil'));
+        $billing['billing_country']  = $take($incoming_billing, 'billing_country', __('País', 'woo-better-shipping-calculator-for-brazil'));
+        $billing['billing_state']    = $take($incoming_billing, 'billing_state', __('Estado', 'woo-better-shipping-calculator-for-brazil'));
+        $billing['billing_email']    = $take($incoming_billing, 'billing_email', __('Endereço de e-mail', 'woo-better-shipping-calculator-for-brazil'));
+        if ($shows_phone) {
+            $billing['billing_phone'] = array('label' => $this->get_phone_field_label(), 'description' => '');
+        }
+        if ($shows_cellphone) {
+            $billing['billing_cellphone'] = array('label' => __('Celular', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
+        }
+
+        $fields['billing']['fields'] = $billing;
+
+        // ── Entrega ──────────────────────────────────────────────────────────
+        $shipping = array();
+        // Botão nativo "Copiar do endereço de cobrança" (quando presente).
+        if (isset($incoming_shipping['copy_billing'])) {
+            $shipping['copy_billing'] = $incoming_shipping['copy_billing'];
+        }
+        $shipping['shipping_first_name'] = $take($incoming_shipping, 'shipping_first_name', __('Nome', 'woo-better-shipping-calculator-for-brazil'));
+        $shipping['shipping_last_name']  = $take($incoming_shipping, 'shipping_last_name', __('Sobrenome', 'woo-better-shipping-calculator-for-brazil'));
+        $shipping['shipping_company']    = $take($incoming_shipping, 'shipping_company', __('Empresa', 'woo-better-shipping-calculator-for-brazil'));
+        $shipping['shipping_address_1']  = $take($incoming_shipping, 'shipping_address_1', __('Endereço', 'woo-better-shipping-calculator-for-brazil'));
+        if ($number_field === 'yes') {
+            $shipping['shipping_number'] = array('label' => __('Número', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
+        }
+        $shipping['shipping_address_2'] = $take($incoming_shipping, 'shipping_address_2', __('Complemento', 'woo-better-shipping-calculator-for-brazil'));
+        if ($neighborhood_field === 'yes') {
+            $shipping['shipping_neighborhood'] = array('label' => __('Bairro', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
+        }
+        $shipping['shipping_city']     = $take($incoming_shipping, 'shipping_city', __('Cidade', 'woo-better-shipping-calculator-for-brazil'));
+        $shipping['shipping_postcode'] = $take($incoming_shipping, 'shipping_postcode', __('CEP', 'woo-better-shipping-calculator-for-brazil'));
+        $shipping['shipping_country']  = $take($incoming_shipping, 'shipping_country', __('País', 'woo-better-shipping-calculator-for-brazil'));
+        $shipping['shipping_state']    = $take($incoming_shipping, 'shipping_state', __('Estado', 'woo-better-shipping-calculator-for-brazil'));
+        if ($shows_phone) {
+            $shipping['shipping_phone'] = array('label' => $this->get_phone_field_label(), 'description' => '');
+        }
+        if ($shows_cellphone) {
+            $shipping['shipping_cellphone'] = array('label' => __('Celular', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
+        }
+
+        $fields['shipping']['fields'] = $shipping;
+
         return $fields;
+    }
+
+    /**
+     * Salva e normaliza os campos do woo-better na página de perfil do usuário.
+     *
+     * Roda DEPOIS do WooCommerce (prioridade 20 em personal_options_update /
+     * edit_user_profile_update), que salva os campos nativos na prioridade 10:
+     *   - divide o documento unificado (billing_document) em CPF/CNPJ/persontype;
+     *   - grava os telefones no formato E.164 (+55 + dígitos), removendo a máscara;
+     *   - normaliza IE/IM em maiúsculas.
+     *
+     * @param int $user_id
+     * @return void
+     */
+    public function save_customer_meta_fields_extra($user_id)
+    {
+        if (! $user_id) {
+            return;
+        }
+
+        // Só age quando o woo-better gerencia a tela de perfil. Caso contrário
+        // (nem um recurso ativo), o Brazilian/nativo controla — não mexe nos metas.
+        if (! $this->profile_manages_fields()) {
+            return;
+        }
+
+        // 1. Documento unificado -> billing_cpf / billing_cnpj / billing_persontype.
+        if (isset($_POST['billing_document'])) {
+            $document = sanitize_text_field(wp_unslash($_POST['billing_document']));
+            $clean = preg_replace('/[^0-9A-Z]/', '', strtoupper($document));
+
+            if (strlen($clean) === 11) {
+                update_user_meta($user_id, 'billing_persontype', '1');
+                update_user_meta($user_id, 'billing_cpf', $document);
+                update_user_meta($user_id, 'billing_cnpj', '');
+            } elseif (strlen($clean) === 14) {
+                update_user_meta($user_id, 'billing_persontype', '2');
+                update_user_meta($user_id, 'billing_cnpj', $document);
+                update_user_meta($user_id, 'billing_cpf', '');
+            } elseif ('' === $clean) {
+                // Campo esvaziado: limpa os campos derivados.
+                update_user_meta($user_id, 'billing_persontype', '');
+                update_user_meta($user_id, 'billing_cpf', '');
+                update_user_meta($user_id, 'billing_cnpj', '');
+            }
+            // Valor inválido (nem 11 nem 14 dígitos): NÃO apaga o que já existe —
+            // espelha o save_edit_address_custom_fields (evita destruir dado válido
+            // com um valor digitado pela metade).
+
+            update_user_meta($user_id, 'billing_document', $document);
+        }
+
+        // 2. Telefones -> E.164 (+55 + dígitos), sem máscara/espaços.
+        $phone_keys = array('billing_phone', 'billing_cellphone', 'shipping_phone', 'shipping_cellphone');
+        foreach ($phone_keys as $key) {
+            if (! isset($_POST[$key])) {
+                continue;
+            }
+
+            $raw = sanitize_text_field(wp_unslash($_POST[$key]));
+            if ('' === trim($raw)) {
+                update_user_meta($user_id, $key, '');
+                continue;
+            }
+
+            $normalized = $this->format_complete_phone($raw, '+55');
+            update_user_meta($user_id, $key, '' !== $normalized ? $normalized : $raw);
+        }
+
+        // 3. IE/IM em maiúsculas (consistente com o checkout).
+        foreach (array('billing_ie', 'billing_im') as $key) {
+            if (isset($_POST[$key])) {
+                update_user_meta($user_id, $key, strtoupper(sanitize_text_field(wp_unslash($_POST[$key]))));
+            }
+        }
     }
 
     /**
@@ -7140,6 +7608,25 @@ class WcBetterShippingCalculatorForBrazil
                 )
             );
         }
+
+        // Campo de Inscrição Municipal (IM) - somente para Pessoa Jurídica
+        $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
+        if ($im_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+            $billing_im_value = get_user_meta(get_current_user_id(), 'billing_im', true);
+            $fields['billing_im'] = array(
+                'label'       => __('Inscrição Municipal (IM)', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Digite a Inscrição Municipal (IM)', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => true,
+                'class'       => array('form-row-wide', 'woo-better-im-field'),
+                'priority'    => 33,
+                'type'        => 'text',
+                'value'       => $billing_im_value,
+                'custom_attributes' => array(
+                    'maxlength' => '15',
+                    'data-im-field' => '1'
+                )
+            );
+        }
         
         // Campo de data de nascimento
         if ($birthdate_enabled === 'yes') {
@@ -7248,6 +7735,11 @@ class WcBetterShippingCalculatorForBrazil
         if ($is_cpf_document) {
             if (isset($fields['billing_ie'])) {
                 $fields['billing_ie']['required'] = false;
+            }
+
+            // A IM (como o IE) só é obrigatória para CNPJ.
+            if (isset($fields['billing_im'])) {
+                $fields['billing_im']['required'] = false;
             }
 
             // Empresa no modo "dynamic" também é obrigatória apenas para CNPJ.
@@ -7518,6 +8010,24 @@ class WcBetterShippingCalculatorForBrazil
                 update_user_meta($user_id, 'shipping_phone', $phone);
             }
         }
+
+        // Modo shim ("Celular e Fixo" com o "Campo de Celular" DESLIGADO): mantém a
+        // meta `*_cellphone` do usuário ESPELHANDO o telefone, para ela não divergir
+        // (compatibilidade PagBank/Asaas/NFe). O campo hidden na tela já é espelhado
+        // por JS; este espelho no servidor garante a consistência mesmo sem JS.
+        if ($this->phone_mode_adds_cellphone_shim()) {
+            if ($load_address === 'billing' && isset($_POST['billing_phone'])) {
+                $billing_cc = isset($_POST['billing_phone_country']) ? sanitize_text_field(wp_unslash($_POST['billing_phone_country'])) : '+55';
+                $cellphone = $this->format_complete_phone(sanitize_text_field(wp_unslash($_POST['billing_phone'])), $billing_cc);
+                update_user_meta($user_id, 'billing_cellphone', $cellphone);
+            }
+
+            if ($load_address === 'shipping' && isset($_POST['shipping_phone'])) {
+                $shipping_cc = isset($_POST['shipping_phone_country']) ? sanitize_text_field(wp_unslash($_POST['shipping_phone_country'])) : '+55';
+                $cellphone = $this->format_complete_phone(sanitize_text_field(wp_unslash($_POST['shipping_phone'])), $shipping_cc);
+                update_user_meta($user_id, 'shipping_cellphone', $cellphone);
+            }
+        }
         
         // Salvar campos de data de nascimento e gênero (apenas para billing)
         if ($load_address === 'billing') {
@@ -7537,6 +8047,13 @@ class WcBetterShippingCalculatorForBrazil
             if ($ie_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
                 $billing_ie = isset($_POST['billing_ie']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['billing_ie']))) : '';
                 update_user_meta($user_id, 'billing_ie', $billing_ie);
+            }
+
+            // Salvar Inscrição Municipal (IM)
+            $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
+            if ($im_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+                $billing_im = isset($_POST['billing_im']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['billing_im']))) : '';
+                update_user_meta($user_id, 'billing_im', $billing_im);
             }
         }
     }
@@ -7605,6 +8122,7 @@ class WcBetterShippingCalculatorForBrazil
         $birthdate_enabled  = get_option('woo_better_calc_enable_birthdate_field', 'no');
         $gender_enabled     = get_option('woo_better_calc_enable_gender_field', 'no');
         $ie_field_enabled   = get_option('woo_better_calc_enable_ie_field', 'no');
+        $im_field_enabled   = get_option('woo_better_calc_enable_im_field', 'no');
 
         // ── Billing ──────────────────────────────────────────────────────────
         if ($person_type !== 'none') {
@@ -7618,6 +8136,10 @@ class WcBetterShippingCalculatorForBrazil
 
             if ($ie_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
                 $data['billing']['ie'] = get_user_meta($user_id, 'billing_ie', true);
+            }
+
+            if ($im_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+                $data['billing']['im'] = get_user_meta($user_id, 'billing_im', true);
             }
         }
 

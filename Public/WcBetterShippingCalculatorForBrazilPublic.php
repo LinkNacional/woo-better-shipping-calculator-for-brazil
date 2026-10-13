@@ -121,6 +121,32 @@ class WcBetterShippingCalculatorForBrazilPublic
     }
 
     /**
+     * Indica se o script de espelho Telefone → Celular (shim) do checkout clássico
+     * deve ser enfileirado.
+     *
+     * O espelho só faz sentido quando o woo-better NÃO tem um campo "Celular"
+     * VISÍVEL — ou seja, no modo "Celular e Fixo" com o bloco "Campo de Celular"
+     * (`woo_better_calc_enable_cellphone_field`) DESLIGADO. Nesse cenário o
+     * `billing_cellphone`/`shipping_cellphone` existe como campo ESCONDIDO (shim),
+     * e o cliente digita só o telefone.
+     *
+     * Quando o "Campo de Celular" está LIGADO (`= 'yes'`) existe um campo visível
+     * próprio — o cliente digita o celular nele — então NÃO se espelha nem enfileira
+     * o script. Nos demais modos ("Somente Celular"/"Somente Fixo"/"Desabilitar")
+     * também não se aplica.
+     *
+     * Método PURO (sem estado) para ser testável isoladamente.
+     *
+     * @param  string $phone_mode               Valor de `woo_better_calc_phone_mode`.
+     * @param  string $enable_cellphone_field   Valor de `woo_better_calc_enable_cellphone_field` ('yes'/'no').
+     * @return bool
+     */
+    public static function cellphone_mirror_required($phone_mode, $enable_cellphone_field)
+    {
+        return 'phone_and_cellphone' === $phone_mode && 'yes' !== $enable_cellphone_field;
+    }
+
+    /**
      * Initialize the class and set its properties.
      *
      * @since    1.0.0
@@ -212,6 +238,23 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
+            // Campos de Inscrição (IE/IM) no checkout em blocos: largura cheia
+            // (não dividem a linha com outro campo). Só há efeito no bloco.
+            $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
+            $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
+            if (
+                ($ie_field_enabled === 'yes' || $im_field_enabled === 'yes') &&
+                ($person_type === 'legal' || $person_type === 'both')
+            ) {
+                wp_enqueue_style(
+                    $this->plugin_name . '-inscricao-fields',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilInscricaoFields.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
+
             $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
                 
             if ($neighborhood_enabled === 'yes') {
@@ -236,6 +279,21 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
             wp_enqueue_style($this->plugin_name . '-phone-require', plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPhoneRequire.COMPILED.css', array(), $this->version, 'all');
+
+            // Campo "Celular" ESCONDIDO (shim) no checkout clássico/shortcode: zera o
+            // espaço vertical do `.form-row` do campo oculto. Só no modo shim.
+            if (
+                $is_checkout_classic
+                && self::cellphone_mirror_required($this->phone_mode(), get_option('woo_better_calc_enable_cellphone_field', 'no'))
+            ) {
+                wp_enqueue_style(
+                    $this->plugin_name . '-cellphone-shim',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCellphoneShim.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
 
         }
 
@@ -266,19 +324,6 @@ class WcBetterShippingCalculatorForBrazilPublic
                 'all'
             );
 
-            // CSS para máscara de telefone na página de edição de endereços
-            $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
-            
-            if ($phone_mask_enabled === 'yes') {
-                wp_enqueue_style(
-                    $this->plugin_name . '-edit-address-phone-mask',
-                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMask.COMPILED.css',
-                    array(),
-                    $this->version,
-                    'all'
-                );
-            }
-
             $person_type = get_option('woo_better_calc_person_type_select', 'none');
             if ($person_type !== 'none') {
                 wp_enqueue_style(
@@ -306,6 +351,18 @@ class WcBetterShippingCalculatorForBrazilPublic
                 wp_enqueue_style(
                     $this->plugin_name . '-edit-address-postcode',
                     plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPostcode.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
+
+            // Campo "Celular" ESCONDIDO (shim): zera o espaço vertical do `.form-row`
+            // do campo oculto na edição de endereço. Só no modo shim.
+            if (self::cellphone_mirror_required($this->phone_mode(), get_option('woo_better_calc_enable_cellphone_field', 'no'))) {
+                wp_enqueue_style(
+                    $this->plugin_name . '-edit-address-cellphone-shim',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCellphoneShim.COMPILED.css',
                     array(),
                     $this->version,
                     'all'
@@ -524,6 +581,47 @@ class WcBetterShippingCalculatorForBrazilPublic
                 wp_localize_script(
                     $this->plugin_name . '-gutenberg-ie-field',
                     'WooBetterIEConfig',
+                    array(
+                        'person_type' => $person_type,
+                    )
+                );
+            }
+
+            // Registrar script para campo de Inscrição Municipal (IM) no checkout de blocos
+            $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
+            if ($im_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
+                $billing_im = '';
+
+                if (function_exists('WC') && WC()->session) {
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_im = get_user_meta($user_id, 'billing_im', true);
+                    }
+
+                    if (empty($billing_im)) {
+                        $billing_im = WC()->session->get('billing_im', '');
+                    }
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-im-field',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergIMField.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-im-field',
+                    'WooBetterIMData',
+                    array(
+                        'billing_im' => sanitize_text_field($billing_im),
+                    )
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-im-field',
+                    'WooBetterIMConfig',
                     array(
                         'person_type' => $person_type,
                     )
@@ -870,6 +968,49 @@ class WcBetterShippingCalculatorForBrazilPublic
                     )
                 );
             }
+
+            // Registrar script para campo de Inscrição Municipal (IM) no checkout shortcode (tradicional)
+            $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
+            $person_type_for_im = get_option('woo_better_calc_person_type_select', 'none');
+
+            if ($im_field_enabled === 'yes' && ($person_type_for_im === 'legal' || $person_type_for_im === 'both')) {
+                $billing_im = '';
+
+                if (function_exists('WC') && WC()->session) {
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_im = get_user_meta($user_id, 'billing_im', true);
+                    }
+
+                    if (empty($billing_im)) {
+                        $billing_im = WC()->session->get('billing_im', '');
+                    }
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-shortcode-im-field',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeIMField.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-shortcode-im-field',
+                    'WooBetterIMData',
+                    array(
+                        'billing_im' => sanitize_text_field($billing_im)
+                    )
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-shortcode-im-field',
+                    'WooBetterIMConfig',
+                    array(
+                        'person_type' => $person_type_for_im
+                    )
+                );
+            }
             
             // Registrar script para campos de bairro no checkout shortcode (tradicional)
             $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
@@ -1110,6 +1251,40 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
+            // Espelho Telefone → Celular (shim) no checkout clássico/shortcode.
+            // No modo "Celular e Fixo" com o "Campo de Celular" DESLIGADO o plugin
+            // registra `billing_cellphone`/`shipping_cellphone` como campo ESCONDIDO
+            // (compatibilidade PagBank/Asaas/NFe). Este script copia o valor do
+            // telefone para o campo escondido enquanto o cliente digita, para o
+            // valor também chegar no `$_POST` — o espelho/normalização no servidor
+            // (handle_cellphone_posted_data) continua valendo.
+            //
+            // IMPORTANTE: com o "Campo de Celular" (woo_better_calc_enable_cellphone_field)
+            // LIGADO existe um campo visível próprio e o script NÃO deve rodar — por isso
+            // nem é enfileirado (ver cellphone_mirror_required()).
+            $is_cellphone_shim = self::cellphone_mirror_required(
+                $this->phone_mode(),
+                get_option('woo_better_calc_enable_cellphone_field', 'no')
+            );
+
+            if ($is_cellphone_shim && $is_checkout_classic) {
+                wp_enqueue_script(
+                    $this->plugin_name . '-checkout-cellphone-mirror-shortcode',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutCellphoneMirrorShortcode.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-checkout-cellphone-mirror-shortcode',
+                    'wc_better_cellphone_mirror_vars',
+                    array(
+                        'enabled' => true
+                    )
+                );
+            }
+
             if ($number_field === 'yes' && $is_checkout_classic) {
                 wp_enqueue_script(
                     $this->plugin_name . '-short-number-field',
@@ -1235,6 +1410,50 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
+            // Script para campo de Inscrição Municipal (IM) na edição de endereço de cobrança
+            $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
+            $person_type_for_im = get_option('woo_better_calc_person_type_select', 'none');
+
+            if (
+                $im_field_enabled === 'yes' &&
+                ($person_type_for_im === 'legal' || $person_type_for_im === 'both')
+            ) {
+                $billing_im = '';
+
+                if (is_user_logged_in()) {
+                    $user_id = get_current_user_id();
+                    $billing_im = get_user_meta($user_id, 'billing_im', true);
+                }
+
+                if (empty($billing_im) && function_exists('WC') && WC()->session) {
+                    $billing_im = WC()->session->get('billing_im', '');
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-edit-address-im-field',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeIMField.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-im-field',
+                    'WooBetterIMData',
+                    array(
+                        'billing_im' => sanitize_text_field($billing_im)
+                    )
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-im-field',
+                    'WooBetterIMConfig',
+                    array(
+                        'person_type' => $person_type_for_im
+                    )
+                );
+            }
+
             // Scripts para campo de bairro
             $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
             
@@ -1294,6 +1513,35 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'phoneMaskEnabled' => 'true',
                         'showCountryCode' => get_option('woo_better_calc_show_phone_country_code', 'no') === 'yes' ? 'true' : 'false',
                         'validateDdd' => get_option('woo_better_calc_validate_ddd', 'yes') === 'yes' ? 'true' : 'false'
+                    )
+                );
+            }
+
+            // Espelho Telefone → Celular (shim) na edição de endereço da conta. No
+            // modo "Celular e Fixo" com o "Campo de Celular" DESLIGADO o plugin gera
+            // o campo `*_cellphone` ESCONDIDO (ver maybe_add_cellphone_field) para a
+            // meta do usuário acompanhar o telefone. Este script mantém o campo hidden
+            // espelhado enquanto o cliente edita o telefone (o espelho do servidor em
+            // save_edit_address_custom_fields é a rede de segurança).
+            $is_cellphone_shim = self::cellphone_mirror_required(
+                $this->phone_mode(),
+                get_option('woo_better_calc_enable_cellphone_field', 'no')
+            );
+
+            if ($is_cellphone_shim) {
+                wp_enqueue_script(
+                    $this->plugin_name . '-edit-address-cellphone-mirror',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutCellphoneMirrorShortcode.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-cellphone-mirror',
+                    'wc_better_cellphone_mirror_vars',
+                    array(
+                        'enabled' => true
                     )
                 );
             }

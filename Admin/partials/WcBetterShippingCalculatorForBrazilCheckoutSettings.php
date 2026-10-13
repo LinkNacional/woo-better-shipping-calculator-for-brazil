@@ -172,6 +172,22 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Adiciona o campo de IE (Inscrição Estadual) ao checkout, exclusivo para Pessoas Jurídicas. Fundamental para emissão de Nota Fiscal eletrônica (NF-e).', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+                'enable_im_field' => array(
+                    'title'    => __('Campo de Inscrição Municipal (IM)', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_enable_im_field',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Adiciona o campo de Inscrição Municipal (IM) no checkout para Pessoa Jurídica.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Habilite para exibir o campo "Inscrição Municipal (IM)" no endereço de cobrança do checkout, visível somente quando o cliente selecionar Pessoa Jurídica (CNPJ). Campo obrigatório para Pessoa Jurídica. Requer que o campo "Tipo de Cliente" esteja configurado como "Pessoa Jurídica" ou "Pessoa Física e Pessoa Jurídica".', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Adiciona o campo de Inscrição Municipal (IM) ao checkout, exclusivo para Pessoas Jurídicas. Complementa o IE para emissão de NF-e/NFS-e. A IM não possui padrão nacional de validação (regra municipal).', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
                 'enable_neighborhood_field' => array(
                     'title'    => __('Campo de Bairro', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_enable_neighborhood_field',
