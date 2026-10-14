@@ -2212,6 +2212,42 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
     }
+
+    /**
+     * Reafirma a meta de telefone do USUÁRIO (perfil) com o telefone NORMALIZADO do
+     * pedido (E.164).
+     *
+     * No checkout o WooCommerce core salva o `WC()->customer` a partir do campo
+     * NATIVO de telefone — que o plugin mantém OCULTO e cujo valor chega cru/mascarado
+     * (ex.: "83 98888-8884"), sobrescrevendo o valor normalizado que o plugin havia
+     * gravado em `persist_phone_values`. Rodando DEPOIS daquela gravação (nos hooks de
+     * pedido do plugin), restauramos o E.164 (`+DDInúmero`) para o perfil refletir o
+     * MESMO valor do pedido. Atua só quando o plugin gerencia o telefone.
+     *
+     * @param WC_Order $order
+     * @return void
+     */
+    private function sync_customer_phone_from_order($order)
+    {
+        if (! $this->phone_mode_hides_native_option()) {
+            return;
+        }
+        if (! function_exists('WC') || ! WC()->customer || ! is_user_logged_in()) {
+            return;
+        }
+
+        $billing  = trim((string) $order->get_billing_phone());
+        $shipping = trim((string) $order->get_shipping_phone());
+
+        if ('' !== $billing) {
+            WC()->customer->set_billing_phone($billing);
+        }
+        if ('' !== $shipping) {
+            WC()->customer->set_shipping_phone($shipping);
+        }
+
+        WC()->customer->save();
+    }
     
     /**
      * Indica se estamos exibindo o pedido para o CLIENTE na página de recibo
@@ -3529,6 +3565,10 @@ class WcBetterShippingCalculatorForBrazil
         $this->normalize_order_phone($order, 'billing', $billing_country_code);
         $this->normalize_order_phone($order, 'shipping', $shipping_country_code);
 
+        // Reafirma o telefone do PERFIL do usuário com o valor normalizado do pedido
+        // (o WC core, no checkout, salva o customer a partir do campo nativo cru).
+        $this->sync_customer_phone_from_order($order);
+
         // Salvar código do país do telefone de faturação
         if (!empty($billing_country_code)) {
             $order->update_meta_data('_billing_phone_country_code', $billing_country_code);
@@ -4052,6 +4092,10 @@ class WcBetterShippingCalculatorForBrazil
         // sem caracteres especiais), concatenando o DDI ao número.
         $this->normalize_order_phone($order, 'billing', $billing_country_code);
         $this->normalize_order_phone($order, 'shipping', $shipping_country_code);
+
+        // Reafirma o telefone do PERFIL do usuário com o valor normalizado do pedido
+        // (o WC core, no Store API, salva o customer a partir do campo nativo cru).
+        $this->sync_customer_phone_from_order($order);
         
         // Salvar código do país do telefone de faturação
         if (!empty($billing_country_code)) {

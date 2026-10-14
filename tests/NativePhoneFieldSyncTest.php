@@ -166,4 +166,48 @@ class NativePhoneFieldSyncTest extends WP_UnitTestCase {
         $this->assertSame( 'hidden', get_option( 'woocommerce_checkout_phone_field' ) );
         $this->assertSame( 'required', get_option( 'woo_better_calc_phone_field_previous' ) );
     }
+
+    public function test_sync_customer_phone_from_order_uses_normalized_phone(): void {
+        // Regressão: no checkout o WC core salva o customer a partir do campo NATIVO
+        // (valor cru/mascarado, ex.: "83 98888-8884"). O plugin reafirma o E.164 do
+        // pedido na meta do usuário (perfil).
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+
+        $user_id = self::factory()->user->create();
+        wp_set_current_user( $user_id );
+        WC()->customer = new \WC_Customer( $user_id );
+
+        // Valor cru que o WC core salvou.
+        update_user_meta( $user_id, 'billing_phone', '83 98888-8884' );
+        update_user_meta( $user_id, 'shipping_phone', '83 98888-8884' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '+5583988888884' );
+        $order->set_shipping_phone( '+5583988888884' );
+
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'sync_customer_phone_from_order' );
+        $ref->setAccessible( true );
+        $ref->invoke( $this->plugin(), $order );
+
+        $this->assertSame( '+5583988888884', get_user_meta( $user_id, 'billing_phone', true ) );
+        $this->assertSame( '+5583988888884', get_user_meta( $user_id, 'shipping_phone', true ) );
+    }
+
+    public function test_sync_customer_phone_does_nothing_in_disabled_mode(): void {
+        update_option( 'woo_better_calc_phone_mode', 'disabled' );
+
+        $user_id = self::factory()->user->create();
+        wp_set_current_user( $user_id );
+        WC()->customer = new \WC_Customer( $user_id );
+        update_user_meta( $user_id, 'billing_phone', '83 98888-8884' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '+5583988888884' );
+
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'sync_customer_phone_from_order' );
+        $ref->setAccessible( true );
+        $ref->invoke( $this->plugin(), $order );
+
+        $this->assertSame( '83 98888-8884', get_user_meta( $user_id, 'billing_phone', true ), 'No modo Desabilitar não mexe no telefone do perfil.' );
+    }
 }
