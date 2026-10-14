@@ -1219,6 +1219,86 @@ class PhoneModeTest extends WP_UnitTestCase {
         $this->assertArrayNotHasKey( 'cellphone', $data );
     }
 
+    // --- Bloco "Dados do Cliente": modo ATUAL define a label do número --------
+
+    private function billingPhoneLabels( \WC_Order $order ): array {
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'prepare_billing_display_data' );
+        $ref->setAccessible( true );
+        $data = $ref->invoke( $this->plugin(), $order, 'none', 'yes', '', '', '', '' );
+
+        $rows = array();
+        foreach ( $data as $key => $row ) {
+            if ( 'phone' === $key || 'cellphone' === $key ) {
+                $rows[ $row['label'] ] = $row['value'];
+            }
+        }
+        return $rows;
+    }
+
+    public function test_customer_block_cellphone_only_shows_celular_for_old_both_order(): void {
+        // Regressão: pedido feito em "Celular e Fixo" (gravou telefone E celular, mesmo
+        // número); a config agora é "Somente Celular". A label deve seguir o MODO →
+        // "Celular" (não "Celular/Telefone").
+        update_option( 'woo_better_calc_phone_mode', 'cellphone_only' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '+5583988888882' );
+        $order->update_meta_data( '_billing_cellphone', '+5583988888882' );
+
+        $labels = $this->billingPhoneLabels( $order );
+
+        $this->assertArrayHasKey( 'Celular', $labels );
+        $this->assertArrayNotHasKey( 'Celular/Telefone', $labels );
+        $this->assertSame( '+5583988888882', $labels['Celular'] );
+    }
+
+    public function test_customer_block_cellphone_only_prefers_cellphone_over_distinct_phone(): void {
+        // "Somente Celular" com telefone (fixo) e celular DIFERENTES: mostra só o
+        // celular, rotulado "Celular".
+        update_option( 'woo_better_calc_phone_mode', 'cellphone_only' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '+551133334444' ); // fixo
+        $order->update_meta_data( '_billing_cellphone', '+5583988888882' );
+
+        $labels = $this->billingPhoneLabels( $order );
+
+        $this->assertArrayHasKey( 'Celular', $labels );
+        $this->assertArrayNotHasKey( 'Telefone', $labels );
+        $this->assertSame( '+5583988888882', $labels['Celular'] );
+    }
+
+    public function test_customer_block_cellphone_only_falls_back_to_phone(): void {
+        // "Somente Celular" sem celular disponível (ex.: pedido antigo do modo "Fixo"):
+        // cai no telefone, rotulado "Telefone".
+        update_option( 'woo_better_calc_phone_mode', 'cellphone_only' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '+551133334444' );
+
+        $labels = $this->billingPhoneLabels( $order );
+
+        $this->assertArrayHasKey( 'Telefone', $labels );
+        $this->assertArrayNotHasKey( 'Celular', $labels );
+        $this->assertSame( '+551133334444', $labels['Telefone'] );
+    }
+
+    public function test_customer_block_landline_only_shows_telefone_for_old_both_order(): void {
+        // "Somente Fixo" com pedido antigo que tem telefone E celular: label segue o
+        // MODO → "Telefone" (não "Celular/Telefone").
+        update_option( 'woo_better_calc_phone_mode', 'landline_only' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '+551133334444' );
+        $order->update_meta_data( '_billing_cellphone', '+5583988888882' );
+
+        $labels = $this->billingPhoneLabels( $order );
+
+        $this->assertArrayHasKey( 'Telefone', $labels );
+        $this->assertArrayNotHasKey( 'Celular/Telefone', $labels );
+        $this->assertSame( '+551133334444', $labels['Telefone'] );
+    }
+
     public function test_suppress_brazilian_customer_block_removes_callback(): void {
         // O woo-better desativa o bloco do Brazilian (instância sem referência
         // global), mantendo apenas o seu próprio bloco.

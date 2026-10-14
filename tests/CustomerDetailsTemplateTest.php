@@ -143,6 +143,34 @@ class CustomerDetailsTemplateTest extends WP_UnitTestCase {
         $this->assertSame( '', $this->renderAdditionalInfo( $order ) );
     }
 
+    public function test_additional_info_cellphone_only_dedupes_old_both_order(): void {
+        // "Somente Celular" com pedido antigo (telefone == celular): o WC já exibe o
+        // telefone no endereço, então o nosso bloco NÃO repete o número.
+        update_option( 'woo_better_calc_person_type_select', 'none' );
+        update_option( 'woo_better_calc_phone_mode', 'cellphone_only' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '+5583988888882' );
+        $order->update_meta_data( '_billing_cellphone', '+5583988888882' );
+
+        $this->assertSame( '', $this->renderAdditionalInfo( $order ) );
+    }
+
+    public function test_additional_info_cellphone_only_shows_celular(): void {
+        // "Somente Celular" com o telefone vazio (pedido novo): o bloco mostra o
+        // celular rotulado "Celular".
+        update_option( 'woo_better_calc_person_type_select', 'none' );
+        update_option( 'woo_better_calc_phone_mode', 'cellphone_only' );
+
+        $order = new \WC_Order();
+        $order->update_meta_data( '_billing_cellphone', '+5583988888882' );
+
+        $html = $this->renderAdditionalInfo( $order );
+
+        $this->assertStringContainsString( 'Celular:', $html );
+        $this->assertStringContainsString( '+5583988888882', $html );
+    }
+
     public function test_additional_info_shows_cellphone_when_field_enabled(): void {
         update_option( 'woo_better_calc_person_type_select', 'none' );
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );

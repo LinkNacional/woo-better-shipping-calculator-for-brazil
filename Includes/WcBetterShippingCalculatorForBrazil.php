@@ -1672,17 +1672,18 @@ class WcBetterShippingCalculatorForBrazil
     }
     
     /**
-     * Monta as linhas de TELEFONE/CELULAR de um endereço do pedido a partir dos
-     * METADADOS (não da configuração atual do modo).
+     * Monta as linhas de TELEFONE/CELULAR de um endereço do pedido.
      *
-     * A configuração de telefone pode mudar DEPOIS do pedido, então a label precisa
-     * refletir o que foi realmente SALVO no pedido:
-     *  - só celular (`_<type>_cellphone` preenchido, `_<type>_phone` vazio) → "Celular"
-     *    (ex.: pedido feito no modo "Somente Celular", depois a config virou "Celular e
-     *    Fixo");
-     *  - só telefone (`_<type>_phone` preenchido, celular vazio) → "Telefone";
-     *  - celular == telefone (shim/espelho do campo único) → "Celular/Telefone";
-     *  - ambos, DIFERENTES → "Celular/Telefone" (campo principal) + "Celular" (secundário).
+     * O MODO ATUAL ("Comportamento do Campo de Telefone") define o número PRINCIPAL
+     * e a sua label — respeitando a config mesmo quando ela mudou DEPOIS do pedido.
+     * Os METADADOS dizem o que está SALVO/disponível (fallback quando falta o principal):
+     *  - "Somente Celular" → "Celular" (celular; se não houver, cai no telefone = "Telefone");
+     *  - "Somente Fixo"    → "Telefone" (telefone; se não houver, cai no celular = "Celular");
+     *  - "Celular e Fixo" / "Desabilitar" → a label segue o que foi salvo:
+     *      · só celular → "Celular";
+     *      · só telefone → "Telefone";
+     *      · celular == telefone → "Celular/Telefone";
+     *      · ambos, DIFERENTES → "Celular/Telefone" (principal) + "Celular" (secundário).
      *
      * @param WC_Order $order
      * @param string   $type 'billing' | 'shipping'
@@ -1713,6 +1714,55 @@ class WcBetterShippingCalculatorForBrazil
         $label_both  = __('Celular/Telefone', 'woo-better-shipping-calculator-for-brazil');
         $label_cell  = __('Celular', 'woo-better-shipping-calculator-for-brazil');
         $label_phone = __('Telefone', 'woo-better-shipping-calculator-for-brazil');
+
+        $mode = $this->get_phone_mode();
+
+        // "Somente Celular": o número PRINCIPAL é o CELULAR e a label segue o MODO
+        // atual — mesmo que a config tenha mudado depois do pedido (ex.: pedido feito
+        // em "Celular e Fixo", que gravou telefone E celular; agora em "Somente
+        // Celular" → sai só "Celular"). O telefone só entra como FALLBACK se não
+        // houver celular disponível.
+        if ('cellphone_only' === $mode) {
+            if ('' !== $cell_digits) {
+                // Celular == telefone: o WC já exibe o telefone no endereço do pedido,
+                // então rotulamos a linha como "Celular" mas mantemos a chave `phone` —
+                // o bloco de recibo só lê `cellphone`, então deduplica sozinho.
+                $key = ('' !== $phone_digits && $cell_digits === $phone_digits) ? 'phone' : 'cellphone';
+                $rows[$key] = array(
+                    'label'   => $label_cell,
+                    'value'   => $this->format_complete_phone($cellphone, $country_code),
+                    'is_link' => true,
+                );
+            } elseif ('' !== $phone_digits) {
+                $rows['phone'] = array(
+                    'label'   => $label_phone,
+                    'value'   => $this->format_complete_phone($phone, $country_code),
+                    'is_link' => true,
+                );
+            }
+            return $rows;
+        }
+
+        // "Somente Fixo": o número PRINCIPAL é o TELEFONE (mesma regra do modo acima).
+        if ('landline_only' === $mode) {
+            if ('' !== $phone_digits) {
+                $rows['phone'] = array(
+                    'label'   => $label_phone,
+                    'value'   => $this->format_complete_phone($phone, $country_code),
+                    'is_link' => true,
+                );
+            } elseif ('' !== $cell_digits) {
+                $rows['cellphone'] = array(
+                    'label'   => $label_cell,
+                    'value'   => $this->format_complete_phone($cellphone, $country_code),
+                    'is_link' => true,
+                );
+            }
+            return $rows;
+        }
+
+        // "Celular e Fixo" (e "Desabilitar"): a label segue o que foi SALVO nos
+        // metadados (o campo principal aceita fixo E celular).
 
         // Só celular: o celular é o campo principal (a meta `*_phone` fica vazia).
         if ('' === $phone_digits) {
@@ -2375,9 +2425,10 @@ class WcBetterShippingCalculatorForBrazil
         // E-mail e Telefone NÃO entram aqui: o WooCommerce já os exibe (o e-mail no
         // resumo do pedido / bloco de endereço e o telefone no bloco de endereço).
         // Repeti-los duplicaria. Só o CELULAR é exclusivo do plugin (o WC não mostra
-        // `_billing_cellphone`) — mostrado quando for DIFERENTE do telefone do WC,
-        // pelos METADADOS (independe do modo atual; cobre o pedido feito no modo
-        // "Somente Celular" cuja config mudou depois).
+        // `_billing_cellphone`). A linha vem de `phone_display_rows`, que segue o MODO
+        // ATUAL: em "Somente Celular" é a linha "Celular"; nos demais, só existe a
+        // chave `cellphone` quando o celular DIFERE do telefone do WC (aí mostramos;
+        // se for igual, o WC já exibiu o telefone e não repetimos).
         $phone_rows = $this->phone_display_rows($order, 'billing');
         if (isset($phone_rows['cellphone'])) {
             $display[] = $phone_rows['cellphone'];
