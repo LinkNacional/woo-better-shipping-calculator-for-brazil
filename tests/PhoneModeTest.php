@@ -632,6 +632,83 @@ class PhoneModeTest extends WP_UnitTestCase {
         $this->assertSame( '+5521988887777', $result['shipping_cellphone'] );
     }
 
+    // --- Shim: só espelha o telefone no celular quando for CELULAR -----------
+
+    public function test_shim_classic_clears_cellphone_for_landline(): void {
+        // O campo de telefone aceita fixo E celular. No shim, o celular é o
+        // espelho do telefone; se o telefone for FIXO, o celular não pode ser
+        // preenchido — o campo é LIMPO (só número de celular é permitido).
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $data = array(
+            'billing_phone'         => '(11) 3333-4444', // fixo
+            'billing_phone_country' => '+55',
+            'billing_cellphone'     => '(11) 3333-4444', // espelho do JS
+        );
+
+        $result = $this->plugin()->handle_cellphone_posted_data( $data );
+
+        $this->assertSame( '', $result['billing_cellphone'], 'Um telefone fixo não pode preencher o celular; o campo deve ficar limpo.' );
+    }
+
+    public function test_shim_classic_keeps_cellphone_for_mobile(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $data = array(
+            'billing_phone'         => '(83) 98888-8882', // celular
+            'billing_phone_country' => '+55',
+            'billing_cellphone'     => '(83) 98888-8882',
+        );
+
+        $result = $this->plugin()->handle_cellphone_posted_data( $data );
+
+        $this->assertSame( '+5583988888882', $result['billing_cellphone'] );
+    }
+
+    public function test_shim_blocks_clears_cellphone_for_landline(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $order = new \WC_Order();
+        // Valor antigo/espúrio na meta: deve ser LIMPO quando o telefone é fixo.
+        $order->update_meta_data( '_billing_cellphone', '1133334444' );
+
+        $this->callProcessCellphone( $order, array(
+            WcBetterShippingCalculatorForBrazil::PHONE_EXTENSION_NAMESPACE => array(
+                'billing_phone' => '1133334444', // fixo
+            ),
+            WcBetterShippingCalculatorForBrazil::CELLPHONE_EXTENSION_NAMESPACE => array(
+                'billing_cellphone' => '1133334444', // espelho do JS
+            ),
+        ) );
+
+        $this->assertSame( '1133334444', preg_replace( '/\D/', '', $order->get_billing_phone() ) );
+        $this->assertSame( '', $order->get_meta( '_billing_cellphone' ), 'Fixo não deve preencher o celular (e limpa um valor antigo).' );
+    }
+
+    public function test_shim_blocks_keeps_cellphone_for_mobile(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $order = new \WC_Order();
+        $this->callProcessCellphone( $order, array(
+            WcBetterShippingCalculatorForBrazil::PHONE_EXTENSION_NAMESPACE => array(
+                'billing_phone' => '83988888882', // celular
+            ),
+            WcBetterShippingCalculatorForBrazil::CELLPHONE_EXTENSION_NAMESPACE => array(
+                'billing_cellphone' => '83988888882',
+            ),
+        ) );
+
+        $this->assertSame( '83988888882', preg_replace( '/\D/', '', $order->get_meta( '_billing_cellphone' ) ) );
+    }
+
     // --- Blocks: campo "Celular" injetado via JS (modo Somente Celular) ------
 
     // --- Blocks: telefone/celular gerados via JS (por modo) ------------------
@@ -1208,6 +1285,92 @@ class PhoneModeTest extends WP_UnitTestCase {
         $this->assertSame( '+5583988888882', $order->get_shipping_phone() );
     }
 
+    // --- Shim: editar endereço (minha conta) e perfil -------------------------
+
+    public function test_shim_edit_address_clears_cellphone_for_landline(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $user_id = self::factory()->user->create();
+        update_user_meta( $user_id, 'billing_country', 'BR' );
+
+        $backup = $_POST;
+        $_POST = array(
+            'billing_phone'         => '(11) 3333-4444', // fixo
+            'billing_phone_country' => '+55',
+        );
+
+        $this->plugin()->save_edit_address_custom_fields( $user_id, 'billing' );
+
+        $_POST = $backup;
+
+        $this->assertSame( '', get_user_meta( $user_id, 'billing_cellphone', true ), 'Fixo não deve preencher o celular no editar-endereço.' );
+    }
+
+    public function test_shim_edit_address_keeps_cellphone_for_mobile(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $user_id = self::factory()->user->create();
+        update_user_meta( $user_id, 'billing_country', 'BR' );
+
+        $backup = $_POST;
+        $_POST = array(
+            'billing_phone'         => '(83) 98888-8882', // celular
+            'billing_phone_country' => '+55',
+        );
+
+        $this->plugin()->save_edit_address_custom_fields( $user_id, 'billing' );
+
+        $_POST = $backup;
+
+        $this->assertSame( '+5583988888882', get_user_meta( $user_id, 'billing_cellphone', true ) );
+    }
+
+    public function test_shim_profile_clears_cellphone_for_landline(): void {
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $user_id = self::factory()->user->create();
+
+        $backup = $_POST;
+        $_POST = array(
+            'billing_phone'     => '(11) 3333-4444', // fixo
+            'billing_cellphone' => '(11) 3333-4444', // espelho
+        );
+
+        $this->plugin()->save_customer_meta_fields_extra( $user_id );
+
+        $_POST = $backup;
+
+        $this->assertSame( '', get_user_meta( $user_id, 'billing_cellphone', true ), 'No perfil, um fixo não deve preencher o celular.' );
+    }
+
+    public function test_shim_profile_keeps_cellphone_for_mobile(): void {
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $user_id = self::factory()->user->create();
+
+        $backup = $_POST;
+        $_POST = array(
+            'billing_phone'     => '(83) 98888-8882', // celular
+            'billing_cellphone' => '',
+        );
+
+        $this->plugin()->save_customer_meta_fields_extra( $user_id );
+
+        $_POST = $backup;
+
+        // O celular do perfil passa a espelhar o telefone (celular) no shim.
+        $this->assertSame( '+5583988888882', get_user_meta( $user_id, 'billing_cellphone', true ) );
+    }
 }
 
 // Stub do plugin "Brazilian Market on WooCommerce" (o plugin real não é carregado

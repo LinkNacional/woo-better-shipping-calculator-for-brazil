@@ -3091,6 +3091,52 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Indica se o telefone informado é um CELULAR (MOBILE).
+     *
+     * Usa o `phone_validation_error` (libphonenumber) com o tipo 'cellphone': só
+     * MOBILE/FIXED_LINE_OR_MOBILE passam. Um FIXO (ou número inválido) retorna
+     * false. Sem a lib instalada, `phone_validation_error` devolve null (não
+     * bloqueia) → considerado celular, o que mantém o comportamento tolerante.
+     *
+     * @param string $phone        Telefone (pode vir com/sem DDI/formatação).
+     * @param string $country_code Ex.: '+55'.
+     * @return bool
+     */
+    private function is_cellphone_number($phone, $country_code = '')
+    {
+        return null === $this->phone_validation_error($phone, $country_code, 'cellphone');
+    }
+
+    /**
+     * Espelha o TELEFONE na meta `*_cellphone` (shim "Celular Oculto").
+     *
+     * O modo "Celular e Fixo" com o "Campo de Celular" DESLIGADO gera um
+     * `*_cellphone` ESCONDIDO que ESPELHA o telefone (compatibilidade PagBank/
+     * Asaas/NFe). Como o campo de telefone aceita fixo E celular, é preciso uma
+     * verificação extra no envio: só espelha quando o número é de fato um CELULAR
+     * (MOBILE). Um FIXO não pode preencher o campo de celular — retorna '' para
+     * LIMPÁ-LO, permitindo apenas números de celular na meta.
+     *
+     * @param string $phone        Telefone de origem (pode vir com/sem DDI/formatação).
+     * @param string $country_code Ex.: '+55'.
+     * @return string E.164 (+DDInúmero) quando for celular; '' caso contrário.
+     */
+    private function mirror_phone_to_cellphone($phone, $country_code = '')
+    {
+        $phone = trim((string) $phone);
+        if ('' === $phone) {
+            return '';
+        }
+
+        $normalized = $this->format_complete_phone($phone, $country_code);
+        if ('' === $normalized || ! $this->is_cellphone_number($normalized, $country_code)) {
+            return '';
+        }
+
+        return $normalized;
+    }
+
+    /**
      * Valida o número de telefone no checkout clássico (shortcode).
      *
      * Aplica somente quando a opção "Validar Número de Telefone" está habilitada.
@@ -6426,6 +6472,19 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
+        // No shim ("Celular Oculto") o `*_cellphone` é o ESPELHO do telefone, mas o
+        // campo de telefone aceita fixo E celular: só grava o celular quando o
+        // número é de fato um CELULAR (MOBILE). Um fixo LIMPA o campo, permitindo
+        // apenas números de celular na meta (ver mirror_phone_to_cellphone).
+        if ('phone_and_cellphone' === $mode && $this->phone_mode_adds_cellphone_shim()) {
+            $values['billing_cellphone']  = $this->mirror_phone_to_cellphone($values['billing_phone']);
+            $values['shipping_cellphone'] = $this->mirror_phone_to_cellphone($values['shipping_phone']);
+            // Grava/limpa a meta JÁ aqui (o valor pode ser vazio quando o telefone
+            // é fixo). Sem isso, um valor antigo na meta não seria removido.
+            $order->update_meta_data('_billing_cellphone', $values['billing_cellphone']);
+            $order->update_meta_data('_shipping_cellphone', $values['shipping_cellphone']);
+        }
+
         // "Somente Celular": só o celular é salvo — o telefone do pedido fica VAZIO
         // (o recibo exibe o celular no lugar do telefone via format_order_*_phone).
         if ('cellphone_only' === $mode) {
@@ -6511,6 +6570,15 @@ class WcBetterShippingCalculatorForBrazil
                 // antigo ou o intl-tel-input do campo principal), o que deixaria o
                 // perfil/sessão divergente do pedido.
                 $value = $this->format_complete_phone(sanitize_text_field($data[$key]));
+
+                // No shim ("Celular Oculto") o `*_cellphone` é o ESPELHO do
+                // telefone: só faz sentido persistir quando o número é um CELULAR
+                // (o telefone pode ser fixo). Um fixo/lixo vira vazio, para a
+                // sessão/perfil não guardarem um "celular" que não é celular.
+                if ('cellphone' === substr($key, -9) && $this->phone_mode_adds_cellphone_shim() && ! $this->is_cellphone_number($value)) {
+                    $value = '';
+                }
+
                 WC()->session->set($key, $value);
                 // Sincroniza com o perfil do usuário (como os demais campos customizados).
                 if (is_user_logged_in()) {
@@ -6953,7 +7021,11 @@ class WcBetterShippingCalculatorForBrazil
 
         $country_code = isset( $data[ $type . '_phone_country' ] ) ? $data[ $type . '_phone_country' ] : '';
 
-        $mirrored = $this->format_complete_phone(
+        // Só espelha quando o telefone é de fato um CELULAR (MOBILE). Um FIXO não
+        // pode preencher o campo de celular — `mirror_phone_to_cellphone` devolve
+        // '' para LIMPÁ-LO (o campo aceita fixo E celular, então a verificação
+        // extra no envio é necessária).
+        $mirrored = $this->mirror_phone_to_cellphone(
             sanitize_text_field( wp_unslash( $data[ $phone_key ] ) ),
             sanitize_text_field( wp_unslash( (string) $country_code ) )
         );
@@ -6961,7 +7033,7 @@ class WcBetterShippingCalculatorForBrazil
         // Se outro plugin já preencheu um celular PRÓPRIO (número diferente do
         // telefone), respeita. Se o valor presente é só o espelho do próprio
         // telefone (ex.: o script do checkout clássico copiou o telefone), segue
-        // para gravá-lo na forma normalizada.
+        // para gravá-lo na forma normalizada (ou limpar, se não for celular).
         if ( ! empty( $data[ $cell_key ] ) ) {
             $existing_digits = preg_replace( '/\D/', '', (string) $data[ $cell_key ] );
             $phone_digits    = preg_replace( '/\D/', '', (string) $data[ $phone_key ] );
@@ -7567,6 +7639,24 @@ class WcBetterShippingCalculatorForBrazil
             update_user_meta($user_id, $key, '' !== $normalized ? $normalized : $raw);
         }
 
+        // 2b. Shim ("Celular Oculto"): o `*_cellphone` ESPELHA o telefone, mas o
+        // campo de telefone aceita fixo E celular. Só grava o celular quando o
+        // telefone é de fato um CELULAR (MOBILE); um fixo LIMPA o campo, deixando
+        // apenas números de celular na meta (evita gateway/NFe receber fixo).
+        if ($this->phone_mode_adds_cellphone_shim()) {
+            foreach (array('billing', 'shipping') as $type) {
+                $phone_key = $type . '_phone';
+                if (! isset($_POST[$phone_key])) {
+                    continue;
+                }
+                $mirrored = $this->mirror_phone_to_cellphone(
+                    sanitize_text_field(wp_unslash($_POST[$phone_key])),
+                    '+55'
+                );
+                update_user_meta($user_id, $type . '_cellphone', $mirrored);
+            }
+        }
+
         // 3. IE/IM em maiúsculas (consistente com o checkout).
         foreach (array('billing_ie', 'billing_im') as $key) {
             if (isset($_POST[$key])) {
@@ -8136,13 +8226,14 @@ class WcBetterShippingCalculatorForBrazil
         if ($this->phone_mode_adds_cellphone_shim()) {
             if ($load_address === 'billing' && isset($_POST['billing_phone'])) {
                 $billing_cc = isset($_POST['billing_phone_country']) ? sanitize_text_field(wp_unslash($_POST['billing_phone_country'])) : '+55';
-                $cellphone = $this->format_complete_phone(sanitize_text_field(wp_unslash($_POST['billing_phone'])), $billing_cc);
+                // Só espelha se o telefone for de fato CELULAR; um fixo limpa o campo.
+                $cellphone = $this->mirror_phone_to_cellphone(sanitize_text_field(wp_unslash($_POST['billing_phone'])), $billing_cc);
                 update_user_meta($user_id, 'billing_cellphone', $cellphone);
             }
 
             if ($load_address === 'shipping' && isset($_POST['shipping_phone'])) {
                 $shipping_cc = isset($_POST['shipping_phone_country']) ? sanitize_text_field(wp_unslash($_POST['shipping_phone_country'])) : '+55';
-                $cellphone = $this->format_complete_phone(sanitize_text_field(wp_unslash($_POST['shipping_phone'])), $shipping_cc);
+                $cellphone = $this->mirror_phone_to_cellphone(sanitize_text_field(wp_unslash($_POST['shipping_phone'])), $shipping_cc);
                 update_user_meta($user_id, 'shipping_cellphone', $cellphone);
             }
         }
