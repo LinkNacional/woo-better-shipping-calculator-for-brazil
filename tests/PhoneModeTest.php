@@ -789,6 +789,47 @@ class PhoneModeTest extends WP_UnitTestCase {
         $this->assertArrayNotHasKey( 'cellphone', $plugin->ensure_admin_phone_fields_shipping( array() ) );
     }
 
+    public function test_admin_fields_drop_leftover_cellphone_when_not_storing(): void {
+        // Regressão: "Celular e Fixo" com "Campo de Celular" e "Celular Oculto"
+        // DESLIGADOS — o woo-better gerencia o telefone mas NÃO cria campo de
+        // celular. Um `cellphone` vindo de outro plugin (ex.: o "Brazilian Market
+        // on WooCommerce", que o adiciona SÓ na cobrança) deve ser DESCARTADO do
+        // admin, para cobrança e entrega ficarem consistentes (nenhuma com celular).
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'no' );
+
+        $plugin = $this->plugin();
+
+        $incoming_billing = array(
+            'phone'     => array( 'label' => 'Phone' ),
+            'cellphone' => array( 'label' => 'Celular', 'show' => false ),
+        );
+
+        $billing = $plugin->ensure_admin_phone_fields_billing( $incoming_billing );
+        $this->assertArrayHasKey( 'phone', $billing );
+        $this->assertArrayNotHasKey( 'cellphone', $billing, 'O celular residual (de outro plugin) deve ser removido.' );
+
+        $shipping = $plugin->ensure_admin_phone_fields_shipping( array( 'phone' => array( 'label' => 'Phone' ) ) );
+        $this->assertArrayHasKey( 'phone', $shipping );
+        $this->assertArrayNotHasKey( 'cellphone', $shipping );
+    }
+
+    public function test_admin_fields_keep_cellphone_when_shim_enabled(): void {
+        // Com o "Celular Oculto" LIGADO o woo-better GERA a meta de celular, então
+        // mantém (e relabela para "Celular (secundário)") o campo de celular.
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $billing = $this->plugin()->ensure_admin_phone_fields_billing( array(
+            'cellphone' => array( 'label' => 'Celular', 'show' => false ),
+        ) );
+
+        $this->assertArrayHasKey( 'cellphone', $billing );
+        $this->assertSame( 'Celular (secundário)', $billing['cellphone']['label'] );
+    }
+
     public function test_admin_fields_are_additive(): void {
         // Deve apenas ADICIONAR/ajustar o Telefone/Celular — nunca remover/reordenar
         // os demais campos que já vieram (convive com o Brazilian).

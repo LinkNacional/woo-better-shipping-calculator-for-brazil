@@ -1329,6 +1329,14 @@ class WcBetterShippingCalculatorForBrazil
             } else {
                 $fields['cellphone'] = $cellphone;
             }
+        } else {
+            // O woo-better gerencia o telefone mas NÃO cria campo de celular:
+            // remove qualquer `cellphone` que tenha vindo de outro plugin. O
+            // "Brazilian Market on WooCommerce", por exemplo, adiciona o
+            // `_billing_cellphone` SÓ na cobrança — sobrava um campo órfão "Celular"
+            // apenas ali, inconsistente com a entrega e sem relação com a config
+            // atual do woo-better (o telefone principal já cobre fixo/celular).
+            unset($fields['cellphone']);
         }
 
         return $fields;
