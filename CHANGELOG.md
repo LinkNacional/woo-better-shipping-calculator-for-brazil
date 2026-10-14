@@ -1,3 +1,14 @@
+# 5.1.0 - 13/10/26
+* Novo: novo fluxo dos campos de Telefone e Celular no checkout (clássico e blocos) — 4 modos de comportamento, DDI/máscara, validação e campo oculto de compatibilidade com PagBank/Asaas/NFe.
+* Novo: campo "Celular" na edição de endereço da conta, espelhando o telefone.
+* Novo: campo de Inscrição Municipal (IM) no checkout para Pessoa Jurídica.
+* Novo: dados do cliente (CPF/CNPJ, tipo de pessoa, IE/IM, nascimento, gênero, contato) na tela de pedido recebido via hook — funciona no tema clássico e no checkout em blocos.
+* Ajuste: o campo "Celular" aparece em cobrança e entrega no admin do pedido; a label do telefone segue o modo configurado.
+* Ajuste: a Inscrição Municipal (IM) agora é obrigatória para Pessoa Jurídica (removida a opção "Isento").
+* Correção: com "usar o mesmo endereço para cobrança" (blocos), telefone/celular acompanham o endereço.
+* Correção: ao trocar CPF por CNPJ, o documento não volta mais para o CPF antigo (blocos).
+* Correção: 404 do CSS de máscara de telefone na página de edição de endereço.
+
 # 5.0.4 - 05/10/26
 * Correção: loop infinito de redirecionamento (ERR_TOO_MANY_REDIRECTS) quando outro plugin LKN também abre sua tela de onboarding na mesma requisição.
 * Correção: o botão de fechar (✕) da tela de migração agora dispensa o aviso definitivamente.

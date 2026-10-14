@@ -738,11 +738,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Usar valores salvos se existirem (prioridade sobre dados iniciais)
         if (savedPersonTypeData.billing_document) {
-            // Se temos dados salvos, usar eles
+            // Se temos dados salvos, usar eles — INCLUSIVE o documento unificado.
+            // Sem reatribuir `initialDocument` aqui, a recriação dos campos (ex.:
+            // alternar "usar mesmo endereço para cobrança") reaplicava o valor
+            // ESTÁTICO vindo do PHP (`WooBetterPersonTypeData.billing_document`, em
+            // geral o CPF antigo do perfil) em vez do documento atual — e o evento de
+            // input disparado em seguida revertia um CNPJ recém-digitado para aquele
+            // CPF no backend.
             initialPersonType = savedPersonTypeData.billing_persontype;
             initialCpf = savedPersonTypeData.billing_cpf;
             initialCnpj = savedPersonTypeData.billing_cnpj;
             initialCompany = savedPersonTypeData.billing_company;
+            initialDocument = savedPersonTypeData.billing_document;
         } else {
             // Se não temos dados salvos, salvar os dados iniciais
             savedPersonTypeData.billing_persontype = initialPersonType;

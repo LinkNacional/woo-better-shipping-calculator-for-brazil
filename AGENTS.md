@@ -158,7 +158,8 @@ Solução: descrição ≤1 linha
 ```bash
 npm install && composer install   # setup
 npm run build                      # assets
-composer test                      # phpunit
+composer test                      # phpunit (tests/*Test.php)
+npm run test:js                    # testes JS (tests/js/*.test.js, node:test)
 composer psalm                     # análise estática
 ```
 

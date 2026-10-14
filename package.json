@@ -21,7 +21,8 @@
     "build:public": "webpack --config webpack.public.config.js",
     "build:admin": "webpack --config webpack.admin.config.js",
     "build:css": "webpack --config webpack.css.config.js",
-    "build": "npm run build:public && npm run build:admin && npm run build:css"
+    "build": "npm run build:public && npm run build:admin && npm run build:css",
+    "test:js": "node --test tests/js/*.test.js"
   },
   "homepage": "https://github.com/LinkNacional/woo-better-shipping-calculator-for-brazil",
   "devDependencies": {

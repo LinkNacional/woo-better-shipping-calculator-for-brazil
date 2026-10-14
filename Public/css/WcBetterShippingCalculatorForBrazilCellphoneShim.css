@@ -1,0 +1,22 @@
+/**
+ * Campo "Celular" ESCONDIDO (shim) — checkout clássico/shortcode e edição de
+ * endereço (minha-conta).
+ *
+ * No modo "Permitir Telefone Celular e Fixo" com o bloco "Campo de Celular"
+ * DESLIGADO, o plugin gera `billing_cellphone`/`shipping_cellphone` como um campo
+ * OCULTO (compatibilidade PagBank/Asaas/NFe). O input é `type="hidden"`, mas o
+ * WooCommerce ainda envolve o campo num `<p class="form-row">{…}</p>`, que herda o
+ * `padding-bottom` padrão do formulário e cria um espaço vazio indesejado.
+ *
+ * Aqui zeramos esse espaçamento apenas para o campo oculto. Miramos: (a) pelo id do
+ * wrapper (`<key>_cellphone_field`, que só é o hidden no modo shim) e (b) via
+ * `:has()` pelo próprio input hidden, marcado com `data-wc-better-cellphone-field`.
+ * A regra é enfileirada SÓ nesse modo, então não afeta o campo "Celular" visível.
+ */
+
+#billing_cellphone_field,
+#shipping_cellphone_field,
+.form-row:has(> .woocommerce-input-wrapper > input[type="hidden"][data-wc-better-cellphone-field="1"]) {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
