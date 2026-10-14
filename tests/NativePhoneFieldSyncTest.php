@@ -175,13 +175,16 @@ class NativePhoneFieldSyncTest extends WP_UnitTestCase {
 
         $user_id = self::factory()->user->create();
         wp_set_current_user( $user_id );
-        WC()->customer = new \WC_Customer( $user_id );
+        // O WC()->customer pode ser um "guest" no checkout clássico (id 0); o sync
+        // deve usar o customer_id do PEDIDO e mesmo assim gravar no user meta.
+        WC()->customer = new \WC_Customer( 0 );
 
         // Valor cru que o WC core salvou.
         update_user_meta( $user_id, 'billing_phone', '83 98888-8884' );
         update_user_meta( $user_id, 'shipping_phone', '83 98888-8884' );
 
         $order = new \WC_Order();
+        $order->set_customer_id( $user_id );
         $order->set_billing_phone( '+5583988888884' );
         $order->set_shipping_phone( '+5583988888884' );
 
@@ -209,5 +212,60 @@ class NativePhoneFieldSyncTest extends WP_UnitTestCase {
         $ref->invoke( $this->plugin(), $order );
 
         $this->assertSame( '83 98888-8884', get_user_meta( $user_id, 'billing_phone', true ), 'No modo Desabilitar não mexe no telefone do perfil.' );
+    }
+
+    public function test_sync_customer_phone_reflects_on_wc_customer_object(): void {
+        // Além do user meta, o objeto WC()->customer (mesmo usuário) deve refletir o
+        // valor normalizado — para a tela não ficar com o valor antigo logo após o checkout.
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+
+        $user_id = self::factory()->user->create();
+        wp_set_current_user( $user_id );
+        WC()->customer = new \WC_Customer( $user_id );
+
+        $order = new \WC_Order();
+        $order->set_customer_id( $user_id );
+        $order->set_billing_phone( '+5583988888884' );
+
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'sync_customer_phone_from_order' );
+        $ref->setAccessible( true );
+        $ref->invoke( $this->plugin(), $order );
+
+        $this->assertSame( '+5583988888884', WC()->customer->get_billing_phone() );
+    }
+
+    public function test_classic_checkout_customer_phone_is_normalized(): void {
+        // No clássico, o hook `woocommerce_checkout_update_customer` roda antes do
+        // save do core: o phone deve sair normalizado (E.164) já no objeto do customer.
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+
+        $user_id = self::factory()->user->create();
+        $customer = new \WC_Customer( $user_id );
+
+        $this->plugin()->sync_customer_phone_on_classic_checkout( $customer, array(
+            'billing_phone'         => '83 98888-8884',
+            'billing_phone_country' => '+55',
+            'shipping_phone'        => '83 98888-8884',
+            'shipping_phone_country' => '+55',
+        ) );
+
+        $this->assertSame( '+5583988888884', $customer->get_billing_phone() );
+        $this->assertSame( '+5583988888884', $customer->get_shipping_phone() );
+    }
+
+    public function test_classic_checkout_customer_phone_untouched_in_disabled(): void {
+        update_option( 'woo_better_calc_phone_mode', 'disabled' );
+
+        $user_id = self::factory()->user->create();
+        $customer = new \WC_Customer( $user_id );
+        $customer->set_billing_phone( '83 98888-8884' );
+
+        $this->plugin()->sync_customer_phone_on_classic_checkout( $customer, array(
+            'billing_phone'         => '83 98888-8884',
+            'billing_phone_country' => '+55',
+        ) );
+
+        $this->assertSame( '83 98888-8884', $customer->get_billing_phone() );
     }
 }
