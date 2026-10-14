@@ -1305,6 +1305,32 @@ class PhoneModeTest extends WP_UnitTestCase {
         return $rows;
     }
 
+    public function test_display_cellphone_ddi_only_when_principal_or_shim(): void {
+        // O "Campo de Celular" VISÍVEL (separado) NÃO tem DDI → a exibição (admin/
+        // recibo) mostra só os dígitos. Já o espelho OCULTO (shim) e o modo "Somente
+        // Celular" exibem o celular em E.164 (+55).
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+
+        // Visível: sem DDI.
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'no' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '+5583988888884' );
+        $order->update_meta_data( '_billing_cellphone', '83988888881' );
+        $order->update_meta_data( '_billing_phone_country_code', '+55' );
+
+        $this->assertSame( '83988888881', $this->billingPhoneLabels( $order )['Celular'] );
+
+        // Shim: com DDI.
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+        $order->update_meta_data( '_billing_cellphone', '+5583988888881' );
+
+        $this->assertSame( '+5583988888881', $this->billingPhoneLabels( $order )['Celular'] );
+    }
+
     public function test_customer_block_cellphone_only_shows_celular_for_old_both_order(): void {
         // Regressão: pedido feito em "Celular e Fixo" (gravou telefone E celular, mesmo
         // número); a config agora é "Somente Celular". A label deve seguir o MODO →
@@ -1388,10 +1414,12 @@ class PhoneModeTest extends WP_UnitTestCase {
 
     // --- DDI (E.164) no pedido do checkout em blocos -------------------------
 
-    public function test_normalize_order_phone_prepends_ddi_to_phone_and_cellphone(): void {
-        // Regressão: o telefone e o celular do pedido devem ficar em E.164
-        // (+DDInúmero). O celular (meta `_<type>_cellphone`, lido por NFe/Brazilian)
-        // também precisa do DDI — antes ficava sem o "+55" no checkout em blocos.
+    public function test_normalize_order_phone_prepends_ddi_to_phone_but_not_visible_cellphone(): void {
+        // O TELEFONE do pedido fica em E.164 (+DDInúmero). O "Campo de Celular"
+        // VISÍVEL (separado) é um campo simples, SEM DDI → o `_*_cellphone` fica só
+        // com os dígitos.
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
         update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
 
         $order = new \WC_Order();
@@ -1403,6 +1431,24 @@ class PhoneModeTest extends WP_UnitTestCase {
         $ref->invoke( $this->plugin(), $order, 'billing', '+55' );
 
         $this->assertSame( '+5583988888882', $order->get_billing_phone() );
+        $this->assertSame( '83988888882', $order->get_meta( '_billing_cellphone' ), 'O celular VISÍVEL não recebe o DDI.' );
+    }
+
+    public function test_normalize_order_phone_prepends_ddi_to_shim_cellphone(): void {
+        // No SHIM (espelho oculto) o celular herda o DDI do bloco principal.
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '83988888882' );
+        $order->update_meta_data( '_billing_cellphone', '83988888882' );
+
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'normalize_order_phone' );
+        $ref->setAccessible( true );
+        $ref->invoke( $this->plugin(), $order, 'billing', '+55' );
+
         $this->assertSame( '+5583988888882', $order->get_meta( '_billing_cellphone' ) );
     }
 

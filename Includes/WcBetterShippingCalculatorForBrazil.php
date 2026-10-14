@@ -1708,6 +1708,11 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         $country_code = $order->get_meta("_{$type}_phone_country_code");
+        // O CELULAR só recebe o DDI na EXIBIÇÃO quando é o campo PRINCIPAL ("Somente
+        // Celular") ou o espelho OCULTO (shim). O "Campo de Celular" VISÍVEL é um
+        // campo básico — aparece só com os dígitos (sem `+55`). Espelha a regra de
+        // `normalize_order_phone`.
+        $cell_country_code = $this->cellphone_meta_uses_ddi() ? $country_code : '';
         // Usa os getters (não `get_meta('_*_phone')`, que é internal meta). No
         // order-received o getter pode já refletir o celular no lugar do telefone
         // (fallback de exibição) — o que é o MESMO valor que o WC exibe no endereço.
@@ -1740,7 +1745,7 @@ class WcBetterShippingCalculatorForBrazil
                 $key = ('' !== $phone_digits && $cell_digits === $phone_digits) ? 'phone' : 'cellphone';
                 $rows[$key] = array(
                     'label'   => $label_cell,
-                    'value'   => $this->format_complete_phone($cellphone, $country_code),
+                    'value'   => $this->format_complete_phone($cellphone, $cell_country_code),
                     'is_link' => true,
                 );
             } elseif ('' !== $phone_digits) {
@@ -1764,7 +1769,7 @@ class WcBetterShippingCalculatorForBrazil
             } elseif ('' !== $cell_digits) {
                 $rows['cellphone'] = array(
                     'label'   => $label_cell,
-                    'value'   => $this->format_complete_phone($cellphone, $country_code),
+                    'value'   => $this->format_complete_phone($cellphone, $cell_country_code),
                     'is_link' => true,
                 );
             }
@@ -1778,7 +1783,7 @@ class WcBetterShippingCalculatorForBrazil
         if ('' === $phone_digits) {
             $rows['cellphone'] = array(
                 'label'   => $label_cell,
-                'value'   => $this->format_complete_phone($cellphone, $country_code),
+                'value'   => $this->format_complete_phone($cellphone, $cell_country_code),
                 'is_link' => true,
             );
             return $rows;
@@ -1812,7 +1817,7 @@ class WcBetterShippingCalculatorForBrazil
         );
         $rows['cellphone'] = array(
             'label'   => $label_cell,
-            'value'   => $this->format_complete_phone($cellphone, $country_code),
+            'value'   => $this->format_complete_phone($cellphone, $cell_country_code),
             'is_link' => true,
         );
 
@@ -2196,9 +2201,12 @@ class WcBetterShippingCalculatorForBrazil
         // normalizado sempre que o plugin manipula o telefone/celular (máscara ativa
         // OU armazena a meta — inclusive no modo "Desabilitar" + "Campo de Celular"),
         // para o valor bater entre clássico e blocos (NFe/Brazilian leem essa meta).
+        // O DDI só entra quando o celular é o campo PRINCIPAL (Somente Celular) ou o
+        // espelho OCULTO (shim); no "Campo de Celular" VISÍVEL ele fica SEM o `+55`.
         $cellphone = (string) $order->get_meta("_{$type}_cellphone");
         if ('' !== trim($cellphone)) {
-            $normalized_cellphone = $this->format_complete_phone($cellphone, $country_code);
+            $cellphone_cc = $this->cellphone_meta_uses_ddi() ? $country_code : '';
+            $normalized_cellphone = $this->format_complete_phone($cellphone, $cellphone_cc);
             if ('' !== $normalized_cellphone) {
                 $order->update_meta_data("_{$type}_cellphone", $normalized_cellphone);
             }
@@ -3680,6 +3688,20 @@ class WcBetterShippingCalculatorForBrazil
     private function is_phone_mask_active() {
         return $this->phone_mode_hides_native_option()
             && get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no')) === 'yes';
+    }
+
+    /**
+     * Indica se o valor do CELULAR (meta `_*_cellphone`) deve receber o DDI (E.164).
+     *
+     * Só quando o celular É o campo PRINCIPAL ("Somente Celular") ou é o ESPELHO
+     * OCULTO do telefone (shim) — que herda o DDI do bloco principal. O "Campo de
+     * Celular" VISÍVEL (separado, `enable_cellphone_field`) é um campo SIMPLES, sem
+     * máscara/DDI: o valor fica só com os dígitos, sem o `+55`.
+     *
+     * @return bool
+     */
+    private function cellphone_meta_uses_ddi() {
+        return 'cellphone_only' === $this->get_phone_mode() || $this->phone_mode_adds_cellphone_shim();
     }
 
     /**
@@ -7768,7 +7790,10 @@ class WcBetterShippingCalculatorForBrazil
         // 2a. Celular (meta `billing_cellphone`/`shipping_cellphone`) -> E.164.
         // É campo do PRÓPRIO plugin: normalizado sempre que o plugin ARMAZENA a meta
         // (inclusive no modo "Desabilitar" + "Campo de Celular", onde o campo é separado).
+        // O DDI só entra quando o celular é o principal (Somente Celular) ou o espelho
+        // oculto (shim); no "Campo de Celular" VISÍVEL fica sem o `+55`.
         if ($this->phone_mode_stores_cellphone()) {
+            $cellphone_cc = $this->cellphone_meta_uses_ddi() ? '+55' : '';
             foreach (array('billing_cellphone', 'shipping_cellphone') as $key) {
                 if (! isset($_POST[$key])) {
                     continue;
@@ -7780,7 +7805,7 @@ class WcBetterShippingCalculatorForBrazil
                     continue;
                 }
 
-                $normalized = $this->format_complete_phone($raw, '+55');
+                $normalized = $this->format_complete_phone($raw, $cellphone_cc);
                 update_user_meta($user_id, $key, '' !== $normalized ? $normalized : $raw);
             }
         }
@@ -7867,19 +7892,57 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
         
-        // Adicionar campo de telefone (só quando o plugin gerencia o telefone; no modo
-        // "Desabilitar" o campo nativo do edit-address fica intacto).
-        if ($phone_required === 'yes' && $this->phone_mode_hides_native_option()) {
-            $priority = ($phone_highlight === 'yes') ? 2 : 90;
-            $fields['billing_phone'] = array(
-                'label'       => __('Celular/Telefone', 'woo-better-shipping-calculator-for-brazil'),
-                'placeholder' => __('(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => true,
-                'class'       => array('form-row-wide'),
-                'priority'    => $priority,
-                'type'        => 'tel',
-                'validate'    => array('phone')
+        // Contato (telefone/celular) — espelha o checkout clássico.
+        $phone_priority = ($phone_highlight === 'yes') ? 2 : 90;
+
+        if ( 'cellphone_only' === $this->get_phone_mode() ) {
+            // "Somente Celular": o "Celular" é o campo principal (substitui o telefone).
+            unset( $fields['billing_phone'] );
+        }
+
+        // "Celular" VISÍVEL: campo principal no modo "Somente Celular"; nos demais
+        // (inclusive "Desabilitar" + "Campo de Celular") é um campo SEPARADO e básico
+        // (sem máscara/DDI), posicionado no FIM do formulário.
+        if ( $this->phone_mode_adds_cellphone_field() ) {
+            $is_main_cellphone = ( 'cellphone_only' === $this->get_phone_mode() );
+            $fields['billing_cellphone'] = array(
+                'label'             => __( 'Celular', 'woo-better-shipping-calculator-for-brazil' ),
+                'placeholder'       => __( '(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil' ),
+                'required'          => $is_main_cellphone ? ( $phone_required === 'yes' ) : $this->is_cellphone_required(),
+                'class'             => array( 'form-row-wide' ),
+                'priority'          => $is_main_cellphone ? $phone_priority : 200,
+                'type'              => 'tel',
+                'custom_attributes' => array( self::CELLPHONE_FIELD_ATTR => '1' ),
             );
+        }
+
+        // Telefone nativo (principal) — quando o plugin GERENCIA o telefone e ele NÃO
+        // foi substituído pelo "Celular" (modo "Somente Celular"). Espelha o checkout:
+        // aparece mesmo quando NÃO é obrigatório (a obrigatoriedade segue "Telefone
+        // (Contato) Obrigatório").
+        if ( $this->phone_mode_hides_native_option() && 'cellphone_only' !== $this->get_phone_mode() ) {
+            if (! isset($fields['billing_phone_country'])) {
+                $fields['billing_phone_country'] = array(
+                    'type'     => 'hidden',
+                    'default'  => '+55',
+                    'required' => false,
+                );
+            }
+
+            if (isset($fields['billing_phone'])) {
+                $fields['billing_phone']['label']    = $this->get_phone_field_label();
+                $fields['billing_phone']['required'] = ($phone_required === 'yes');
+            } else {
+                $fields['billing_phone'] = array(
+                    'label'       => $this->get_phone_field_label(),
+                    'placeholder' => __('(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil'),
+                    'required'    => ($phone_required === 'yes'),
+                    'class'       => array('form-row-wide'),
+                    'priority'    => $phone_priority,
+                    'type'        => 'tel',
+                    'validate'    => array('phone')
+                );
+            }
         }
         
         // Adicionar campos de tipo de pessoa
@@ -8174,19 +8237,51 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
         
-        // Adicionar campo de telefone (só quando o plugin gerencia o telefone; no modo
-        // "Desabilitar" o campo nativo do edit-address fica intacto).
-        if ($phone_required === 'yes' && $this->phone_mode_hides_native_option()) {
-            $priority = ($phone_highlight === 'yes') ? 2 : 90;
-            $fields['shipping_phone'] = array(
-                'label'       => __('Celular/Telefone', 'woo-better-shipping-calculator-for-brazil'),
-                'placeholder' => __('(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => true,
-                'class'       => array('form-row-wide'),
-                'priority'    => $priority,
-                'type'        => 'tel',
-                'validate'    => array('phone')
+        // Contato (telefone/celular) — espelha o checkout clássico.
+        $phone_priority = ($phone_highlight === 'yes') ? 2 : 90;
+
+        if ( 'cellphone_only' === $this->get_phone_mode() ) {
+            unset( $fields['shipping_phone'] );
+        }
+
+        if ( $this->phone_mode_adds_cellphone_field() ) {
+            $is_main_cellphone = ( 'cellphone_only' === $this->get_phone_mode() );
+            $fields['shipping_cellphone'] = array(
+                'label'             => __( 'Celular', 'woo-better-shipping-calculator-for-brazil' ),
+                'placeholder'       => __( '(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil' ),
+                'required'          => $is_main_cellphone ? ( $phone_required === 'yes' ) : $this->is_cellphone_required(),
+                'class'             => array( 'form-row-wide' ),
+                'priority'          => $is_main_cellphone ? $phone_priority : 200,
+                'type'              => 'tel',
+                'custom_attributes' => array( self::CELLPHONE_FIELD_ATTR => '1' ),
             );
+        }
+
+        // Telefone nativo (principal) — quando o plugin gerencia e não foi substituído
+        // pelo "Celular" (modo "Somente Celular"). Aparece mesmo quando opcional.
+        if ($this->phone_mode_hides_native_option() && 'cellphone_only' !== $this->get_phone_mode()) {
+            if (! isset($fields['shipping_phone_country'])) {
+                $fields['shipping_phone_country'] = array(
+                    'type'     => 'hidden',
+                    'default'  => '+55',
+                    'required' => false,
+                );
+            }
+
+            if (isset($fields['shipping_phone'])) {
+                $fields['shipping_phone']['label']    = $this->get_phone_field_label();
+                $fields['shipping_phone']['required'] = ($phone_required === 'yes');
+            } else {
+                $fields['shipping_phone'] = array(
+                    'label'       => $this->get_phone_field_label(),
+                    'placeholder' => __('(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil'),
+                    'required'    => ($phone_required === 'yes'),
+                    'class'       => array('form-row-wide'),
+                    'priority'    => $phone_priority,
+                    'type'        => 'tel',
+                    'validate'    => array('phone')
+                );
+            }
         }
         
         // Campo de bairro

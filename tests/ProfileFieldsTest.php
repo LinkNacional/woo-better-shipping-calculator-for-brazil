@@ -207,7 +207,7 @@ class ProfileFieldsTest extends WP_UnitTestCase {
         $_POST = $backup;
 
         $this->assertSame( '+5583988888882', get_user_meta( $user_id, 'billing_phone', true ), 'Telefone deve ser E.164 (+55 + dígitos), sem máscara.' );
-        $this->assertSame( '+5583988888885', get_user_meta( $user_id, 'billing_cellphone', true ) );
+        $this->assertSame( '83988888885', get_user_meta( $user_id, 'billing_cellphone', true ), 'O "Campo de Celular" VISÍVEL é simples → sem DDI (só dígitos).' );
         $this->assertSame( '+5583988888882', get_user_meta( $user_id, 'shipping_phone', true ) );
         $this->assertSame( '1', get_user_meta( $user_id, 'billing_persontype', true ), 'CPF deve definir persontype=1.' );
         $this->assertSame( '493.147.600-73', get_user_meta( $user_id, 'billing_cpf', true ) );

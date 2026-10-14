@@ -174,4 +174,86 @@ class EditAddressBrazilianPrecedenceTest extends WP_UnitTestCase {
 
         $_POST = $backup;
     }
+
+    public function test_native_phone_is_readded_on_edit_address_when_managed(): void {
+        // O telefone nativo fica OCULTO quando o plugin gerencia o telefone
+        // (woocommerce_checkout_phone_field=hidden). O woo-better deve RE-adicionar
+        // o campo no edit-address mesmo quando NÃO é obrigatório — senão o campo de
+        // contato some da tela (o que acontecia: só era adicionado se obrigatório).
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_contact_required', 'no' );
+
+        $fields = apply_filters( 'woocommerce_billing_fields', array(
+            'billing_country'    => array( 'value' => 'BR' ),
+            'billing_first_name' => array( 'label' => 'Nome' ),
+        ) );
+
+        $this->assertArrayHasKey( 'billing_phone', $fields, 'O telefone deve ser re-adicionado no edit-address quando gerenciado.' );
+        $this->assertFalse( (bool) ( $fields['billing_phone']['required'] ?? false ), 'Contato não obrigatório → telefone opcional.' );
+        $this->assertArrayHasKey( 'billing_phone_country', $fields, 'O hidden do DDI acompanha o telefone.' );
+
+        // Entrega também.
+        update_option( 'woo_better_calc_contact_required', 'no' );
+        $ship = apply_filters( 'woocommerce_shipping_fields', array(
+            'shipping_country'    => array( 'value' => 'BR' ),
+            'shipping_first_name' => array( 'label' => 'Nome' ),
+        ) );
+        $this->assertArrayHasKey( 'shipping_phone', $ship );
+    }
+
+    public function test_native_phone_not_readded_in_disabled_mode(): void {
+        // No modo "Desabilitar" o plugin não gerencia o telefone → não adiciona.
+        update_option( 'woo_better_calc_phone_mode', 'disabled' );
+
+        $fields = apply_filters( 'woocommerce_billing_fields', array(
+            'billing_country' => array( 'value' => 'BR' ),
+        ) );
+
+        $this->assertArrayNotHasKey( 'billing_phone', $fields, 'No modo Desabilitar o woo-better não adiciona telefone.' );
+    }
+
+    public function test_visible_cellphone_added_at_the_end_on_edit_address(): void {
+        // "Campo de Celular" VISÍVEL (separado): deve aparecer no edit-address, no FIM
+        // (prioridade 200), como campo básico — junto do telefone principal.
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'no' );
+
+        foreach ( array( 'billing', 'shipping' ) as $type ) {
+            $fields = apply_filters( "woocommerce_{$type}_fields", array(
+                "{$type}_country" => array( 'value' => 'BR' ),
+            ) );
+            $this->assertArrayHasKey( "{$type}_phone", $fields, "O telefone principal deve estar presente ($type)." );
+            $this->assertArrayHasKey( "{$type}_cellphone", $fields, "O celular VISÍVEL deve aparecer no edit-address ($type)." );
+            $this->assertSame( 200, $fields["{$type}_cellphone"]['priority'], "O celular deve ficar no FIM do formulário ($type)." );
+            $this->assertSame( 'tel', $fields["{$type}_cellphone"]['type'] );
+        }
+    }
+
+    public function test_cellphone_only_on_edit_address_replaces_phone(): void {
+        // "Somente Celular": o celular é o campo principal; o telefone não aparece.
+        update_option( 'woo_better_calc_phone_mode', 'cellphone_only' );
+
+        $fields = apply_filters( 'woocommerce_billing_fields', array(
+            'billing_country' => array( 'value' => 'BR' ),
+        ) );
+
+        $this->assertArrayNotHasKey( 'billing_phone', $fields, 'No modo Somente Celular o telefone não aparece.' );
+        $this->assertArrayHasKey( 'billing_cellphone', $fields, 'O celular assume o lugar do telefone.' );
+        $this->assertSame( 'Celular', $fields['billing_cellphone']['label'] );
+    }
+
+    public function test_disabled_with_visible_cellphone_is_additive_on_edit_address(): void {
+        // "Desabilitar" + "Campo de Celular": o plugin não mexe no telefone nativo, mas
+        // adiciona o "Celular" separado (aditivo), como no checkout.
+        update_option( 'woo_better_calc_phone_mode', 'disabled' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+
+        $fields = apply_filters( 'woocommerce_billing_fields', array(
+            'billing_country' => array( 'value' => 'BR' ),
+        ) );
+
+        $this->assertArrayHasKey( 'billing_cellphone', $fields, 'O celular separado deve aparecer no modo Desabilitar + Campo de Celular.' );
+        $this->assertSame( 200, $fields['billing_cellphone']['priority'] );
+    }
 }
