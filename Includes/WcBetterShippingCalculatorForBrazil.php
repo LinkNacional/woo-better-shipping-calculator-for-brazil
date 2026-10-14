@@ -257,18 +257,28 @@ class WcBetterShippingCalculatorForBrazil
         // ATENÇÃO ao nome dos hooks dinâmicos do WP: são "add_option_{$option}" e
         // "update_option_{$option}" (sem o "d" de "updated_option").
         //
-        // Visibilidade (hidden x visível) ← "Destaque do Campo Telefone".
+        // O woo-better é a ÚNICA fonte de verdade do telefone: enquanto o recurso
+        // está ativo, o campo nativo do WooCommerce
+        // (`woocommerce_checkout_phone_field`) é DESABILITADO (hidden), e a opção
+        // própria "Telefone (Contato) Obrigatório"
+        // (`woo_better_calc_contact_required`) é EXCLUSIVA — NÃO é sincronizada a
+        // partir do nativo (evita conflito/bug quando o toggle do editor de blocos
+        // muda). Ao DESABILITAR o recurso (modo "Desabilitar"), o campo nativo volta
+        // ao estado ORIGINAL guardado.
+        //
+        // Reavalia a visibilidade do nativo quando o modo de telefone (ou o
+        // "Destaque"/obrigatoriedade) muda.
         $this->loader->add_action('add_option_woo_better_calc_contact_field_position', $this, 'sync_phone_field', 10, 0);
         $this->loader->add_action('update_option_woo_better_calc_contact_field_position', $this, 'sync_phone_field', 10, 0);
-        // Obrigatoriedade (optional x required) ← "Telefone (Contato) Obrigatório".
-        $this->loader->add_action('update_option_woo_better_calc_contact_required', $this, 'sync_native_from_contact_required', 10, 0);
-        // Visibilidade do nativo também depende do novo modo de telefone (modos
-        // "Somente Celular" e "Desabilitar" ocultam o telefone nativo).
         $this->loader->add_action('add_option_woo_better_calc_phone_mode', $this, 'sync_phone_field', 10, 0);
         $this->loader->add_action('update_option_woo_better_calc_phone_mode', $this, 'sync_phone_field', 10, 0);
-        // Ida e volta a partir do editor do checkout em blocos (toggle/radio do telefone).
-        $this->loader->add_action('update_option_woocommerce_checkout_phone_field', $this, 'sync_contact_required_from_native', 10, 3);
-        // Migração para instalações existentes: cria a opção (default 'yes') se ainda não existir.
+        // Mantém o nativo SEMPRE desabilitado enquanto o recurso está ativo: se o
+        // toggle "Telefone" do editor de blocos tentar reativá-lo (muda a option),
+        // reaplicamos o `hidden`. NÃO sincroniza "Telefone (Contato) Obrigatório" —
+        // essa opção é EXCLUSIVA do plugin (desacoplada do nativo).
+        $this->loader->add_action('update_option_woocommerce_checkout_phone_field', $this, 'enforce_native_phone_hidden', 10, 3);
+        // Reafirma o estado do telefone nativo a cada requisição (hook init — vale
+        // para público E admin).
         $this->loader->add_action('init', $this, 'ensure_phone_field_option', 10, 0);
 
         // Hook para adicionar campos customizados na resposta AJAX de detalhes do cliente (admin)
@@ -2160,26 +2170,32 @@ class WcBetterShippingCalculatorForBrazil
      */
     private function normalize_order_phone($order, $type, $country_code)
     {
-        $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
-        if ($phone_mask_enabled !== 'yes') {
+        $mask_active       = $this->is_phone_mask_active();
+        $stores_cellphone  = $this->phone_mode_stores_cellphone();
+
+        if (! $mask_active && ! $stores_cellphone) {
             return;
         }
 
-        $phone = ($type === 'shipping') ? $order->get_shipping_phone() : $order->get_billing_phone();
-        if (! empty($phone)) {
-            $normalized = $this->format_complete_phone($phone, $country_code);
+        // Telefone NATIVO -> E.164 — só quando o plugin GERENCIA o telefone
+        // (máscara/DDI ativa; no modo "Desabilitar" não tocamos no nativo).
+        if ($mask_active) {
+            $phone = ($type === 'shipping') ? $order->get_shipping_phone() : $order->get_billing_phone();
+            if (! empty($phone)) {
+                $normalized = $this->format_complete_phone($phone, $country_code);
 
-            if ($type === 'shipping') {
-                $order->set_shipping_phone($normalized);
-            } else {
-                $order->set_billing_phone($normalized);
+                if ($type === 'shipping') {
+                    $order->set_shipping_phone($normalized);
+                } else {
+                    $order->set_billing_phone($normalized);
+                }
             }
         }
 
-        // Celular (meta `_<type>_cellphone`), quando houver: mesma normalização
-        // E.164 (+DDInúmero), para o valor salvo bater com o telefone (NFe/
-        // Brazilian leem essa meta direto). No modo "Somente Celular" o telefone
-        // fica vazio e o número vive só aqui — por isso é tratado à parte.
+        // Celular (meta `_<type>_cellphone`) — é campo do PRÓPRIO plugin, então é
+        // normalizado sempre que o plugin manipula o telefone/celular (máscara ativa
+        // OU armazena a meta — inclusive no modo "Desabilitar" + "Campo de Celular"),
+        // para o valor bater entre clássico e blocos (NFe/Brazilian leem essa meta).
         $cellphone = (string) $order->get_meta("_{$type}_cellphone");
         if ('' !== trim($cellphone)) {
             $normalized_cellphone = $this->format_complete_phone($cellphone, $country_code);
@@ -2211,7 +2227,10 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function format_order_billing_phone($phone, $order)
     {
-        $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
+        // No modo "Desabilitar" o plugin não mexe no telefone do pedido.
+        if (! $this->phone_mode_hides_native_option()) {
+            return $phone;
+        }
 
         // "Somente Celular": o telefone do pedido fica VAZIO (o número é o celular).
         // No recibo o celular aparece no lugar do telefone — ele "substitui" o telefone.
@@ -2219,7 +2238,7 @@ class WcBetterShippingCalculatorForBrazil
             $phone = $order->get_meta('_billing_cellphone');
         }
 
-        if ($phone_mask_enabled === 'yes' && !empty($phone)) {
+        if ($this->is_phone_mask_active() && !empty($phone)) {
             $country_code = $order->get_meta('_billing_phone_country_code');
             return $this->format_complete_phone($phone, $country_code);
         }
@@ -2236,14 +2255,17 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function format_order_shipping_phone($phone, $order)
     {
-        $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
+        // No modo "Desabilitar" o plugin não mexe no telefone do pedido.
+        if (! $this->phone_mode_hides_native_option()) {
+            return $phone;
+        }
 
         // "Somente Celular": idem billing — no recibo o celular substitui o telefone.
         if (empty($phone) && 'cellphone_only' === $this->get_phone_mode() && $this->is_order_receipt_context()) {
             $phone = $order->get_meta('_shipping_cellphone');
         }
 
-        if ($phone_mask_enabled === 'yes' && !empty($phone)) {
+        if ($this->is_phone_mask_active() && !empty($phone)) {
             $country_code = $order->get_meta('_shipping_phone_country_code');
             return $this->format_complete_phone($phone, $country_code);
         }
@@ -3196,10 +3218,15 @@ class WcBetterShippingCalculatorForBrazil
      * @return void
      */
     public function validate_phone_ddd_classic() {
-        $validate_enabled = get_option('woo_better_calc_validate_ddd', 'yes');
-        $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
+        // No modo "Desabilitar" o woo-better não gerencia o telefone: não valida o
+        // campo nativo (nem bloqueia o checkout).
+        if (! $this->phone_mode_hides_native_option()) {
+            return;
+        }
 
-        if ($validate_enabled !== 'yes' || $phone_mask_enabled !== 'yes') {
+        $validate_enabled = get_option('woo_better_calc_validate_ddd', 'yes');
+
+        if ($validate_enabled !== 'yes' || ! $this->is_phone_mask_active()) {
             return;
         }
 
@@ -3427,8 +3454,9 @@ class WcBetterShippingCalculatorForBrazil
         // Detecta se está usando o mesmo endereço para aplicar nos telefones
         $use_same_address = $this->detect_same_address_usage($order, $data);
         
-        // Lógica de sincronização de telefones considerando o checkbox de mesmo endereço
-        if ($use_same_address) {
+        // Lógica de sincronização de telefones considerando o checkbox de mesmo endereço.
+        // Só quando o woo-better gerencia o telefone (no modo "Desabilitar" não mexe).
+        if ($use_same_address && $this->phone_mode_hides_native_option()) {
             // Se usar mesmo endereço, prioriza o telefone de cobrança (billing)
             if (!empty($billing_phone)) {
                 $order->set_shipping_phone($billing_phone);
@@ -3586,12 +3614,14 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
-     * Garante a sincronização da visibilidade do telefone nativo com o
-     * "Destaque do Campo Telefone".
+     * Garante a sincronização da visibilidade do telefone nativo com o woo-better.
      *
-     * Executa no init (toda requisição): roda a sincronização uma vez por versão
-     * do plugin, para que o campo nativo seja ocultado/restaurado conforme o
-     * destaque atual sem o lojista precisar salvar qualquer configuração.
+     * Executa no init — em TODA requisição (público E admin, inclusive REST/cron de
+     * atualização). Roda o `sync_phone_field()` a cada requisição para REAFIRMAR o
+     * estado: enquanto o recurso está ativo, o nativo fica desabilitado; ao desabilitar,
+     * volta ao original. É idempotente (no-op quando já correto), então reafirmar toda
+     * hora é barato e cobre resets externos da option — garantindo que um visitante
+     * que só abre o checkout (sem nunca passar pelo admin) sempre veja o estado certo.
      */
     public function ensure_phone_field_option() {
         // Migração: remove flag obsoleta de versões anteriores da feature.
@@ -3601,12 +3631,12 @@ class WcBetterShippingCalculatorForBrazil
             delete_option('woo_better_calc_phone_field_managed');
         }
 
-        // Sincroniza automaticamente uma vez por versão do plugin. Assim, ao
-        // atualizar o plugin, o campo nativo é ocultado conforme a opção atual
-        // (default 'yes') sem depender de o lojista salvar as configurações.
-        $synced_version = get_option('woo_better_calc_phone_field_synced_version', '');
-        if ($synced_version !== $this->version) {
-            $this->sync_phone_field();
+        // Reafirma o estado a cada requisição (idempotente). Cobre: ativação/atualização
+        // do plugin, mudança de configuração e resets externos da option nativa.
+        $this->sync_phone_field();
+
+        // Marca a versão sincronizada (informativo/migração).
+        if (get_option('woo_better_calc_phone_field_synced_version', '') !== $this->version) {
             update_option('woo_better_calc_phone_field_synced_version', $this->version);
         }
     }
@@ -3621,12 +3651,35 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
-     * Verifica se a opção "Destaque do Campo Telefone" está ativa.
+     * Verifica se o "Destaque do Campo Telefone" está ativo E se aplica.
+     *
+     * O destaque só faz sentido quando o woo-better GERENCIA o telefone (cria o
+     * próprio campo) — ou seja, em qualquer modo exceto "Desabilitar". No modo
+     * "Desabilitar" não há campo próprio do plugin, então o destaque é IGNORADO
+     * (senão o plugin mexeria no campo nativo — reposicionando/ocultando — mesmo
+     * com o recurso desligado).
      *
      * @return bool
      */
     private function is_phone_highlight() {
-        return get_option('woo_better_calc_contact_field_position', 'no') === 'yes';
+        return $this->phone_mode_hides_native_option()
+            && get_option('woo_better_calc_contact_field_position', 'no') === 'yes';
+    }
+
+    /**
+     * Indica se a máscara/DDI do telefone está ativa E faz sentido no modo atual.
+     *
+     * A opção "Aplicar Máscara + Captura de DDI" é dependente do "Comportamento do
+     * Campo de Telefone" (o admin a desabilita no modo "Desabilitar"). Como o valor
+     * gravado não é resetado ao desabilitar, o backend precisa ignorá-la nesse modo —
+     * senão o plugin continuaria formatando/exigindo o telefone nativo (checkout
+     * clássico, edit-address e normalização/format do pedido).
+     *
+     * @return bool
+     */
+    private function is_phone_mask_active() {
+        return $this->phone_mode_hides_native_option()
+            && get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no')) === 'yes';
     }
 
     /**
@@ -3689,27 +3742,29 @@ class WcBetterShippingCalculatorForBrazil
      * Indica se o modo atual oculta o telefone nativo no ÂMBITO DA OPÇÃO nativa
      * (woocommerce_checkout_phone_field = hidden), afetando clássico E blocos.
      *
-     * Os modos "Desabilitar" e "Somente Celular" fazem isso: no bloco o telefone nativo
-     * precisa ficar oculto (a option é o mecanismo canônico do checkout em blocos) e, no
-     * clássico, ele também é removido do array de campos.
+     * Só os modos GERENCIADOS (tudo exceto "Desabilitar") ocultam o nativo — o
+     * plugin assume o telefone com o campo próprio. No modo "Desabilitar" NÃO
+     * mexemos: o sync restaura o estado original guardado em
+     * woo_better_calc_phone_field_previous.
      *
      * @return bool
      */
     private function phone_mode_hides_native_option() {
-        // O plugin assume o controle do telefone nos modos gerenciados (tudo exceto
-        // "Desabilitar"): o campo nativo do WooCommerce fica oculto. No modo
-        // "Desabilitar" NÃO mexemos — o sync restaura o estado original guardado em
-        // woo_better_calc_phone_field_previous.
         return 'disabled' !== $this->get_phone_mode();
     }
 
     /**
-     * Indica se o modo atual oculta o campo nativo de telefone no checkout clássico.
+     * Indica se o modo atual SUBSTITUI o campo nativo de telefone pelo campo de
+     * celular do plugin (o nativo é removido e o telefone do pedido fica VAZIO).
+     *
+     * Só o modo "Somente Celular" faz isso (o celular é o campo principal).
+     * Nos demais — inclusive "Desabilitar" com o "Campo de Celular" ligado — o
+     * telefone nativo é MANTIDO e o celular é um campo SEPARADO (aditivo).
      *
      * @return bool
      */
     private function phone_mode_hides_native_field() {
-        return in_array($this->get_phone_mode(), array('disabled', 'cellphone_only'), true);
+        return 'cellphone_only' === $this->get_phone_mode();
     }
 
     /**
@@ -3779,20 +3834,17 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
-     * Sincroniza a VISIBILIDADE do campo de telefone nativo com o "Destaque do
-     * Campo Telefone" (woo_better_calc_contact_field_position).
+     * Sincroniza a VISIBILIDADE do campo de telefone nativo com o woo-better.
      *
      * O nativo é a MESMA opção (woocommerce_checkout_phone_field) usada pelo toggle
-     * "Telefone" do editor de checkout em blocos. Mapeamento:
+     * "Telefone" do editor de checkout em blocos. Enquanto o woo-better gerencia o
+     * telefone (qualquer modo exceto "Desabilitar"), o nativo fica DESABILITADO
+     * (hidden): o plugin assume o telefone com o campo próprio (o "Destaque do Campo
+     * Telefone" só REPOSICIONA esse campo, não decide a visibilidade do nativo).
      *
-     * - destaque ligado   → campo próprio (destaque): oculta o nativo.
-     * - destaque desligado → telefone nativo visível (required/optional).
-     *
-     * Ao ocultar, guarda o último estado visível em
-     * woo_better_calc_phone_field_previous (evidência de que fomos nós que ocultamos).
-     * Ao desligar o destaque, restaura o estado visível respeitando a opção de
-     * obrigatoriedade; se o usuário ocultou o nativo por conta própria e o plugin
-     * nunca o ocultou, não mexe.
+     * Ao DESABILITAR o recurso, o nativo volta ao estado ORIGINAL guardado em
+     * woo_better_calc_phone_field_previous. Se o lojista ocultou o nativo por conta
+     * própria e o plugin nunca o ocultou, não mexemos.
      */
     public function sync_phone_field() {
         // Evita reentrância: update_option() do nativo re-dispara os hooks.
@@ -3803,105 +3855,82 @@ class WcBetterShippingCalculatorForBrazil
 
         try {
             $native_phone = get_option('woocommerce_checkout_phone_field', 'optional');
-            $owns_hidden = get_option('woo_better_calc_phone_field_previous', false) !== false;
-            $target_visible = $this->is_phone_required() ? 'required' : 'optional';
+            $previous = get_option('woo_better_calc_phone_field_previous', false);
+            $owns_hidden = ($previous !== false);
 
-            // 'yes' (Destaque do Campo Telefone) usa o campo próprio e oculta o
-            // nativo; os modos "Somente Celular"/"Desabilitar" também ocultam; caso
-            // contrário o telefone é o campo nativo do WooCommerce.
-            $should_hide = $this->is_phone_highlight() || $this->phone_mode_hides_native_option();
+            // O woo-better só oculta o nativo quando ELE injeta o campo próprio do
+            // telefone — ou seja, em qualquer modo gerenciado (todos exceto
+            // "Desabilitar"). O "Destaque do Campo Telefone" apenas REPOSICIONA o
+            // campo do plugin; NÃO deve ocultar o nativo por conta própria (senão,
+            // no modo "Desabilitar" — que não injeta campo nenhum — o telefone
+            // sumiria). Por isso o gate é só o modo.
+            $should_hide = $this->phone_mode_hides_native_option();
 
             if ($should_hide) {
-                // Destaque ativo: o nativo precisa ficar oculto.
                 if ($native_phone !== 'hidden') {
-                    // Seta a flag ANTES de ocultar, guardando o estado visível atual.
-                    update_option('woo_better_calc_phone_field_previous', $native_phone);
+                    // Guarda o estado visível ATUAL como "original" só na PRIMEIRA
+                    // vez (evita um re-assert posterior sobrescrever o original).
+                    if (false === $previous) {
+                        update_option('woo_better_calc_phone_field_previous', $native_phone);
+                    }
                     update_option('woocommerce_checkout_phone_field', 'hidden');
                 }
-            } else {
-                // Sem destaque: restaura só se o plugin havia ocultado.
-                if ($native_phone === 'hidden' && ! $owns_hidden) {
-                    // Usuário ocultou o nativo por conta própria → não mexe.
-                    return;
+            } elseif ($owns_hidden) {
+                // Recurso desabilitado: restaura o estado ORIGINAL do nativo (o valor
+                // guardado), sem recomputar de outras opções — o woo-better NÃO dita
+                // a visibilidade/obrigatoriedade do nativo quando está desligado.
+                if ($previous !== $native_phone) {
+                    update_option('woocommerce_checkout_phone_field', $previous);
                 }
-                if ($native_phone !== $target_visible) {
-                    update_option('woocommerce_checkout_phone_field', $target_visible);
-                }
-                if ($owns_hidden) {
-                    delete_option('woo_better_calc_phone_field_previous');
-                }
+                delete_option('woo_better_calc_phone_field_previous');
             }
+            // Se o nativo foi ocultado pelo PRÓPRIO lojista (não temos o valor
+            // guardado), não mexemos — nem para mostrar nem para ocultar.
         } finally {
             self::$phone_field_syncing = false;
         }
     }
 
     /**
-     * Propaga a OBRIGATORIEDADE da opção "Telefone (Contato) Obrigatório" para o
-     * campo nativo (woocommerce_checkout_phone_field = required/optional).
+     * Mantém o campo de telefone NATIVO desabilitado (hidden) enquanto o woo-better
+     * gerencia o telefone.
      *
-     * Só atua quando o destaque está desligado; com o destaque ativo o campo
-     * próprio substitui o nativo (que fica oculto e não é tocado).
-     */
-    public function sync_native_from_contact_required() {
-        if (self::$phone_field_syncing) {
-            return;
-        }
-        self::$phone_field_syncing = true;
-
-        try {
-            if ($this->is_phone_highlight() || $this->phone_mode_hides_native_option()) {
-                return; // destaque/modo oculta o nativo: não mexe na obrigatoriedade dele
-            }
-
-            $native_phone = get_option('woocommerce_checkout_phone_field', 'optional');
-            $owns_hidden = get_option('woo_better_calc_phone_field_previous', false) !== false;
-
-            if ($native_phone === 'hidden' && ! $owns_hidden) {
-                return; // usuário ocultou o nativo por conta própria → não mexe
-            }
-
-            $target = $this->is_phone_required() ? 'required' : 'optional';
-            if ($native_phone !== $target) {
-                update_option('woocommerce_checkout_phone_field', $target);
-            }
-        } finally {
-            self::$phone_field_syncing = false;
-        }
-    }
-
-    /**
-     * Ida e volta: quando a opção nativa muda (editor do checkout em blocos),
-     * reflete em "Telefone (Contato) Obrigatório".
+     * O toggle "Telefone" do editor do checkout em blocos escreve a option
+     * `woocommerce_checkout_phone_field`. Como o woo-better é a ÚNICA fonte de
+     * verdade do telefone (campo próprio), reaplicamos o `hidden` sempre que essa
+     * option muda para um valor visível — assim o nativo nunca fica ativo/obrigatório
+     * e não conflita com o campo próprio.
      *
-     * - required → contact_required = yes
-     * - optional → contact_required = no
-     * - hidden   → não altera a obrigatoriedade (só visibilidade)
+     * NÃO sincroniza a opção "Telefone (Contato) Obrigatório"
+     * (`woo_better_calc_contact_required`): ela é EXCLUSIVA do plugin e desacoplada
+     * do nativo. Quando o recurso está desabilitado, não mexemos no nativo (ele volta
+     * ao estado original via `sync_phone_field`).
      *
      * Assinatura do hook dinâmico update_option_{$option}: ($old_value, $value, $option).
      *
      * @param mixed  $old_value Valor anterior.
      * @param mixed  $new_value Valor novo.
      * @param string $option    Nome da opção.
+     * @return void
      */
-    public function sync_contact_required_from_native($old_value = null, $new_value = null, $option = '') {
+    public function enforce_native_phone_hidden($old_value = null, $new_value = null, $option = '')
+    {
         if (self::$phone_field_syncing) {
             return;
         }
+
+        // Recurso desabilitado → não mexe no nativo (é restaurado ao original).
+        if (! $this->phone_mode_hides_native_option()) {
+            return;
+        }
+
+        if ('hidden' === $new_value) {
+            return;
+        }
+
         self::$phone_field_syncing = true;
-
         try {
-            if ($new_value === 'required') {
-                update_option('woo_better_calc_contact_required', 'yes');
-            } elseif ($new_value === 'optional') {
-                update_option('woo_better_calc_contact_required', 'no');
-            }
-
-            // Destaque ativo → o nativo precisa permanecer oculto. O mesmo vale
-            // para os modos "Somente Celular"/"Desabilitar".
-            if ($new_value !== 'hidden' && ($this->is_phone_highlight() || $this->phone_mode_hides_native_option())) {
-                update_option('woocommerce_checkout_phone_field', 'hidden');
-            }
+            update_option('woocommerce_checkout_phone_field', 'hidden');
         } finally {
             self::$phone_field_syncing = false;
         }
@@ -5105,7 +5134,7 @@ class WcBetterShippingCalculatorForBrazil
         // clássico fica desatualizado (sem o "+DDI" ou com dígito faltando), pois a
         // lib não consegue formatar um número inválido.
         if ( function_exists('WC') && WC()->customer ) {
-            $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
+            $phone_highlight = $this->is_phone_highlight() ? 'yes' : 'no';
 
             $customer_billing  = $billing_phone_formatted;
             $customer_shipping = $shipping_phone_formatted;
@@ -5141,7 +5170,7 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_checkout_fields_locale_priority( $locale ) {
         $email_highlight    = get_option( 'woo_better_calc_email_field_position_shortcode', 'no' );
-        $phone_highlight    = get_option( 'woo_better_calc_contact_field_position', 'no' );
+        $phone_highlight    = $this->is_phone_highlight() ? 'yes' : 'no';
         $person_type        = get_option( 'woo_better_calc_person_type_select', 'none' );
 
         // Nenhuma das opções ativa, sem alterações
@@ -5181,8 +5210,16 @@ class WcBetterShippingCalculatorForBrazil
 
     public function wc_better_calc_phone_number($locale)
     {
+        // No modo "Desabilitar" o woo-better NÃO gerencia o telefone: não mexemos no
+        // campo nativo (nem label, nem visibilidade/obrigatoriedade). Deixamos o
+        // WooCommerce (e outros plugins, ex.: Brazilian) no controle — assim o
+        // telefone nativo volta ao comportamento original.
+        if ('disabled' === $this->get_phone_mode()) {
+            return $locale;
+        }
+
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
-        $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
+        $phone_highlight = $this->is_phone_highlight() ? 'yes' : 'no';
 
         // REASON: Ocultar o campo nativo de telefone no locale só faz sentido no
         // checkout em blocos (Gutenberg). No clássico/shortcode o reposicionamento
@@ -5274,7 +5311,7 @@ class WcBetterShippingCalculatorForBrazil
         $fill_checkout_address = get_option('woo_better_calc_enable_auto_address_fill', 'no');
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
         $email_highlight_shortcode = get_option('woo_better_calc_email_field_position_shortcode', 'no');
-        $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
+        $phone_highlight = $this->is_phone_highlight() ? 'yes' : 'no';
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
 
         // Forçar limpeza do cache se necessário  
@@ -5482,7 +5519,10 @@ class WcBetterShippingCalculatorForBrazil
 
         // Re-adiciona o campo de telefone no checkout clássico/shortcode para que
         // o telefone continue disponível (a máscara é aplicada pelo script legado).
-        {
+        // Só quando o plugin GERENCIA o telefone (qualquer modo exceto "Desabilitar");
+        // no modo "Desabilitar" o campo nativo fica intacto (não adicionamos DDI nem
+        // relabel/required do plugin).
+        if ($this->phone_mode_hides_native_option()) {
             if (!isset($fields['billing']['billing_phone'])) {
                 $fields['billing']['billing_phone_country'] = array(
                     'type'        => 'hidden',
@@ -5539,12 +5579,10 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // Modos de telefone (select "Comportamento do Campo de Telefone").
-        // "Somente Celular"/"Desabilitar" ocultam o telefone nativo no clássico; o
-        // modo "Somente Celular" adiciona um campo "Celular" no lugar (registrado em
-        // maybe_add_cellphone_field, prioridade 99). No modo "Desabilitar" nenhum
-        // campo de telefone é exibido. "Celular e Fixo" mantém o nativo e adiciona o
-        // campo "Celular" logo abaixo.
-        if ($this->phone_mode_hides_native_field()) {
+        // O nativo só é REMOVIDO quando o plugin fornece um substituto (o campo de
+        // celular): "Somente Celular" ou "Desabilitar" + "Campo de Celular" ligado.
+        // Nos demais (inclui "Desabilitar" SEM o campo de celular) o nativo é mantido.
+        if ($this->phone_mode_hides_native_field() && $this->phone_mode_adds_cellphone_field()) {
             // Remove apenas o input visível do telefone. No modo "Somente Celular"
             // mantemos o hidden `*_phone_country` (DDI): o campo "Celular" assume o
             // papel de telefone e usa esse hidden para capturar o código do país.
@@ -5554,7 +5592,7 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
         if ('disabled' === $this->get_phone_mode()) {
-            // Modo "Desabilitar": nenhum telefone/celular — remove também o DDI.
+            // Modo "Desabilitar": remove o hidden de DDI do próprio plugin.
             unset(
                 $fields['billing']['billing_phone_country'],
                 $fields['shipping']['shipping_phone_country']
@@ -6433,7 +6471,7 @@ class WcBetterShippingCalculatorForBrazil
             // billing_phone_formatted/shipping_phone_formatted acima. Exigir o
             // destaque evita que um custom_phone_formatted vazio (enviado só
             // para satisfazer o schema) zere os dois telefones.
-            $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
+            $phone_highlight = $this->is_phone_highlight() ? 'yes' : 'no';
             if ($phone_highlight === 'yes' && isset($phone_data['custom_phone_formatted'])) {
                 $custom_phone_formatted = sanitize_text_field($phone_data['custom_phone_formatted']);
 
@@ -6461,7 +6499,9 @@ class WcBetterShippingCalculatorForBrazil
      *  - `phone_and_cellphone`: telefone → `billing_phone`/`shipping_phone` e
      *    celular → metas `_billing_cellphone`/`_shipping_cellphone`;
      *  - `cellphone_only`: só o celular (metas); o TELEFONE fica VAZIO;
-     *  - `landline_only`: só o telefone; o celular fica vazio.
+     *  - `landline_only`: só o telefone; o celular fica vazio;
+     *  - `disabled`: o TELEFONE é o NATIVO (não mexemos); só o celular (campo
+     *    separado) é gravado nas metas.
      *
      * @param WC_Order $order
      * @param WP_REST_Request $request
@@ -6470,7 +6510,7 @@ class WcBetterShippingCalculatorForBrazil
     private function process_cellphone_from_request($order, $request)
     {
         $mode = $this->get_phone_mode();
-        if ( ! in_array($mode, array('phone_and_cellphone', 'cellphone_only', 'landline_only'), true)) {
+        if ( ! in_array($mode, array('phone_and_cellphone', 'cellphone_only', 'landline_only', 'disabled'), true)) {
             return;
         }
 
@@ -6493,9 +6533,10 @@ class WcBetterShippingCalculatorForBrazil
         // Fallback: sessão (valor salvo pelo callback do Store API) — apenas para as
         // chaves do FLUXO atual, para não vazar um valor do outro tipo (ex.: um
         // celular antigo guardado na sessão entrando no fluxo de telefone).
-        $flow_keys = ('cellphone_only' === $mode)
-            ? array('billing_cellphone', 'shipping_cellphone')
-            : array('billing_phone', 'shipping_phone');
+        $flow_keys = array('billing_phone', 'shipping_phone');
+        if ('cellphone_only' === $mode || 'disabled' === $mode) {
+            $flow_keys = array('billing_cellphone', 'shipping_cellphone');
+        }
         if ('phone_and_cellphone' === $mode && $this->is_cellphone_field_enabled()) {
             $flow_keys = array('billing_phone', 'shipping_phone', 'billing_cellphone', 'shipping_cellphone');
         }
@@ -6505,6 +6546,28 @@ class WcBetterShippingCalculatorForBrazil
                     $values[$key] = (string) WC()->session->get($key, '');
                 }
             }
+        }
+
+        // "Desabilitar" + "Campo de Celular": o TELEFONE é o NATIVO do WooCommerce
+        // (não mexemos nele aqui). O plugin só grava o CELULAR (campo separado).
+        if ('disabled' === $mode) {
+            $force_billing = ('billing_only' === get_option('woocommerce_ship_to_destination', 'shipping'));
+            if ($force_billing) {
+                $values['shipping_cellphone'] = $values['billing_cellphone'];
+            } elseif (empty($values['billing_cellphone']) && ! empty($values['shipping_cellphone'])) {
+                $values['billing_cellphone'] = $values['shipping_cellphone'];
+            } elseif (empty($values['shipping_cellphone']) && ! empty($values['billing_cellphone'])) {
+                $values['shipping_cellphone'] = $values['billing_cellphone'];
+            }
+
+            if (! empty($values['billing_cellphone'])) {
+                $order->update_meta_data('_billing_cellphone', $this->format_complete_phone($values['billing_cellphone']));
+            }
+            if (! empty($values['shipping_cellphone'])) {
+                $order->update_meta_data('_shipping_cellphone', $this->format_complete_phone($values['shipping_cellphone']));
+            }
+
+            return;
         }
 
         // Respeita a opção de endereço do WooCommerce: em "billing_only" só o billing
@@ -6701,20 +6764,23 @@ class WcBetterShippingCalculatorForBrazil
                 // mesmo endereço para cobrança" os dois números devem ser o MESMO.
                 // Prefere o shipping (é o endereço exibido quando "shipping as
                 // billing"); se ele estiver vazio, cai no billing — para nunca zerar.
-                $this->mirror_same_address_phone(
-                    $order,
-                    array($order, 'set_billing_phone'),
-                    array($order, 'set_shipping_phone'),
-                    array($order, 'get_billing_phone'),
-                    array($order, 'get_shipping_phone')
-                );
-                $this->mirror_same_address_phone(
-                    $order,
-                    function ($v) use ($order) { $order->update_meta_data('_billing_cellphone', $v); },
-                    function ($v) use ($order) { $order->update_meta_data('_shipping_cellphone', $v); },
-                    function () use ($order) { return (string) $order->get_meta('_billing_cellphone'); },
-                    function () use ($order) { return (string) $order->get_meta('_shipping_cellphone'); }
-                );
+                // Só quando o woo-better gerencia o telefone (no modo "Desabilitar" não mexe).
+                if ($this->phone_mode_hides_native_option()) {
+                    $this->mirror_same_address_phone(
+                        $order,
+                        array($order, 'set_billing_phone'),
+                        array($order, 'set_shipping_phone'),
+                        array($order, 'get_billing_phone'),
+                        array($order, 'get_shipping_phone')
+                    );
+                    $this->mirror_same_address_phone(
+                        $order,
+                        function ($v) use ($order) { $order->update_meta_data('_billing_cellphone', $v); },
+                        function ($v) use ($order) { $order->update_meta_data('_shipping_cellphone', $v); },
+                        function () use ($order) { return (string) $order->get_meta('_billing_cellphone'); },
+                        function () use ($order) { return (string) $order->get_meta('_shipping_cellphone'); }
+                    );
+                }
 
             }
         }
@@ -7583,6 +7649,9 @@ class WcBetterShippingCalculatorForBrazil
         $billing['billing_email']    = $take($incoming_billing, 'billing_email', __('Endereço de e-mail', 'woo-better-shipping-calculator-for-brazil'));
         if ($shows_phone) {
             $billing['billing_phone'] = array('label' => $this->get_phone_field_label(), 'description' => '');
+        } elseif ('disabled' === $phone_mode && isset($incoming_billing['billing_phone'])) {
+            // Modo "Desabilitar": preserva o campo nativo do telefone intacto.
+            $billing['billing_phone'] = $incoming_billing['billing_phone'];
         }
         if ($shows_cellphone) {
             $billing['billing_cellphone'] = array('label' => $cellphone_label, 'description' => '');
@@ -7613,6 +7682,9 @@ class WcBetterShippingCalculatorForBrazil
         $shipping['shipping_state']    = $take($incoming_shipping, 'shipping_state', __('Estado', 'woo-better-shipping-calculator-for-brazil'));
         if ($shows_phone) {
             $shipping['shipping_phone'] = array('label' => $this->get_phone_field_label(), 'description' => '');
+        } elseif ('disabled' === $phone_mode && isset($incoming_shipping['shipping_phone'])) {
+            // Modo "Desabilitar": preserva o campo nativo do telefone intacto.
+            $shipping['shipping_phone'] = $incoming_shipping['shipping_phone'];
         }
         if ($shows_cellphone) {
             $shipping['shipping_cellphone'] = array('label' => $cellphone_label, 'description' => '');
@@ -7673,21 +7745,44 @@ class WcBetterShippingCalculatorForBrazil
             update_user_meta($user_id, 'billing_document', $document);
         }
 
-        // 2. Telefones -> E.164 (+55 + dígitos), sem máscara/espaços.
-        $phone_keys = array('billing_phone', 'billing_cellphone', 'shipping_phone', 'shipping_cellphone');
-        foreach ($phone_keys as $key) {
-            if (! isset($_POST[$key])) {
-                continue;
-            }
+        // 2. Telefone NATIVO -> E.164 (+55 + dígitos), sem máscara/espaços.
+        // Só quando o woo-better gerencia o telefone (no modo "Desabilitar" o plugin
+        // não reformata o telefone nativo do perfil; o valor é preservado como enviado).
+        if ($this->phone_mode_hides_native_option()) {
+            foreach (array('billing_phone', 'shipping_phone') as $key) {
+                if (! isset($_POST[$key])) {
+                    continue;
+                }
 
-            $raw = sanitize_text_field(wp_unslash($_POST[$key]));
-            if ('' === trim($raw)) {
-                update_user_meta($user_id, $key, '');
-                continue;
-            }
+                $raw = sanitize_text_field(wp_unslash($_POST[$key]));
+                if ('' === trim($raw)) {
+                    update_user_meta($user_id, $key, '');
+                    continue;
+                }
 
-            $normalized = $this->format_complete_phone($raw, '+55');
-            update_user_meta($user_id, $key, '' !== $normalized ? $normalized : $raw);
+                $normalized = $this->format_complete_phone($raw, '+55');
+                update_user_meta($user_id, $key, '' !== $normalized ? $normalized : $raw);
+            }
+        }
+
+        // 2a. Celular (meta `billing_cellphone`/`shipping_cellphone`) -> E.164.
+        // É campo do PRÓPRIO plugin: normalizado sempre que o plugin ARMAZENA a meta
+        // (inclusive no modo "Desabilitar" + "Campo de Celular", onde o campo é separado).
+        if ($this->phone_mode_stores_cellphone()) {
+            foreach (array('billing_cellphone', 'shipping_cellphone') as $key) {
+                if (! isset($_POST[$key])) {
+                    continue;
+                }
+
+                $raw = sanitize_text_field(wp_unslash($_POST[$key]));
+                if ('' === trim($raw)) {
+                    update_user_meta($user_id, $key, '');
+                    continue;
+                }
+
+                $normalized = $this->format_complete_phone($raw, '+55');
+                update_user_meta($user_id, $key, '' !== $normalized ? $normalized : $raw);
+            }
         }
 
         // 2b. Shim ("Celular Oculto"): o `*_cellphone` ESPELHA o telefone, mas o
@@ -7747,7 +7842,7 @@ class WcBetterShippingCalculatorForBrazil
         $number_enabled = get_option('woo_better_calc_number_required', 'no');
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
         $email_highlight_shortcode = get_option('woo_better_calc_email_field_position_shortcode', 'no');
-        $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
+        $phone_highlight = $this->is_phone_highlight() ? 'yes' : 'no';
         $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
         $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
         
@@ -7772,8 +7867,9 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
         
-        // Adicionar campo de telefone
-        if ($phone_required === 'yes') {
+        // Adicionar campo de telefone (só quando o plugin gerencia o telefone; no modo
+        // "Desabilitar" o campo nativo do edit-address fica intacto).
+        if ($phone_required === 'yes' && $this->phone_mode_hides_native_option()) {
             $priority = ($phone_highlight === 'yes') ? 2 : 90;
             $fields['billing_phone'] = array(
                 'label'       => __('Celular/Telefone', 'woo-better-shipping-calculator-for-brazil'),
@@ -8043,7 +8139,7 @@ class WcBetterShippingCalculatorForBrazil
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
         $email_highlight_shortcode = get_option('woo_better_calc_email_field_position_shortcode', 'no');
-        $phone_highlight = get_option('woo_better_calc_contact_field_position', 'no');
+        $phone_highlight = $this->is_phone_highlight() ? 'yes' : 'no';
         
         // Aplicar prioridades de campos conforme configurações
         if($email_highlight_shortcode === 'yes') {
@@ -8078,8 +8174,9 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
         
-        // Adicionar campo de telefone
-        if ($phone_required === 'yes') {
+        // Adicionar campo de telefone (só quando o plugin gerencia o telefone; no modo
+        // "Desabilitar" o campo nativo do edit-address fica intacto).
+        if ($phone_required === 'yes' && $this->phone_mode_hides_native_option()) {
             $priority = ($phone_highlight === 'yes') ? 2 : 90;
             $fields['shipping_phone'] = array(
                 'label'       => __('Celular/Telefone', 'woo-better-shipping-calculator-for-brazil'),
@@ -8257,8 +8354,9 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
         
-        // Salvar campo de telefone
-        if ($phone_required === 'yes') {
+        // Salvar campo de telefone (só quando o woo-better gerencia o telefone; no
+        // modo "Desabilitar" o WooCommerce salva o valor nativo por conta própria).
+        if ($phone_required === 'yes' && $this->phone_mode_hides_native_option()) {
             if ($load_address === 'billing' && isset($_POST['billing_phone'])) {
                 $phone = sanitize_text_field(wp_unslash($_POST['billing_phone']));
                 update_user_meta($user_id, 'billing_phone', $phone);

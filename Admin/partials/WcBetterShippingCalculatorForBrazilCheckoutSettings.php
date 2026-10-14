@@ -477,6 +477,16 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
             if ('phone_and_cellphone' !== $mode) {
                 update_option('woo_better_calc_enable_cellphone_shim', 'no');
             }
+
+            // O "Celular Oculto" (shim) ESPELHA o telefone — não combina com o "Campo
+            // de Celular" (visível, separado): no admin os radios deste ficam
+            // `disabled` quando o shim está ligado (e inputs `disabled` não são
+            // enviados no submit). Precedência: o shim vence → forçamos o "Campo de
+            // Celular" e o "Celular Obrigatório" em "Desabilitar".
+            if ('yes' === get_option('woo_better_calc_enable_cellphone_shim', 'no')) {
+                update_option('woo_better_calc_enable_cellphone_field', 'no');
+                update_option('woo_better_calc_cellphone_required', 'no');
+            }
         }
 
         /**

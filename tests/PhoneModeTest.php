@@ -336,11 +336,59 @@ class PhoneModeTest extends WP_UnitTestCase {
         $this->assertArrayNotHasKey( 'shipping_phone', $fields['shipping'] );
     }
 
-    public function test_native_phone_removed_in_disabled_mode(): void {
+    public function test_native_phone_kept_in_disabled_mode(): void {
+        // Modo "Desabilitar": o woo-better NÃO gerencia o telefone — o campo nativo
+        // fica intacto (comportamento original). Antes ele era REMOVIDO no clássico;
+        // agora o plugin é inerte no modo desabilitado.
         update_option( 'woo_better_calc_phone_mode', 'disabled' );
         $fields = $this->plugin()->wc_better_calc_checkout_fields( $this->base_fields() );
 
-        $this->assertArrayNotHasKey( 'billing_phone', $fields['billing'] );
+        $this->assertArrayHasKey( 'billing_phone', $fields['billing'] );
+        $this->assertArrayHasKey( 'shipping_phone', $fields['shipping'] );
+    }
+
+    public function test_disabled_with_cellphone_keeps_native_phone_in_classic(): void {
+        // "Desabilitar" + "Campo de Celular": o telefone nativo é MANTIDO e o
+        // "Celular" é um campo SEPARADO (aditivo) no fim do formulário.
+        update_option( 'woo_better_calc_phone_mode', 'disabled' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+
+        $fields = $this->base_fields();
+        $fields['billing']['billing_cellphone'] = array( 'type' => 'tel', 'priority' => 93 );
+
+        $result = $this->plugin()->wc_better_calc_checkout_fields( $fields );
+
+        $this->assertArrayHasKey( 'billing_phone', $result['billing'], 'O telefone nativo deve permanecer.' );
+        $this->assertArrayHasKey( 'billing_cellphone', $result['billing'], 'O celular separado deve existir.' );
+        $this->assertSame( 200, $result['billing']['billing_cellphone']['priority'], 'O celular deve ficar no fim do formulário.' );
+    }
+
+    public function test_disabled_mode_normalize_order_phone_is_inert(): void {
+        // Modo "Desabilitar": mesmo com a máscara/DDI gravada como ligada (stale),
+        // o plugin NÃO normaliza o telefone do pedido.
+        update_option( 'woo_better_calc_phone_mode', 'disabled' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '83988888882' );
+
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'normalize_order_phone' );
+        $ref->setAccessible( true );
+        $ref->invoke( $this->plugin(), $order, 'billing', '+55' );
+
+        $this->assertSame( '83988888882', $order->get_billing_phone(), 'No modo Desabilitar o telefone do pedido fica intacto.' );
+    }
+
+    public function test_disabled_mode_format_order_phone_is_inert(): void {
+        // Mesmo com a máscara ligada (stale), o filtro de exibição não reformata o
+        // telefone do pedido no modo "Desabilitar".
+        update_option( 'woo_better_calc_phone_mode', 'disabled' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+
+        $order = new \WC_Order();
+        $out = $this->plugin()->format_order_billing_phone( '83988888882', $order );
+
+        $this->assertSame( '83988888882', $out, 'No modo Desabilitar o telefone é exibido como está.' );
     }
 
     public function test_cellphone_only_keeps_phone_country_for_ddi(): void {
@@ -483,6 +531,21 @@ class PhoneModeTest extends WP_UnitTestCase {
         $this->assertTrue( $locale['BR']['phone']['required'] );
     }
 
+    public function test_disabled_mode_locale_does_not_touch_native_phone(): void {
+        // Regressão: no modo "Desabilitar" o woo-better NÃO mexe no telefone nativo —
+        // nem label, nem hidden, nem required — mesmo com o "Destaque do Campo
+        // Telefone" ligado. Antes o destaque ocultava o nativo (o telefone sumia).
+        update_option( 'woo_better_calc_phone_mode', 'disabled' );
+        update_option( 'woo_better_calc_contact_field_position', 'yes' );
+        update_option( 'woo_better_calc_contact_required', 'yes' );
+
+        $locale = $this->plugin()->wc_better_calc_phone_number( array( 'BR' => array( 'phone' => array( 'label' => 'Phone' ) ) ) );
+
+        $this->assertArrayNotHasKey( 'hidden', $locale['BR']['phone'], 'O telefone nativo NÃO deve ficar oculto no modo Desabilitar.' );
+        $this->assertArrayNotHasKey( 'required', $locale['BR']['phone'], 'O plugin NÃO deve mexer no required do nativo no modo Desabilitar.' );
+        $this->assertSame( 'Phone', $locale['BR']['phone']['label'], 'O label nativo deve permanecer o do WooCommerce.' );
+    }
+
     public function test_locale_phone_survives_brazilian_locale_wipe(): void {
         // Regressão: o plugin "Brazilian Market on WooCommerce" registra
         // `address_fields_priority` em woocommerce_get_country_locale (prio 10) e faz
@@ -602,18 +665,21 @@ class PhoneModeTest extends WP_UnitTestCase {
         $this->assertArrayHasKey( 'billing_cellphone', $this->billing_fields_with_cellphone() );
     }
 
-    public function test_disabled_with_enable_empties_phone(): void {
-        // No modo "Desabilitar" com o celular ligado, o telefone nativo não existe:
-        // o número fica no celular e o telefone do pedido fica VAZIO.
+    public function test_disabled_with_enable_keeps_phone_and_adds_cellphone(): void {
+        // No modo "Desabilitar" com o campo de celular ligado, o telefone é ADITIVO:
+        // o telefone nativo é MANTIDO e o "Celular" é um campo separado.
         update_option( 'woo_better_calc_phone_mode', 'disabled' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
 
-        $data = array( 'billing_cellphone' => '(11) 99999-8888' );
+        $data = array(
+            'billing_phone'     => '(11) 3333-4444',
+            'billing_cellphone' => '(11) 99999-8888',
+        );
 
         $result = $this->plugin()->handle_cellphone_posted_data( $data );
 
-        $this->assertArrayNotHasKey( 'billing_phone', $result );
-        $this->assertSame( '(11) 99999-8888', $result['billing_cellphone'] );
+        $this->assertSame( '(11) 3333-4444', $result['billing_phone'], 'O telefone deve ser mantido.' );
+        $this->assertSame( '(11) 99999-8888', $result['billing_cellphone'], 'O celular separado deve ser mantido.' );
     }
 
     public function test_shim_mirrors_shipping_phone_into_shipping_cellphone(): void {
@@ -771,18 +837,22 @@ class PhoneModeTest extends WP_UnitTestCase {
         $this->assertSame( '11999998888', $order->get_meta( '_billing_cellphone' ) );
     }
 
-    public function test_blocks_ignored_in_disabled_mode(): void {
+    public function test_blocks_disabled_with_cellphone_saves_cellphone_and_keeps_phone(): void {
+        // "Desabilitar" + "Campo de Celular": o telefone é o NATIVO (não mexemos
+        // nele) e o celular (campo separado) é gravado nas metas.
         update_option( 'woo_better_calc_phone_mode', 'disabled' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
 
         $order = new \WC_Order();
+        $order->set_billing_phone( '+5583988888882' ); // telefone nativo do WC
         $this->callProcessCellphone( $order, array(
             WcBetterShippingCalculatorForBrazil::CELLPHONE_EXTENSION_NAMESPACE => array(
                 'billing_cellphone' => '(11) 99999-8888',
             ),
         ) );
 
-        $this->assertSame( '', $order->get_billing_phone() );
-        $this->assertSame( '', $order->get_meta( '_billing_cellphone' ) );
+        $this->assertSame( '+5583988888882', $order->get_billing_phone(), 'O telefone nativo deve permanecer intacto.' );
+        $this->assertSame( '11999998888', $order->get_meta( '_billing_cellphone' ) );
     }
 
     public function test_blocks_maps_shipping(): void {

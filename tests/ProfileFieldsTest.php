@@ -144,14 +144,17 @@ class ProfileFieldsTest extends WP_UnitTestCase {
         $this->assertSame( 'Celular', $billing['billing_cellphone']['label'] );
     }
 
-    public function test_disabled_phone_removes_phone_fields(): void {
+    public function test_disabled_phone_keeps_native_phone_and_removes_cellphone(): void {
+        // Modo "Desabilitar": o woo-better não gerencia o telefone — o campo nativo
+        // do perfil é PRESERVADO; nenhum celular do plugin é adicionado.
         update_option( 'woo_better_calc_person_type_select', 'both' );
         update_option( 'woo_better_calc_phone_mode', 'disabled' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
 
         $billing = $this->apply()['billing']['fields'];
 
-        $this->assertArrayNotHasKey( 'billing_phone', $billing );
+        $this->assertArrayHasKey( 'billing_phone', $billing, 'No modo Desabilitar o telefone nativo deve permanecer.' );
+        $this->assertSame( 'Telefone', $billing['billing_phone']['label'], 'O label nativo deve ser preservado.' );
         $this->assertArrayNotHasKey( 'billing_cellphone', $billing );
     }
 
@@ -184,6 +187,10 @@ class ProfileFieldsTest extends WP_UnitTestCase {
     public function test_save_normalizes_phone_to_e164_and_splits_document(): void {
         $this->ensure_wc_ready();
         update_option( 'woo_better_calc_person_type_select', 'both' );
+        // O campo "Celular" precisa estar ATIVO (é o que faz a tela do perfil exibir
+        // e salvar o `billing_cellphone`).
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
         $user_id = self::factory()->user->create();
 
         $backup = $_POST;

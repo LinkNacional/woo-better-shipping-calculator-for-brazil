@@ -739,18 +739,6 @@
         });
       });
 
-      // O bloco "Campo de Celular" fica desabilitado no modo "Permitir somente
-      // Telefone Celular" (o celular já é o campo principal). Marca "Desabilitar":
-      // o disabled é apenas visual — o valor é garantido no servidor.
-      const cellphoneModeBlocked = (mode === 'cellphone_only');
-      enableCellphoneRadios.forEach(function (radio) {
-        radio.disabled = cellphoneModeBlocked;
-        radio.style.cursor = cellphoneModeBlocked ? 'not-allowed' : '';
-        if (cellphoneModeBlocked && radio.value === 'no') {
-          radio.checked = true;
-        }
-      });
-
       // "Celular Oculto" só existe no modo "Permitir Telefone Celular e Fixo". Nos
       // demais, o bloco é ESCONDIDO e o valor forçado a "Desabilitar" (o `hidden`
       // ainda seria enviado no submit — por isso forçamos o valor e reforçamos no
@@ -769,6 +757,23 @@
           shimBlock.style.display = shimShown ? 'flex' : 'none';
         }
       }
+      const shimOn = Array.from(cellphoneShimRadios).some(function (radio) {
+        return radio.checked && radio.value === 'yes';
+      });
+
+      // O bloco "Campo de Celular" fica desabilitado quando:
+      //  - o modo é "Permitir somente Telefone Celular" (o celular já é o principal); ou
+      //  - o "Celular Oculto" está ligado (ele espelha o telefone — não combina com um
+      //    campo de celular visível separado; o `hidden` ainda seria enviado, por isso
+      //    forçamos o valor e reforçamos no servidor).
+      const cellphoneModeBlocked = (mode === 'cellphone_only') || shimOn;
+      enableCellphoneRadios.forEach(function (radio) {
+        radio.disabled = cellphoneModeBlocked;
+        radio.style.cursor = cellphoneModeBlocked ? 'not-allowed' : '';
+        if (cellphoneModeBlocked && radio.value === 'no') {
+          radio.checked = true;
+        }
+      });
 
       updateCellphoneRequiredState();
 
@@ -808,6 +813,11 @@
         updateCellphoneRequiredState();
         updateValidateDddState();
       });
+    });
+    // "Celular Oculto" ligado/desligado reavalia o bloco "Campo de Celular" (que é
+    // desabilitado quando o shim está ativo).
+    cellphoneShimRadios.forEach(function (radio) {
+      radio.addEventListener('change', updatePhoneModeChildState);
     });
 
     // Função para mostrar/esconder tabelas dinamicamente

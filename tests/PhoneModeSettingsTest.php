@@ -63,4 +63,29 @@ class PhoneModeSettingsTest extends WP_UnitTestCase {
 
         $this->assertSame( 'yes', get_option( 'woo_better_calc_enable_cellphone_shim' ) );
     }
+
+    public function test_cellphone_shim_disables_visible_cellphone_field(): void {
+        // "Celular Oculto" ligado → o "Campo de Celular" (visível) é forçado a
+        // "Desabilitar" (o shim espelha o telefone; não combina com um campo visível
+        // separado). Precedência: o shim vence.
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+        update_option( 'woo_better_calc_cellphone_required', 'yes' );
+
+        WcBetterShippingCalculatorForBrazilCheckoutSettings::enforce_cellphone_options_for_mode( 'phone_and_cellphone' );
+
+        $this->assertSame( 'yes', get_option( 'woo_better_calc_enable_cellphone_shim' ) );
+        $this->assertSame( 'no', get_option( 'woo_better_calc_enable_cellphone_field' ) );
+        $this->assertSame( 'no', get_option( 'woo_better_calc_cellphone_required' ) );
+    }
+
+    public function test_visible_cellphone_field_kept_when_shim_off(): void {
+        // Sem o "Celular Oculto", o "Campo de Celular" segue a escolha do lojista.
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+
+        WcBetterShippingCalculatorForBrazilCheckoutSettings::enforce_cellphone_options_for_mode( 'phone_and_cellphone' );
+
+        $this->assertSame( 'yes', get_option( 'woo_better_calc_enable_cellphone_field' ) );
+    }
 }

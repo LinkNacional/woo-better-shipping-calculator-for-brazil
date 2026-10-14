@@ -658,14 +658,51 @@ function addressInsertAfterEnd(context) {
 }
 
 /**
+ * Âncora no FIM do formulário de endereço (o último campo entre as seções de
+ * cobrança e entrega). Usada pelo campo "Celular" secundário (único) quando o
+ * "Destaque" está ligado — ele fica no rodapé, NÃO junto do telefone destacado.
+ *
+ * @returns {Element|null}
+ */
+function secondaryBottomAnchor() {
+    var billing = addressInsertAfterEnd('billing');
+    var shipping = addressInsertAfterEnd('shipping');
+
+    if (billing && shipping) {
+        // Prefere a seção que aparece por ÚLTIMO no DOM (o verdadeiro rodapé).
+        // DOCUMENT_POSITION_FOLLOWING (4): shipping vem depois de billing.
+        return (billing.compareDocumentPosition(shipping) & 4) ? shipping : billing;
+    }
+
+    return shipping || billing;
+}
+
+/**
  * Monta o campo (destaque = único abaixo do e-mail; senão billing + shipping).
  *
  * @param {object} spec { kind, label, required }
  */
 function mountField(spec) {
-    // Campo SECUNDÁRIO (ex.: "Celular" separado do bloco principal): sempre inline,
-    // no FIM do formulário de endereço (billing + shipping), SEM destaque e SEM lib.
+    // Campo SECUNDÁRIO (ex.: "Celular" separado do bloco principal).
     if (spec.secondary) {
+        // Com o "Destaque do Campo Telefone" LIGADO o telefone é ÚNICO (vale para
+        // cobrança E entrega). O "Celular" secundário também é ÚNICO (um só valor,
+        // evita campos independentes que divergiam no request), mas NÃO usa o
+        // destaque — o "Destaque" é só do telefone principal. Ele fica no FIM do
+        // formulário de endereço (rodapé), como um campo simples.
+        if (truthy(cfgValue('highlight'))) {
+            var singleId = domIdFor(spec.kind, 'single');
+            if (!document.getElementById(singleId)) {
+                var anchor = secondaryBottomAnchor();
+                if (anchor) {
+                    buildField(spec, 'single', anchor);
+                }
+            }
+            return;
+        }
+
+        // Sem destaque: um "Celular" por endereço (billing + shipping), no FIM do
+        // formulário de endereço, SEM lib (campo simples).
         CONTEXTS.forEach(function (context) {
             var id = context + '_' + spec.kind;
             if (document.getElementById(id)) {

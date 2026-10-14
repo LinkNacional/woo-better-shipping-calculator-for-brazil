@@ -678,7 +678,11 @@ class WcBetterShippingCalculatorForBrazilPublic
             // os campos são gerados via JS — um script por campo — conforme o
             // "Comportamento do Campo de Telefone". No clássico/shortcode a criação é
             // via hook (woocommerce_billing_fields).
-            if ( 'disabled' !== $this->phone_mode() ) {
+            //
+            // No modo "Desabilitar" não geramos campo de telefone, MAS o "Campo de
+            // Celular" (enable_cellphone_field) pode adicionar um "Celular" SEPARADO
+            // (mantendo o telefone nativo) — por isso também entramos aqui nesse caso.
+            if ( 'disabled' !== $this->phone_mode() || get_option('woo_better_calc_enable_cellphone_field', 'no') === 'yes' ) {
                 $billing_phone      = '';
                 $shipping_phone     = '';
                 $billing_cellphone  = '';
@@ -730,6 +734,10 @@ class WcBetterShippingCalculatorForBrazilPublic
                     if ('yes' === get_option('woo_better_calc_enable_cellphone_field', 'no')) {
                         $phone_field_scripts[] = 'WcBetterShippingCalculatorForBrazilPublicGutenbergCellphoneFieldBoth';
                     }
+                } elseif ('disabled' === $this->phone_mode()) {
+                    // "Desabilitar" + "Campo de Celular": o telefone é o NATIVO (não
+                    // injetamos campo de telefone) e o "Celular" é um campo SEPARADO.
+                    $phone_field_scripts[] = 'WcBetterShippingCalculatorForBrazilPublicGutenbergCellphoneFieldDisabled';
                 }
 
                 $config_localized = false;
@@ -1137,7 +1145,10 @@ class WcBetterShippingCalculatorForBrazilPublic
 
         if ($is_checkout_page) {
             // Sanitizador universal de telefone (campo próprio + nativo, todos os cenários).
-            $this->enqueue_phone_sanitizer();
+            // No modo "Desabilitar" não mexemos no telefone nativo → não enfileira.
+            if ('disabled' !== $this->phone_mode()) {
+                $this->enqueue_phone_sanitizer();
+            }
 
             $number_field = get_option('woo_better_calc_number_required', 'no');
             $billing_number = '';
@@ -1208,8 +1219,10 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
-            // Máscara de telefone no checkout clássico/shortcode.
-            if ($phone_mask_enabled === 'yes' && $is_checkout_classic) {
+            // Máscara de telefone no checkout clássico/shortcode. Só quando o
+            // woo-better gerencia o telefone (no modo "Desabilitar" não aplicamos a
+            // máscara no telefone nativo).
+            if ($phone_mask_enabled === 'yes' && $is_checkout_classic && 'disabled' !== $this->phone_mode()) {
                 wp_enqueue_style(
                     $this->plugin_name . '-checkout-phone-mask-shortcode',
                     plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.css',
@@ -1320,7 +1333,10 @@ class WcBetterShippingCalculatorForBrazilPublic
 
         if ($is_edit_address) {
             // Sanitizador universal de telefone (edição de endereço da conta).
-            $this->enqueue_phone_sanitizer();
+            // No modo "Desabilitar" não mexemos no telefone nativo → não enfileira.
+            if ('disabled' !== $this->phone_mode()) {
+                $this->enqueue_phone_sanitizer();
+            }
 
             // Scripts de pessoa física/jurídica
             $person_type = get_option('woo_better_calc_person_type_select', 'none');
@@ -1490,10 +1506,11 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
-            // Scripts para máscara de telefone (DDI + formatação)
+            // Scripts para máscara de telefone (DDI + formatação). Só quando o
+            // woo-better gerencia o telefone (modo "Desabilitar" não aplica máscara).
             $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
             
-            if ($phone_mask_enabled === 'yes') {
+            if ($phone_mask_enabled === 'yes' && 'disabled' !== $this->phone_mode()) {
                 wp_enqueue_script(
                     $this->plugin_name . '-edit-address-phone-mask',
                     plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.js',

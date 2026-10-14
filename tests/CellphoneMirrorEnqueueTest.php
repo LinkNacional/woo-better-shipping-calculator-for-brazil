@@ -60,9 +60,9 @@ class CellphoneMirrorEnqueueTest extends WP_UnitTestCase {
                 'landline_only', 'no', 'yes', false,
                 'No modo Somente Fixo não há celular para espelhar.',
             ),
-            'Desabilitar não espelha' => array(
+            'Desabilitar não espelha (shim)' => array(
                 'disabled', 'no', 'yes', false,
-                'No modo Desabilitar não há telefone/celular.',
+                'O shim (espelho) só existe no modo "Celular e Fixo".',
             ),
         );
     }
