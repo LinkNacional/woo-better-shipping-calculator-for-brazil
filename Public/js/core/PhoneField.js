@@ -42,6 +42,12 @@ if (!S) {
             billing_cellphone: '',
             shipping_cellphone: ''
         },
+        // DDI (`+55`) por contexto — enviado ao Store API (namespace
+        // `woo_better_phone_country`) para o pedido gravar o telefone em E.164.
+        countries: {
+            billing: '+55',
+            shipping: '+55'
+        },
         boundButton: null,
         serverTimer: null,
         pendingKinds: {}
@@ -158,6 +164,90 @@ function activePayloads() {
     });
 }
 
+/** Namespace do DDI dos telefones no Store API (lido no backend ao criar o pedido). */
+function phoneCountryNamespace() {
+    return 'woo_better_phone_country';
+}
+
+/** DDI (`+55`) de um contexto, com fallback para o Brasil. */
+function countryVal(context) {
+    var c = S.countries || {};
+    var dial = (context === 'shipping') ? c.shipping : c.billing;
+    return dial || '+55';
+}
+
+/**
+ * Envia os DDIs atuais ao store do checkout (namespace `woo_better_phone_country`).
+ *
+ * O input do intl-tel-input com `separateDialCode` (opção "Exibir Código do País")
+ * mostra apenas o número NACIONAL — o DDI fica num elemento à parte e NÃO entra no
+ * `input.value`. Sem enviá-lo por fora, o pedido grava o telefone sem o `+55` (o
+ * backend não consegue remontar o E.164). Só age com a máscara ligada.
+ */
+function pushPhoneCountryToStore() {
+    if (!truthy(cfgValue('maskEnabled'))) {
+        return;
+    }
+    if (typeof wp === 'undefined' || !wp.data || !wp.data.dispatch) {
+        return;
+    }
+    try {
+        var checkoutDispatch = wp.data.dispatch('wc/store/checkout');
+        if (checkoutDispatch && checkoutDispatch.setExtensionData) {
+            checkoutDispatch.setExtensionData(phoneCountryNamespace(), {
+                billing_phone_country_code: countryVal('billing'),
+                shipping_phone_country_code: countryVal('shipping')
+            });
+        }
+    } catch (error) {
+        // Silencioso.
+    }
+}
+
+/**
+ * Lê o DDI selecionado no campo e o sincroniza no Store API.
+ *
+ * No modo destaque o campo é ÚNICO (vale para cobrança e entrega); nos demais, o
+ * DDI é gravado por contexto e espelhado no outro lado quando este NÃO tem campo
+ * próprio (ex.: "enviar só para o endereço de cobrança").
+ *
+ * @param {string}           kind    'phone' | 'cellphone'
+ * @param {string}           context 'billing' | 'shipping' | 'single'
+ * @param {HTMLInputElement} input
+ */
+function syncPhoneCountry(kind, context, input) {
+    if (!truthy(cfgValue('maskEnabled')) || !truthy(cfgValue('showCountryCode'))) {
+        return;
+    }
+
+    var dial = '+55';
+    var iti = input ? input.wcBetterIti : null;
+    if (iti && typeof iti.getSelectedCountryData === 'function') {
+        var data = iti.getSelectedCountryData();
+        if (data && data.dialCode) {
+            dial = '+' + String(data.dialCode).replace(/[^0-9]/g, '');
+        }
+    }
+
+    if (!S.countries) {
+        S.countries = { billing: '+55', shipping: '+55' };
+    }
+
+    if (context === 'single') {
+        S.countries.billing = dial;
+        S.countries.shipping = dial;
+    } else {
+        S.countries[context] = dial;
+
+        var other = (context === 'billing') ? 'shipping' : 'billing';
+        if (!document.getElementById(domIdFor(kind, other))) {
+            S.countries[other] = dial;
+        }
+    }
+
+    pushPhoneCountryToStore();
+}
+
 /** Envia TODOS os valores atuais ao store do checkout (seed — 1x). */
 function pushToStore() {
     if (typeof wp === 'undefined' || !wp.data || !wp.data.dispatch) {
@@ -173,6 +263,7 @@ function pushToStore() {
     } catch (error) {
         // Silencioso.
     }
+    pushPhoneCountryToStore();
 }
 
 /**
@@ -299,8 +390,10 @@ function applyCountryRadius(input) {
  * Aplica a máscara/DDI (intl-tel-input) no input, quando a opção está ligada.
  *
  * @param {HTMLInputElement} input
+ * @param {string}           kind    'phone' | 'cellphone'
+ * @param {string}           context 'billing' | 'shipping' | 'single'
  */
-function applyMask(input, kind) {
+function applyMask(input, kind, context) {
     if (!input || input.dataset.wcBetterFieldMask === 'true') {
         return;
     }
@@ -352,6 +445,8 @@ function applyMask(input, kind) {
 
     input.addEventListener('countrychange', function () {
         applyPadding(input);
+        // O DDI mudou (troca de bandeira): reenvia ao Store API.
+        syncPhoneCountry(kind, context, input);
     });
 
     if (iti && iti.promise && typeof iti.promise.then === 'function') {
@@ -360,6 +455,9 @@ function applyMask(input, kind) {
     applyPadding(input);
     setTimeout(function () { applyPadding(input); }, 150);
     setTimeout(function () { applyPadding(input); }, 600);
+
+    // Envia o DDI inicial (Brasil) sem depender de interação.
+    syncPhoneCountry(kind, context, input);
 }
 
 /**
@@ -492,7 +590,7 @@ function buildField(spec, context, insertAfter) {
 
     // Campo SECUNDÁRIO NÃO recebe a lib (intl-tel-input): é um campo simples.
     if (!spec.secondary) {
-        applyMask(input, spec.kind);
+        applyMask(input, spec.kind, context);
     }
     refreshActive();
 }

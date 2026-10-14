@@ -1117,6 +1117,56 @@ class PhoneModeTest extends WP_UnitTestCase {
 
         $this->assertFalse( has_action( $hook, $callback ) );
     }
+
+    // --- DDI (E.164) no pedido do checkout em blocos -------------------------
+
+    public function test_normalize_order_phone_prepends_ddi_to_phone_and_cellphone(): void {
+        // Regressão: o telefone e o celular do pedido devem ficar em E.164
+        // (+DDInúmero). O celular (meta `_<type>_cellphone`, lido por NFe/Brazilian)
+        // também precisa do DDI — antes ficava sem o "+55" no checkout em blocos.
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '83988888882' );
+        $order->update_meta_data( '_billing_cellphone', '83988888882' );
+
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'normalize_order_phone' );
+        $ref->setAccessible( true );
+        $ref->invoke( $this->plugin(), $order, 'billing', '+55' );
+
+        $this->assertSame( '+5583988888882', $order->get_billing_phone() );
+        $this->assertSame( '+5583988888882', $order->get_meta( '_billing_cellphone' ) );
+    }
+
+    public function test_blocks_phone_country_extension_prepends_ddi(): void {
+        // O JS (blocos) envia o DDI no namespace `woo_better_phone_country`; o
+        // pedido deve sair com o telefone em E.164 (com o +55), como no clássico.
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'no' );
+
+        $order = new \WC_Order();
+        $request = new \WP_REST_Request();
+        $request->set_param( 'extensions', array(
+            WcBetterShippingCalculatorForBrazil::PHONE_EXTENSION_NAMESPACE => array(
+                'billing_phone'  => '83988888882',
+                'shipping_phone' => '83988888882',
+            ),
+            'woo_better_phone_country' => array(
+                'billing_phone_country_code'  => '+55',
+                'shipping_phone_country_code' => '+55',
+            ),
+        ) );
+
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'process_checkout_data_blocks' );
+        $ref->setAccessible( true );
+        $ref->invoke( $this->plugin(), $order, $request );
+
+        $this->assertSame( '+5583988888882', $order->get_billing_phone() );
+        $this->assertSame( '+5583988888882', $order->get_shipping_phone() );
+    }
+
 }
 
 // Stub do plugin "Brazilian Market on WooCommerce" (o plugin real não é carregado

@@ -2088,11 +2088,12 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
-     * Normaliza o telefone do pedido para o formato internacional limpo.
+     * Normaliza o telefone e o celular do pedido para o formato internacional limpo.
      *
      * Mantém apenas dígitos e um "+" inicial, prefixando o DDI quando houver.
-     * O telefone fica "tudo junto" (+DDInúmero), sem espaços, parênteses, hífens
-     * ou outros caracteres especiais. Só atua quando a máscara/DDI está ativa.
+     * O número fica "tudo junto" (+DDInúmero), sem espaços, parênteses, hífens ou
+     * outros caracteres especiais. Atua no campo nativo `billing_phone`/
+     * `shipping_phone` e na meta `_<type>_cellphone`. Só roda com a máscara ativa.
      *
      * @param WC_Order $order
      * @param string   $type         'billing' | 'shipping'
@@ -2107,16 +2108,26 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         $phone = ($type === 'shipping') ? $order->get_shipping_phone() : $order->get_billing_phone();
-        if (empty($phone)) {
-            return;
+        if (! empty($phone)) {
+            $normalized = $this->format_complete_phone($phone, $country_code);
+
+            if ($type === 'shipping') {
+                $order->set_shipping_phone($normalized);
+            } else {
+                $order->set_billing_phone($normalized);
+            }
         }
 
-        $normalized = $this->format_complete_phone($phone, $country_code);
-
-        if ($type === 'shipping') {
-            $order->set_shipping_phone($normalized);
-        } else {
-            $order->set_billing_phone($normalized);
+        // Celular (meta `_<type>_cellphone`), quando houver: mesma normalização
+        // E.164 (+DDInúmero), para o valor salvo bater com o telefone (NFe/
+        // Brazilian leem essa meta direto). No modo "Somente Celular" o telefone
+        // fica vazio e o número vive só aqui — por isso é tratado à parte.
+        $cellphone = (string) $order->get_meta("_{$type}_cellphone");
+        if ('' !== trim($cellphone)) {
+            $normalized_cellphone = $this->format_complete_phone($cellphone, $country_code);
+            if ('' !== $normalized_cellphone) {
+                $order->update_meta_data("_{$type}_cellphone", $normalized_cellphone);
+            }
         }
     }
     
