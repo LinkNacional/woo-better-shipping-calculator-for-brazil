@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     // Mensagem no footer
-    const saveButton = document.querySelector('p.submit');
+    const saveButton = document.querySelector('.admin-layout-submit-wrapper') || document.querySelector('p.submit');
     if (saveButton) {
         const div = document.createElement('div');
         div.innerHTML = `
@@ -22,8 +22,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const personTypeField = document.getElementById('woo_better_calc_person_type_select');
 
         if (personTypeField) {
-            const container = personTypeField.closest('.forminp');
-            const descSpan = container?.querySelector('.woo-forminp-header span');
+            const container = personTypeField.closest('.admin-layout-field-parent-flex') || personTypeField.closest('.forminp');
+            const descSpan = container?.querySelector('.admin-layout-field-component-bg > .admin-layout-block-sub-title')
+                || container?.querySelector('.admin-layout-field-component-bg > .admin-layout-description')
+                || container?.querySelector('.woo-forminp-header span');
 
             if (descSpan) {
                 const linkText = 'Configurações de Entrega do WooCommerce';

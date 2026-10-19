@@ -498,28 +498,27 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_woo_better_footer_page()
     {
-        // Verifica se estamos na página da aba de checkout
+        // Assets da aba de checkout ("Campos Brasileiros").
         if (
             isset($_GET['page'], $_GET['tab']) &&
             sanitize_text_field(wp_unslash($_GET['page'])) === 'wc-settings' &&
             sanitize_text_field(wp_unslash($_GET['tab'])) === 'wc-better-calc-checkout'
         ) {
             wp_enqueue_script(
-                'wc-better-calc-settings-layout',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js',
-                array(),
+                'wc-better-calc-settings-layout-tabs',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutTabs.COMPILED.js',
+                array('jquery'),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true
             );
 
-            $plugin_path = 'invoice-payment-for-woocommerce/wc-invoice-payment.php';
-            $invoice_plugin_installed = file_exists(WP_PLUGIN_DIR . '/' . $plugin_path);
-
-            wp_localize_script('wc-better-calc-settings-layout', 'wcBetterCalcAjax', array(
-                'install_nonce' => wp_create_nonce('install-plugin_invoice-payment-for-woocommerce'),
-                'plugin_slug' => 'invoice-payment-for-woocommerce',
-                'invoice_plugin_installed' => $invoice_plugin_installed,
-            ));
+            wp_enqueue_script(
+                'wc-better-calc-settings-layout-behaviors',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.COMPILED.js',
+                array(),
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                true
+            );
 
             wp_enqueue_script(
                 'wc-better-calc-footer-message',
@@ -530,40 +529,27 @@ class WcBetterShippingCalculatorForBrazil
             );
 
             wp_enqueue_style(
-                'wc-better-calc-style-settings',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.css',
+                'wc-better-calc-style-settings-layout',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutSettings.COMPILED.css',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 'all'
             );
 
             wp_enqueue_style(
-                'wc-better-calc-style-admin-card-settings',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminCard.COMPILED.css',
+                'wc-better-calc-style-settings-layout-link-card',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutLinkCard.COMPILED.css',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 'all'
             );
 
-            $versions = 'Woo Better v' . $this->version . ' | WooCommerce v' . WC()->version;
-            ;
-
-            wc_get_template(
-                'WcBetterShippingCalculatorForBrazilAdminSettingsCard.php',
-                array(
-                        'backgrounds' => array(
-                            'right' => plugin_dir_url(__FILE__) . 'assets/icons/backgroundCardRight.svg',
-                            'left' => plugin_dir_url(__FILE__) . 'assets/icons/backgroundCardLeft.svg'
-                        ),
-                        'logo' => plugin_dir_url(__FILE__) . 'assets/icons/linkNacionalLogo.webp',
-                        'whatsapp' => plugin_dir_url(__FILE__) . 'assets/icons/whatsapp.svg',
-                        'telegram' => plugin_dir_url(__FILE__) . 'assets/icons/telegram.svg',
-                        'stars' => plugin_dir_url(__FILE__) . 'assets/icons/stars.svg',
-                        'versions' => $versions
-
-                    ),
-                'woocommerce/WcBetterShippingCalculatorForBrazilAdminSettingsCard/',
-                plugin_dir_path(__FILE__) . 'assets/templates/'
+            wp_enqueue_style(
+                'wc-better-calc-style-settings',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.css',
+                array(),
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                'all'
             );
         }
     }
