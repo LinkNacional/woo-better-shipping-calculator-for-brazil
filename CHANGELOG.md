@@ -1,3 +1,10 @@
+# 5.1.1 - 19/10/26
+* Novo: a tela de configurações do checkout passou a ser dividida em quatro abas (Endereço e CEP, Documentos e Pessoa, Telefone e Celular, Dados Pessoais) com cards, em vez de uma página única e longa.
+* Novo: um cartão lateral reúne os canais de suporte (WhatsApp e Telegram) e apresenta os recursos da versão PRO.
+* Ajuste: as opções que dependem de outra agora ficam aninhadas logo abaixo dela.
+* Ajuste: títulos, subtítulos e descrições dos campos foram reposicionados para facilitar a leitura de cada opção.
+* Nota: nenhuma configuração salva muda de nome, então os ajustes já feitos continuam valendo.
+
 # 5.1.0 - 13/10/26
 * Novo: novo fluxo dos campos de Telefone e Celular no checkout (clássico e blocos) — 4 modos de comportamento, DDI/máscara, validação e campo oculto de compatibilidade com PagBank/Asaas/NFe.
 * Novo: campo "Celular" na edição de endereço da conta, espelhando o telefone.

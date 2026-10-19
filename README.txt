@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.1.0
+Stable tag: 5.1.1
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -124,6 +124,13 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.1.1 - 2026-10-19
+* New: the checkout settings screen is now split into four tabs (Address and Postcode, Documents and Person, Phone and Cellphone, Personal Data) with cards, instead of one long page.
+* New: a sidebar card gathers the support channels (WhatsApp and Telegram) and presents the PRO version highlights.
+* Tweak: options that depend on another option are now nested right below it.
+* Tweak: field titles, subtitles and descriptions were repositioned so each option is easier to scan.
+* Note: no saved setting changed its name, so existing configurations keep working as before.
 
 # 5.1.0 - 2026-10-13
 * New: new flow for the Phone and Cellphone fields on checkout (classic and blocks) — 4 behavior modes, country code/mask, validation and a hidden compatibility field for PagBank/Asaas/NFe.
