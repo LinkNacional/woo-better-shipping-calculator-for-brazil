@@ -71,6 +71,17 @@ When you need help, please create a topic in the [Plugin Support Forum](https://
 * [Link Invoice Payment for WooCommerce](https://wordpress.org/plugins/invoice-payment-for-woocommerce/) - Integrate custom payment methods and offer invoice-based payments in your WooCommerce store.
 * [Pix For WooCommerce](https://br.wordpress.org/plugins/payment-gateway-pix-for-woocommerce/) - Integrate Pix, Brazil’s revolutionary instant payment system, into your WooCommerce store 
 
+= PRO version =
+
+Upgrade to **Campos Checkout Brasileiro para WooCommerce PRO** for advanced checkout features:
+
+* Delivery scheduling: let customers choose a delivery date and time slot at checkout
+* Block dates and time slots that are already full, with a minimum preparation time before the first available slot
+* Delivery orders panel, listing orders by the delivery date and time slot chosen by the customer
+* Hide the address fields automatically when the customer selects local pickup
+
+Learn more about the PRO version [here](#).
+
 == Installation ==
 
 1.  Access your [WordPress](https://www.linknacional.com.br/wordpress/) admin and go to **Plugins > Add New**.

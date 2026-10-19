@@ -40,6 +40,17 @@ Plugin de **campos brasileiros para o checkout do WooCommerce**, facilitando e m
 
 > **Nota:** A calculadora de frete (página de produto e carrinho) migrou para o plugin [Shipping Simulator for WooCommerce](https://wordpress.org/plugins/shipping-simulator-for-woocommerce/).
 
+## Versão PRO
+
+Conheça o **Campos Checkout Brasileiro para WooCommerce PRO**, com recursos avançados de checkout:
+
+- Agendamento de entrega: o cliente escolhe a data e o turno de entrega no checkout.
+- Bloqueio de datas e turnos esgotados, com prazo mínimo de preparo antes do primeiro horário disponível.
+- Painel de pedidos por entrega, listando os pedidos pela data e turno escolhidos pelo cliente.
+- Ocultação automática dos campos de endereço quando o cliente seleciona retirada no local.
+
+Saiba mais sobre a versão PRO [aqui](#).
+
 ## Como instalar?
 
 1. Acesse o painel de administração do WordPress e vá para **Plugins > Adicionar Novo**.
