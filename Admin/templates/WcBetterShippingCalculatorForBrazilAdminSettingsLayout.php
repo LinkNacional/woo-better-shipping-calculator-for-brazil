@@ -112,6 +112,14 @@ $wb_layout_children_map = function ( $form_fields ) {
 };
 
 /**
+ * URL da página comercial da versão PRO.
+ *
+ * Fonte única dos links de upsell da tela (pílula `PRO`, banner do bloco e card
+ * promocional lateral). Vem da constante/filtro do ProGate.
+ */
+$wb_layout_pro_pill_url = \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::upgrade_url();
+
+/**
  * Pílula vermelha `PRO` (só aparece enquanto o PRO está inativo).
  *
  * Usada em três lugares: no item do menu de abas (span, porque um `a` não pode
@@ -120,8 +128,8 @@ $wb_layout_children_map = function ( $form_fields ) {
  * @param bool $as_link `true` = link (`<a>`), `false` = span.
  * @return string Markup escapado.
  */
-$wb_layout_pro_pill = function ( $as_link = false ) {
-	$url   = \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::upgrade_url();
+$wb_layout_pro_pill = function ( $as_link = false ) use ( $wb_layout_pro_pill_url ) {
+	$url   = $wb_layout_pro_pill_url;
 	$label = __( 'PRO', 'woo-better-shipping-calculator-for-brazil' );
 
 	if ( $as_link ) {
@@ -548,7 +556,7 @@ $wb_layout_title    = isset( $method_title ) ? $method_title : __( 'Configuraç�
 							<hr class="block-promotional-card-hr">
 							<p class="block-promotional-card-description"><?php esc_html_e( 'Agendamento de data e horário de entrega no checkout, bloqueio de datas e turnos esgotados, prazo mínimo de preparo e ocultação do endereço na retirada no local.', 'woo-better-shipping-calculator-for-brazil' ); ?></p>
 							<div class="block-promotional-card-buttons">
-								<a class="block-promotional-card-btn block-promotional-card-btn-learn" href="<?php echo esc_url( '#' ); ?>">
+								<a class="block-promotional-card-btn block-promotional-card-btn-learn" href="<?php echo esc_url( $wb_layout_pro_pill_url ); ?>" target="_blank" rel="noopener noreferrer">
 									<?php esc_html_e( 'Conheça mais', 'woo-better-shipping-calculator-for-brazil' ); ?>
 								</a>
 							</div>

@@ -32,10 +32,10 @@ class WcBetterShippingCalculatorForBrazilAdminProGate
     /**
      * URL da página comercial da versão PRO.
      *
-     * TODO: página ainda será definida — trocar o valor desta constante
-     * (ou usar o filtro `wc_better_shipping_calculator_pro_upgrade_url`).
+     * Pode ser trocada por filtro (`wc_better_shipping_calculator_pro_upgrade_url`)
+     * ou pela constante `WC_BETTER_SHIPPING_CALCULATOR_PRO_UPGRADE_URL`.
      */
-    public const UPGRADE_URL = '#';
+    public const UPGRADE_URL = 'https://www.linknacional.com.br/wordpress/woocommerce/checkout-brasileiro/';
 
     /**
      * Constante definida pelo plugin PRO quando ele está ativo.
