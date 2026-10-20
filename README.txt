@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.1.1
+Stable tag: 5.1.2
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -125,12 +125,20 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
-# 5.1.1 - 2026-10-19
+# 5.1.2 - 2026-10-20
 * New: the checkout settings screen is now split into four tabs (Address and Postcode, Documents and Person, Phone and Cellphone, Personal Data) with cards, instead of one long page.
 * New: a sidebar card gathers the support channels (WhatsApp and Telegram) and presents the PRO version highlights.
+* New: the PRO-only blocks (Local Pickup and Delivery Time) now show up on the settings screen together with the Brazilian fields, and become editable once the PRO plugin is active.
 * Tweak: options that depend on another option are now nested right below it.
 * Tweak: field titles, subtitles and descriptions were repositioned so each option is easier to scan.
+* Tweak: the PRO version links now point to each plugin's commercial page.
 * Note: no saved setting changed its name, so existing configurations keep working as before.
+
+# 5.1.1 - 2026-10-20
+* New: "Company Field Behavior" now has a "Disabled" option, which stops the Company field from being generated on checkout (classic and blocks), on the account's edit-address page and on the user profile screen.
+* Fix: with the Company field disabled, a Company field re-added by another plugin can no longer be required — it stays optional and no longer blocks the order.
+* Fix: the Company field behavior no longer switches back to "Dynamic" right after saving the settings.
+* Note: no saved setting changed its name; existing configurations keep working and values already stored for the Company field are preserved.
 
 # 5.1.0 - 2026-10-13
 * New: new flow for the Phone and Cellphone fields on checkout (classic and blocks) — 4 behavior modes, country code/mask, validation and a hidden compatibility field for PagBank/Asaas/NFe.

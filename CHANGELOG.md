@@ -1,9 +1,17 @@
-# 5.1.1 - 19/10/26
+# 5.1.2 - 20/10/26
 * Novo: a tela de configurações do checkout passou a ser dividida em quatro abas (Endereço e CEP, Documentos e Pessoa, Telefone e Celular, Dados Pessoais) com cards, em vez de uma página única e longa.
 * Novo: um cartão lateral reúne os canais de suporte (WhatsApp e Telegram) e apresenta os recursos da versão PRO.
+* Novo: os blocos exclusivos da versão PRO (Retirada no Local e Prazo de Entrega) agora aparecem na tela de configurações do checkout, junto dos campos brasileiros, e ficam editáveis quando o plugin PRO está ativo.
 * Ajuste: as opções que dependem de outra agora ficam aninhadas logo abaixo dela.
 * Ajuste: títulos, subtítulos e descrições dos campos foram reposicionados para facilitar a leitura de cada opção.
+* Ajuste: os links da versão PRO passaram a apontar para as páginas comerciais de cada plugin.
 * Nota: nenhuma configuração salva muda de nome, então os ajustes já feitos continuam valendo.
+
+# 5.1.1 - 20/10/26
+* Novo: a opção "Comportamento do Campo Empresa" ganhou o valor "Desabilitado", que deixa de gerar o campo Empresa no checkout (clássico e blocos), na edição de endereço da conta e na tela de perfil do usuário.
+* Correção: com o campo Empresa desabilitado, um campo Empresa reintroduzido por outro plugin não pode mais ficar obrigatório — permanece opcional e não trava mais o pedido.
+* Correção: o comportamento do campo Empresa não volta mais para "Dinâmico" logo após salvar as configurações.
+* Nota: nenhuma configuração salva muda de nome; os ajustes já feitos continuam valendo e os valores de Empresa já gravados são preservados.
 
 # 5.1.0 - 13/10/26
 * Novo: novo fluxo dos campos de Telefone e Celular no checkout (clássico e blocos) — 4 modos de comportamento, DDI/máscara, validação e campo oculto de compatibilidade com PagBank/Asaas/NFe.
