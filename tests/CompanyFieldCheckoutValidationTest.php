@@ -9,6 +9,8 @@
  *   - Dinâmico + CNPJ                 → o erro de Empresa permanece (empresa é exigida).
  *   - Dinâmico + país fora do Brasil  → o erro de Empresa é removido.
  *   - Opcional/Obrigatório            → o woo-better NÃO mexe nos erros (decisão do WC).
+ *   - Desabilitado                    → o erro de Empresa é sempre removido (o campo não
+ *     deve existir; se outro plugin o injetar, fica opcional).
  *
  * @package WcBetterShippingCalculatorForBrazil\Tests
  */
@@ -113,6 +115,48 @@ class CompanyFieldCheckoutValidationTest extends WP_UnitTestCase {
         $this->assertNotEmpty(
             $errors->get_error_message( 'billing_company_required' ),
             'Nos modos Opcional/Obrigatório a obrigatoriedade é do WooCommerce; o woo-better não remove o erro.'
+        );
+    }
+
+    public function test_disabled_mode_always_drops_company_required(): void {
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_company_field_behavior', 'disabled' );
+
+        // Mesmo com CNPJ (onde o modo Dinâmico exigiria a Empresa), o campo está
+        // desabilitado: o pedido não pode ser travado por um campo que a loja desligou.
+        $data = array(
+            'billing_country'    => 'BR',
+            'billing_persontype' => '2',
+            'billing_document'   => '11.222.333/0001-81', // CNPJ
+            'billing_cnpj'       => '11222333000181',
+            'billing_company'    => '',
+        );
+        $errors = $this->errors_with_company();
+
+        $this->plugin()->lkn_disabled_require_field( $data, $errors );
+
+        $this->assertEmpty(
+            $errors->get_error_message( 'billing_company_required' ),
+            'No modo Desabilitado o erro de Empresa obrigatória deve ser sempre removido.'
+        );
+    }
+
+    public function test_disabled_mode_drops_company_required_for_cpf(): void {
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_company_field_behavior', 'disabled' );
+
+        $data = array(
+            'billing_country'  => 'BR',
+            'billing_document' => '123.456.789-09', // CPF
+            'billing_company'  => '',
+        );
+        $errors = $this->errors_with_company();
+
+        $this->plugin()->lkn_disabled_require_field( $data, $errors );
+
+        $this->assertEmpty(
+            $errors->get_error_message( 'billing_company_required' ),
+            'No modo Desabilitado o erro de Empresa obrigatória deve ser removido também com CPF.'
         );
     }
 
