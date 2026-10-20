@@ -163,4 +163,35 @@ class CompanyFieldPositionTest extends WP_UnitTestCase {
             );
         }
     }
+
+    public function test_disabled_mode_does_not_create_company_field(): void {
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_company_field_behavior', 'disabled' );
+
+        // Loja com o campo Empresa oculto (option nativa em `hidden`): o woo-better
+        // não pode recriá-lo — é justamente o modo "Desabilitado".
+        $incoming = $this->incoming_fields();
+        unset( $incoming['billing']['billing_company'] );
+
+        $fields = ( new WcBetterShippingCalculatorForBrazil() )->wc_better_calc_checkout_fields( $incoming );
+
+        $this->assertArrayNotHasKey(
+            'billing_company',
+            $fields['billing'],
+            'No modo Desabilitado o woo-better não deve gerar o campo Empresa.'
+        );
+    }
+
+    public function test_disabled_mode_keeps_company_optional_when_another_plugin_adds_it(): void {
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_company_field_behavior', 'disabled' );
+
+        // Brazilian/outro plugin injetou o campo como obrigatório.
+        $fields = $this->apply( 'disabled' );
+
+        $this->assertFalse(
+            (bool) $fields['billing']['billing_company']['required'],
+            'No modo Desabilitado um campo Empresa injetado por outro plugin deve ficar OPCIONAL (nunca obrigatório), para não travar o checkout.'
+        );
+    }
 }

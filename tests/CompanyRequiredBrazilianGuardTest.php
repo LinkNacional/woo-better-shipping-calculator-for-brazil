@@ -83,6 +83,20 @@ class CompanyRequiredBrazilianGuardTest extends WP_UnitTestCase {
         $this->assertCount( 0, $this->error_notices(), 'No modo Dinâmico o aviso do Brazilian deve ser descartado.' );
     }
 
+    public function test_drops_company_notice_in_disabled_mode(): void {
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_company_field_behavior', 'disabled' );
+        $this->seed_error_notices( array( self::BRAZILIAN_COMPANY_MESSAGE ) );
+
+        $this->plugin()->guard_brazilian_company_required();
+
+        $this->assertCount(
+            0,
+            $this->error_notices(),
+            'No modo Desabilitado o aviso do Brazilian também deve ser descartado (o campo não existe).'
+        );
+    }
+
     public function test_keeps_company_notice_when_company_is_required(): void {
         update_option( 'woo_better_calc_person_type_select', 'legal' );
         update_option( 'woo_better_calc_company_field_behavior', 'required' );
