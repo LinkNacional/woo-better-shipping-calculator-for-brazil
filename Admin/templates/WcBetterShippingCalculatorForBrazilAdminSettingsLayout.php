@@ -112,6 +112,36 @@ $wb_layout_children_map = function ( $form_fields ) {
 };
 
 /**
+ * Pílula vermelha `PRO` (só aparece enquanto o PRO está inativo).
+ *
+ * Usada em três lugares: no item do menu de abas (span, porque um `a` não pode
+ * conter outro `a`), no banner do bloco e no título de cada card (`a`).
+ *
+ * @param bool $as_link `true` = link (`<a>`), `false` = span.
+ * @return string Markup escapado.
+ */
+$wb_layout_pro_pill = function ( $as_link = false ) {
+	$url   = \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::upgrade_url();
+	$label = __( 'PRO', 'woo-better-shipping-calculator-for-brazil' );
+
+	if ( $as_link ) {
+		return sprintf(
+			'<a class="admin-layout-pro-pill" href="%s" data-pro-url="%s" target="_blank" rel="noopener noreferrer">%s</a>',
+			esc_url( $url ),
+			esc_attr( $url ),
+			esc_html( $label )
+		);
+	}
+
+	return sprintf(
+		'<span class="admin-layout-pro-pill admin-layout-pro-pill--nav" role="button" tabindex="0" data-pro-url="%s" title="%s">%s</span>',
+		esc_attr( $url ),
+		esc_attr__( 'Conheça a versão PRO', 'woo-better-shipping-calculator-for-brazil' ),
+		esc_html( $label )
+	);
+};
+
+/**
  * Renderiza um campo (e, recursivamente, os filhos declarados via `join`).
  *
  * @param string|int $field_key    Chave do campo na lista.
@@ -120,7 +150,7 @@ $wb_layout_children_map = function ( $form_fields ) {
  * @param int        $depth        0 = campo raiz; > 0 = aninhado no pai.
  * @return void
  */
-$wb_layout_field = function ( $field_key, $field, $children_map, $depth = 0 ) use ( &$wb_layout_field, $wb_layout_text, $wb_layout_attrs ) {
+$wb_layout_field = function ( $field_key, $field, $children_map, $depth = 0 ) use ( &$wb_layout_field, $wb_layout_text, $wb_layout_attrs, $wb_layout_pro_pill ) {
 	$field_id    = ! empty( $field['id'] ) ? $field['id'] : $field_key;
 	$field_type  = isset( $field['type'] ) ? $field['type'] : 'text';
 
@@ -145,6 +175,9 @@ $wb_layout_field = function ( $field_key, $field, $children_map, $depth = 0 ) us
 
 	$body_desc  = $wb_layout_text( $field, 'body_desc' );
 	$left_tip   = $wb_layout_text( $field, 'left_tip' );
+
+	// Card de um campo exclusivo da versão PRO (pílula ao lado do título).
+	$is_pro_card = \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::should_render_pill( $field );
 	?>
 	<div class="admin-layout-field-parent-flex<?php echo $depth > 0 ? ' admin-layout-field-nested' : ''; ?>">
 		<?php if ( 0 === $depth ) : ?>
@@ -158,7 +191,14 @@ $wb_layout_field = function ( $field_key, $field, $children_map, $depth = 0 ) us
 			</div>
 		<?php endif; ?>
 		<div class="admin-layout-field-component-bg">
-			<span class="admin-layout-label"><?php echo esc_html( $card_title ); ?></span>
+			<span class="admin-layout-label<?php echo $is_pro_card ? ' admin-layout-label--pro' : ''; ?>">
+				<span class="admin-layout-label-text"><?php echo esc_html( $card_title ); ?></span>
+				<?php
+				if ( $is_pro_card ) {
+					echo $wb_layout_pro_pill( true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup escapado na closure.
+				}
+				?>
+			</span>
 			<?php if ( '' !== $card_sub ) : ?>
 				<div class="admin-layout-description admin-layout-block-sub-title"><?php echo wp_kses_post( $card_sub ); ?></div>
 			<?php endif; ?>
@@ -291,8 +331,14 @@ $wb_layout_field = function ( $field_key, $field, $children_map, $depth = 0 ) us
 						break;
 
 					default:
-						// Tipo não mapeado: renderiza pelo helper nativo do WooCommerce.
-						if ( function_exists( 'woocommerce_form_field' ) ) {
+						// Tipos customizados (ex.: widgets da versão PRO que agora vivem
+						// no FREE): quem trata é o hook do tipo, se houver.
+						$wb_layout_custom_hook = 'wc_better_shipping_calculator_admin_field_' . $field_type;
+
+						if ( has_action( $wb_layout_custom_hook ) ) {
+							do_action( $wb_layout_custom_hook, $field_id, $field, $field_value );
+						} elseif ( function_exists( 'woocommerce_form_field' ) ) {
+							// Tipo não mapeado: renderiza pelo helper nativo do WooCommerce.
 							woocommerce_form_field(
 								$field_id,
 								array(
@@ -364,6 +410,8 @@ foreach ( $form_fields as $field_key => $field ) {
 			'desc'      => isset( $field['desc'] ) ? $field['desc'] : '',
 			'intro'     => isset( $field['block_intro'] ) ? $field['block_intro'] : '',
 			'sub_title' => isset( $field['block_sub_title'] ) ? $field['block_sub_title'] : '',
+			// Bloco exclusivo da versão PRO (pílula vermelha no nav e no bloco).
+			'pro'       => ! empty( $field['pro'] ),
 			'fields'    => array(),
 		);
 
@@ -383,6 +431,7 @@ foreach ( $form_fields as $field_key => $field ) {
 
 $wb_layout_children = $wb_layout_children_map( $form_fields );
 $wb_layout_title    = isset( $method_title ) ? $method_title : __( 'Configurações', 'woo-better-shipping-calculator-for-brazil' );
+
 ?>
 <div class="admin-layout-page-wrapper">
 	<div class="admin-layout-content">
@@ -396,8 +445,13 @@ $wb_layout_title    = isset( $method_title ) ? $method_title : __( 'Configuraç�
 					<div class="admin-layout-top-menu-clip">
 						<nav class="admin-layout-top-menu">
 							<?php foreach ( $wb_layout_blocks as $block_id => $block ) : ?>
-								<a href="#" id="nav-<?php echo esc_attr( $block_id ); ?>" class="admin-layout-title-link<?php echo $block_id === $wb_layout_first_block ? ' active' : ''; ?>" data-target="block-<?php echo esc_attr( $block_id ); ?>">
-									<?php echo esc_html( '' !== $block['title'] ? $block['title'] : ucfirst( $block_id ) ); ?>
+								<a href="#" id="nav-<?php echo esc_attr( $block_id ); ?>" class="admin-layout-title-link<?php echo $block_id === $wb_layout_first_block ? ' active' : ''; ?><?php echo $block['pro'] ? ' admin-layout-title-link--pro' : ''; ?>" data-target="block-<?php echo esc_attr( $block_id ); ?>">
+									<span class="admin-layout-title-link-text"><?php echo esc_html( '' !== $block['title'] ? $block['title'] : ucfirst( $block_id ) ); ?></span>
+									<?php
+									if ( $block['pro'] && ! \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::is_pro_active() ) {
+										echo $wb_layout_pro_pill( false ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup escapado na closure.
+									}
+									?>
 								</a>
 							<?php endforeach; ?>
 						</nav>
@@ -407,7 +461,14 @@ $wb_layout_title    = isset( $method_title ) ? $method_title : __( 'Configuraç�
 			<?php endif; ?>
 
 			<?php foreach ( $wb_layout_blocks as $block_id => $block ) : ?>
-				<div class="admin-layout-block<?php echo $block_id === $wb_layout_first_block ? ' active' : ''; ?>" id="block-<?php echo esc_attr( $block_id ); ?>">
+				<?php $wb_layout_pro_block = $block['pro'] && ! \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::is_pro_active(); ?>
+				<div class="admin-layout-block<?php echo $block_id === $wb_layout_first_block ? ' active' : ''; ?><?php echo $wb_layout_pro_block ? ' admin-layout-block--pro' : ''; ?>" id="block-<?php echo esc_attr( $block_id ); ?>">
+					<?php if ( $wb_layout_pro_block ) : ?>
+						<div class="admin-layout-pro-banner">
+							<?php echo $wb_layout_pro_pill( true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup escapado na closure. ?>
+							<span class="admin-layout-pro-banner-text"><?php esc_html_e( 'Recurso exclusivo da versão PRO. Você pode explorar as opções, mas elas não são salvas enquanto o PRO não estiver ativo.', 'woo-better-shipping-calculator-for-brazil' ); ?></span>
+						</div>
+					<?php endif; ?>
 					<?php if ( ! empty( $block['desc'] ) || ! empty( $block['intro'] ) || ! empty( $block['sub_title'] ) ) : ?>
 						<div class="admin-layout-field-parent-flex admin-layout-block-desc-row">
 							<div class="admin-layout-field-label-desc">

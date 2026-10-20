@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilCheckoutSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilShippingCalculatorSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdmin;
+use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminDeliveryFields;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilShippingMigration;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilMigrationEmail;
@@ -214,6 +215,11 @@ class WcBetterShippingCalculatorForBrazil
         $migration_email = new WcBetterShippingCalculatorForBrazilMigrationEmail();
         $this->loader->add_action('init', $migration_email, 'maybe_schedule_email');
         $this->loader->add_action(WcBetterShippingCalculatorForBrazilMigrationEmail::CRON_HOOK, $migration_email, 'send_migration_email');
+
+        // Widgets com tipo customizado da aba "Campos Brasileiros" (blocos PRO
+        // "Prazo de Entrega" e "Pedidos com Prazo de Entrega", cuja interface é
+        // compartilhada com o plugin gratuito).
+        new WcBetterShippingCalculatorForBrazilAdminDeliveryFields();
 
         // detect state from postcode
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100, 1);
@@ -523,6 +529,16 @@ class WcBetterShippingCalculatorForBrazil
             wp_enqueue_script(
                 'wc-better-calc-footer-message',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.js',
+                array(),
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                true
+            );
+
+            // Widgets "Prazo de Entrega" / "Pedidos Pendentes" (blocos PRO, cuja
+            // interface é compartilhada com a versão gratuita).
+            wp_enqueue_script(
+                'wc-better-calc-settings-delivery-fields',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminDeliveryFields.COMPILED.js',
                 array(),
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
                 true

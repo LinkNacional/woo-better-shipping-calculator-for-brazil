@@ -1,4 +1,34 @@
 jQuery(document).ready(function ($) {
+    // ── Pílula PRO ──
+    // Dentro do nav a pílula fica aninhada no link da aba (um <a> não pode
+    // conter outro <a>), então o clique é capturado na fase de CAPTURA: sem
+    // isso o handler do link (que troca de aba) rodaria antes.
+    document.addEventListener('click', function (e) {
+        var pill = e.target.closest ? e.target.closest('.admin-layout-pro-pill') : null;
+        if (!pill) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openProUrl(pill);
+    }, true);
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        var pill = e.target.closest ? e.target.closest('.admin-layout-pro-pill[data-pro-url]') : null;
+        if (!pill) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openProUrl(pill);
+    }, true);
+
+    function openProUrl(pill) {
+        var url = pill.getAttribute('data-pro-url') || pill.getAttribute('href');
+        // Enquanto a página comercial não estiver definida a constante aponta
+        // para '#' — nesse caso só evita a troca de aba.
+        if (url && url !== '#') {
+            window.open(url, '_blank', 'noopener');
+        }
+    }
+
     // ── Guard de "alterações não salvas" do WooCommerce ──
     // O `editPrompt()` do `woocommerce/assets/js/admin/settings.js` liga o
     // `window.onbeforeunload` no primeiro `change` do formulário e só o desliga

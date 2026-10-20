@@ -153,6 +153,29 @@ Solução: descrição ≤1 linha
 
 ---
 
+## 5-B. Configurações compartilhadas com a versão PRO (blocos PRO)
+
+As opções da versão PRO vivem na MESMA página do plugin gratuito
+(`wc-better-calc-checkout`, "Campos Brasileiros"). O plugin PRO **não registra
+aba/página própria** — ele só reage (sanitização, dados, lógica).
+
+- Declare o bloco e os campos no FREE com `'pro' => true` (no `title` do bloco
+  e em cada campo). O bloco ganha a pílula vermelha `PRO` no nav, no banner e no
+  título de cada card.
+- `WcBetterShippingCalculatorForBrazilAdminProGate`:
+  - `is_pro_active()` → `defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_PRO_VERSION')`
+    (filtrável por `wc_better_shipping_calculator_is_pro_active`);
+  - `guard_settings($settings)` roda em `save()`: com o PRO inativo os campos
+    `pro` saem da lista do `WC_Admin_Settings::save_fields()` e a option volta
+    ao `default` declarado;
+  - `upgrade_url()` → constante `UPGRADE_URL` (`'#'` até a página comercial
+    existir) ou `WC_BETTER_SHIPPING_CALCULATOR_PRO_UPGRADE_URL` (filtrável).
+- Tipos de campo customizados: o template dispara
+  `wc_better_shipping_calculator_admin_field_{type}`; registre o renderizador em
+  `WcBetterShippingCalculatorForBrazilAdminDeliveryFields`.
+- UI dos widgets PRO mora no FREE (o usuário explora, o valor não persiste); a
+  **lógica** fica só no PRO. Nunca duplique lógica no FREE "para simular".
+
 ## 6. Build & Qualidade
 
 ```bash
