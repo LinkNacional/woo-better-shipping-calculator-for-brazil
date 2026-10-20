@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.1.0
+Stable tag: 5.1.1
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -113,6 +113,12 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.1.1 - 2026-10-20
+* New: "Company Field Behavior" now has a "Disabled" option, which stops the Company field from being generated on checkout (classic and blocks), on the account's edit-address page and on the user profile screen.
+* Fix: with the Company field disabled, a Company field re-added by another plugin can no longer be required — it stays optional and no longer blocks the order.
+* Fix: the Company field behavior no longer switches back to "Dynamic" right after saving the settings.
+* Note: no saved setting changed its name; existing configurations keep working and values already stored for the Company field are preserved.
 
 # 5.1.0 - 2026-10-13
 * New: new flow for the Phone and Cellphone fields on checkout (classic and blocks) — 4 behavior modes, country code/mask, validation and a hidden compatibility field for PagBank/Asaas/NFe.

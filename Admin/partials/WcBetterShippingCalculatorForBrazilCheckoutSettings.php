@@ -100,11 +100,12 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     'options'  => array(
                         'dynamic'   => __('Dinâmico (Recomendado)', 'woo-better-shipping-calculator-for-brazil'),
                         'optional'  => __('Opcional', 'woo-better-shipping-calculator-for-brazil'),
-                        'required'  => __('Obrigatório', 'woo-better-shipping-calculator-for-brazil')
+                        'required'  => __('Obrigatório', 'woo-better-shipping-calculator-for-brazil'),
+                        'disabled'  => __('Desabilitado', 'woo-better-shipping-calculator-for-brazil')
                     ),
                     'custom_attributes' => array(
                         'data-desc-tip' => __('Define como o campo Empresa será tratado no checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Dinâmico: O campo Empresa será exibido apenas quando o usuário digitar um CNPJ válido e o "Tipo de Cliente" estiver configurado como "Pessoa Física e Pessoa Jurídica" ou "Pessoa Jurídica apenas".', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Dinâmico: O campo Empresa será exibido apenas quando o usuário digitar um CNPJ válido e o "Tipo de Cliente" estiver configurado como "Pessoa Física e Pessoa Jurídica" ou "Pessoa Jurídica apenas". Desabilitado: o campo Empresa deixa de ser gerado no checkout (clássico e blocos) — se outro plugin o reintroduzir, ele fica sempre opcional, nunca obrigatório.', 'woo-better-shipping-calculator-for-brazil'),
                         'data-title-description' => __('Controla a exibição e obrigatoriedade do campo Empresa no checkout.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
@@ -491,7 +492,12 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
 
         /**
          * Atualiza a option nativa do WooCommerce conforme o comportamento escolhido.
-         * dynamic → hidden | optional → optional | required → required.
+         *
+         * dynamic → hidden | optional → optional | required → required | disabled → hidden
+         *
+         * No modo "disabled" o `hidden` é o que faz o WooCommerce (clássico E blocos)
+         * parar de gerar o campo Empresa — ver `WC_Countries::get_default_address_fields()`,
+         * que remove `company` do endereço quando a option está em `hidden`.
          */
         private function update_woocommerce_company_field_setting()
         {
@@ -506,6 +512,11 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     break;
                 case 'required':
                     update_option('woocommerce_checkout_company_field', 'required');
+                    break;
+                case 'disabled':
+                    // Nunca deixa a option nativa em "required": um campo obrigatório
+                    // que a loja não quer é o que trava o checkout.
+                    update_option('woocommerce_checkout_company_field', 'hidden');
                     break;
             }
         }

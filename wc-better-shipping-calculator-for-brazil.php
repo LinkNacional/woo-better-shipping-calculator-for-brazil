@@ -16,7 +16,7 @@
  * Plugin Name:       Campos Checkout Brasileiro para WooCommerce
  * Plugin URI:        https://www.linknacional.com.br/wordpress
  * Description:       Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce.
- * Version:           5.1.0
+ * Version:           5.1.1
  * Author:            Link Nacional
  * Author URI:        https://linknacional.com.br/
  * Requires PHP:      8.2
@@ -46,7 +46,7 @@ if (! defined('WPINC')) {
  */
 // Consts
 if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
-    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION', '5.1.0');
+    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION', '5.1.1');
 }
 
 if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_MIN_GIVE_VERSION')) {
@@ -80,7 +80,7 @@ if (! defined('WC_BETTER_SHIPPING_PRODUCT_QUANTITY')) {
 // Define se esta versão contém novas funcionalidades (true) ou apenas correções de bug (false).
 // Quando false, o notice de atualização não é exibido para usuários veteranos.
 if (! defined('WC_BETTER_SHIPPING_NEW_FEATURES')) {
-    define('WC_BETTER_SHIPPING_NEW_FEATURES', true);
+    define('WC_BETTER_SHIPPING_NEW_FEATURES', false);
 }
 
 /**

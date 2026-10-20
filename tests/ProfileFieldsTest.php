@@ -18,6 +18,11 @@
  *   - save_customer_meta_fields_extra (personal_options_update / edit_user_profile_update,
  *     prioridade 20) divide o documento em CPF/CNPJ/persontype e grava os telefones em E.164.
  *
+ * E, com "Comportamento do Campo Empresa" = Desabilitado, o campo Empresa (cobrança e
+ * entrega) sai da tela: a lista do perfil é hardcoded em
+ * WC_Admin_Profile::get_customer_meta_fields() e não consulta a option nativa
+ * (woocommerce_checkout_company_field), que é como o checkout esconde o campo.
+ *
  * @package WcBetterShippingCalculatorForBrazil\Tests
  */
 
@@ -277,6 +282,93 @@ class ProfileFieldsTest extends WP_UnitTestCase {
             '+55 83 98888-8882',
             get_user_meta( $user_id, 'billing_phone', true ),
             'Sem recurso ativo o woo-better não deve reescrever o telefone do perfil.'
+        );
+    }
+
+    // --- Campo Empresa (Comportamento = Desabilitado) -----------------------
+
+    public function test_company_removed_from_profile_when_disabled(): void {
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_company_field_behavior', 'disabled' );
+
+        $fields = $this->apply();
+
+        $this->assertArrayNotHasKey(
+            'billing_company',
+            $fields['billing']['fields'],
+            'Comportamento Desabilitado: o campo Empresa não deve aparecer na cobrança do perfil.'
+        );
+        $this->assertArrayNotHasKey(
+            'shipping_company',
+            $fields['shipping']['fields'],
+            'Comportamento Desabilitado: o campo Empresa não deve aparecer na entrega do perfil.'
+        );
+    }
+
+    public function test_company_removed_from_profile_when_disabled_and_no_other_feature(): void {
+        // Nenhum outro recurso ativo (o woo-better não remonta a tela): mesmo assim o
+        // campo Empresa sai, para ficar coerente com o checkout.
+        update_option( 'woo_better_calc_person_type_select', 'none' );
+        update_option( 'woo_better_calc_number_required', 'no' );
+        update_option( 'woo_better_calc_enable_neighborhood_field', 'no' );
+        update_option( 'woo_better_calc_enable_ie_field', 'no' );
+        update_option( 'woo_better_calc_enable_im_field', 'no' );
+        update_option( 'woo_better_calc_enable_birthdate_field', 'no' );
+        update_option( 'woo_better_calc_enable_gender_field', 'no' );
+        update_option( 'woo_better_calc_company_field_behavior', 'disabled' );
+
+        $fields = $this->apply();
+
+        $this->assertArrayNotHasKey( 'billing_company', $fields['billing']['fields'] );
+        $this->assertArrayNotHasKey( 'shipping_company', $fields['shipping']['fields'] );
+        // Nada mais é remontado nesse cenário (Brazilian/nativo manda no resto).
+        $this->assertArrayHasKey( 'billing_cpf', $fields['billing']['fields'], 'Sem recurso ativo o woo-better não remonta o resto da tela.' );
+    }
+
+    public function test_company_kept_in_profile_in_dynamic_mode(): void {
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_company_field_behavior', 'dynamic' );
+
+        $fields = $this->apply();
+
+        $this->assertArrayHasKey(
+            'billing_company',
+            $fields['billing']['fields'],
+            'No modo Dinâmico o campo Empresa continua na tela do perfil.'
+        );
+        $this->assertArrayHasKey( 'shipping_company', $fields['shipping']['fields'] );
+    }
+
+    public function test_company_kept_in_profile_in_optional_mode(): void {
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_company_field_behavior', 'optional' );
+
+        $fields = $this->apply();
+
+        $this->assertArrayHasKey( 'billing_company', $fields['billing']['fields'] );
+        $this->assertArrayHasKey( 'shipping_company', $fields['shipping']['fields'] );
+    }
+
+    public function test_disabled_company_does_not_wipe_saved_value(): void {
+        // Remover o campo da tela não pode apagar o dado: o WooCommerce só grava as
+        // chaves enviadas no POST e o woo-better não mexe em company no save.
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_company_field_behavior', 'disabled' );
+
+        $user_id = self::factory()->user->create();
+        update_user_meta( $user_id, 'billing_company', 'Empresa Salva Ltda' );
+
+        $backup = $_POST;
+        $_POST = array( 'billing_first_name' => 'Fulano' ); // empresa NÃO enviada
+
+        $this->plugin()->save_customer_meta_fields_extra( $user_id );
+
+        $_POST = $backup;
+
+        $this->assertSame(
+            'Empresa Salva Ltda',
+            get_user_meta( $user_id, 'billing_company', true ),
+            'O valor já salvo de billing_company deve ser preservado.'
         );
     }
 }

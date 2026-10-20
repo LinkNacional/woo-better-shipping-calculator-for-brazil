@@ -212,6 +212,65 @@ class EditAddressBrazilianPrecedenceTest extends WP_UnitTestCase {
         $this->assertArrayNotHasKey( 'billing_phone', $fields, 'No modo Desabilitar o woo-better não adiciona telefone.' );
     }
 
+    public function test_company_not_created_on_edit_address_when_disabled(): void {
+        // "Comportamento do Campo Empresa" = Desabilitado: o woo-better não gera o
+        // campo no edit-address (nem na cobrança, nem na entrega).
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_company_field_behavior', 'disabled' );
+
+        $billing = apply_filters( 'woocommerce_billing_fields', array(
+            'billing_country'    => array( 'value' => 'BR' ),
+            'billing_first_name' => array( 'label' => 'Nome' ),
+        ) );
+
+        $this->assertArrayNotHasKey(
+            'billing_company',
+            $billing,
+            'No modo Desabilitado o campo Empresa não deve ser criado no edit-address de cobrança.'
+        );
+
+        $shipping = apply_filters( 'woocommerce_shipping_fields', array(
+            'shipping_country'    => array( 'value' => 'BR' ),
+            'shipping_first_name' => array( 'label' => 'Nome' ),
+        ) );
+
+        $this->assertArrayNotHasKey(
+            'shipping_company',
+            $shipping,
+            'No modo Desabilitado o campo Empresa não deve ser criado no edit-address de entrega.'
+        );
+    }
+
+    public function test_company_injected_on_edit_address_is_optional_when_disabled(): void {
+        // Se outro plugin (Brazilian) já injetou o campo como obrigatório, o
+        // woo-better o mantém, porém OPCIONAL — nunca obrigatório.
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_company_field_behavior', 'disabled' );
+
+        $billing = apply_filters( 'woocommerce_billing_fields', array(
+            'billing_country'    => array( 'value' => 'BR' ),
+            'billing_first_name' => array( 'label' => 'Nome' ),
+            'billing_company'    => array( 'label' => 'Company name', 'required' => true ),
+        ) );
+
+        $this->assertArrayHasKey( 'billing_company', $billing );
+        $this->assertFalse(
+            (bool) $billing['billing_company']['required'],
+            'No modo Desabilitado um campo Empresa injetado por outro plugin deve ficar opcional.'
+        );
+
+        $shipping = apply_filters( 'woocommerce_shipping_fields', array(
+            'shipping_country'    => array( 'value' => 'BR' ),
+            'shipping_first_name' => array( 'label' => 'Nome' ),
+            'shipping_company'    => array( 'label' => 'Company name', 'required' => true ),
+        ) );
+
+        $this->assertFalse(
+            (bool) $shipping['shipping_company']['required'],
+            'Idem para o endereço de entrega.'
+        );
+    }
+
     public function test_visible_cellphone_added_at_the_end_on_edit_address(): void {
         // "Campo de Celular" VISÍVEL (separado): deve aparecer no edit-address, no FIM
         // (prioridade 200), como campo básico — junto do telefone principal.

@@ -128,7 +128,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '5.1.0';
+            $this->version = '5.1.1';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -347,7 +347,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '5.0.4', '5.0.3', '5.0.2', '5.0.1', '5.0.0', '4.17.4', '4.17.3', '4.17.2', '4.17.1', '4.17.0', '4.16.12', '4.16.11', '4.16.10', '4.16.9' );
+            $old_versions   = array( '5.1.0', '5.0.4', '5.0.3', '5.0.2', '5.0.1', '5.0.0', '4.17.4', '4.17.3', '4.17.2', '4.17.1', '4.17.0', '4.16.12', '4.16.11', '4.16.10' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -477,7 +477,22 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
-        
+
+        // Modo "Desabilitado": o campo Empresa não deve existir. Se algum outro
+        // filtro/plugin o reintroduzir no checkout em blocos, ele fica sem
+        // obrigatoriedade (nunca "required"), para não travar o pedido.
+        if ('disabled' === $company_behavior) {
+            if (!isset($locale['BR'])) {
+                $locale['BR'] = array();
+            }
+            if (!isset($locale['BR']['company'])) {
+                $locale['BR']['company'] = array();
+            }
+            $locale['BR']['company']['required'] = false;
+
+            return $locale;
+        }
+
         // Só aplica a lógica se for dinâmico
         if ($company_behavior === 'dynamic') {
             $person_type = get_option('woo_better_calc_person_type_select', 'none');
@@ -3709,12 +3724,19 @@ class WcBetterShippingCalculatorForBrazil
      */
     private function execute_company_field_sync() {
         $company_company_field = get_option('woocommerce_checkout_company_field', 'hidden');
+        $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
 
         // Mapeamento biunívoco entre a option do WooCommerce e o comportamento do plugin.
         // Valores desconhecidos/vazios não sobrescrevem a escolha do lojista.
         switch ($company_company_field) {
             case 'hidden':
-                update_option('woo_better_calc_company_field_behavior', 'dynamic');
+                // REASON: "Dinâmico" e "Desabilitado" usam `hidden` no nativo, então o
+                // sync reverso NÃO pode converter `hidden` em `dynamic` quando a escolha
+                // atual é "Desabilitado" — senão salvar em "Desabilitado" (que grava
+                // `hidden`) reativaria o modo dinâmico na mesma requisição.
+                if ('disabled' !== $company_behavior) {
+                    update_option('woo_better_calc_company_field_behavior', 'dynamic');
+                }
                 break;
             case 'optional':
                 update_option('woo_better_calc_company_field_behavior', 'optional');
@@ -5562,6 +5584,18 @@ class WcBetterShippingCalculatorForBrazil
                     if (isset($fields['shipping']['shipping_company'])) {
                         unset($fields['shipping']['shipping_company']);
                     }
+                } else if ('disabled' === $company_field_behavior) {
+                    // REASON: modo "Desabilitado" — o woo-better NÃO gera o campo Empresa
+                    // (a option nativa fica em `hidden`, então o WooCommerce também não o
+                    // cria). Se outro plugin o reintroduzir (ex.: Brazilian Market), ele
+                    // fica sempre OPCIONAL: obrigatório num campo que a loja desligou é o
+                    // que trava o checkout com "Empresa é um campo obrigatório".
+                    if (isset($fields['billing']['billing_company'])) {
+                        $fields['billing']['billing_company']['required'] = false;
+                    }
+                    if (isset($fields['shipping']['shipping_company'])) {
+                        $fields['shipping']['shipping_company']['required'] = false;
+                    }
                 } else if (isset($fields['billing']['billing_company'])) {
                     // REASON: nos modos Opcional/Obrigatório o required do campo Empresa
                     // deve seguir a escolha do lojista no woo-better — e não a option
@@ -6970,11 +7004,19 @@ class WcBetterShippingCalculatorForBrazil
         $clean_document = preg_replace( '/[^0-9A-Z]/', '', strtoupper( $billing_document ) );
         $is_cpf = strlen( $clean_document ) === 11;
 
-        // REASON: o campo "Empresa" só é controlado pelo plugin no modo "dynamic".
-        // Nos modos "required"/"optional" a obrigatoriedade é do WooCommerce e não
-        // deve ser desfeita por CPF/CNPJ nem por país.
+        // REASON: o campo "Empresa" só é controlado pelo plugin nos modos "dynamic"
+        // (visível só com CNPJ) e "disabled" (não deve existir). Nos modos
+        // "required"/"optional" a obrigatoriedade é do WooCommerce e não deve ser
+        // desfeita por CPF/CNPJ nem por país.
         $company_behavior = get_option( 'woo_better_calc_company_field_behavior', 'dynamic' );
-        $controls_company = ( 'dynamic' === $company_behavior );
+        $controls_company = in_array( $company_behavior, array( 'dynamic', 'disabled' ), true );
+
+        // Modo "Desabilitado": o campo Empresa não deve existir, então nunca pode ser
+        // exigido — independente do documento (CPF/CNPJ) e do país. Remove aqui para
+        // cobrir o CNPJ, que não passa pelos ramos abaixo.
+        if ( 'disabled' === $company_behavior ) {
+            $errors->remove( 'billing_company_required' );
+        }
 
         if ( 'BR' !== $billing_country ) {
             // Remover erros de campos obrigatórios que não se aplicam fora do Brasil.
@@ -7661,6 +7703,12 @@ class WcBetterShippingCalculatorForBrazil
      * devolve os campos como estão (o Brazilian/nativo assume), respeitando a regra de
      * precedência "recurso desligado no woo-better → Brazilian manda".
      *
+     * Exceção: com "Comportamento do Campo Empresa" = Desabilitado o campo Empresa é
+     * removido da tela (cobrança e entrega) mesmo nesse caso — a lista do perfil é
+     * hardcoded no WooCommerce e não consulta a option nativa, então é o plugin que
+     * precisa garantir a coerência com o checkout. O dado existente no user meta é
+     * preservado (nada é gravado quando o campo não é enviado).
+     *
      * @param array $fields Array de campos do WooCommerce.
      * @return array
      */
@@ -7669,6 +7717,21 @@ class WcBetterShippingCalculatorForBrazil
         if (!class_exists('\WC_Customer') || !is_array($fields)
             || !isset($fields['billing']['fields']) || !isset($fields['shipping']['fields'])) {
             return $fields;
+        }
+
+        // "Comportamento do Campo Empresa" = Desabilitado: o campo não deve existir.
+        // No checkout isso é resolvido pela option nativa (fica em `hidden`, que faz o
+        // WooCommerce parar de gerar o campo — clássico, blocos e edit-address). A lista
+        // da tela de PERFIL, porém, é hardcoded em WC_Admin_Profile::get_customer_meta_fields()
+        // e NÃO consulta essa option, então removemos aqui.
+        //
+        // Remover não apaga o dado: WC_Admin_Profile::save_customer_meta_fields() só grava
+        // as chaves presentes no POST, e save_customer_meta_fields_extra() não mexe em company.
+        $company_disabled = ('disabled' === get_option('woo_better_calc_company_field_behavior', 'dynamic'));
+
+        if ($company_disabled) {
+            unset($fields['billing']['fields']['billing_company']);
+            unset($fields['shipping']['fields']['shipping_company']);
         }
 
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
@@ -7727,7 +7790,7 @@ class WcBetterShippingCalculatorForBrazil
             $billing['billing_document'] = array('label' => $document_label, 'description' => '');
         }
 
-        if ($person_type === 'legal' || $person_type === 'both' || isset($incoming_billing['billing_company'])) {
+        if (!$company_disabled && ($person_type === 'legal' || $person_type === 'both' || isset($incoming_billing['billing_company']))) {
             $billing['billing_company'] = $take($incoming_billing, 'billing_company', __('Empresa', 'woo-better-shipping-calculator-for-brazil'));
         }
 
@@ -7797,7 +7860,9 @@ class WcBetterShippingCalculatorForBrazil
         }
         $shipping['shipping_first_name'] = $take($incoming_shipping, 'shipping_first_name', __('Nome', 'woo-better-shipping-calculator-for-brazil'));
         $shipping['shipping_last_name']  = $take($incoming_shipping, 'shipping_last_name', __('Sobrenome', 'woo-better-shipping-calculator-for-brazil'));
-        $shipping['shipping_company']    = $take($incoming_shipping, 'shipping_company', __('Empresa', 'woo-better-shipping-calculator-for-brazil'));
+        if (!$company_disabled) {
+            $shipping['shipping_company'] = $take($incoming_shipping, 'shipping_company', __('Empresa', 'woo-better-shipping-calculator-for-brazil'));
+        }
         $shipping['shipping_address_1']  = $take($incoming_shipping, 'shipping_address_1', __('Endereço', 'woo-better-shipping-calculator-for-brazil'));
         if ($number_field === 'yes') {
             $shipping['shipping_number'] = array('label' => __('Número', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
@@ -8083,17 +8148,26 @@ class WcBetterShippingCalculatorForBrazil
                 // nasce obrigatório (required => true) e a obrigação é removida no
                 // submit quando o documento é CPF (ver disable_ie_required_on_edit_address_submit).
                 // Nos modos "required"/"optional" respeitamos a configuração do lojista.
+                // No modo "disabled" o campo não é criado (se outro plugin já o tiver
+                // adicionado, ele fica opcional).
                 $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
-                $company_required = ($company_behavior === 'required' || $company_behavior === 'dynamic');
 
-                $fields['billing_company'] = array(
-                    'label'       => __('Empresa', 'woo-better-shipping-calculator-for-brazil'),
-                    'placeholder' => __('Nome da empresa', 'woo-better-shipping-calculator-for-brazil'),
-                    'required'    => $company_required,
-                    'class'       => array('form-row-wide'),
-                    'priority'    => 28,
-                    'type'        => 'text'
-                );
+                if ('disabled' === $company_behavior) {
+                    if (isset($fields['billing_company'])) {
+                        $fields['billing_company']['required'] = false;
+                    }
+                } else {
+                    $company_required = ($company_behavior === 'required' || $company_behavior === 'dynamic');
+
+                    $fields['billing_company'] = array(
+                        'label'       => __('Empresa', 'woo-better-shipping-calculator-for-brazil'),
+                        'placeholder' => __('Nome da empresa', 'woo-better-shipping-calculator-for-brazil'),
+                        'required'    => $company_required,
+                        'class'       => array('form-row-wide'),
+                        'priority'    => 28,
+                        'type'        => 'text'
+                    );
+                }
             }
             
             // Campos hidden para compatibilidade
@@ -8270,8 +8344,9 @@ class WcBetterShippingCalculatorForBrazil
 
             // Empresa no modo "dynamic" também é obrigatória apenas para CNPJ.
             // Nos modos "required"/"optional" a decisão do lojista é preservada.
+            // No modo "disabled" o campo nunca é obrigatório.
             $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
-            if ($company_behavior === 'dynamic' && isset($fields['billing_company'])) {
+            if (in_array($company_behavior, array('dynamic', 'disabled'), true) && isset($fields['billing_company'])) {
                 $fields['billing_company']['required'] = false;
             }
         }
@@ -8333,16 +8408,26 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
         
-        // Campo empresa para pessoa jurídica (se configuração permitir)
+        // Campo empresa para pessoa jurídica (se configuração permitir).
+        // No modo "disabled" o campo não é criado: se outro plugin já o tiver
+        // adicionado, fica opcional (nunca obrigatório).
         if ($person_type === 'legal' || $person_type === 'both') {
-            $fields['shipping_company'] = array(
-                'label'       => __('Empresa', 'woo-better-shipping-calculator-for-brazil'),
-                'placeholder' => __('Nome da empresa', 'woo-better-shipping-calculator-for-brazil'),
-                'required'    => false,
-                'class'       => array('form-row-wide'),
-                'priority'    => 27,
-                'type'        => 'text'
-            );
+            $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
+
+            if ('disabled' === $company_behavior) {
+                if (isset($fields['shipping_company'])) {
+                    $fields['shipping_company']['required'] = false;
+                }
+            } else {
+                $fields['shipping_company'] = array(
+                    'label'       => __('Empresa', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => __('Nome da empresa', 'woo-better-shipping-calculator-for-brazil'),
+                    'required'    => false,
+                    'class'       => array('form-row-wide'),
+                    'priority'    => 27,
+                    'type'        => 'text'
+                );
+            }
         }
         
         // Contato (telefone/celular) — espelha o checkout clássico.
