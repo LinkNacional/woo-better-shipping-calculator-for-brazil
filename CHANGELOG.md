@@ -1,3 +1,9 @@
+# 5.1.1 - 20/10/26
+* Novo: a opção "Comportamento do Campo Empresa" ganhou o valor "Desabilitado", que deixa de gerar o campo Empresa no checkout (clássico e blocos), na edição de endereço da conta e na tela de perfil do usuário.
+* Correção: com o campo Empresa desabilitado, um campo Empresa reintroduzido por outro plugin não pode mais ficar obrigatório — permanece opcional e não trava mais o pedido.
+* Correção: o comportamento do campo Empresa não volta mais para "Dinâmico" logo após salvar as configurações.
+* Nota: nenhuma configuração salva muda de nome; os ajustes já feitos continuam valendo e os valores de Empresa já gravados são preservados.
+
 # 5.1.0 - 13/10/26
 * Novo: novo fluxo dos campos de Telefone e Celular no checkout (clássico e blocos) — 4 modos de comportamento, DDI/máscara, validação e campo oculto de compatibilidade com PagBank/Asaas/NFe.
 * Novo: campo "Celular" na edição de endereço da conta, espelhando o telefone.
