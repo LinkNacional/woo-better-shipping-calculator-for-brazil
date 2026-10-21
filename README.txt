@@ -9,25 +9,25 @@ Stable tag: 5.3.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
-Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce.
+Brazilian checkout fields: CPF/CNPJ, address number, neighborhood and phone, with automatic CEP address pre-filling and much more for WooCommerce.
 
 == Description ==
 
-Complete Brazilian checkout fields designed specifically for **[WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/) stores in Brazil**, making it easier and significantly improving the data entry flow on the checkout pages.
+Complete [Brazilian checkout](https://www.linknacional.com.br/wordpress/woocommerce/checkout-brasileiro/) fields designed specifically for Brazilian Market on [WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/) stores in Brazil, making it easier and significantly improving the data entry flow on the checkout pages.
 
 This version includes **full compatibility with Shortcodes and Gutenberg themes**, allowing you to use the Brazilian checkout fields anywhere on your site with maximum flexibility.
 
 This [WordPress](https://www.linknacional.com.br/wordpress/) plugin ensures faster address verification and cleaner form management, leading to a better user experience and fewer abandoned carts.
 
-> **Note:** The shipping calculator features have moved to the [Shipping Simulator for WooCommerce](https://wordpress.org/plugins/shipping-simulator-for-woocommerce/) plugin.
+> **Note:** The shipping calculator features have moved to a dedicated plugin: [Shipping Simulator for WooCommerce](/plugins/shipping-simulator-for-woocommerce/).
 
-## 🚀 Complete Brazilian Checkout
+## 🚀 Full and Free Brazilian Checkout
 
-We have expanded the plugin capabilities to offer a full checkout solution for the Brazilian market, managing **Custom Checkout Fields** essential for Brazilian logistics and invoicing. Every field is listed — with its meta key and what it does — in the **Checkout fields** section below.
+We have expanded the plugin capabilities to offer a full checkout solution for the Brazilian Market on WooCommerce, managing **Custom Checkout Fields** essential for Brazilian logistics and fiscal invoicing. Every field is listed — with its meta key and what it does — in the **Checkout fields** section below.
 
 ### ✅ ERP & "Brazilian Market" Compatibility
 
-This is a major update for store owners who need to issue invoices (Nota Fiscal). The plugin is now fully compatible with the data standards used by the **Brazilian Market on WooCommerce** plugin (by Claudio Sanches).
+This is a major update for store owners who need to issue invoices (Nota Fiscal). The plugin is now fully compatible with other payment's plugin for the data standards used by the **Brazilian Market on WooCommerce** plugin by Claudio Sanches.
 
 **Why is this important?**
 1.  **Bling & ERP Integration:** CPF, CNPJ and address data are saved with the standard meta keys (the same ones listed below), so this plugin is **fully compatible with Bling, Tiny** and other ERPs that integrate with [WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/). You can issue invoices (NFe) without data errors.
@@ -77,9 +77,11 @@ When you need help, please create a topic in the [Plugin Support Forum](https://
 
 
 ** Recommended Plugins **
-* [Shipping Simulator for WooCommerce](https://wordpress.org/plugins/shipping-simulator-for-woocommerce/) - Shipping calculator for the product and cart pages, free shipping rules and more.
-* [Link Invoice Payment for WooCommerce](https://wordpress.org/plugins/invoice-payment-for-woocommerce/) - Integrate custom payment methods and offer invoice-based payments in your WooCommerce store.
-* [Pix For WooCommerce](https://br.wordpress.org/plugins/payment-gateway-pix-for-woocommerce/) - Integrate Pix, Brazil’s revolutionary instant payment system, into your WooCommerce store 
+* [Shipping Simulator for WooCommerce](/plugins/shipping-simulator-for-woocommerce/) - Shipping calculator for the product and cart pages, free shipping rules and more.
+* [Link Invoice Payment for WooCommerce](/plugins/invoice-payment-for-woocommerce/) - Integrate custom payment methods and offer invoice-based payments in your WooCommerce store.
+* [Pix For WooCommerce](/plugins/payment-gateway-pix-for-woocommerce/) - Integrate Pix, Brazil’s revolutionary instant payment system, into your WooCommerce store 
+* [AntiFraude](/plugins/fraud-and-scam-detection-for-woocommerce/) - Fraud and Scam Detection For WooCommerce
+* [Authentification and OTP for WooCommerce](/plugins/woo-force-authentification-before-checkout/) - OTP and Force customer to log in or register before checkout to increase your conversion rate.
 
 = PRO version =
 
