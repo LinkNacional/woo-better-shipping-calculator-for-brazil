@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.1.1
+Stable tag: 5.2.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -113,6 +113,15 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.2.0 - 2026-10-21
+* New: "RG" (general registry) field on checkout, optional by default and linked to the CPF — it only shows when the customer enters a CPF and stays hidden for CNPJ, the same way IE/IM behave with the CNPJ.
+* New: the RG uses the same ID as invoice apps (`billing_rg`), so they recognize it. It is available on checkout (classic and blocks), on the account's edit-address page, on the profile, on the order (admin data with editing and "Load address"), on the order-received screen and in the orders and customers API.
+* New: RG options in the Brazilian fields settings (enable and required).
+* Tweak: the RG is positioned right after the document, without conflicting with the order of the other address fields.
+* Fix: the IE, IM, RG and Company fields are no longer cleared when hidden — when the document is corrected (erasing or retyping CPF/CNPJ) the typed value is preserved and comes back when the field is shown again.
+* Fix: hidden fields no longer take up space in the classic checkout and edit-address layout, with no leftover margin or padding.
+* Note: the RG has no national validation standard (the rule varies by state), so the validation is format and length only, not a check digit.
 
 # 5.1.1 - 2026-10-20
 * New: "Company Field Behavior" now has a "Disabled" option, which stops the Company field from being generated on checkout (classic and blocks), on the account's edit-address page and on the user profile screen.

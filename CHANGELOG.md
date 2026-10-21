@@ -1,3 +1,12 @@
+# 5.2.0 - 21/10/26
+* Novo: campo "RG" (Registro Geral) no checkout, opcional por padrão e vinculado ao CPF — aparece apenas quando o cliente informa um CPF e fica oculto para CNPJ, como a IE/IM fazem com o CNPJ.
+* Novo: o RG usa o mesmo ID dos aplicativos de Nota Fiscal (`billing_rg`), então é reconhecido por eles. Está no checkout (clássico e blocos), na edição de endereço da conta, no perfil, no pedido (dados do admin com edição e "Carregar endereço"), na tela de pedido recebido e na API de pedidos e clientes.
+* Novo: opções de RG nas configurações de campos brasileiros (habilitar e obrigatoriedade).
+* Ajuste: o RG é posicionado logo após o documento, sem conflitar com a ordem dos demais campos do endereço.
+* Correção: os campos IE, IM, RG e Empresa não são mais apagados quando ficam ocultos — ao corrigir o documento (apagar ou redigitar CPF/CNPJ) o valor digitado é preservado e volta ao reexibir o campo.
+* Correção: os campos ocultos deixaram de ocupar espaço no layout do checkout clássico e da edição de endereço, sem margem ou preenchimento residuais.
+* Nota: o RG não tem padrão nacional de validação (a regra varia por estado), então a validação é de formato e tamanho, não de dígito verificador.
+
 # 5.1.1 - 20/10/26
 * Novo: a opção "Comportamento do Campo Empresa" ganhou o valor "Desabilitado", que deixa de gerar o campo Empresa no checkout (clássico e blocos), na edição de endereço da conta e na tela de perfil do usuário.
 * Correção: com o campo Empresa desabilitado, um campo Empresa reintroduzido por outro plugin não pode mais ficar obrigatório — permanece opcional e não trava mais o pedido.
