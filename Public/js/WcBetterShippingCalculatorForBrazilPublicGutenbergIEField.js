@@ -251,6 +251,15 @@ document.addEventListener("DOMContentLoaded", function () {
 			return customCompany
 		}
 
+		// Campo RG (pessoa física): quando a Empresa não existe, o IE ancora no RG
+		// — e NUNCA no mesmo elemento do RG (o container do CPF/CNPJ). Se ambos
+		// usassem o mesmo âncora, cada script reposicionaria o campo do outro no
+		// observer e o checkout em blocos travaria em loop infinito de mutações.
+		const rgContainer = container.querySelector('.wc-better-billing-rg')
+		if (rgContainer) {
+			return rgContainer
+		}
+
 		const documentInput = document.getElementById('billing_document')
 		if (documentInput) {
 			const documentContainer = documentInput.closest('.wc-block-components-text-input')

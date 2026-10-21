@@ -429,11 +429,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 companyField.style.height = '0px';
                 companyField.style.overflow = 'hidden';
                 
-                // CPF não tem empresa: limpa o campo (sem sentinela).
-                const companyInput = document.getElementById('billing_company');
-                if (companyInput) {
-                    companyInput.value = '';
-                }
+                // NÃO limpa o campo: esconder é só visual. Limpar fazia o cliente
+                // perder a Empresa ao corrigir o CNPJ. É o que o checkout em BLOCOS
+                // já faz ("Não limpar o campo, apenas esconder para manter
+                // flexibilidade", em ...GutenbergPersonType.js).
 
                 // Remove obrigatoriedade (ignora como o campo IE no CPF).
                 setCompanyRequired(false);
@@ -456,11 +455,7 @@ document.addEventListener("DOMContentLoaded", function () {
             companyField.style.height = '0px';
             companyField.style.overflow = 'hidden';
             
-            // CPF não tem empresa: limpa o campo (sem sentinela).
-            const companyInput = document.getElementById('billing_company');
-            if (companyInput) {
-                companyInput.value = '';
-            }
+            // NÃO limpa o campo (ver hideCompanyField): esconder é só visual.
 
             // Remove obrigatoriedade (ignora como o campo IE no CPF).
             setCompanyRequired(false);

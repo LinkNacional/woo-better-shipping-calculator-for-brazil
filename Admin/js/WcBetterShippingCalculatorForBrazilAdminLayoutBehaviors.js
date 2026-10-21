@@ -72,6 +72,36 @@
 		});
 	}
 
+	// ── 3.1 Campo RG: a obrigatoriedade só faz sentido com o campo habilitado ──
+	function initRgFieldState() {
+		var enableRgRadios = document.querySelectorAll('input[name="woo_better_calc_enable_rg_field"]');
+		var rgRequiredRadios = document.querySelectorAll('input[name="woo_better_calc_rg_required"]');
+
+		if (enableRgRadios.length === 0 || rgRequiredRadios.length === 0) {
+			return;
+		}
+
+		function isRgEnabled() {
+			return Array.prototype.some.call(enableRgRadios, function (radio) {
+				return radio.checked && radio.value === 'yes';
+			});
+		}
+
+		function updateRgRequiredState() {
+			var enabled = isRgEnabled();
+
+			rgRequiredRadios.forEach(function (radio) {
+				radio.disabled = !enabled;
+				radio.style.cursor = enabled ? '' : 'not-allowed';
+			});
+		}
+
+		updateRgRequiredState();
+		enableRgRadios.forEach(function (radio) {
+			radio.addEventListener('change', updateRgRequiredState);
+		});
+	}
+
 	// ── 3. Estados de dependência ──────────────────────────────────────────
 	function initDependencies() {
 		var positionRadios = document.querySelectorAll('input[name="woo_better_calc_cep_field_position"]');
@@ -250,6 +280,7 @@
 		if (!document.querySelector('.admin-layout-page-wrapper')) return;
 
 		initDependencies();
+		initRgFieldState();
 	}
 
 	if (document.readyState === 'loading') {

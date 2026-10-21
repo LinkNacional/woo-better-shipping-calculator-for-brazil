@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Fora do Brasil, não exibe IM
         if (currentCountry && currentCountry !== 'BR') {
-            hideIMField(true);
+            hideIMField();
             return;
         }
 
@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", function () {
             showIMField();
             setIMRequired(true);
         } else {
-            hideIMField(true);
+            hideIMField();
         }
     }
 
@@ -92,7 +92,7 @@ document.addEventListener("DOMContentLoaded", function () {
         imFieldWrapper.style.margin = '';
     }
 
-    function hideIMField(clearValue) {
+    function hideIMField() {
         if (!imFieldWrapper) {
             return;
         }
@@ -105,9 +105,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         setIMRequired(false);
 
-        if (clearValue && imInput) {
-            imInput.value = '';
-        }
+        // NÃO apaga o valor digitado (espelha o checkout em blocos): esconder é só
+        // visual, e limpar fazia o cliente perder a IM ao corrigir o CNPJ. O backend
+        // limpa a meta do PEDIDO quando o documento não é CNPJ (process_im_from_data).
     }
 
     function setupFieldListeners() {

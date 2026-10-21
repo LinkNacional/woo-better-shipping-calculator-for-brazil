@@ -195,7 +195,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Fora do Brasil, não exibe IE
         if (currentCountry && currentCountry !== 'BR') {
-            hideIEField(true);
+            hideIEField();
             return;
         }
 
@@ -220,7 +220,7 @@ document.addEventListener("DOMContentLoaded", function () {
             showIEField();
             setIERequired(true);
         } else {
-            hideIEField(true);
+            hideIEField();
         }
     }
 
@@ -241,7 +241,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    function hideIEField(clearValue) {
+    function hideIEField() {
         if (!ieFieldWrapper) {
             return;
         }
@@ -258,14 +258,24 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         setIERequired(false);
-        setIEFieldDisabled(false);
 
-        if (isentoCheckbox) {
-            isentoCheckbox.checked = false;
-        }
-
-        if (clearValue && ieInput) {
-            ieInput.value = '';
+        // NÃO apaga o valor digitado. Esconder o campo é só visual: o cliente pode
+        // estar corrigindo o CNPJ (apagando/redigitando) e perdia a IE, a IM, o RG e
+        // a Empresa já preenchidos. O checkout em BLOCOS já se comporta assim
+        // (`hideIEField()` sem limpeza), então o clássico passa a espelhá-lo.
+        // O backend continua limpando a meta do PEDIDO quando o documento não é
+        // CNPJ (process_ie_from_data), então nada vaza para o pedido.
+        if (ieInput && 'ISENTO' === ieInput.value) {
+            // "Isento" marcado: mantém o estado coerente para quando reexibir.
+            if (isentoCheckbox) {
+                isentoCheckbox.checked = true;
+            }
+            setIEFieldDisabled(true);
+        } else {
+            if (isentoCheckbox) {
+                isentoCheckbox.checked = false;
+            }
+            setIEFieldDisabled(false);
         }
     }
 

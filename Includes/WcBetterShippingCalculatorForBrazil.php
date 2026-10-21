@@ -766,6 +766,12 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_admin_billing_fields', $this, 'ensure_admin_phone_fields_billing', 99, 1);
         $this->loader->add_filter('woocommerce_admin_shipping_fields', $this, 'ensure_admin_phone_fields_shipping', 99, 1);
 
+        // Garante o campo RG nos campos EDITÁVEIS de cobrança do admin do pedido.
+        // Aditivo e em prioridade 99 (mesma estratégia do Telefone/Celular) para
+        // valer também com o plugin "Brazilian Market on WooCommerce" ativo —
+        // recurso ligado no woo-better vence a disputa pelo mesmo campo.
+        $this->loader->add_filter('woocommerce_admin_billing_fields', $this, 'ensure_admin_rg_field_billing', 99, 1);
+
         // Preenche o "Celular" ao usar "Carregar endereço de cobrança/entrega" no
         // admin do pedido (o WooCommerce só traz os campos nativos; o celular é o
         // nosso campo extra). O JS do WC faz `#_<tipo>_<chave>` para cada chave
@@ -809,6 +815,9 @@ class WcBetterShippingCalculatorForBrazil
         // Hook para validação de Inscrição Municipal (IM) no checkout clássico
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_im_field_value_classic');
 
+        // Hook para validação do RG no checkout clássico (obrigatório opcional)
+        $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_rg_field_value_classic');
+
         // Hook para validação de DDD do telefone no checkout clássico
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_phone_ddd_classic');
         
@@ -841,6 +850,12 @@ class WcBetterShippingCalculatorForBrazil
         // do contrário o Brazilian segue no comando.
         if ($brazilian_plugin_active) {
             $this->loader->add_action('woocommerce_checkout_process', $this, 'guard_brazilian_company_required', 11, 1);
+
+            // RG: o Brazilian exige o RG sempre que a opção DELE (`wcbcf_settings['rg']`)
+            // está ligada — ignorando a nossa ("RG obrigatório" começa DESLIGADO) e o
+            // fato de o campo só existir para CPF. Com o nosso recurso ligado, a
+            // configuração do woo-better vence (mesma lógica do campo Empresa).
+            $this->loader->add_action('woocommerce_checkout_process', $this, 'guard_brazilian_rg_required', 11, 1);
         }
 
         // Campos de telefone conforme o "Comportamento do Campo de Telefone" (woo_better_calc_phone_mode).
@@ -1000,6 +1015,16 @@ class WcBetterShippingCalculatorForBrazil
                 'type'  => 'text',
                 'show'  => false
             );
+
+            // RG: documento de pessoa física, logo abaixo do CPF (mesmo meta
+            // `_billing_rg` usado pelos aplicativos de NF-e).
+            if ($this->rg_field_enabled()) {
+                $fields['rg'] = array(
+                    'label' => __('RG', 'woo-better-shipping-calculator-for-brazil'),
+                    'type'  => 'text',
+                    'show'  => false
+                );
+            }
         }
         
         if ($person_type === 'legal' || $person_type === 'both') {
@@ -1285,6 +1310,43 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Garante o campo RG nos campos de cobrança editáveis do admin do pedido.
+     *
+     * Roda em prioridade 99 e é puramente ADITIVO — não reconstrói nem reordena o
+     * array recebido —, para valer também quando o plugin "Brazilian Market on
+     * WooCommerce" (que também registra `_billing_rg`) estiver ativo: recurso
+     * ligado no woo-better vence a disputa pelo mesmo campo.
+     *
+     * @param array $fields
+     * @return array
+     */
+    public function ensure_admin_rg_field_billing($fields)
+    {
+        if (! is_array($fields) || ! $this->rg_field_enabled()) {
+            return $fields;
+        }
+
+        // Espelha o gate dos campos de Telefone/Celular ("Exibir detalhes do pedido").
+        if (get_option('woo_better_calc_enable_order_details', 'yes') !== 'yes') {
+            return $fields;
+        }
+
+        $rg = array(
+            'label' => __('RG', 'woo-better-shipping-calculator-for-brazil'),
+            'type'  => 'text',
+            'show'  => false,
+        );
+
+        if (isset($fields['rg']) && is_array($fields['rg'])) {
+            $fields['rg'] = array_merge($fields['rg'], $rg);
+        } else {
+            $fields['rg'] = $rg;
+        }
+
+        return $fields;
+    }
+
+    /**
      * Adiciona "Telefone"/"Celular" aos campos do pedido (admin) SE faltarem.
      *
      * Roda em prioridade alta (99) e é puramente ADITIVO — nunca reconstrói nem
@@ -1420,7 +1482,18 @@ class WcBetterShippingCalculatorForBrazil
         if (!function_exists('is_plugin_active')) {
             include_once(ABSPATH . 'wp-admin/includes/plugin.php');
         }
-        
+
+        // RG: salvo ANTES do bail do plugin Brazilian, porque o nosso recurso tem
+        // precedência sobre o dele (mesmo meta `_billing_rg`). Com o nosso recurso
+        // desligado NADA é gravado aqui — aí quem manda é o Brazilian.
+        if ($this->rg_field_enabled()) {
+            $rg_order = wc_get_order($order_id);
+            if ($rg_order && isset($_POST['_billing_rg'])) {
+                $rg_order->update_meta_data('_billing_rg', $this->sanitize_rg_value(wp_unslash($_POST['_billing_rg'])));
+                $rg_order->save();
+            }
+        }
+
         if (is_plugin_active('woocommerce-extra-checkout-fields-for-brazil/woocommerce-extra-checkout-fields-for-brazil.php')) {
             return;
         }
@@ -1966,6 +2039,17 @@ class WcBetterShippingCalculatorForBrazil
                         'label' => __('CPF', 'woo-better-shipping-calculator-for-brazil'),
                         'value' => $billing_cpf
                     ];
+                }
+
+                // RG: documento de pessoa física (vem logo abaixo do CPF).
+                if ($this->rg_field_enabled()) {
+                    $billing_rg = $order->get_meta('_billing_rg');
+                    if (!empty($billing_rg)) {
+                        $display_data['rg'] = [
+                            'label' => __('RG', 'woo-better-shipping-calculator-for-brazil'),
+                            'value' => $billing_rg
+                        ];
+                    }
                 }
             }
 
@@ -3221,6 +3305,143 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Verifica se o recurso "Campo RG" está ativo.
+     *
+     * O RG é um documento de PESSOA FÍSICA, então depende do "Tipo de Cliente"
+     * permitir pessoa física (`physical` ou `both`).
+     *
+     * @return bool
+     */
+    private function rg_field_enabled()
+    {
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+
+        return 'yes' === get_option('woo_better_calc_enable_rg_field', 'no')
+            && in_array($person_type, array('physical', 'both'), true);
+    }
+
+    /**
+     * Calcula a prioridade do campo RG: o primeiro número livre DEPOIS do campo
+     * de documento (CPF/CNPJ), para o RG aparecer logo abaixo do campo pai.
+     *
+     * Por que não usar um número fixo: o checkout clássico já ocupa 27 (documento),
+     * 28-30 (persontype/CPF/CNPJ, `type=hidden`), 31 (Empresa), 32 (IE), 33 (IM) e
+     * 34 (CEP, quando "Posição do CEP" está ligada) — um valor fixo em 34 empatava
+     * com o **CEP**, e o RG caía depois do checkbox do CEP. No EDIT-ADDRESS o mapa
+     * é outro (Empresa em 28), então o slot livre muda de tela para tela.
+     *
+     * Campos `type=hidden` são IGNORADOS: o WooCommerce até imprime um `<p>` para
+     * eles, mas sem altura (não ocupam espaço visual), então empatar com eles é
+     * inofensivo — o que não pode é empatar com campo visível (a ordem entre
+     * prioridades iguais fica indefinida).
+     *
+     * @param array $fields    Campos do endereço (billing ou o array plano do edit-address).
+     * @param int   $document_priority Prioridade do campo de documento.
+     * @return int
+     */
+    private function rg_field_priority($fields, $document_priority = 27)
+    {
+        $used = array();
+
+        if (is_array($fields)) {
+            foreach ($fields as $field) {
+                if (! is_array($field)) {
+                    continue;
+                }
+                if (isset($field['type']) && 'hidden' === $field['type']) {
+                    continue;
+                }
+                if (isset($field['priority'])) {
+                    $used[(int) $field['priority']] = true;
+                }
+            }
+        }
+
+        $priority = (int) $document_priority + 1;
+        while (isset($used[$priority])) {
+            $priority++;
+        }
+
+        return $priority;
+    }
+
+    /**
+     * Verifica se o RG é obrigatório quando visível (padrão: opcional).
+     *
+     * @return bool
+     */
+    private function rg_field_required()
+    {
+        return 'yes' === get_option('woo_better_calc_rg_required', 'no');
+    }
+
+    /**
+     * Normaliza o valor do RG.
+     *
+     * Mantém o MESMO formato aceito pelo plugin "Brazilian Market on WooCommerce"
+     * (que usa o meta `billing_rg`/`_billing_rg` — id universal aceito pelos
+     * aplicativos de NF-e): dígitos, letras (inclusive o "X" do dígito de São
+     * Paulo), ponto, barra e hífen, em MAIÚSCULAS e com no máximo 20 caracteres.
+     *
+     * @param string $value Valor cru (POST/meta/API).
+     * @return string
+     */
+    private function sanitize_rg_value($value)
+    {
+        $value = strtoupper(sanitize_text_field((string) $value));
+        $value = preg_replace('/[^0-9A-Z\.\-\/ ]/', '', $value);
+
+        return substr(trim((string) $value), 0, 20);
+    }
+
+    /**
+     * Remove a formatação do documento (CPF/CNPJ) para contagem de caracteres.
+     *
+     * @param string $document
+     * @return string
+     */
+    private function document_clean_value($document)
+    {
+        return preg_replace('/[^0-9A-Z]/', '', strtoupper((string) $document));
+    }
+
+    /**
+     * Valida o preenchimento do RG no checkout clássico (shortcode).
+     *
+     * O RG fica VINCULADO ao CPF: só é exibido — e só é exigido — quando o
+     * documento informado é um CPF (11 dígitos). Com CNPJ o campo não aparece,
+     * então nada é exigido. A obrigatoriedade só vale com a opção "RG
+     * obrigatório" ligada (padrão: opcional). Não há cálculo de dígito
+     * verificador: o RG não tem padrão nacional (a regra varia por UF).
+     *
+     * @return void
+     */
+    public function validate_rg_field_value_classic()
+    {
+        if (! $this->rg_field_enabled() || ! $this->rg_field_required()) {
+            return;
+        }
+
+        $billing_document = isset($_POST['billing_document']) ? sanitize_text_field(wp_unslash($_POST['billing_document'])) : '';
+        $billing_cpf = isset($_POST['billing_cpf']) ? sanitize_text_field(wp_unslash($_POST['billing_cpf'])) : '';
+
+        if ('' === $billing_document) {
+            $billing_document = $billing_cpf;
+        }
+
+        // RG só existe para pessoa física (documento CPF).
+        if (11 !== strlen($this->document_clean_value($billing_document))) {
+            return;
+        }
+
+        $billing_rg = isset($_POST['billing_rg']) ? $this->sanitize_rg_value(wp_unslash($_POST['billing_rg'])) : '';
+
+        if ('' === $billing_rg) {
+            wc_add_notice(__('Por favor, preencha o RG.', 'woo-better-shipping-calculator-for-brazil'), 'error');
+        }
+    }
+
+    /**
      * Retorna o tipo de erro do telefone, usando o libphonenumber (~300 países).
      *
      * - null     : válido
@@ -3610,6 +3831,9 @@ class WcBetterShippingCalculatorForBrazil
 
         // Processa dados de Inscrição Municipal (IM)
         $this->process_im_from_data($order, $data);
+
+        // Processa dados de RG (vinculado ao CPF)
+        $this->process_rg_from_data($order, $data);
 
         $billing_country_code = '';
         $shipping_country_code = '';
@@ -4117,6 +4341,9 @@ class WcBetterShippingCalculatorForBrazil
         
         // Processa dados de Inscrição Municipal (IM)
         $this->process_im_from_request($order, $request);
+
+        // Processa dados de RG (vinculado ao CPF)
+        $this->process_rg_from_request($order, $request);
         
         // Processa dados de telefone formatado
         $this->process_phone_formatter_from_request($order, $request);
@@ -4824,6 +5051,25 @@ class WcBetterShippingCalculatorForBrazil
                 },
             ]);
 
+            // Registra campos para RG (documento de pessoa física, vinculado ao CPF)
+            woocommerce_store_api_register_endpoint_data( [
+                'endpoint'        => 'checkout',
+                'namespace'       => 'woo_better_rg_field',
+                'schema_callback' => function() {
+                    return [
+                        'billing_rg' => [
+                            'type'     => 'string',
+                            'readonly' => true,
+                        ],
+                    ];
+                },
+                'data_callback' => function() {
+                    return [
+                        'billing_rg'  => '',
+                    ];
+                },
+            ]);
+
             // Registra campos para telefone formatado
             woocommerce_store_api_register_endpoint_data( [
                 'endpoint'        => 'checkout',
@@ -4936,6 +5182,12 @@ class WcBetterShippingCalculatorForBrazil
             woocommerce_store_api_register_update_callback([
                 'namespace' => 'woo_better_im_field',
                 'callback'  => [ $this, 'handle_im_update' ],
+            ]);
+
+            // Callback para RG (campo injetado via JS no bloco)
+            woocommerce_store_api_register_update_callback([
+                'namespace' => 'woo_better_rg_field',
+                'callback'  => [ $this, 'handle_rg_update' ],
             ]);
 
             // Callback para telefone formatado
@@ -5232,6 +5484,30 @@ class WcBetterShippingCalculatorForBrazil
 
             if (is_user_logged_in()) {
                 update_user_meta( get_current_user_id(), 'billing_im', $billing_im );
+            }
+        }
+    }
+
+    /**
+     * Guarda o RG digitado no checkout em blocos (sessão + perfil).
+     *
+     * Espelha `handle_im_update`: o JS do bloco envia o valor via
+     * `extensionCartUpdate` a cada digitação (debounce).
+     *
+     * @param array $data Dados do namespace `woo_better_rg_field`.
+     * @return void
+     */
+    public function handle_rg_update( $data ) {
+        if (! function_exists('WC') || ! WC()->session ) {
+            return;
+        }
+
+        if ( isset( $data['billing_rg'] ) ) {
+            $billing_rg = $this->sanitize_rg_value( $data['billing_rg'] );
+            WC()->session->set( 'billing_rg', $billing_rg );
+
+            if (is_user_logged_in()) {
+                update_user_meta( get_current_user_id(), 'billing_rg', $billing_rg );
             }
         }
     }
@@ -5661,6 +5937,27 @@ class WcBetterShippingCalculatorForBrazil
             );
         }
 
+        // Campo de RG - somente para Pessoa Física e VINCULADO ao CPF: o JS
+        // só exibe o campo quando o documento informado é um CPF completo
+        // (11 dígitos). A prioridade é CALCULADA para cair logo abaixo do
+        // CPF/CNPJ (27), sem empatar com campo visível — um valor fixo em 34
+        // empatava com o CEP e jogava o RG para depois do checkbox do CEP.
+        if ($this->rg_field_enabled()) {
+            $fields['billing']['billing_rg'] = array(
+                'label'       => __('RG', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Digite o RG', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => $this->rg_field_required(),
+                'class'       => array('form-row-wide', 'woo-better-rg-field'),
+                'priority'    => $this->rg_field_priority($fields['billing']),
+                'type'        => 'text',
+                'autocomplete' => 'off',
+                'custom_attributes' => array(
+                    'maxlength' => '20',
+                    'data-rg-field' => '1'
+                )
+            );
+        }
+
         // Campos de bairro
         $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
         if ($neighborhood_enabled === 'yes') {
@@ -5692,6 +5989,7 @@ class WcBetterShippingCalculatorForBrazil
             if (!isset($fields['billing']['billing_phone'])) {
                 $fields['billing']['billing_phone_country'] = array(
                     'type'        => 'hidden',
+                    'class'       => array('woo-better-hidden-field'),
                     'default'     => '+55',
                     'required'    => false,
                 );
@@ -5706,6 +6004,7 @@ class WcBetterShippingCalculatorForBrazil
             } else {
                 $fields['billing']['billing_phone_country'] = array(
                     'type'        => 'hidden',
+                    'class'       => array('woo-better-hidden-field'),
                     'default'     => '+55',
                     'required'    => false,
                 );
@@ -5714,6 +6013,7 @@ class WcBetterShippingCalculatorForBrazil
             if (!isset($fields['shipping']['shipping_phone'])) {
                 $fields['shipping']['shipping_phone_country'] = array(
                     'type'        => 'hidden',
+                    'class'       => array('woo-better-hidden-field'),
                     'default'     => '+55',
                     'required'    => false,
                 );
@@ -5728,6 +6028,7 @@ class WcBetterShippingCalculatorForBrazil
             } else {
                 $fields['shipping']['shipping_phone_country'] = array(
                     'type'        => 'hidden',
+                    'class'       => array('woo-better-hidden-field'),
                     'default'     => '+55',
                     'required'    => false,
                 );
@@ -6601,6 +6902,114 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Processa os dados de RG no checkout de BLOCOS.
+     *
+     * Espelha `process_im_from_request`, porém INVERTIDO: o RG é exclusivo de
+     * pessoa FÍSICA, então só é gravado quando o documento é um CPF (11 dígitos).
+     * Com CNPJ (ou documento ausente) a meta é LIMPA — o RG não pertence ao
+     * pedido de pessoa jurídica.
+     *
+     * @param WC_Order $order
+     * @param WP_REST_Request $request
+     * @return void
+     */
+    private function process_rg_from_request($order, $request)
+    {
+        if (! $this->rg_field_enabled()) {
+            return;
+        }
+
+        $extensions = $request->get_param('extensions') ?? [];
+
+        // Determina se o documento submetido é um CPF (11 dígitos).
+        $billing_document = '';
+        if (!empty($extensions['woo_better_person_type']['billing_cpf'])) {
+            $billing_document = sanitize_text_field($extensions['woo_better_person_type']['billing_cpf']);
+        }
+        if (empty($billing_document) && !empty($extensions['woo_better_person_type']['billing_document'])) {
+            $billing_document = sanitize_text_field($extensions['woo_better_person_type']['billing_document']);
+        }
+        if (empty($billing_document) && isset($_POST['billing_cpf'])) {
+            $billing_document = sanitize_text_field(wp_unslash($_POST['billing_cpf']));
+        }
+        if (empty($billing_document) && isset($_POST['billing_document'])) {
+            $billing_document = sanitize_text_field(wp_unslash($_POST['billing_document']));
+        }
+
+        $is_cpf = 11 === strlen($this->document_clean_value($billing_document));
+
+        if (!$is_cpf) {
+            $order->update_meta_data('_billing_rg', '');
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'billing_rg', '');
+            }
+
+            // Limpa também a sessão, senão o valor antigo de RG volta ao checkout.
+            if (function_exists('WC') && WC()->session) {
+                WC()->session->set('billing_rg', '');
+            }
+            return;
+        }
+
+        if (isset($extensions['woo_better_rg_field'])) {
+            $rg_data = $extensions['woo_better_rg_field'];
+            if (isset($rg_data['billing_rg'])) {
+                $billing_rg = $this->sanitize_rg_value($rg_data['billing_rg']);
+                $order->update_meta_data('_billing_rg', $billing_rg);
+
+                if (is_user_logged_in()) {
+                    update_user_meta(get_current_user_id(), 'billing_rg', $billing_rg);
+                }
+            }
+        }
+    }
+
+    /**
+     * Processa os dados de RG no checkout clássico.
+     *
+     * Espelha `process_rg_from_request` (só grava para CPF; limpa para CNPJ).
+     *
+     * @param WC_Order $order
+     * @param array $data
+     * @return void
+     */
+    private function process_rg_from_data($order, $data)
+    {
+        if (! $this->rg_field_enabled()) {
+            return;
+        }
+
+        $billing_document = '';
+        if (!empty($data['billing_cpf'])) {
+            $billing_document = sanitize_text_field(wp_unslash($data['billing_cpf']));
+        } elseif (!empty($data['billing_document'])) {
+            $billing_document = sanitize_text_field(wp_unslash($data['billing_document']));
+        }
+        $is_cpf = 11 === strlen($this->document_clean_value($billing_document));
+
+        if (!$is_cpf) {
+            $order->update_meta_data('_billing_rg', '');
+            if (is_user_logged_in()) {
+                update_user_meta(get_current_user_id(), 'billing_rg', '');
+            }
+
+            // Limpa também a sessão, senão o valor antigo de RG volta ao checkout.
+            if (function_exists('WC') && WC()->session) {
+                WC()->session->set('billing_rg', '');
+            }
+            return;
+        }
+
+        $billing_rg = isset($data['billing_rg']) ? $this->sanitize_rg_value(wp_unslash($data['billing_rg'])) : '';
+
+        $order->update_meta_data('_billing_rg', $billing_rg);
+
+        if (is_user_logged_in()) {
+            update_user_meta(get_current_user_id(), 'billing_rg', $billing_rg);
+        }
+    }
+
+    /**
      * Processa os dados de telefone formatado no checkout de blocos
      *
      * @param WC_Order $order
@@ -7028,6 +7437,7 @@ class WcBetterShippingCalculatorForBrazil
             $errors->remove( 'billing_neighborhood_required' );
             $errors->remove( 'billing_ie_required' );
             $errors->remove( 'billing_im_required' );
+            $errors->remove( 'billing_rg_required' );
             // Em modo "dynamic" o campo "Empresa" só existe no Brasil (depende do CNPJ),
             // então não deve ser exigido de clientes de outros países.
             if ( $controls_company ) {
@@ -7043,6 +7453,14 @@ class WcBetterShippingCalculatorForBrazil
             if ( $controls_company ) {
                 $errors->remove( 'billing_company_required' );
             }
+        }
+
+        // RG: é documento de pessoa FÍSICA — com CNPJ (ou documento incompleto) o
+        // campo fica OCULTO no checkout, então o `required` do array de campos não
+        // pode bloquear o pedido. Só age quando o recurso está ligado no woo-better
+        // (com ele desligado, Brazilian/outro plugin segue no comando).
+        if ( ! $is_cpf && $this->rg_field_enabled() ) {
+            $errors->remove( 'billing_rg_required' );
         }
     }
 
@@ -7079,6 +7497,21 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
+        $this->remove_brazilian_required_notice( __( 'Company', 'woocommerce-extra-checkout-fields-for-brazil' ) );
+    }
+
+    /**
+     * Remove da sessão o aviso "<campo> is a required field" gerado pelo plugin
+     * "Brazilian Market on WooCommerce" (ele usa `wc_add_notice()`, então não pode
+     * ser removido pelo objeto `$errors` de `lkn_disabled_require_field()`).
+     *
+     * O match é feito na mensagem EXATA do Brazilian (mesmo text domain), o que
+     * funciona inclusive com o pt_BR traduzido.
+     *
+     * @param string $label Texto do campo exatamente como o Brazilian usa (ex.: 'RG').
+     * @return void
+     */
+    private function remove_brazilian_required_notice( $label ) {
         if ( ! function_exists( 'WC' ) || ! WC()->session ) {
             return;
         }
@@ -7088,17 +7521,15 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        // Monta a mensagem idêntica à gerada pelo Brazilian (mesmo text domain e
-        // estrutura), garantindo o match inclusive quando traduzida (ex.: pt_BR).
-        $company_required = sprintf(
+        $required_notice = sprintf(
             '<strong>%s</strong> %s.',
-            __( 'Company', 'woocommerce-extra-checkout-fields-for-brazil' ),
+            $label,
             __( 'is a required field', 'woocommerce-extra-checkout-fields-for-brazil' )
         );
 
         $changed = false;
         foreach ( $notices['error'] as $index => $notice ) {
-            if ( isset( $notice['notice'] ) && trim( (string) $notice['notice'] ) === $company_required ) {
+            if ( isset( $notice['notice'] ) && trim( (string) $notice['notice'] ) === $required_notice ) {
                 unset( $notices['error'][ $index ] );
                 $changed = true;
             }
@@ -7108,6 +7539,36 @@ class WcBetterShippingCalculatorForBrazil
             $notices['error'] = array_values( $notices['error'] );
             WC()->session->set( 'wc_notices', $notices );
         }
+    }
+
+    /**
+     * Remove a exigência de RG feita pelo plugin "Brazilian Market on WooCommerce"
+     * quando a configuração do woo-better deve prevalecer.
+     *
+     * O Brazilian exige o RG (`wcbcf_settings['rg']`) sempre que o documento é CPF,
+     * sem consultar a nossa opção "RG obrigatório". Como o woo-better tem precedência
+     * quando o recurso está ligado, mantemos o aviso APENAS quando o RG é obrigatório
+     * aqui E o documento é CPF (o único cenário em que o campo está visível).
+     *
+     * @return void
+     */
+    public function guard_brazilian_rg_required() {
+        if ( ! $this->rg_field_enabled() ) {
+            return;
+        }
+
+        if ( $this->rg_field_required() ) {
+            $document = isset( $_POST['billing_document'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_document'] ) ) : '';
+            if ( '' === $document && ! empty( $_POST['billing_cpf'] ) ) {
+                $document = sanitize_text_field( wp_unslash( $_POST['billing_cpf'] ) );
+            }
+
+            if ( 11 === strlen( $this->document_clean_value( $document ) ) ) {
+                return;
+            }
+        }
+
+        $this->remove_brazilian_required_notice( __( 'RG', 'woocommerce-extra-checkout-fields-for-brazil' ) );
     }
 
     /**
@@ -7420,6 +7881,7 @@ class WcBetterShippingCalculatorForBrazil
         $order_data['billing_address']['cpf']          = $this->format_number($order->get_meta('_billing_cpf'));
         $order_data['billing_address']['cnpj']         = $this->format_number($order->get_meta('_billing_cnpj'));
         $order_data['billing_address']['ie']           = $order->get_meta('_billing_ie');
+        $order_data['billing_address']['rg']           = $order->get_meta('_billing_rg');
         $order_data['billing_address']['number']       = $order->get_meta('_billing_number');
         $order_data['billing_address']['neighborhood'] = $order->get_meta('_billing_neighborhood');
         $order_data['billing_address']['birthdate']    = $order->get_meta('_billing_birthdate');
@@ -7435,6 +7897,7 @@ class WcBetterShippingCalculatorForBrazil
             $order_data['customer']['billing_address']['cpf']          = $this->format_number($order->get_meta('_billing_cpf'));
             $order_data['customer']['billing_address']['cnpj']         = $this->format_number($order->get_meta('_billing_cnpj'));
             $order_data['customer']['billing_address']['ie']           = $order->get_meta('_billing_ie');
+            $order_data['customer']['billing_address']['rg']           = $order->get_meta('_billing_rg');
             $order_data['customer']['billing_address']['number']       = $order->get_meta('_billing_number');
             $order_data['customer']['billing_address']['neighborhood'] = $order->get_meta('_billing_neighborhood');
             $order_data['customer']['billing_address']['birthdate']    = $order->get_meta('_billing_birthdate');
@@ -7463,6 +7926,7 @@ class WcBetterShippingCalculatorForBrazil
         $customer_data['billing_address']['cpf']          = $this->format_number($customer->get_meta('billing_cpf'));
         $customer_data['billing_address']['cnpj']         = $this->format_number($customer->get_meta('billing_cnpj'));
         $customer_data['billing_address']['ie']           = $customer->get_meta('billing_ie');
+        $customer_data['billing_address']['rg']           = $customer->get_meta('billing_rg');
         $customer_data['billing_address']['number']       = $customer->get_meta('billing_number');
         $customer_data['billing_address']['neighborhood'] = $customer->get_meta('billing_neighborhood');
         $customer_data['billing_address']['birthdate']    = $customer->get_meta('billing_birthdate');
@@ -7491,6 +7955,7 @@ class WcBetterShippingCalculatorForBrazil
         $response->data['billing']['cpf']          = $this->format_number($customer->get_meta('billing_cpf'));
         $response->data['billing']['cnpj']         = $this->format_number($customer->get_meta('billing_cnpj'));
         $response->data['billing']['ie']           = $customer->get_meta('billing_ie');
+        $response->data['billing']['rg']           = $customer->get_meta('billing_rg');
         $response->data['billing']['number']       = $customer->get_meta('billing_number');
         $response->data['billing']['neighborhood'] = $customer->get_meta('billing_neighborhood');
 
@@ -7533,6 +7998,7 @@ class WcBetterShippingCalculatorForBrazil
         $response->data['billing']['cpf']          = $this->format_number($order->get_meta('_billing_cpf'));
         $response->data['billing']['cnpj']         = $this->format_number($order->get_meta('_billing_cnpj'));
         $response->data['billing']['ie']           = $order->get_meta('_billing_ie');
+        $response->data['billing']['rg']           = $order->get_meta('_billing_rg');
         $response->data['billing']['number']       = $order->get_meta('_billing_number');
         $response->data['billing']['neighborhood'] = $order->get_meta('_billing_neighborhood');
         $response->data['billing']['birthdate']    = $order->get_meta('_billing_birthdate');
@@ -7687,6 +8153,7 @@ class WcBetterShippingCalculatorForBrazil
             || (get_option('woo_better_calc_enable_neighborhood_field', 'no') === 'yes')
             || (get_option('woo_better_calc_enable_ie_field', 'no') === 'yes')
             || (get_option('woo_better_calc_enable_im_field', 'no') === 'yes')
+            || (get_option('woo_better_calc_enable_rg_field', 'no') === 'yes')
             || (get_option('woo_better_calc_enable_birthdate_field', 'no') === 'yes')
             || (get_option('woo_better_calc_enable_gender_field', 'no') === 'yes');
     }
@@ -7792,6 +8259,10 @@ class WcBetterShippingCalculatorForBrazil
             $billing['billing_document'] = array('label' => $document_label, 'description' => '');
         }
 
+        if ($this->rg_field_enabled()) {
+            $billing['billing_rg'] = array('label' => __('RG', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
+        }
+
         if (!$company_disabled && ($person_type === 'legal' || $person_type === 'both' || isset($incoming_billing['billing_company']))) {
             $billing['billing_company'] = $take($incoming_billing, 'billing_company', __('Empresa', 'woo-better-shipping-calculator-for-brazil'));
         }
@@ -7804,8 +8275,9 @@ class WcBetterShippingCalculatorForBrazil
             $billing['billing_im'] = array('label' => __('Inscrição Municipal (IM)', 'woo-better-shipping-calculator-for-brazil'), 'description' => '');
         }
 
-        // RG é exclusivo do Brazilian: preserva se existir para não perder o dado.
-        if (isset($incoming_billing['billing_rg'])) {
+        // RG: com o recurso desligado no woo-better, preserva o campo do Brazilian
+        // (mesmo meta `billing_rg`) para não perder o dado na tela de perfil.
+        if (!$this->rg_field_enabled() && isset($incoming_billing['billing_rg'])) {
             $billing['billing_rg'] = $incoming_billing['billing_rg'];
         }
 
@@ -8003,11 +8475,16 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
-        // 3. IE/IM em maiúsculas (consistente com o checkout).
+        // 3. IE/IM e RG em maiúsculas (consistente com o checkout).
         foreach (array('billing_ie', 'billing_im') as $key) {
             if (isset($_POST[$key])) {
                 update_user_meta($user_id, $key, strtoupper(sanitize_text_field(wp_unslash($_POST[$key]))));
             }
+        }
+
+        // 3b. RG (mesmo normalize do checkout: maiúsculas, sem símbolos estranhos).
+        if ($this->rg_field_enabled() && isset($_POST['billing_rg'])) {
+            update_user_meta($user_id, 'billing_rg', $this->sanitize_rg_value(wp_unslash($_POST['billing_rg'])));
         }
     }
 
@@ -8099,6 +8576,7 @@ class WcBetterShippingCalculatorForBrazil
             if (! isset($fields['billing_phone_country'])) {
                 $fields['billing_phone_country'] = array(
                     'type'     => 'hidden',
+                    'class'    => array('woo-better-hidden-field'),
                     'default'  => '+55',
                     'required' => false,
                 );
@@ -8229,6 +8707,26 @@ class WcBetterShippingCalculatorForBrazil
                 )
             );
         }
+
+        // Campo de RG - somente para Pessoa Física (vinculado ao CPF).
+        // Prioridade calculada (ver rg_field_priority): no edit-address a Empresa
+        // ocupa 28, então o slot livre do RG é diferente do checkout clássico.
+        if ($this->rg_field_enabled()) {
+            $billing_rg_value = get_user_meta(get_current_user_id(), 'billing_rg', true);
+            $fields['billing_rg'] = array(
+                'label'       => __('RG', 'woo-better-shipping-calculator-for-brazil'),
+                'placeholder' => __('Digite o RG', 'woo-better-shipping-calculator-for-brazil'),
+                'required'    => $this->rg_field_required(),
+                'class'       => array('form-row-wide', 'woo-better-rg-field'),
+                'priority'    => $this->rg_field_priority($fields),
+                'type'        => 'text',
+                'value'       => $billing_rg_value ? $this->sanitize_rg_value($billing_rg_value) : '',
+                'custom_attributes' => array(
+                    'maxlength' => '20',
+                    'data-rg-field' => '1'
+                )
+            );
+        }
         
         // Campo de data de nascimento
         if ($birthdate_enabled === 'yes') {
@@ -8351,6 +8849,10 @@ class WcBetterShippingCalculatorForBrazil
             if (in_array($company_behavior, array('dynamic', 'disabled'), true) && isset($fields['billing_company'])) {
                 $fields['billing_company']['required'] = false;
             }
+        } elseif ($this->rg_field_enabled() && isset($fields['billing_rg'])) {
+            // RG é o INVERSO do IE/IM: só existe para CPF. Com CNPJ o campo fica
+            // oculto no formulário, então não pode ser exigido no save do endereço.
+            $fields['billing_rg']['required'] = false;
         }
 
         return $fields;
@@ -8458,6 +8960,7 @@ class WcBetterShippingCalculatorForBrazil
             if (! isset($fields['shipping_phone_country'])) {
                 $fields['shipping_phone_country'] = array(
                     'type'     => 'hidden',
+                    'class'    => array('woo-better-hidden-field'),
                     'default'  => '+55',
                     'required' => false,
                 );
@@ -8703,6 +9206,12 @@ class WcBetterShippingCalculatorForBrazil
                 $billing_im = isset($_POST['billing_im']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['billing_im']))) : '';
                 update_user_meta($user_id, 'billing_im', $billing_im);
             }
+
+            // Salvar RG (documento de pessoa física, mesmo meta do Brazilian).
+            if ($this->rg_field_enabled()) {
+                $billing_rg = isset($_POST['billing_rg']) ? $this->sanitize_rg_value(wp_unslash($_POST['billing_rg'])) : '';
+                update_user_meta($user_id, 'billing_rg', $billing_rg);
+            }
         }
     }
     
@@ -8788,6 +9297,10 @@ class WcBetterShippingCalculatorForBrazil
 
             if ($im_field_enabled === 'yes' && ($person_type === 'legal' || $person_type === 'both')) {
                 $data['billing']['im'] = get_user_meta($user_id, 'billing_im', true);
+            }
+
+            if ($this->rg_field_enabled()) {
+                $data['billing']['rg'] = get_user_meta($user_id, 'billing_rg', true);
             }
         }
 
