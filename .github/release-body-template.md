@@ -37,10 +37,6 @@ This is a major update for store owners who need to issue invoices (Nota Fiscal)
 1.  **Bling & ERP Integration:** Because we follow the standard meta-keys structure, this plugin is **fully compatible with Bling, Tiny**, and other ERPs that integrate with WooCommerce. You can issue invoices (NFe) seamlessly without data errors.
 2.  **Standardized Data:** Ensures that CPF, CNPJ, and address data are saved exactly how external integration tools expect them.
 
-### Watch the Plugin Demo:
-
-[youtube https://www.youtube.com/watch?v=oHnUt0zYLv0]
-
 ### Key Features & Improvements:
 
 #### **On the Checkout Page:**
