@@ -398,13 +398,19 @@ class WcBetterShippingCalculatorForBrazil
 
                     <div style="margin-top: 10px;">
                         <p style="font-size: 14px; margin-top: 8px;">
-                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Campo de Inscrição Municipal (IM) no checkout, exibido para Pessoa Jurídica (CNPJ) e obrigatório quando preenchido.', 'woo-better-shipping-calculator-for-brazil' ); ?>
+                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Campo de RG (Registro Geral) no checkout, exibido para Pessoa Física e vinculado ao CPF — opcional por padrão e com o mesmo campo usado pelos aplicativos de Nota Fiscal.', 'woo-better-shipping-calculator-for-brazil' ); ?>
                         </p>
                     </div>
 
                     <div style="margin-top: 10px;">
                         <p style="font-size: 14px; margin-top: 8px;">
-                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Novo fluxo dos campos de Telefone e Celular no checkout (clássico e blocos): modos de comportamento, máscara/DDI, validação e campo de celular opcional.', 'woo-better-shipping-calculator-for-brazil' ); ?>
+                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Campo de Inscrição Municipal (IM) no checkout, exibido para Pessoa Jurídica (CNPJ).', 'woo-better-shipping-calculator-for-brazil' ); ?>
+                        </p>
+                    </div>
+
+                    <div style="margin-top: 10px;">
+                        <p style="font-size: 14px; margin-top: 8px;">
+                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Novo fluxo dos campos de Telefone e Celular no checkout (clássico e blocos).', 'woo-better-shipping-calculator-for-brazil' ); ?>
                         </p>
                     </div>
 
