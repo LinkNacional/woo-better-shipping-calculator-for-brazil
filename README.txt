@@ -61,6 +61,29 @@ This is a major update for store owners who need to issue invoices (Nota Fiscal)
 
 More details can be found in the [Frequently Asked Questions (FAQ)](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
 
+= Checkout fields =
+
+Below is every field the plugin adds or manages, on the billing and shipping address forms (classic checkout, block checkout, the account's edit-address page and the order admin screen):
+
+* **CPF/CNPJ** (`billing_document`): a single document field with mask and validation. It reads the number of digits to tell individuals (CPF, 11 digits) from companies (CNPJ, 14 digits) — and that choice drives the rest of the form.
+* **Person type** (`billing_persontype`): hidden field that stores the type worked out from the document, so other plugins and ERPs read "individual" or "company" the way they expect.
+* **CPF** (`billing_cpf`) and **CNPJ** (`billing_cnpj`): hidden companions that receive the same value as the document, for invoice (NF-e) plugins and ERPs that look for these keys.
+* **Company** (`billing_company`): shown for companies. Its behavior is configurable — Dynamic, Optional, Required or Disabled.
+* **State registration / Inscrição Estadual** (`billing_ie`): shown for companies, with an "Isento" (exempt) checkbox. Required when enabled.
+* **Municipal registration / Inscrição Municipal** (`billing_im`): shown for companies and required for them. No "Isento" option, because the municipal registration is what identifies the business for service invoices.
+* **RG** (`billing_rg`): shown for individuals only, next to the CPF, and hidden for companies. Optional by default. Saved with the same key used by invoice apps, so the value is already there when you issue the nota fiscal.
+* **Number** (`billing_number`): the street number, mandatory and usually missing from standard WooCommerce forms. It comes with a "Sem Número" (no number) checkbox that fills the field for addresses without a number.
+* **Neighborhood / Bairro** (`billing_neighborhood`): mandatory neighborhood field, placed right after the address.
+* **Complement** (`billing_address_2`): the native WooCommerce complement, renamed and repositioned.
+* **Phone** (`billing_phone`): phone field with mask and country code (DDI). Four modes: full phone, cellphone only, landline only or disabled. Optional validation of the number (including the area code).
+* **Cellphone** (`billing_cellphone`): optional separate cellphone field, filled in alongside the phone, and a hidden mirror for gateways that expect it.
+* **Birthdate** (`billing_birthdate`): optional date field, with an option to make it required.
+* **Gender** (`billing_gender`): optional dropdown (Male, Female, Non-binary, Other, Prefer not to say).
+* **Postcode / CEP** (`billing_postcode`): can be highlighted at the top of the form, with a confirmation checkbox and automatic address lookup.
+* **Country, State and City** (`billing_country`, `billing_state`, `billing_city`): the native WooCommerce fields, kept in place and repositioned so the Brazilian order of the address makes sense.
+
+Every field above can be turned on or off in **WooCommerce > Settings > Campos Brasileiros**, together with its required/optional rule.
+
 = Help and Support =
 
 When you need help, please create a topic in the [Plugin Support Forum](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
