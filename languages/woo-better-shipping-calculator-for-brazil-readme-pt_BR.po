@@ -156,14 +156,6 @@ msgstr ""
 "2.  <strong>Sem digitar duas vezes:</strong> o mesmo valor alimenta a finalização de compra, o pedido, o perfil do cliente e o aplicativo de nota fiscal."
 
 #. Found in description header.
-msgid "Watch the Plugin Demo:"
-msgstr "Assista à demonstração do Plugin:"
-
-#. Found in description paragraph.
-msgid "[youtube https://www.youtube.com/watch?v=oHnUt0zYLv0]"
-msgstr "[youtube https://www.youtube.com/watch?v=oHnUt0zYLv0]"
-
-#. Found in description header.
 msgid "Key Features &amp; Improvements:"
 msgstr "Principais recursos e benefícios:"
 
