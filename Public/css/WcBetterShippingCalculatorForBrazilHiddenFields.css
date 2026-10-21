@@ -1,0 +1,26 @@
+/**
+ * Campos OCULTOS do woo-better no checkout clássico/shortcode e na edição de
+ * endereço (minha conta).
+ *
+ * O WooCommerce envolve TODO campo num `<p class="form-row">` — inclusive os
+ * `type="hidden"`, que não têm conteúdo visível mas herdam o `padding`/`margin`
+ * do formulário e deixam um vão vazio no meio dos campos:
+ *
+ *   <p class="form-row " id="billing_phone_country_field" data-priority="">
+ *     <span class="woocommerce-input-wrapper">
+ *       <input type="hidden" name="billing_phone_country" value="+55">
+ *     </span>
+ *   </p>
+ *
+ * O plugin marca esses wrappers com a classe `woo-better-hidden-field` (nas
+ * definições dos campos, em `Includes/`) e aqui o espaçamento é zerado.
+ *
+ * `!important` porque temas costumam redefinir `.form-row` com especificidade
+ * igual (ex.: `.woocommerce-checkout .form-row`) e são carregados DEPOIS do
+ * plugin — sem isso a regra perderia.
+ */
+
+.form-row.woo-better-hidden-field {
+    margin: 0 !important;
+    padding: 0 !important;
+}

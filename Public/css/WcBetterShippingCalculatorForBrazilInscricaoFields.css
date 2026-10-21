@@ -1,10 +1,11 @@
 /*
- * Campos de Inscrição (IE/IM) no checkout em BLOCOS: ocupam a linha inteira,
+ * Campos de Inscrição (IE/IM) e RG no checkout em BLOCOS: ocupam a linha inteira,
  * em vez de dividir a linha (50%/50%). Mesmo mecanismo do campo Documento
  * (CPF/CNPJ) e do Bairro: o formulário de endereço do bloco é um flex-wrap e
  * cada campo recebe "flex: 0 0 100%" para forçar largura cheia.
  */
 .wc-block-components-text-input.wc-block-components-address-form__ie.wc-better-billing-ie,
-.wc-block-components-text-input.wc-block-components-address-form__im.wc-better-billing-im {
+.wc-block-components-text-input.wc-block-components-address-form__im.wc-better-billing-im,
+.wc-block-components-text-input.wc-block-components-address-form__rg.wc-better-billing-rg {
     flex: 0 0 100%;
 }
