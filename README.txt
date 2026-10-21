@@ -21,22 +21,17 @@ This [WordPress](https://www.linknacional.com.br/wordpress/) plugin ensures fast
 
 > **Note:** The shipping calculator features have moved to the [Shipping Simulator for WooCommerce](https://wordpress.org/plugins/shipping-simulator-for-woocommerce/) plugin.
 
-## 🚀 New Features: Complete Brazilian Checkout
+## 🚀 Complete Brazilian Checkout
 
-We have expanded the plugin capabilities to offer a full checkout solution for the Brazilian market, managing **Custom Checkout Fields** essential for Brazilian logistics and invoicing.
-
-**New Field Features:**
-* **CPF & CNPJ:** Adds fields for Individual (CPF) and Company (CNPJ) Tax IDs with automatic validation.
-* **Address Fields:** Adds and manages specific fields for **Neighborhood (Bairro)**, **Number**, and **Complement**.
-* **Phone Masks:** Intelligent input masking for Brazilian landlines and mobile phones.
+We have expanded the plugin capabilities to offer a full checkout solution for the Brazilian market, managing **Custom Checkout Fields** essential for Brazilian logistics and invoicing. Every field is listed — with its meta key and what it does — in the **Checkout fields** section below.
 
 ### ✅ ERP & "Brazilian Market" Compatibility
 
 This is a major update for store owners who need to issue invoices (Nota Fiscal). The plugin is now fully compatible with the data standards used by the **Brazilian Market on WooCommerce** plugin (by Claudio Sanches).
 
 **Why is this important?**
-1.  **Bling & ERP Integration:** Because we follow the standard meta-keys structure, this plugin is **fully compatible with Bling, Tiny**, and other ERPs that integrate with [WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/). You can issue invoices (NFe) seamlessly without data errors.
-2.  **Standardized Data:** Ensures that CPF, CNPJ, and address data are saved exactly how external integration tools expect them.
+1.  **Bling & ERP Integration:** CPF, CNPJ and address data are saved with the standard meta keys (the same ones listed below), so this plugin is **fully compatible with Bling, Tiny** and other ERPs that integrate with [WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/). You can issue invoices (NFe) without data errors.
+2.  **No double data entry:** the same value feeds the checkout, the order, the customer profile and the invoice app.
 
 ### Watch the Plugin Demo:
 
@@ -46,17 +41,13 @@ This is a major update for store owners who need to issue invoices (Nota Fiscal)
 
 #### **On the Checkout Page:**
 
-* **✨ NEW: Automatic Address Lookup:** Automatically pre-fills the street, neighborhood, city, and state fields after the customer enters a valid CEP.
-* **✨ NEW: Checkout Custom Fields:** Adds support for CPF, CNPJ, Number, Neighborhood, and Birthdate.
-* **✨ NEW: Input Validation:** Validates CPF/CNPJ algorithms and applies input masks to prevent typing errors.
-* **✨ NEW: Person Type Selector:** Allows customers to switch between "Person" (Pessoa Física) and "Company" (Pessoa Jurídica) during checkout.
-* **Required Phone Field with DDI:** The phone field is now mandatory and includes a resource to capture the Country Code (DDI), ensuring complete contact information.
-* **Number Field Addition:** Adds the mandatory "Number" field, often missing in standard [WooCommerce](https://www.linknacional.com.br/wordpress/woocommerce/) forms. Includes a `checkbox` option for addresses that are "Sem Número" (No Number).
-* Dynamic Field Hiding: Option to hide address fields when not needed.
+* **Automatic Address Lookup:** Fills in street, neighborhood, city and state as soon as the customer enters a valid CEP.
+* **Input Validation:** Checks CPF/CNPJ digits and applies input masks, so a wrong number is caught before the order is placed.
+* **Dynamic Field Hiding:** Hides the fields that do not apply to the customer — company data for individuals, CPF and RG for companies — and gives the typed value back when the field returns.
+* **Person Type Selector:** In the block checkout the customer can switch between "Person" (Pessoa Física) and "Company" (Pessoa Jurídica); in the classic checkout the type follows the document that was typed.
 
 #### **Additional Features:**
 
-* Fully customizable through the dedicated plugin settings page.
 * The plugin is fully customizable via action and filter hooks for advanced users.
 
 More details can be found in the [Frequently Asked Questions (FAQ)](https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil/).
