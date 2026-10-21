@@ -402,17 +402,6 @@ class WcBetterShippingCalculatorForBrazil
                         </p>
                     </div>
 
-                    <div style="margin-top: 10px;">
-                        <p style="font-size: 14px; margin-top: 8px;">
-                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Campo de Inscrição Municipal (IM) no checkout, exibido para Pessoa Jurídica (CNPJ).', 'woo-better-shipping-calculator-for-brazil' ); ?>
-                        </p>
-                    </div>
-
-                    <div style="margin-top: 10px;">
-                        <p style="font-size: 14px; margin-top: 8px;">
-                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Novo fluxo dos campos de Telefone e Celular no checkout (clássico e blocos).', 'woo-better-shipping-calculator-for-brazil' ); ?>
-                        </p>
-                    </div>
 
                     <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
                         <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout" class="button button-primary" style="display: flex; align-items: center; justify-content: center;">
