@@ -302,9 +302,10 @@ class EditAddressBrazilianPrecedenceTest extends WP_UnitTestCase {
         $this->assertSame( 'Celular', $fields['billing_cellphone']['label'] );
     }
 
-    public function test_disabled_with_visible_cellphone_is_additive_on_edit_address(): void {
-        // "Desabilitar" + "Campo de Celular": o plugin não mexe no telefone nativo, mas
-        // adiciona o "Celular" separado (aditivo), como no checkout.
+    public function test_disabled_does_not_add_cellphone_on_edit_address(): void {
+        // REGRESSÃO: "Desabilitar" significa deixar a configuração nativa do
+        // WooCommerce — o plugin não gera campo de celular, mesmo que a option
+        // `enable_cellphone_field` tenha ficado `yes` de uma configuração anterior.
         update_option( 'woo_better_calc_phone_mode', 'disabled' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
 
@@ -312,7 +313,6 @@ class EditAddressBrazilianPrecedenceTest extends WP_UnitTestCase {
             'billing_country' => array( 'value' => 'BR' ),
         ) );
 
-        $this->assertArrayHasKey( 'billing_cellphone', $fields, 'O celular separado deve aparecer no modo Desabilitar + Campo de Celular.' );
-        $this->assertSame( 200, $fields['billing_cellphone']['priority'] );
+        $this->assertArrayNotHasKey( 'billing_cellphone', $fields, 'O celular não deve aparecer com o telefone desabilitado.' );
     }
 }

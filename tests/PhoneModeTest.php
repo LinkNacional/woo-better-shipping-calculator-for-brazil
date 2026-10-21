@@ -30,6 +30,22 @@ class PhoneModeTest extends WP_UnitTestCase {
         return $this->plugin()->add_cellphone_billing_fields( array( 'billing_phone' => array( 'type' => 'tel' ) ) );
     }
 
+    public function test_disabled_native_mode_is_accepted(): void {
+        update_option( 'woo_better_calc_phone_mode', 'disabled_native' );
+        $this->assertSame( 'disabled_native', $this->plugin()->get_phone_mode() );
+    }
+
+    public function test_disabled_native_does_not_reinject_own_phone_field(): void {
+        // "Desabilitar o campo de telefone": o plugin não injeta o campo próprio
+        // (o nativo fica hidden) — senão o telefone "desabilitado" reapareceria.
+        update_option( 'woo_better_calc_phone_mode', 'disabled_native' );
+
+        $result = $this->plugin()->wc_better_calc_checkout_fields( array( 'billing' => array(), 'shipping' => array() ) );
+
+        $this->assertArrayNotHasKey( 'billing_phone', $result['billing'] );
+        $this->assertArrayNotHasKey( 'billing_phone_country', $result['billing'] );
+    }
+
     // --- Modo padrão ---------------------------------------------------------
 
     public function test_default_mode_is_phone_and_cellphone(): void {
@@ -656,13 +672,34 @@ class PhoneModeTest extends WP_UnitTestCase {
         $this->assertSame( 93, $result['billing']['billing_cellphone']['priority'] );
     }
 
-    public function test_cellphone_created_in_disabled_mode_with_enable(): void {
-        // Comportamento esperado: o bloco "Campo de Celular" só é bloqueado no modo
-        // "somente Celular"; em "Desabilitar" ainda pode adicionar o celular.
+    public function test_cellphone_not_created_in_disabled_mode_even_with_enable(): void {
+        // REGRESSÃO: com o telefone desabilitado o plugin NÃO pode gerar o "Celular".
+        // Antes, uma option residual `enable_cellphone_field = yes` fazia o campo
+        // aparecer no checkout mesmo com o telefone desligado.
         update_option( 'woo_better_calc_phone_mode', 'disabled' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
 
-        $this->assertArrayHasKey( 'billing_cellphone', $this->billing_fields_with_cellphone() );
+        $this->assertArrayNotHasKey( 'billing_cellphone', $this->billing_fields_with_cellphone() );
+    }
+
+    public function test_cellphone_not_created_in_disabled_native_mode(): void {
+        // "Desabilitar o campo de telefone" também não gera celular.
+        update_option( 'woo_better_calc_phone_mode', 'disabled_native' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+
+        $this->assertArrayNotHasKey( 'billing_cellphone', $this->billing_fields_with_cellphone() );
+    }
+
+    public function test_disabled_native_hides_native_phone_option(): void {
+        // A opção "Desabilitar o campo de telefone" desliga o telefone NATIVO do
+        // WooCommerce; a opção "Deixar a configuração nativa" não mexe nele.
+        update_option( 'woo_better_calc_phone_mode', 'disabled_native' );
+        delete_option( 'woo_better_calc_phone_field_previous' );
+        update_option( 'woocommerce_checkout_phone_field', 'required' );
+
+        $this->plugin()->sync_phone_field();
+
+        $this->assertSame( 'hidden', get_option( 'woocommerce_checkout_phone_field' ) );
     }
 
     public function test_disabled_with_enable_keeps_phone_and_adds_cellphone(): void {

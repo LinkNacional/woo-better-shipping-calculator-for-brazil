@@ -730,7 +730,10 @@
         return;
       }
       const mode = phoneModeSelect.value;
-      const enabled = mode !== 'disabled';
+      // Recursos do bloco de telefone: desabilitados nos DOIS modos em que o plugin
+      // não gerencia o telefone — "Deixar a configuração nativa" (disabled) e
+      // "Desabilitar o campo de telefone" (disabled_native).
+      const enabled = mode !== 'disabled' && mode !== 'disabled_native';
 
       // Recursos do bloco de telefone: desabilitados no modo "Desabilitar".
       [applyPhoneMaskRadios, showCountryCodeRadios, contactRequiredRadios, contactFieldPositionRadios].forEach(function (group) {
