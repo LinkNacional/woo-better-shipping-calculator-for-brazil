@@ -9,7 +9,7 @@
 * Tags: woocommerce, checkout, CPF, CNPJ, CEP
 * Testado até: 7.1
 * Requer PHP: 8.2
-* Tag estável: 5.1.2
+* Tag estável: 5.3.0
 * Licença: GPLv2 ou posterior
 * URI da licença: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 

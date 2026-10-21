@@ -1,4 +1,4 @@
-# 5.1.2 - 20/10/26
+# 5.3.0 - 21/10/26
 * Novo: a tela de configurações do checkout passou a ser dividida em quatro abas (Endereço e CEP, Documentos e Pessoa, Telefone e Celular, Dados Pessoais) com cards, em vez de uma página única e longa.
 * Novo: um cartão lateral reúne os canais de suporte (WhatsApp e Telegram) e apresenta os recursos da versão PRO.
 * Novo: os blocos exclusivos da versão PRO (Retirada no Local e Prazo de Entrega) agora aparecem na tela de configurações do checkout, junto dos campos brasileiros, e ficam editáveis quando o plugin PRO está ativo.
