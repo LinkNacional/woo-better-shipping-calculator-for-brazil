@@ -12,10 +12,12 @@ msgstr ""
 "Project-Id-Version: Plugins - Campos Checkout Brasileiro para WooCommerce - Stable Readme (latest release)\n"
 
 #. Short description.
+#, gp-priority: high
 msgid "Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce."
 msgstr "Campos de finalização de compra no Brasil (CPF/CNPJ, número do endereço, bairro e telefone) com preenchimento automático do endereço por CEP para o WooCommerce."
 
 #. Plugin name.
+#, gp-priority: high
 msgid "Campos Checkout Brasileiro para WooCommerce"
 msgstr "Campos Checkout Brasileiro para WooCommerce"
 
@@ -314,582 +316,727 @@ msgid "Learn more about the PRO version <a href=\"#\">here</a>."
 msgstr "Saiba mais sobre a versão PRO <a href=\"#\">aqui</a>."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "5.3.0 - 2026-10-21"
 msgstr "5.3.0 - 2026-10-21"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: the checkout settings screen is now split into four tabs (Address and Postcode, Documents and Person, Phone and Cellphone, Personal Data) with cards, instead of one long page."
 msgstr "Novo: a tela de configurações da finalização de compra agora é dividida em quatro abas (Endereço e CEP, Documentos e Pessoa, Telefone e Celular, Dados Pessoais) com cards, em vez de uma única página longa."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: a sidebar card gathers the support channels (WhatsApp and Telegram) and presents the PRO version highlights."
 msgstr "Novo: um card lateral reúne os canais de suporte (WhatsApp e Telegram) e apresenta os destaques da versão PRO."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: the PRO-only blocks (Local Pickup and Delivery Time) now show up on the settings screen together with the Brazilian fields, and become editable once the PRO plugin is active."
 msgstr "Novo: os blocos exclusivos da versão PRO (Retirada no Local e Prazo de Entrega) agora aparecem na tela de configurações junto com os campos brasileiros, e ficam editáveis quando o plugin PRO está ativo."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tweak: options that depend on another option are now nested right below it."
 msgstr "Ajuste: as opções que dependem de outra opção agora ficam aninhadas logo abaixo dela."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tweak: field titles, subtitles and descriptions were repositioned so each option is easier to scan."
 msgstr "Ajuste: títulos, subtítulos e descrições dos campos foram reposicionados para que cada opção seja mais fácil de ler."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tweak: the PRO version links now point to each plugin's commercial page."
 msgstr "Ajuste: os links da versão PRO agora apontam para a página comercial de cada plugin."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Note: no saved setting changed its name, so existing configurations keep working as before."
 msgstr "Observação: nenhuma configuração salva mudou de nome, então as configurações existentes continuam funcionando como antes."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "5.2.0 - 2026-10-21"
 msgstr "5.2.0 - 2026-10-21"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: RG (general registry) field on checkout. It shows for individuals, next to the CPF, stays hidden for companies (CNPJ) and filling it in is optional."
 msgstr "Novo: campo RG na finalização de compra. Ele aparece para pessoa física, ao lado do CPF, fica oculto para pessoa jurídica (CNPJ) e o preenchimento é opcional."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: the RG is also on the account's edit-address page, on the user profile and on the order details — including the order-received screen and the order admin panel, where it can be edited."
 msgstr "Novo: o RG também está na página de edição de endereço da conta, no perfil do usuário e nos detalhes do pedido — incluindo a tela de pedido recebido e o painel do pedido no admin, onde ele pode ser editado."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: RG options in the Brazilian fields settings (enable and required)."
 msgstr "Novo: opções do RG nas configurações de campos brasileiros (habilitar e obrigatório)."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tweak: the RG sits right after the CPF, without disturbing the order of the other address fields."
 msgstr "Ajuste: o RG fica logo depois do CPF, sem alterar a ordem dos outros campos de endereço."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: the IE, IM, RG and Company fields are no longer cleared when hidden — when the document is corrected (erasing or retyping CPF/CNPJ) the typed value is preserved and comes back when the field is shown again."
 msgstr "Correção: os campos IE, IM, RG e Empresa não são mais apagados quando ficam ocultos — ao corrigir o documento (apagar ou digitar novamente o CPF/CNPJ) o valor digitado é preservado e volta quando o campo é exibido de novo."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: hidden fields no longer take up space in the classic checkout and edit-address layout, with no leftover margin or padding."
 msgstr "Correção: os campos ocultos não ocupam mais espaço no layout da finalização de compra clássica e da edição de endereço, sem margem ou espaçamento sobrando."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Note: the RG has no national validation standard (the rule varies by state), so the validation is format and length only, not a check digit."
 msgstr "Observação: o RG não tem padrão nacional de validação (a regra varia por estado), então a validação é apenas de formato e tamanho, sem dígito verificador."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "5.1.1 - 2026-10-20"
 msgstr "5.1.1 - 2026-10-20"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: \"Company Field Behavior\" now has a \"Disabled\" option, which stops the Company field from being generated on checkout (classic and blocks), on the account's edit-address page and on the user profile screen."
 msgstr "Novo: o \"Comportamento do Campo Empresa\" agora tem a opção \"Desabilitado\", que impede a geração do campo Empresa na finalização de compra (clássica e em blocos), na página de edição de endereço da conta e na tela de perfil do usuário."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: with the Company field disabled, a Company field re-added by another plugin can no longer be required — it stays optional and no longer blocks the order."
 msgstr "Correção: com o campo Empresa desabilitado, um campo Empresa recriado por outro plugin não pode mais ser obrigatório — ele fica opcional e não bloqueia mais o pedido."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: the Company field behavior no longer switches back to \"Dynamic\" right after saving the settings."
 msgstr "Correção: o comportamento do campo Empresa não volta mais para \"Dinâmico\" logo depois de salvar as configurações."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Note: no saved setting changed its name; existing configurations keep working and values already stored for the Company field are preserved."
 msgstr "Observação: nenhuma configuração salva mudou de nome; as configurações existentes continuam funcionando e os valores já gravados no campo Empresa são preservados."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "5.1.0 - 2026-10-13"
 msgstr "5.1.0 - 2026-10-13"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: new flow for the Phone and Cellphone fields on checkout (classic and blocks) — 4 behavior modes, country code/mask, validation and a hidden compatibility field for PagBank/Asaas/NFe."
 msgstr "Novo: novo fluxo para os campos Telefone e Celular na finalização de compra (clássica e em blocos) — 4 modos de comportamento, código do país/máscara, validação e um campo oculto de compatibilidade para PagBank/Asaas/NFe."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: \"Cellphone\" field on the account's edit-address page, mirroring the phone."
 msgstr "Novo: campo \"Celular\" na página de edição de endereço da conta, espelhando o telefone."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: Municipal Registration (IM) field on checkout for Legal Person."
 msgstr "Novo: campo de Inscrição Municipal (IM) na finalização de compra para Pessoa Jurídica."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: customer details (CPF/CNPJ, person type, IE/IM, birthdate, gender, contact) on the order-received page via hook — works on classic themes and block checkout."
 msgstr "Novo: dados do cliente (CPF/CNPJ, tipo de cliente, IE/IM, data de nascimento, gênero, contato) na página de pedido recebido via hook — funciona em temas clássicos e na finalização de compra em blocos."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tweak: the \"Cellphone\" field now appears on both billing and shipping on the order admin; the phone label follows the configured mode."
 msgstr "Ajuste: o campo \"Celular\" agora aparece tanto em cobrança quanto em entrega no admin do pedido; o rótulo do telefone segue o modo configurado."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tweak: Municipal Registration (IM) is now required for Legal Person (removed the \"Exempt\" option)."
 msgstr "Ajuste: a Inscrição Municipal (IM) agora é obrigatória para Pessoa Jurídica (removida a opção \"Isento\")."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: with \"use the same address for billing\" (blocks), phone/cellphone now follow the address."
 msgstr "Correção: com \"usar o mesmo endereço para cobrança\" (blocos), telefone/celular agora acompanham o endereço."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: when switching CPF to CNPJ, the document no longer reverts to the old CPF (blocks)."
 msgstr "Correção: ao trocar CPF por CNPJ, o documento não volta mais para o CPF antigo (blocos)."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: 404 of the phone mask CSS on the edit-address page."
 msgstr "Correção: 404 do CSS da máscara de telefone na página de edição de endereço."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "5.0.4 - 2026-10-05"
 msgstr "5.0.4 - 2026-10-05"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: infinite redirect loop (ERR_TOO_MANY_REDIRECTS) when another LKN plugin also opens its onboarding screen in the same request."
 msgstr "Correção: loop infinito de redirecionamento (ERR_TOO_MANY_REDIRECTS) quando outro plugin LKN também abre sua tela de onboarding na mesma solicitação."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: the close button (✕) of the migration screen now permanently dismisses the follow-up notice."
 msgstr "Correção: o botão fechar (✕) da tela de migração agora dispensa permanentemente o aviso de acompanhamento."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "5.0.3 - 2026-10-02"
 msgstr "5.0.3 - 2026-10-02"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: browser freeze when finishing the order on the checkout (shortcode and blocks) caused by an event loop in the masked phone field."
 msgstr "Correção: o navegador congela ao finalizar o pedido na finalização de compra (shortcode e blocos), causado por um event loop no campo de telefone mascarado."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "5.0.2 - 2026-09-24"
 msgstr "5.0.2 - 2026-09-24"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: The phone field is no longer incorrectly flagged as required (without a label) on the block checkout (Store API) when the native phone field is hidden."
 msgstr "Correção: O campo de telefone não é mais marcado incorretamente como obrigatório (sem rótulo) no bloco de finalização de compra (Store API) quando o campo de telefone nativo está oculto."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "5.0.1 - 2026-10-01"
 msgstr "5.0.1 - 2026-10-01"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: The phone field DDI (country code) can now be customized — the select previously only showed the flags, and the user can now also display the DDI number."
 msgstr "Novo: o campo de telefone DDI (código do país) agora pode ser personalizado — a seleção antes mostrava apenas as bandeiras, e agora o usuário também pode exibir o número do DDI."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: Phone field validation, to help stores that need this data filled in correctly."
 msgstr "Novo: validação do campo de telefone, para ajudar as lojas que precisam que esses dados sejam preenchidos corretamente."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: CSS/style adjustments on the birth date field."
 msgstr "Correção: Ajustes em CSS/estilos no campo de data de nascimento."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "5.0.0 - 2026-10-01"
 msgstr "5.0.0 - 2026-10-01"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Major: Migrated the shipping calculator resources to shipping-simulation."
 msgstr "Major: Migrou os recursos do calculador de frete para o **shipping-simulation**."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.17.6 - 2026-09-16"
 msgstr "4.17.6 - 2026-09-16"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: The \"Company\" field no longer reverts to \"Optional\" when the checkout page is saved — the native WooCommerce option and the plugin setting now stay in sync."
 msgstr "Correção: O campo \"Empresa\" já não volta a \"Opcional\" quando a página de finalização de compra é salva — a opção nativa do WooCommerce e a configuração do plugin agora ficam sincronizadas."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tweak: In \"Dynamic\" mode, the \"Company\" field is no longer displayed for customers outside Brazil; in \"Optional\" and \"Required\" modes, the field is handled by WooCommerce."
 msgstr "Ajuste: No modo “Dinâmico”, o campo “Empresa” não é mais exibido para clientes fora do Brasil; nos modos “Opcional” e “Obrigatório”, o campo é tratado pelo WooCommerce."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tweak: The Postal Code (CEP) lookup and the \"Neighborhood\" field now only activate when the selected country is Brazil, in both the block and shortcode checkouts."
 msgstr "Ajuste: A consulta do CEP (Código de Endereçamento Postal) e o campo “Bairro” agora só são ativados quando o país selecionado for Brasil, tanto nos checkouts do Bloco quanto do shortcode."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.17.5 - 2026-09-09"
 msgstr "4.17.5 - 2026-09-09"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: The \"Company\" field is no longer saved with the internal \"woonomedaempresa\" value when editing the address with a CPF."
 msgstr "Correção: O campo “Company” não é mais salvo com o valor interno “woonomedaempresa” ao editar o endereço com um CPF."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tweak: The \"Company\" field now behaves like the \"State Registration (IE)\" field in \"Dynamic\" mode — required for CNPJ and ignored for CPF, while respecting the \"Optional\" and \"Required\" options."
 msgstr "Ajuste: O campo \"Empresa\" agora se comporta como o campo \"Inscrição Estadual (IE)\" no modo \"Dinâmico\" — obrigatório para CNPJ e ignorado para CPF, respeitando as opções \"Opcional\" e \"Obrigatório\"."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.17.4 - 2026-09-09"
 msgstr "4.17.4 - 2026-09-09"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: \"Company\" and \"State Registration (IE)\" fields no longer reappear pre-filled in the block and shortcode checkout after an order placed with a CPF — the WooCommerce session is now cleared alongside the user metadata."
 msgstr "Correção: os campos “Empresa” e “Inscrição Estadual (IE)” não reaparecem mais preenchidos antes no bloco e na finalização de compra com shortcode após um pedido feito com um CPF — a sessão do WooCommerce agora é limpa junto com os metadados do usuário."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.17.3 - 2026-09-09"
 msgstr "4.17.3 - 2026-09-09"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: The \"Ship to a different address?\" checkbox no longer appears on the classic/shortcode checkout when \"Force shipping to the billing address\" is enabled."
 msgstr "Correção: A caixa de seleção “Enviar para um endereço diferente?” não aparece mais na finalização de compra clássica/shortcode quando “Forçar o envio para o endereço de cobrança” está ativado."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: The \"State Registration (IE)\" field is no longer required on the \"My Account &gt; Edit Address\" page when the entered document is a CPF."
 msgstr "**Correção:** O campo **“Inscrição Estadual (IE)”** não é mais obrigatório na página **“Minha conta &gt; Editar endereço”** quando o documento informado for **CPF**."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.17.2 - 2026-09-03"
 msgstr "4.17.2 - 2026-09-03"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Corrected the plugin update notification informing about a new important update scheduled for 2026-09-01."
 msgstr "Correção: Corrigiu a notificação de atualização do plugin informando uma nova atualização importante agendada para 2026-10-01."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: \"S/N\" (no number) option now saves immediately in the block checkout."
 msgstr "Correção: a opção \"S/N\" (sem número) agora salva imediatamente na finalização de compra do bloco."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.17.1 - 2026-08-21"
 msgstr "4.17.1 - 2026-08-21"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: CNPJ now validated for active registration status (situação cadastral ATIVA) against the Federal Revenue (BrasilAPI and ReceitaWS)."
 msgstr "Correção: CNPJ agora validado para status de cadastro ativo (situação cadastral ATIVA) junto à Receita Federal (BrasilAPI e ReceitaWS)."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Alphanumeric CNPJ (IN RFB 2.229/2024) now goes through the API (fail-closed) instead of being accepted by check digit only."
 msgstr "Correção: O CNPJ alfanumérico (IN RFB 2.229/2024) agora passa pela API (fail-closed) em vez de ser aceito apenas pela verificação do dígito."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Dev: Updated the CNPJ API validation field description in the settings."
 msgstr "Dev: Atualizou a descrição do campo de validação da API de CNPJ nas configurações."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.17.0 - 2026-08-19"
 msgstr "4.17.0 - 2026-08-19"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: CNPJ validation against the Brazilian Federal Revenue (BrasilAPI with ReceitaWS fallback)."
 msgstr "Novo: validação de CNPJ contra a Receita Federal do Brasil (BrasilAPI com contingência de ReceitaWS)."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: IE field no longer wrongly highlighted after a CNPJ validation error."
 msgstr "**Correção:** O campo IE não é mais destacado incorretamente após um erro de validação de CNPJ."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Docs: Added BrasilAPI and ReceitaWS to the third-party credits."
 msgstr "Docs: Adicionado BrasilAPI e ReceitaWS nos créditos de terceiros."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.16.12 - 2026-08-14"
 msgstr "4.16.12 - 2026-08-14"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Sanitization and character validation of the IE (Inscrição Estadual) field."
 msgstr "Correção: Saneamento e validação de caracteres do campo IE (Inscrição Estadual)."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Security: Defense-in-depth IE field sanitization on the PHP-to-JS bridge."
 msgstr "Segurança: sanitização de campos no mecanismo Defense-in-depth no bridge PHP-para-JS."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.16.11 - 2026-08-05"
 msgstr "4.16.11 - 2026-08-05"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Shipping calculation when using order total as calculation base."
 msgstr "Correção: cálculo do frete ao usar o valor total do pedido como base de cálculo."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Dev: Improved release preparation skill."
 msgstr "Dev: habilidade de preparação melhorada para o lançamento."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: Improved the validation flow for invalid ZIP codes during search."
 msgstr "Ajuste: melhorou o fluxo de validação para CEPs inválidos durante a pesquisa."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.16.10 - 2026-07-30"
 msgstr "4.16.10 - 2026-07-30"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: Standardization of Funnelkit fields with the Brazilian plugin."
 msgstr "Correção: padronização dos campos do Funnelkit com o plugin do Brasil."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.16.9 - 2026-07-29"
 msgstr "4.16.9 - 2026-07-29"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tweak: Funilkit plugin verification system with the Brazilian plugin."
 msgstr "Ajuste: Sistema de verificação do Funilkit com o plugin brasileiro."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.16.8 - 2026-07-28"
 msgstr "4.16.8 - 2026-07-28"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: Mandatory field validation for birth date and gender."
 msgstr "Ajuste: validação obrigatória do campo de data de nascimento e gênero."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: Mandatory birth date field system."
 msgstr "Novo: sistema de campo de data de nascimento obrigatório."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.16.7 - 2026-07-17"
 msgstr "4.16.7 - 2026-07-17"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: Added best V2 submission metadata to the label."
 msgstr "Ajuste: Adicionado melhores metadados de envio da V2 ao rótulo."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.16.6 - 2026-07-17"
 msgstr "4.16.6 - 2026-07-17"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tweak: Address field description name."
 msgstr "Ajuste: Corrige o nome da descrição do campo de endereço."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.16.5 - 2026-07-14"
 msgstr "4.16.5 - 2026-07-14"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tweak: Placeholder name in the classic checkout address field."
 msgstr "Ajuste: conteúdo de marcação do nome no campo clássico de endereço da finalização de compra."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.16.4 - 2026-07-06"
 msgstr "4.16.4 - 2026-07-06"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjust: Fallback for the plugin's calculator label when shipping business days are not detected."
 msgstr "Ajuste: contingência para o rótulo do calculador do plugin quando não forem detectados os dias úteis de envio."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.16.3 - 2026-07-03"
 msgstr "4.16.3 - 2026-07-03"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Correction in class loading."
 msgstr "Correção: correção no carregamento de classes."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.16.2 - 2026-07-02"
 msgstr "4.16.2 - 2026-07-02"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: Shipping calculation option via coupon/fees."
 msgstr "Novo: opção de cálculo de frete via cupom/taxas."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.16.1 - 2026-07-01"
 msgstr "4.16.1 - 2026-07-01"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Compatibility with the FunnelKit plugin."
 msgstr "Compatibilidade com o plugin FunnelKit."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "CPF validation in the shortcode version."
 msgstr "Validação de CPF na versão do shortcode."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Improved detection of available shipping labels in the custom calculator."
 msgstr "Detecção melhorada de rótulos de envio disponíveis no calculador personalizado."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.16.0 - 2026-06-11"
 msgstr "4.16.0 - 2026-06-11"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: Product-based shipping system."
 msgstr "Novo: sistema de envio baseado em produtos."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: Label system to define delivery business days for free shipping methods."
 msgstr "Novo: sistema de rótulos para definir dias úteis de entrega para métodos de frete grátis."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: Behavior system triggered upon detecting free shipping."
 msgstr "Novo: sistema de comportamento ativado ao detectar frete grátis."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Free shipping bar detection when running the plugin's calculator component."
 msgstr "Correção: detecção da barra de frete grátis ao executar o componente de calculadora do plugin."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Address number checkbox field in Gutenberg."
 msgstr "Correção: campo da caixa de seleção do número do endereço no Gutenberg."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.15.2 - 2026-06-09"
 msgstr "4.15.2 - 2026-06-09"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: CEP format sent to the API."
 msgstr "Corrigido: Formato de CEP enviado para a API."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.15.1 - 2026-06-08"
 msgstr "4.15.1 - 2026-06-08"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: Click event to dismiss the update notice."
 msgstr "Corrigido: Clique no evento para dispensar a atualização do aviso."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.15.0 - 2026-06-01"
 msgstr "4.15.0 - 2026-06-01"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: Alphanumeric CNPJ format support (IN RFB 2.229/2024)."
 msgstr "Novo: Suporte ao formato alfanumérico de CNPJ (IN RFB 2.229/2024)."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: Address number field auto-fill on first automatic lookup."
 msgstr "Corrigido: Correção do preenchimento automático do campo do número do endereço na primeira pesquisa automática."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: has-error class on the Gutenberg number field when the field is empty."
 msgstr "Corrigido: classe `has-error` no campo do número do Gutenberg quando o campo está vazio."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: CEP autofill on autocomplete."
 msgstr "Corrigido: preenchimento automático de CEP no autocomplete."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: Nonce for the contact number field."
 msgstr "Corrigido: Nonce para o campo do número de contato."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: Address auto-fill on the order edit page."
 msgstr "Corrigido: corrigir o preenchimento automático do endereço na página de edição do pedido."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.14.0 - 2026-05-27"
 msgstr "4.14.0 - 2026-05-27"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: CEP address auto-fill feature."
 msgstr "Novo: recurso de preenchimento automático do endereço por CEP."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: Checkbox behavior when filling the address."
 msgstr "Corrigido: comportamento da caixa de seleção ao preencher o endereço."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: Field positioning in order data + removal of country code."
 msgstr "Corrigido: Posicionamento do campo nos dados do pedido + remoção do código do país."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: Icons, banners and screenshots."
 msgstr "Novo: ícones, banners e capturas de tela."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: highlighted field position in classic checkout."
 msgstr "Corrigido: posição do campo destacado na finalização de compra clássica."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.13.0 - 2026-05-25"
 msgstr "4.13.0 - 2026-05-25"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: Optional/required CPF field."
 msgstr "Corrigido: Campo de CPF opcional/obrigatório."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: State Registration (IE) field."
 msgstr "Novo: campo de Inscrição Estadual (IE)."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.12.5 - 2026-04-29"
 msgstr "4.12.5 - 2026-04-29"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: CEP auto-fill system for cache."
 msgstr "Corrigido: sistema de preenchimento automático de CEP para cache."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: Address synchronization when filling the form."
 msgstr "Corrigido: Corrigir a sincronização de endereço ao preencher o formulário."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.12.4 - 2026-04-22"
 msgstr "4.12.4 - 2026-04-22"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: CPF field filling."
 msgstr "Corrigido: Preenchimento do campo CPF."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: Country field changes."
 msgstr "Corrigido: Alterações no campo de país."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: Field population when detecting empty country."
 msgstr "Corrigido: população do campo ao detectar país vazio."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.12.3 - 2026-04-13"
 msgstr "4.12.3 - 2026-04-13"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: Address number field."
 msgstr "Corrigido: campo do número do endereço."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.12.2 - 2026-04-06"
 msgstr "4.12.2 - 2026-04-06"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: Fix Birthdate validation"
 msgstr "Corrigido: Correção da validação da data de nascimento"
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.12.1 - 2026-04-02"
 msgstr "4.12.1 - 2026-04-02"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed: CEP field highlighting configuration."
 msgstr "Corrigido: configuração de realce do campo de CEP."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.12.0 - 2026-04-02"
 msgstr "4.12.0 - 2026-04-02"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Added: New birth date and gender fields."
 msgstr "Adicionado: novos campos de data de nascimento e gênero."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Enhancement: New option for free shipping detection."
 msgstr "Aprimoramento: Nova opção para detecção de frete grátis."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Added: New option for free shipping detection."
 msgstr "Adicionado: Nova opção para detecção de frete grátis."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.11.0 - 2026-04-01"
 msgstr "4.11.0 - 2026-04-01"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Enhancement: New free shipping detection system through shipping zones."
 msgstr "Aprimoramento: novo sistema de detecção de frete grátis por zonas de envio."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Enhancement: New option for checkout block (Campos Brasileiros)"
 msgstr "Melhoria: nova opção para bloco de finalização de compra (Campos Brasileiros)"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Enhancement: New quantity detection system on product page."
 msgstr "Aprimoramento: Novo sistema de detecção de quantidade na página do produto."
 
 #. Found in changelog paragraph.
+#, gp-priority: low
 msgid ""
 "= 4.10.1 - 2026-03-30\n"
 "* Fixed cart change detection (adding/removing products).\n"
@@ -900,6 +1047,7 @@ msgstr ""
 "* Corrigida expansão do componente quando o bloco estava minimizado."
 
 #. Found in changelog paragraph.
+#, gp-priority: low
 msgid ""
 "= 4.10.0 - 2026-03-11\n"
 "* Fixed script loading between Classic and Block versions.\n"
@@ -912,6 +1060,7 @@ msgstr ""
 "* Nova opção para ocultar o componente do calculador de frete personalizado quando apenas produtos digitais forem detectados."
 
 #. Found in changelog paragraph.
+#, gp-priority: low
 msgid ""
 "= 4.9.2 - 2026-03-06\n"
 "* Adjustment: Changed the phone field position on the edit address page."
@@ -920,6 +1069,7 @@ msgstr ""
 "* Ajuste: alterou a posição do campo de telefone na página de edição de endereço."
 
 #. Found in changelog paragraph.
+#, gp-priority: low
 msgid ""
 "= 4.9.1 - 2026-03-06\n"
 "* Adjustment: Highlight on the ZIP code field via shortcode.\n"
@@ -930,6 +1080,7 @@ msgstr ""
 "* Ajuste: campos de configuração de envio."
 
 #. Found in changelog paragraph.
+#, gp-priority: low
 msgid ""
 "= 4.9.0 - 2026-03-04\n"
 "* Added: New options to highlight the contact and email fields.\n"
@@ -940,6 +1091,7 @@ msgstr ""
 "* Adicionado: nova opção para impedir frete grátis duplicado."
 
 #. Found in changelog paragraph.
+#, gp-priority: low
 msgid ""
 "= 4.8.0 - 2026-02-09\n"
 "* Addition: Option to hide shipping methods when free shipping is acquired.\n"
@@ -956,6 +1108,7 @@ msgstr ""
 "* Ajustes nas rotas ajax e rest_api para evitar cache."
 
 #. Found in changelog paragraph.
+#, gp-priority: low
 msgid ""
 "= 4.7.4 - 2026-01-21\n"
 "* Fix: variable products shipping calculation on product page."
@@ -964,6 +1117,7 @@ msgstr ""
 "* Correção: cálculo do frete de produtos com variação na página do produto."
 
 #. Found in changelog paragraph.
+#, gp-priority: low
 msgid ""
 "= 4.7.3 - 2026-01-13\n"
 "* Fix: phone number field regarding digits.\n"
@@ -976,6 +1130,7 @@ msgstr ""
 "* Correção: configuração de exibição do campo de CEP no shortcode."
 
 #. Found in changelog paragraph.
+#, gp-priority: low
 msgid ""
 "= 4.7.2 - 2026-01-07\n"
 "* Fix: number field verification + Brazilian plugin compatibility."
@@ -984,6 +1139,7 @@ msgstr ""
 "* Correção: verificação do campo numérico + compatibilidade do plugin brasileiro."
 
 #. Found in changelog paragraph.
+#, gp-priority: low
 msgid ""
 "= 4.7.1 - 2026-01-06\n"
 "* Fix: dynamic CPF/CNPJ field in block editor."
@@ -992,6 +1148,7 @@ msgstr ""
 "* Correção: campo dinâmico de CPF/CNPJ no editor de blocos."
 
 #. Found in changelog paragraph.
+#, gp-priority: low
 msgid ""
 "= 4.7.0 - 2025-12-23\n"
 "* NEW: CPF/CNPJ field\n"
@@ -1004,413 +1161,516 @@ msgstr ""
 "* Ajuste: barra de frete grátis.”"
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.6.0 - 2025-12-15"
 msgstr "4.6.0 - 15/12/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "NEW: Dynamic progress bar for free shipping with customizable messages."
 msgstr "NOVO: Barra de progresso dinâmica para frete grátis com mensagens personalizáveis."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "NEW: Automatic capture and formatting of country codes in phone numbers."
 msgstr "NOVO: Captura e formatação automática de códigos de país em números de telefone."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "NEW: Complete feature parity between block editor and shortcode."
 msgstr "NOVO: Paridade total de recursos entre o editor de blocos e o shortcode."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.5.0 - 2025-10-24"
 msgstr "4.5.0 - 24/10/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "NEW: Text font configuration system in the product and cart components."
 msgstr "NOVO: Sistema de configuração de fonte de texto nos componentes de produto e carrinho."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "NEW: Automatic address filling on the Checkout page."
 msgstr "NOVO: Preenchimento automático de endereço na página de finalização de compra."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "NEW: Highlight for the ZIP code field in the Checkout page form."
 msgstr "NOVO: Destaque para o campo de CEP no formulário da página de finalização de compra."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.4.0 - 2025-09-10"
 msgstr "4.4.0 - 10/09/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: cache system for postal code queries."
 msgstr "Novo: sistema de cache para consultas de CEP."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: plugin display card."
 msgstr "Novo: cartão de exibição do plugin."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New: Psalm and CodeQL libraries for code"
 msgstr "Novo: bibliotecas de Salmos e CodeQL para código"
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.3.3 - 2025-08-15"
 msgstr "4.3.3 - 15/08/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Button styles."
 msgstr "Correção: Estilos de botão."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Nonce."
 msgstr "Correção: Nonce."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Currency type and decimal places."
 msgstr "Correção: Tipo de moeda e casas decimais."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.3.2 - 2025-08-08"
 msgstr "4.3.2 - 08/08/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Component display issue."
 msgstr "Correção: Problema na exibição de componente."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: Message in Gutenberg fields."
 msgstr "Ajuste: Mensagem nos campos do Gutenberg."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Addition: Link configuration field."
 msgstr "Adição: Campo de configuração de link."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.3.1 - 2025-08-05"
 msgstr "4.3.1 - 05/08/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: Option that defines the component position is now at a higher level, for both product page and cart."
 msgstr "Ajuste: A opção que define a posição do componente agora está em um nível superior, tanto para a página do produto quanto para o carrinho."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: When defining the CEP component position on a product page in custom mode, it did not display as expected."
 msgstr "Correção: Ao definir a posição do componente de CEP na página do produto no modo personalizado, ele não era exibido conforme o esperado."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Default icon color value."
 msgstr "Correção: Valor padrão da cor do ícone."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Addition: Link that leads to configuration page is now available on the product page when the user is a page administrator."
 msgstr "Adição: O link que leva à página de configuração agora está disponível na página do produto quando o usuário for um administrador da página."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.3.0 - 2025-07-29"
 msgstr "4.3.0 - 29/07/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Addition: New custom ZIP code verification components."
 msgstr "Adição: Novos componentes personalizados de verificação de CEP."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Addition: ZIP code component for the product page."
 msgstr "Adição: Componente de CEP para a página do produto."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Addition: ZIP code component for the Woo cart page"
 msgstr "Adição: Componente de CEP para a página de carrinho do Woo."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.2.1 - 2025-06-09"
 msgstr "4.2.1 - 09/06/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Decimal separator."
 msgstr "Correção: Separador decimal."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Dynamic URL."
 msgstr "Correção: URL dinâmica."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Progress bar on the legacy cart page."
 msgstr "Correção: Barra de progresso na página de carrinho legada."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.2.0 - 2025-06-06"
 msgstr "4.2.0 - 06/06/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Addition: Option to set a minimum cart value for free shipping."
 msgstr "Adição: Opção para definir um valor mínimo no carrinho para frete grátis."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.1.6 - 2025-06-02"
 msgstr "4.1.6 - 02/06/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: fix in the address auto-fill field."
 msgstr "Ajuste: correção no campo de autopreenchimento de endereço."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.1.5 - 2025-05-22"
 msgstr "4.1.5 - 22/05/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: address hiding field."
 msgstr "Ajuste: campo de ocultação de endereço."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Addition: plugin contributors."
 msgstr "Inserção: dos contribuidores do plugin."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Addition: link to the plugin settings page on the cart page only when the user is an administrator."
 msgstr "Inserção: de link que leva para página de configurações do plugin na página do carrinho apenas quando o usuário for administrador."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.1.4 - 2025-05-20"
 msgstr "4.1.4 - 20/05/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: neighborhood field is outside the established parameters."
 msgstr "Ajuste: campo de bairro está fora dos parâmetros estabelecidos."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: README.txt file tags."
 msgstr "Ajuste: tags do arquivo README.txt."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.1.3 - 2025-05-15"
 msgstr "4.1.3 - 15/05/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: more dynamic blueprint at the time of playground configuration."
 msgstr "Ajuste: blueprint mais dinâmico no momento da configuração do playground."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.1.2 - 2025-05-07"
 msgstr "4.1.2 - 07/05/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Adjustments in the identification of physical and digital products."
 msgstr "Correção: Ajustes na identificação de produtos físicos e digitais."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: Improvement in the githubworkflow flow for plugin release in the repository and WordPress."
 msgstr "Ajuste: Melhoria no fluxo do githubworkflow para lançamento do plugin no repositorio e WordPress."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.1.1 - 2025-04-29"
 msgstr "4.1.1 - 29/04/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Improved README.txt description for Portuguese - BR."
 msgstr "Correção: Melhoria na descrição do README.txt para o Português - BR."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Improved Gutenberg field for ZIP code field, now it is possible to enable or disable address hiding in ZIP code fields."
 msgstr "Correção: Melhoria no campo do Gutenberg para campo de CEP, agora é possível habilitar ou desabilitar a ocultação do endereço nos campos de CEP."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.0.1 - 2025-04-23"
 msgstr "4.0.1 - 23/04/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: New Readme.txt and image list."
 msgstr "Correção: Novo Readme.txt e lista de imagens."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "4.0.0 - 2025-03-26"
 msgstr "4.0.0 - 26/03/2025"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: Plugin changed to Object Oriented (OO) model."
 msgstr "Ajuste: Alteração do plugin para o modelo de Orientação a Objetos (OO)."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New settings tab for the plugin."
 msgstr "Novo tab de configuração para o plugin."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Compatibility with Gutenberg."
 msgstr "Compatibilidade com o Gutenberg."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New number field in Woocommerce checkout (shortcode and gutenberg)"
 msgstr "Novo campo de número no checkout do Woocommerce(shortcode e gutenberg)"
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "3.2.2"
 msgstr "3.2.2"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tested up to WordPress 6.6"
 msgstr "Testado até o WordPress 6.6"
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "3.2.1"
 msgstr "3.2.1"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tested up to WordPress 6.4"
 msgstr "Testado até o WordPress 6.4"
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "3.2.0"
 msgstr "3.2.0"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: Forces WooCommerce settings to enable shipping calculation."
 msgstr "Ajuste: Força as configurações do WooCommerce para ativar o cálculo de frete."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "3.1.2"
 msgstr "3.1.2"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Incompatibility with the Fluid Checkout plugin."
 msgstr "Correção: Incompatibilidade com o plugin Fluid Checkout."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "3.1.1"
 msgstr "3.1.1"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: Sometimes the ZIP code field mask was not working in new shipping calculations."
 msgstr "Correção: Às vezes, a máscara do campo de CEP não estava funcionando em novos cálculos de frete."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "3.1.0"
 msgstr "3.1.0"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Feature: Now the ZIP code field has the 'tel' type (to show the numeric keyboard on mobile)."
 msgstr "Recurso: Agora o campo de CEP possui o tipo 'tel' (para mostrar o teclado numérico no celular)."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "3.0.2"
 msgstr "3.0.2"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: The donation notice was not closing."
 msgstr "Correção: O aviso de doação não estava fechando."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "3.0.1"
 msgstr "3.0.1"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix: The plugin's JavaScript should only run on the cart page."
 msgstr "Correção: O JavaScript do plugin deve ser executado apenas na página do carrinho."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "3.0.0"
 msgstr "3.0.0"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: Refactored code for better compatibility."
 msgstr "Ajuste: Código refatorado para melhor compatibilidade."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Breaking: Several hooks have been removed."
 msgstr "Ruptura: Vários hooks foram removidos."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "2.2.0"
 msgstr "2.2.0"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Adjustment: Clears the city field to avoid unexpected results."
 msgstr "Ajuste: Limpa o campo de cidade para evitar resultados inesperados."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fixed the <code>wc_better_shipping_calculator_for_brazil_hide_country</code> filter hook."
 msgstr "Corrigido o hook de filtro <code>wc_better_shipping_calculator_for_brazil_hide_country</code>"
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "2.1.2"
 msgstr "2.1.2"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Minor fixes."
 msgstr "Correções menores."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "2.1.1"
 msgstr "2.1.1"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "JavaScript fix."
 msgstr "Correção de JavaScript."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "2.1.0"
 msgstr "2.1.0"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Plugin name changed to \"Improved shipping calculator for Brazilian stores\"."
 msgstr "Nome do plugin alterado para \"Calculadora de frete melhorada para lojas brasileiras\"."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Now the ZIP code field is always visible."
 msgstr "Agora o campo de CEP está sempre visível."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New hook filter: <code>wc_better_shipping_calculator_for_brazil_add_postcode_mask</code> (default: <code>true</code>)"
 msgstr "Novo filtro de hook: <code>wc_better_shipping_calculator_for_brazil_add_postcode_mask</code> (padrão: <code>true</code>)"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "New hook filter: <code>wc_better_shipping_calculator_for_brazil_postcode_label</code> (default: <code>\"Calculate shipping:\"</code>)"
 msgstr "Novo filtro de hook: <code>wc_better_shipping_calculator_for_brazil_postcode_label</code> (padrão: <code>\"Calcule o frete:\"</code>)"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix in <code>register_activation_hook</code>."
 msgstr "Correção em <code>register_activation_hook</code>."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "2.0.4"
 msgstr "2.0.4"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix in pt_BR translation."
 msgstr "Correção na tradução pt_BR."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Tested with WordPress 6.0 and WooCommerce 6.5."
 msgstr "Testado com WordPress 6.0 e WooCommerce 6.5."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "2.0.3"
 msgstr "2.0.3"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Fix for a syntax error with older PHP versions."
 msgstr "Correção de um erro de sintaxe com versões antigas do PHP."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "2.0.2"
 msgstr "2.0.2"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "JavaScript fixes."
 msgstr "Correção em JavaScript."
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Added translation for PT-BR."
 msgstr "Tradução para PT-BR adicionada."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "2.0.1"
 msgstr "2.0.1"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Internal fixes."
 msgstr "Correções internas."
 
 #. Found in changelog header.
+#, gp-priority: low
 msgid "2.0.0"
 msgstr "2.0.0"
 
 #. Found in changelog list item.
+#, gp-priority: low
 msgid "Initial release."
 msgstr "Lançamento inicial."
