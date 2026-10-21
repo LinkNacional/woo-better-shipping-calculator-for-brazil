@@ -205,9 +205,14 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Adiciona o campo de RG (Registro Geral) ao checkout, exclusivo para Pessoas Físicas. Útil para emissão de Nota Fiscal eletrônica e conferência de identidade.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+                // Campo FILHO do "Campo de RG": a chave `join` guarda o id do PAI.
+                // Nesta tela (layout antigo, sem o template de abas/cards) quem
+                // aplica a dependência é a lista `joinPairs` em
+                // Admin/js/WcBetterShippingCalculatorForBrazilAdminSettings.js.
                 'rg_required' => array(
                     'title'    => __('Obrigatoriedade do Campo de RG', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_rg_required',
+                    'join'     => 'woo_better_calc_enable_rg_field',
                     'desc_tip' => false,
                     'default'  => 'no',
                     'type'     => 'radio',
