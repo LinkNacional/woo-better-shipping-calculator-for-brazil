@@ -398,7 +398,7 @@ class WcBetterShippingCalculatorForBrazil
 
                     <div style="margin-top: 10px;">
                         <p style="font-size: 14px; margin-top: 8px;">
-                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Campo de RG (Registro Geral) no checkout, exibido para Pessoa Física e vinculado ao CPF — opcional por padrão e com o mesmo campo usado pelos aplicativos de Nota Fiscal.', 'woo-better-shipping-calculator-for-brazil' ); ?>
+                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Campo de RG (Registro Geral) no checkout. Ele aparece para Pessoa Física, junto com o CPF, e o preenchimento é opcional.', 'woo-better-shipping-calculator-for-brazil' ); ?>
                         </p>
                     </div>
 
