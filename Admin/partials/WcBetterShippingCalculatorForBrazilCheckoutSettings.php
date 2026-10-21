@@ -249,8 +249,8 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     ),
                     'custom_attributes' => array(
                         'data-desc-tip' => __('Adiciona o campo de RG no checkout para Pessoa Física.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Habilite para exibir o campo "RG" no endereço de cobrança do checkout. O campo é vinculado ao CPF: só aparece quando o cliente informar um CPF (Pessoa Física) e fica oculto para CNPJ (Pessoa Jurídica). O valor é salvo no mesmo campo usado pelos aplicativos de Nota Fiscal (billing_rg), então plugins de NF-e o reconhecem. Requer que o campo "Tipo de Cliente" esteja configurado como "Pessoa Física" ou "Pessoa Física e Pessoa Jurídica".', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-title-description' => __('Adiciona o campo de RG (Registro Geral) ao checkout, exclusivo para Pessoas Físicas. Útil para emissão de Nota Fiscal eletrônica e conferência de identidade.', 'woo-better-shipping-calculator-for-brazil')
+                        'data-description' => __('Habilite para exibir o campo "RG" no endereço de cobrança do checkout. O campo é vinculado ao CPF: só aparece quando o cliente informar um CPF (Pessoa Física) e fica oculto para CNPJ (Pessoa Jurídica). Quem usa aplicativo de Nota Fiscal encontra o RG já preenchido. Requer que o campo "Tipo de Cliente" esteja configurado como "Pessoa Física" ou "Pessoa Física e Pessoa Jurídica".', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Adiciona o campo de RG (Registro Geral) ao checkout, exclusivo para Pessoas Físicas. Ajuda a conferir a identidade do cliente e a emitir nota fiscal.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
                 'rg_required' => array(
@@ -267,7 +267,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     'custom_attributes' => array(
                         'data-desc-tip' => __('Define se o campo de RG é obrigatório ou opcional quando visível.', 'woo-better-shipping-calculator-for-brazil'),
                         'data-description' => __('Escolha "Habilitar" para exigir o preenchimento do RG sempre que o campo estiver visível (Pessoa Física com CPF) ou "Desabilitar" para deixar a critério do cliente.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-title-description' => __('Controla a obrigatoriedade do campo de RG quando ele está habilitado. O RG não possui padrão nacional de validação (o cálculo varia por estado).', 'woo-better-shipping-calculator-for-brazil')
+                        'data-title-description' => __('Controla a obrigatoriedade do campo de RG quando ele está habilitado. Cada estado tem uma regra própria de RG, por isso o campo não é validado.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
 
@@ -649,8 +649,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
             // Cards verdes de novidades do sidebar (um card por item do array).
             $sidebar_features = array(
                 array(
-                    '<strong>' . __('NOVO:', 'woo-better-shipping-calculator-for-brazil') . '</strong> ' . __('Campo de Inscrição Municipal (IM) no checkout, exibido para Pessoa Jurídica (CNPJ).', 'woo-better-shipping-calculator-for-brazil'),
-                    '<strong>' . __('NOVO:', 'woo-better-shipping-calculator-for-brazil') . '</strong> ' . __('Novo fluxo dos campos de Telefone e Celular no checkout (clássico e blocos).', 'woo-better-shipping-calculator-for-brazil'),
+                    '<strong>' . __('NOVO:', 'woo-better-shipping-calculator-for-brazil') . '</strong> ' . __('Campo de RG (Registro Geral) no checkout. Ele aparece para Pessoa Física, junto com o CPF, e o preenchimento é opcional.', 'woo-better-shipping-calculator-for-brazil'),
                 ),
             );
 

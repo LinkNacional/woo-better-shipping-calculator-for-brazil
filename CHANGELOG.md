@@ -7,6 +7,15 @@
 * Ajuste: os links da versão PRO passaram a apontar para as páginas comerciais de cada plugin.
 * Nota: nenhuma configuração salva muda de nome, então os ajustes já feitos continuam valendo.
 
+# 5.2.0 - 21/10/26
+* Novo: campo de RG (Registro Geral) no checkout. Ele aparece para Pessoa Física, junto com o CPF, fica oculto para CNPJ e o preenchimento é opcional.
+* Novo: o RG também está na edição de endereço da conta, no perfil do usuário e nos dados do pedido — inclusive na tela de pedido recebido e no painel do pedido, onde pode ser editado.
+* Novo: opções de RG nas configurações de campos brasileiros (habilitar e obrigatoriedade).
+* Ajuste: o RG fica logo depois do CPF, sem bagunçar a ordem dos outros campos do endereço.
+* Correção: os campos IE, IM, RG e Empresa não são mais apagados quando ficam ocultos — ao corrigir o documento (apagar ou redigitar CPF/CNPJ) o valor digitado é preservado e volta ao reexibir o campo.
+* Correção: os campos ocultos deixaram de ocupar espaço no layout do checkout clássico e da edição de endereço, sem margem ou preenchimento residuais.
+* Nota: o RG não tem padrão nacional de validação (a regra varia por estado), então a validação é de formato e tamanho, não de dígito verificador.
+
 # 5.1.1 - 20/10/26
 * Novo: a opção "Comportamento do Campo Empresa" ganhou o valor "Desabilitado", que deixa de gerar o campo Empresa no checkout (clássico e blocos), na edição de endereço da conta e na tela de perfil do usuário.
 * Correção: com o campo Empresa desabilitado, um campo Empresa reintroduzido por outro plugin não pode mais ficar obrigatório — permanece opcional e não trava mais o pedido.

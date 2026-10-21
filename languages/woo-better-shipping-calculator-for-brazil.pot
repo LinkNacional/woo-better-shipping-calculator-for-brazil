@@ -1,0 +1,1433 @@
+# Copyright (C) 2026 Link Nacional
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Campos Checkout Brasileiro para WooCommerce 5.2.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/woo-better-shipping-calculator-for-brazil\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-10-21T16:26:59+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: woo-better-shipping-calculator-for-brazil\n"
+
+#. Plugin Name of the plugin
+#: wc-better-shipping-calculator-for-brazil.php
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:355
+#: Admin/WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller.php:118
+#: Admin/WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller.php:126
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:517
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:521
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:723
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:733
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:856
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:860
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:963
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:967
+#: Includes/WcBetterShippingCalculatorForBrazil.php:365
+#: Includes/WcBetterShippingCalculatorForBrazilActivator.php:76
+msgid "Campos Checkout Brasileiro para WooCommerce"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: wc-better-shipping-calculator-for-brazil.php
+msgid "https://www.linknacional.com.br/wordpress"
+msgstr ""
+
+#. Description of the plugin
+#: wc-better-shipping-calculator-for-brazil.php
+msgid "Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce."
+msgstr ""
+
+#. Author of the plugin
+#: wc-better-shipping-calculator-for-brazil.php
+msgid "Link Nacional"
+msgstr ""
+
+#. Author URI of the plugin
+#: wc-better-shipping-calculator-for-brazil.php
+msgid "https://linknacional.com.br/"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:15
+msgid "Campos Brasileiros"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:24
+msgid "Checkout"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:29
+msgid "Destaque do Campo CEP"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:35
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:51
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:67
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:119
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:135
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:151
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:167
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:183
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:199
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:220
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:236
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:252
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:287
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:304
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:321
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:338
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:354
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:371
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:387
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:403
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:419
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:435
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:451
+msgid "Habilitar"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:36
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:52
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:68
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:120
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:136
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:152
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:168
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:184
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:200
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:221
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:237
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:253
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:288
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:305
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:322
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:339
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:355
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:372
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:388
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:404
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:420
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:436
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:452
+msgid "Desabilitar"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:39
+msgid "Defina as configurações de exibição e funcionalidade para o campo de CEP (Checkout)."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:40
+msgid "Ao habilitar, o campo CEP será exibido no topo do formulário de checkout, posicionado imediatamente após o campo de País."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:41
+msgid "Escolha se o campo de CEP deve ser destacado no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:45
+msgid "Sugestão de Endereço por CEP"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:55
+msgid "Exibe uma sugestão de endereço ao digitar o CEP. O cliente precisa confirmar clicando no checkbox para que os campos sejam preenchidos."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:56
+msgid "Com esta opção ativada, ao digitar o CEP no checkout, um checkbox de sugestão aparecerá com o endereço encontrado. O cliente deverá marcar o checkbox para confirmar e preencher os campos automaticamente. Ideal para quem quer dar controle ao cliente antes de sobrescrever os dados já digitados."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:57
+msgid "Exibe uma sugestão de endereço via CEP que o cliente precisa confirmar clicando em um checkbox."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:61
+msgid "Preenchimento Automático Silencioso por CEP"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:71
+msgid "Preenche os campos de endereço automaticamente ao digitar o CEP, sem nenhuma confirmação do cliente."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:72
+msgid "Com esta opção ativada, assim que o CEP for digitado e validado, os campos de endereço (Rua, Bairro, Cidade, Estado) serão preenchidos automaticamente, sem que o cliente precise confirmar nada. Atenção: dados já digitados pelo cliente serão sobrescritos. Não pode ser usado ao mesmo tempo que a opção \"Sugestão de Endereço por CEP\"."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:73
+msgid "Preenche o endereço automaticamente ao digitar o CEP, sem confirmação do cliente."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:77
+msgid "Tipo de Cliente"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:83
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1009
+msgid "Nenhum"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:84
+msgid "Pessoa Física e Pessoa Jurídica"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:85
+msgid "Pessoa Física apenas"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:86
+msgid "Pessoa Jurídica apenas"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:89
+msgid "Configure a validação de tipo de cliente no checkout. A opção \"Nenhum\" desativa a validação."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:90
+msgid "Selecione \"Nenhum\" para desativar a validação, ou escolha entre Pessoa Física (CPF), Pessoa Jurídica (CNPJ) ou ambos. Os campos CPF/CNPJ aparecem exclusivamente no endereço de cobrança."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:91
+msgid "Configure a validação de documentos no checkout. Importante: se o formulário não estiver priorizando o endereço de cobrança, ative \"Forçar entrega para o endereço de cobrança\" nas Configurações de Entrega do WooCommerce."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:95
+msgid "Comportamento do Campo Empresa"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:101
+msgid "Dinâmico (Recomendado)"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:102
+msgid "Opcional"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:103
+msgid "Obrigatório"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:104
+msgid "Desabilitado"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:107
+msgid "Define como o campo Empresa será tratado no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:108
+msgid "Dinâmico: O campo Empresa será exibido apenas quando o usuário digitar um CNPJ válido e o \"Tipo de Cliente\" estiver configurado como \"Pessoa Física e Pessoa Jurídica\" ou \"Pessoa Jurídica apenas\". Desabilitado: o campo Empresa deixa de ser gerado no checkout (clássico e blocos) — se outro plugin o reintroduzir, ele fica sempre opcional, nunca obrigatório."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:109
+msgid "Controla a exibição e obrigatoriedade do campo Empresa no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:113
+msgid "Aplicar Máscara no CPF"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:123
+msgid "Define se o CPF será salvo com máscara (###.###.###-##) ou apenas números."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:124
+msgid "Habilite para salvar o CPF com formatação (pontos e hífen) ou desabilite para salvar apenas os números."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:125
+msgid "Controla a formatação do CPF ao salvar os dados do cliente."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:129
+msgid "Aplicar Máscara no CNPJ"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:139
+msgid "Define se o CNPJ será salvo com máscara (##.###.###/####-##) ou apenas números."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:140
+msgid "Habilite para salvar o CNPJ com formatação (pontos, barra e hífen) ou desabilite para salvar apenas os números."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:141
+msgid "Controla a formatação do CNPJ ao salvar os dados do cliente."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:145
+msgid "Validação de CNPJ na Receita Federal"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:155
+msgid "Após validar o dígito verificador, consulta a Receita Federal (BrasilAPI, com fallback para ReceitaWS) para confirmar que o CNPJ existe e que a situação cadastral está ativa."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:156
+msgid "Adiciona uma camada extra de validação: além do cálculo do dígito verificador, o plugin consulta a base da Receita Federal para garantir que o CNPJ é real e que a situação cadastral está ativa. Aplica-se a CNPJs numéricos e alfanuméricos."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:157
+msgid "Confirma na Receita Federal se o CNPJ informado realmente existe e está com situação cadastral ativa."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:161
+msgid "Campo de Inscrição Estadual (IE)"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:171
+msgid "Adiciona o campo de Inscrição Estadual (IE) no checkout para Pessoa Jurídica."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:172
+msgid "Habilite para exibir o campo \"Inscrição Estadual (IE)\" no endereço de cobrança do checkout, visível somente quando o cliente selecionar Pessoa Jurídica (CNPJ). Inclui opção \"Isento\". Requer que o campo \"Tipo de Cliente\" esteja configurado como \"Pessoa Jurídica\" ou \"Pessoa Física e Pessoa Jurídica\"."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:173
+msgid "Adiciona o campo de IE (Inscrição Estadual) ao checkout, exclusivo para Pessoas Jurídicas. Fundamental para emissão de Nota Fiscal eletrônica (NF-e)."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:177
+msgid "Campo de Inscrição Municipal (IM)"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:187
+msgid "Adiciona o campo de Inscrição Municipal (IM) no checkout para Pessoa Jurídica."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:188
+msgid "Habilite para exibir o campo \"Inscrição Municipal (IM)\" no endereço de cobrança do checkout, visível somente quando o cliente selecionar Pessoa Jurídica (CNPJ). Campo obrigatório para Pessoa Jurídica. Requer que o campo \"Tipo de Cliente\" esteja configurado como \"Pessoa Jurídica\" ou \"Pessoa Física e Pessoa Jurídica\"."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:189
+msgid "Adiciona o campo de Inscrição Municipal (IM) ao checkout, exclusivo para Pessoas Jurídicas. Complementa o IE para emissão de NF-e/NFS-e. A IM não possui padrão nacional de validação (regra municipal)."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:193
+msgid "Campo de RG"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:203
+msgid "Adiciona o campo de RG no checkout para Pessoa Física."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:204
+msgid "Habilite para exibir o campo \"RG\" no endereço de cobrança do checkout. Ele aparece junto com o CPF, quando o cliente é Pessoa Física, e fica oculto para CNPJ (Pessoa Jurídica). Quem usa aplicativo de Nota Fiscal encontra o RG já preenchido. Requer que o campo \"Tipo de Cliente\" esteja configurado como \"Pessoa Física\" ou \"Pessoa Física e Pessoa Jurídica\"."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:205
+msgid "Adiciona o campo de RG (Registro Geral) ao checkout, exclusivo para Pessoas Físicas. Ajuda a conferir a identidade do cliente e a emitir nota fiscal."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:213
+msgid "Obrigatoriedade do Campo de RG"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:224
+msgid "Define se o campo de RG é obrigatório ou opcional quando visível."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:225
+msgid "Escolha \"Habilitar\" para exigir o preenchimento do RG sempre que o campo estiver visível (Pessoa Física com CPF) ou \"Desabilitar\" para deixar a critério do cliente."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:226
+msgid "Controla a obrigatoriedade do campo de RG quando ele está habilitado. Cada estado tem uma regra própria de RG, por isso o campo não é validado."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:230
+msgid "Campo de Bairro"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:240
+msgid "Adiciona um campo obrigatório de Bairro no formulário de endereço do checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:241
+msgid "Habilite para adicionar o campo \"Bairro\" tanto nos endereços de cobrança quanto de entrega."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:242
+msgid "Adiciona o campo de Bairro, posicionado após o endereço principal."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:246
+msgid "Campo de Número do Endereço"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:256
+msgid "Adicionar Campo de Número (Obrigatório)"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:257
+msgid "Adiciona um campo de Número de preenchimento obrigatório ao formulário de endereço no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:258
+msgid "Habilite para adicionar um campo de \"Número\" ao endereço. Inclui checkbox para endereços \"Sem Número\" e torna o campo obrigatório no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:259
+msgid "Adiciona o campo de Número, posicionado logo após o campo principal do endereço (Rua)."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:263
+msgid "Comportamento do Campo de Telefone"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:269
+msgid "Desabilitar o campo de telefone"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:270
+msgid "Permitir Telefone Celular e Fixo"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:271
+msgid "Permitir somente Telefone Celular"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:272
+msgid "Permitir somente Telefone Fixo"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:275
+msgid "Define como o campo de telefone se comporta no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:276
+msgid "Define o comportamento do campo de telefone no checkout clássico (shortcode): \"Permitir Telefone Celular e Fixo\" exibe o telefone e permite adicionar o campo de Celular; \"Permitir somente Telefone Celular\" usa apenas o celular; \"Permitir somente Telefone Fixo\" usa apenas o telefone; \"Desabilitar o campo de telefone\" remove o telefone. No checkout em blocos apenas o telefone nativo é manipulado."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:277
+msgid "Controla o comportamento do campo de telefone no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:281
+msgid "Celular Oculto"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:291
+msgid "Gerar o campo de Celular oculto"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:292
+msgid "Gera o campo de celular OCULTO (billing_cellphone/shipping_cellphone) para compatibilidade com gateways (PagBank, Asaas, NFe)."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:293
+msgid "Ao habilitar, o plugin gera um campo de celular OCULTO espelhando o telefone, para plugins que esperam \"billing_cellphone\"/\"shipping_cellphone\". Ao desabilitar (padrão), NENHUM campo de celular é gerado — evitando conflitos. Aplica-se apenas ao modo \"Permitir Telefone Celular e Fixo\" com o \"Campo de Celular\" desligado."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:294
+msgid "Gera o campo de celular oculto (compatibilidade com gateways)."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:298
+msgid "Telefone com Máscara e DDI"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:308
+msgid "Aplicar Máscara + Captura de DDI"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:309
+msgid "Ativa a formatação do telefone e adiciona o recurso de captura do Código de País (DDI)."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:310
+msgid "Habilite para aplicar máscara de formatação no campo de telefone e incluir o código de país (DDI) ou desabilite para manter o comportamento padrão."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:311
+msgid "No checkout, o campo de telefone receberá formatação e passará a incluir o código de país (DDI)."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:315
+msgid "Exibir Código do País (DDI)"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:325
+msgid "Exibir Código do País (DDI) no Telefone"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:326
+msgid "Mostra o código do país (DDI) ao lado da bandeira no campo de telefone."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:327
+msgid "Requer que a opção \"Telefone com Máscara e DDI\" esteja habilitada. Quando ativada, o campo exibe a bandeira e o código do país (DDI) do país selecionado."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:328
+msgid "Exibe o código do país (DDI) junto à bandeira no campo de telefone."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:332
+msgid "Telefone (Contato) Obrigatório"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:342
+msgid "Define a obrigatoriedade do campo de Telefone no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:343
+msgid "Se habilitado, o campo de telefone será de preenchimento obrigatório para que o cliente possa finalizar o pedido."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:344
+msgid "No checkout, o campo de telefone torna-se obrigatório."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:348
+msgid "Validar Número de Telefone"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:358
+msgid "Validar o número de telefone no checkout"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:359
+msgid "Valida se o número de telefone informado é válido."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:360
+msgid "Requer que a opção \"Telefone com Máscara e DDI\" esteja habilitada e que o telefone/celular seja obrigatório. Quando ativada, o checkout impede o envio caso o número de telefone seja inválido."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:361
+msgid "Valida o número de telefone no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:365
+msgid "Destaque do Campo Telefone"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:375
+msgid "Defina as configurações de exibição e funcionalidade para o campo de Telefone (Checkout)."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:376
+msgid "Ao habilitar, o campo Telefone será exibido no topo do formulário de checkout, posicionado imediatamente após o campo de País."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:377
+msgid "Escolha se o campo de Telefone deve ser destacado no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:381
+msgid "Campo de Celular"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:391
+msgid "Adiciona um campo de Celular separado no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:392
+msgid "Adiciona o campo \"Celular\" logo abaixo do campo de telefone. Requer que o \"Comportamento do Campo de Telefone\" permita celular. No modo \"Permitir somente Telefone Celular\" esta opção fica desabilitada (o campo de celular já é o principal)."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:393
+msgid "Adiciona o campo de Celular (separado do telefone) no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:397
+msgid "Celular Obrigatório"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:407
+msgid "Define a obrigatoriedade do campo de Celular no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:408
+msgid "Quando habilitado, o campo de Celular passa a ser de preenchimento obrigatório."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:409
+msgid "Torna o campo de Celular obrigatório no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:413
+msgid "Campo de Data de Nascimento"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:423
+msgid "Adiciona um campo de Data de Nascimento no formulário de checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:424
+msgid "Habilite para adicionar o campo \"Data de Nascimento\" no endereço de cobrança do checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:425
+msgid "Adiciona o campo de Data de Nascimento para coleta de informações adicionais do cliente."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:429
+msgid "Obrigatoriedade da Data de Nascimento"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:439
+msgid "Define se o campo de Data de Nascimento é obrigatório ou opcional no checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:440
+msgid "Escolha \"Habilitar\" para exigir o preenchimento ou \"Desabilitar\" para deixar a critério do cliente."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:441
+msgid "Controla a obrigatoriedade do campo de Data de Nascimento quando ele está habilitado."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:445
+msgid "Campo de Gênero"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:455
+msgid "Adiciona um campo de Gênero no formulário de checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:456
+msgid "Habilite para adicionar o campo \"Gênero\" (opcional) no endereço de cobrança do checkout."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:457
+msgid "Adiciona o campo de Gênero para coleta de informações demográficas do cliente."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilOrderBillingData.php:15
+#: Admin/partials/WcBetterShippingCalculatorForBrazilOrderShippingData.php:15
+msgid "Dados do Cliente"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:64
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:290
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:294
+msgid "Calculadora de Frete"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:95
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:422
+msgid "Agora a Calculadora de Frete se chama Simulador de Frete"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:96
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:426
+msgid "Essa nova versão do seu plugin faz uma divisão importante entre campos brasileiros e o cálculo de frete. O plugin atual será exclusivo para os Campos de Checkout Brasileiros"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:97
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:436
+msgid "Para continuar usando os recursos abaixo, clique no botão \"Continuar utilizando os recursos da Calculadora de Frete\"."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:98
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:266
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:456
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:506
+msgid "Continuar utilizando Recursos do Calculadora de Frete"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:102
+msgid "A Calculadora de Frete agora é um plugin separado"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:103
+msgid "A partir desta versão, o cálculo de frete passou a fazer parte do plugin Simulador de Frete para WooCommerce"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:104
+msgid "Instale o plugin abaixo para usar a calculadora de frete nas páginas de produto e carrinho, frete grátis e demais recursos."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:105
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:279
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:849
+msgid "Instalar Simulador de Frete para WooCommerce"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:110
+msgid "Atualize o Simulador de Frete para WooCommerce"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:111
+msgid "A versão instalada do Simulador de Frete para WooCommerce não possui os novos recursos da calculadora de frete"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:112
+msgid "Atualize o plugin para a versão mais recente para ter acesso aos recursos da calculadora de frete nas páginas de produto e carrinho, frete grátis e demais opções."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:113
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:975
+msgid "Atualizar Simulador de Frete para WooCommerce"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:116
+msgid "Ative o Simulador de Frete para WooCommerce"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:117
+msgid "O plugin Simulador de Frete para WooCommerce está instalado, mas desativado"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:118
+msgid "Ative o plugin para utilizar os recursos da calculadora de frete nas páginas de produto e carrinho, frete grátis e demais opções."
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:119
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:848
+msgid "Ativar Simulador de Frete para WooCommerce"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:140
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:223
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:441
+msgid "Frete grátis por valor mínimo e por produto"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:141
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:224
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:442
+msgid "Esconder campos de endereço conforme o tipo de produto (digital/virtual)"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:142
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:225
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:443
+msgid "Calculadora de frete na página do produto"
+msgstr ""
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilShippingCalculatorSettings.php:143
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:226
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:444
+msgid "Calculadora de frete na página do carrinho"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:107
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:340
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:346
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:355
+msgid "Calculadora de Frete e Campos Checkout para o Brasil"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:108
+msgid "Aviso: migração da Calculadora de Frete"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:240
+msgid "Como atualizar:"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:241
+msgid "O plugin Simulador de Frete para WooCommerce está ativo, porém em uma versão desatualizada. Atualize para utilizar os novos recursos da Calculadora de Frete."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:243
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:253
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:262
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:276
+msgid "Acesse o painel administrativo do WordPress."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:244
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:254
+msgid "Vá até a página \"Plugins\"."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:245
+msgid "Atualize o plugin Simulador de Frete para WooCommerce para a versão 3.0.0 ou superior."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:246
+msgid "Clique na notificação de configuração automática para utilizar os novos recursos da Calculadora de Frete."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:250
+msgid "Ative o plugin:"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:255
+msgid "Clique em ativar o plugin."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:259
+msgid "Como migrar:"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:263
+msgid "Você será redirecionado automaticamente para a página de migração."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:265
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:278
+msgid "Clique no botão"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:267
+msgid "e o plugin será instalado automaticamente."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:269
+msgid "Suas configurações antigas serão migradas junto."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:273
+msgid "Como instalar:"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:280
+msgid "ou instale manualmente pelo repositório do WordPress."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:282
+msgid "Ative o plugin após a instalação."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:290
+msgid "Instale o plugin"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:290
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:294
+msgid "Simulador de Frete para WooCommerce"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:290
+msgid "para utilizar os recursos da"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:291
+msgid "Realize os procedimentos abaixo para utilizar os recursos da Calculadora de Frete:"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:292
+msgid "Recomendamos realizar a instalação o mais breve possível para aproveitar todos os recursos da Calculadora de Frete."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:294
+msgid "Os recursos da"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:294
+msgid "foram movidos para o plugin"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:294
+msgid "Confira os recursos impactados:"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:295
+msgid "Realize os procedimentos abaixo para continuar utilizando nossos recursos:"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:296
+msgid "Recomendamos realizar o processo o mais breve possível para não interromper o uso dos recursos da calculadora de frete."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:338
+msgid "Aviso"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:345
+msgid "Olá!"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:346
+msgid "Uma atualização importante foi aplicada ao plugin"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:354
+msgid "Se preferir fazer o processo manualmente, baixe o plugin em:"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:355
+msgid "Informamos que o plugin"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:355
+msgid "agora se chama"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilMigrationEmail.php:360
+msgid "Atenciosamente, equipe Link Nacional"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller.php:119
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:724
+msgid "Sucesso"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller.php:120
+#: Admin/WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller.php:128
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:725
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:735
+msgid "Fechar"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller.php:121
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:726
+msgid "O plugin Simulador de Frete para WooCommerce foi instalado e ativado com sucesso."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller.php:122
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:727
+msgid "O plugin Simulador de Frete para WooCommerce foi atualizado com sucesso."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller.php:123
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:728
+msgid "O plugin Simulador de Frete para WooCommerce foi ativado com sucesso."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller.php:127
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:734
+msgid "Erro"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:241
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:242
+msgid "Migração da Calculadora de Frete"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:397
+msgid "Você não tem permissão para acessar esta página."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:415
+msgid "Fechar e não mostrar novamente"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:432
+msgid "O novo plugin já está ativo. Seus dados não foram alterados."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:434
+msgid "O novo plugin já está instalado. Ative-o para continuar usando estes recursos. Seus dados não serão alterados."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:449
+msgid "Agora não"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:452
+msgid "Simulador de Frete para WooCommerce já está ativo. Tudo pronto!"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:505
+msgid "Continuar utilizando Recursos do Simulador de Frete"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:509
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:861
+msgid "Sugestão"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:510
+msgid "Migração"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:526
+msgid "Ative o novo plugin para continuar usando frete grátis, a calculadora de frete no produto/carrinho e as opções de endereço."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:528
+msgid "Instale o novo plugin para continuar usando frete grátis, a calculadora de frete no produto/carrinho e as opções de endereço."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:536
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:875
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:978
+msgid "Dispensar este aviso."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:729
+msgid "O plugin Campos Checkout Brasileiro para WooCommerce foi atualizado para a nova versão com sucesso."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:730
+msgid "O plugin Campos Checkout Brasileiro para WooCommerce retornou para a versão anterior com sucesso."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:865
+msgid "Os recursos da Calculadora de Frete agora fazem parte do plugin Simulador de Frete para WooCommerce. Ative-o para usar a calculadora de frete nas páginas de produto e carrinho, frete grátis e demais recursos."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:867
+msgid "Os recursos da Calculadora de Frete agora fazem parte do plugin Simulador de Frete para WooCommerce. Instale-o para usar a calculadora de frete nas páginas de produto e carrinho, frete grátis e demais recursos."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:968
+msgid "Atualização"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:971
+msgid "O plugin Simulador de Frete para WooCommerce está desatualizado. Atualize-o para ter acesso aos novos recursos da calculadora de frete."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:1116
+msgid "Retornar a versão anterior"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:1151
+msgid "Tem certeza que deseja retornar à versão anterior?"
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:1152
+msgid "Carregando..."
+msgstr ""
+
+#: Admin/WcBetterShippingCalculatorForBrazilShippingMigration.php:1185
+msgid "Falha ao retornar à versão anterior."
+msgstr ""
+
+#: Includes/assets/templates/WcBetterShippingCalculatorForBrazilAdminSettingsCard.php:20
+msgid "Documentação"
+msgstr ""
+
+#: Includes/assets/templates/WcBetterShippingCalculatorForBrazilAdminSettingsCard.php:23
+msgid "Hosting"
+msgstr ""
+
+#: Includes/assets/templates/WcBetterShippingCalculatorForBrazilAdminSettingsCard.php:28
+msgid "WP Plugin"
+msgstr ""
+
+#: Includes/assets/templates/WcBetterShippingCalculatorForBrazilAdminSettingsCard.php:31
+msgid "Suporte WP"
+msgstr ""
+
+#: Includes/assets/templates/WcBetterShippingCalculatorForBrazilAdminSettingsCard.php:38
+msgid "Avaliar o plugin"
+msgstr ""
+
+#. translators: %s: versão do plugin
+#: Includes/WcBetterShippingCalculatorForBrazil.php:395
+#, php-format
+msgid "Campos Checkout Brasileiro para WooCommerce — Atualização v%s"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:401
+msgid "Campo de RG (Registro Geral) no checkout. Ele aparece para Pessoa Física, junto com o CPF, e o preenchimento é opcional."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:453
+#: Includes/WcBetterShippingCalculatorForBrazil.php:694
+#: Includes/WcBetterShippingCalculatorForBrazil.php:706
+msgid "Nome da rua"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:600
+msgid "Configurações"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:623
+#: Includes/WcBetterShippingCalculatorForBrazil.php:631
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1087
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1229
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2535
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8311
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8347
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8781
+#: Includes/WcBetterShippingCalculatorForBrazil.php:9004
+msgid "Número"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:624
+#: Includes/WcBetterShippingCalculatorForBrazil.php:632
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8782
+#: Includes/WcBetterShippingCalculatorForBrazil.php:9005
+msgid "Ex: 123a"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:644
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1134
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2016
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8290
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8739
+msgid "Data de Nascimento"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:645
+msgid "dd/mm/aaaa"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:657
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1144
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2121
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8295
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8751
+msgid "Gênero"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:660
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1147
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8298
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8757
+msgid "Selecione..."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:661
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1148
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2113
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8299
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8758
+msgid "Masculino"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:662
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1149
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2114
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8300
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8759
+msgid "Feminino"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:663
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1150
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2115
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8301
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8760
+msgid "Não-binário"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:664
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1151
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2116
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8302
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8761
+msgid "Outro"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:665
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1152
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2117
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8303
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8762
+msgid "Prefiro não dizer"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1005
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2034
+msgid "Tipo de Pessoa"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1008
+msgid "Selecione"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1010
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2028
+msgid "Pessoa Física"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1011
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2030
+msgid "Pessoa Jurídica"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1019
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2044
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5791
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8241
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8613
+msgid "CPF"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1028
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1340
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2054
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5952
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8268
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8722
+msgid "RG"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1037
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2065
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5794
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8243
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8616
+msgid "CNPJ"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1050
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2072
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2100
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2533
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8272
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8343
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8648
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8932
+msgid "Empresa"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1063
+msgid "Inscrição Estadual"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1072
+msgid "Inscrição Municipal"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1102
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1244
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2537
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5970
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5979
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8315
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8351
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8770
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8993
+msgid "Bairro"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1119
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8321
+msgid "Endereço de e-mail"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1125
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1277
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1831
+#: Includes/WcBetterShippingCalculatorForBrazil.php:4093
+#: Public/WcBetterShippingCalculatorForBrazilPublic.php:104
+msgid "Telefone"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1258
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2540
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8318
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8354
+msgid "CEP"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1390
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1830
+#: Includes/WcBetterShippingCalculatorForBrazil.php:4095
+#: Includes/WcBetterShippingCalculatorForBrazil.php:7708
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8235
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8566
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8952
+#: Public/WcBetterShippingCalculatorForBrazilPublic.php:106
+#: Public/WcBetterShippingCalculatorForBrazilPublic.php:787
+msgid "Celular"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1422
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8236
+msgid "Celular (secundário)"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1829
+#: Includes/WcBetterShippingCalculatorForBrazil.php:4098
+#: Public/WcBetterShippingCalculatorForBrazilPublic.php:109
+msgid "Celular/Telefone"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2080
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5911
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8276
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8683
+msgid "Inscrição Estadual (IE)"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2089
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5931
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8280
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8702
+msgid "Inscrição Municipal (IM)"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2138
+msgid "Email"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2532
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8260
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8340
+msgid "Nome"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2534
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8309
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8345
+msgid "Endereço"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2536
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8313
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8349
+msgid "Complemento"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2538
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8317
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8353
+msgid "Cidade"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2539
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8320
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8356
+msgid "Estado"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2541
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8319
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8355
+msgid "País"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2718
+msgid "Informações adicionais"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2902
+msgid "CNPJ não encontrado na Receita Federal. Verifique o número informado."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2906
+msgid "CNPJ com situação cadastral inativa na Receita Federal."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:2910
+msgid "Não foi possível validar o CNPJ no momento. Tente novamente em instantes."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:3083
+msgid "CNPJ inválido. Verifique os números informados."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:3260
+msgid "Por favor, preencha a Inscrição Estadual (IE) ou marque como ISENTO."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:3308
+msgid "Por favor, preencha a Inscrição Municipal (IM)."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:3445
+msgid "Por favor, preencha o RG."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:3597
+msgid "Número de telefone inválido."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:3605
+msgid "Número de celular inválido."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:3616
+msgid "Número de telefone de entrega inválido."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:3622
+msgid "Número de celular de entrega inválido."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5787
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8239
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8609
+msgid "CPF/CNPJ"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5788
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8610
+msgid "Digite seu CPF ou CNPJ"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5792
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8614
+msgid "000.000.000-00"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5795
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8617
+msgid "00.000.000/0000-00"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5841
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5857
+msgid "Nome da Empresa"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5842
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5858
+msgid "Digite o nome da empresa"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5912
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8684
+msgid "Digite a IE ou marque Isento"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5932
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8703
+msgid "Digite a Inscrição Municipal (IM)"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5953
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8723
+msgid "Digite o RG"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5971
+#: Includes/WcBetterShippingCalculatorForBrazil.php:5980
+msgid "Digite o nome do bairro"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:6004
+#: Includes/WcBetterShippingCalculatorForBrazil.php:6028
+msgid "Digite o telefone"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:6112
+#: Includes/WcBetterShippingCalculatorForBrazil.php:6120
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8803
+#: Includes/WcBetterShippingCalculatorForBrazil.php:9026
+msgid "Informe acima o código postal (CEP)."
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:7709
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8567
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8596
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8953
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8980
+msgid "(00) 00000-0000"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8261
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8341
+msgid "Sobrenome"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8649
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8933
+msgid "Nome da empresa"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8740
+msgid "DD/MM/AAAA"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8771
+#: Includes/WcBetterShippingCalculatorForBrazil.php:8994
+msgid "Nome do bairro"
+msgstr ""
+
+#: Includes/WcBetterShippingCalculatorForBrazilActivator.php:76
+msgid "Este plugin requer o WooCommerce para funcionar corretamente."
+msgstr ""
+
+#: Public/WcBetterShippingCalculatorForBrazilPublic.php:1878
+msgid "Digite seu CEP"
+msgstr ""
+
+#: Public/js/WcBetterShippingCalculatorForBrazilPublicShortcodeIEField.js:109
+#: Public/jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeIEField.COMPILED.js:1
+msgid "Isento"
+msgstr ""

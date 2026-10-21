@@ -404,15 +404,10 @@ class WcBetterShippingCalculatorForBrazil
 
                     <div style="margin-top: 10px;">
                         <p style="font-size: 14px; margin-top: 8px;">
-                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Campo de Inscrição Municipal (IM) no checkout, exibido para Pessoa Jurídica (CNPJ) e obrigatório quando preenchido.', 'woo-better-shipping-calculator-for-brazil' ); ?>
+                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Campo de RG (Registro Geral) no checkout. Ele aparece para Pessoa Física, junto com o CPF, e o preenchimento é opcional.', 'woo-better-shipping-calculator-for-brazil' ); ?>
                         </p>
                     </div>
 
-                    <div style="margin-top: 10px;">
-                        <p style="font-size: 14px; margin-top: 8px;">
-                            ✨ <strong>Novo:</strong> <?php esc_html_e( 'Novo fluxo dos campos de Telefone e Celular no checkout (clássico e blocos): modos de comportamento, máscara/DDI, validação e campo de celular opcional.', 'woo-better-shipping-calculator-for-brazil' ); ?>
-                        </p>
-                    </div>
 
                     <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
                         <a href="admin.php?page=wc-settings&tab=wc-better-calc-checkout" class="button button-primary" style="display: flex; align-items: center; justify-content: center;">
@@ -525,11 +520,23 @@ class WcBetterShippingCalculatorForBrazil
             sanitize_text_field(wp_unslash($_GET['page'])) === 'wc-settings' &&
             sanitize_text_field(wp_unslash($_GET['tab'])) === 'wc-better-calc-checkout'
         ) {
+            // Cache-busting por mtime: os bundles de admin são recompilados sem
+            // que a versão do plugin mude (iterações dentro da mesma release), e
+            // usar a constante deixava o navegador rodando o arquivo antigo mesmo
+            // depois de um refresh — o ajuste só aparecia com hard refresh.
+            $asset_version = function ($relative_path) {
+                $absolute_path = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_DIR . $relative_path;
+
+                return file_exists($absolute_path)
+                    ? (string) filemtime($absolute_path)
+                    : WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
+            };
+
             wp_enqueue_script(
                 'wc-better-calc-settings-layout-tabs',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutTabs.COMPILED.js',
                 array('jquery'),
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutTabs.COMPILED.js'),
                 true
             );
 
@@ -537,7 +544,7 @@ class WcBetterShippingCalculatorForBrazil
                 'wc-better-calc-settings-layout-behaviors',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.COMPILED.js',
                 array(),
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.COMPILED.js'),
                 true
             );
 
@@ -545,7 +552,7 @@ class WcBetterShippingCalculatorForBrazil
                 'wc-better-calc-footer-message',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.js',
                 array(),
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.js'),
                 true
             );
 
@@ -555,7 +562,7 @@ class WcBetterShippingCalculatorForBrazil
                 'wc-better-calc-settings-delivery-fields',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminDeliveryFields.COMPILED.js',
                 array(),
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminDeliveryFields.COMPILED.js'),
                 true
             );
 
@@ -563,7 +570,7 @@ class WcBetterShippingCalculatorForBrazil
                 'wc-better-calc-style-settings-layout',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutSettings.COMPILED.css',
                 array(),
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                $asset_version('Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutSettings.COMPILED.css'),
                 'all'
             );
 
@@ -571,7 +578,7 @@ class WcBetterShippingCalculatorForBrazil
                 'wc-better-calc-style-settings-layout-link-card',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutLinkCard.COMPILED.css',
                 array(),
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                $asset_version('Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutLinkCard.COMPILED.css'),
                 'all'
             );
 
@@ -579,7 +586,7 @@ class WcBetterShippingCalculatorForBrazil
                 'wc-better-calc-style-settings',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.css',
                 array(),
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                $asset_version('Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.css'),
                 'all'
             );
         }
