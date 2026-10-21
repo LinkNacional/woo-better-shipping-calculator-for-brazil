@@ -4114,9 +4114,37 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function get_phone_mode() {
         $mode    = get_option('woo_better_calc_phone_mode', 'phone_and_cellphone');
-        $allowed = array('disabled', 'phone_and_cellphone', 'cellphone_only', 'landline_only');
+        $allowed = array('disabled', 'disabled_native', 'phone_and_cellphone', 'cellphone_only', 'landline_only');
 
         return in_array($mode, $allowed, true) ? $mode : 'phone_and_cellphone';
+    }
+
+    /**
+     * Indica se o modo escolhido DESABILITA o telefone de verdade no checkout.
+     *
+     * Existem DOIS "desabilitar" distintos:
+     *
+     * - `disabled_native` — "Desabilitar o campo de telefone": o plugin DESABILITA
+     *   o telefone NATIVO do WooCommerce (`woocommerce_checkout_phone_field = hidden`)
+     *   e não gera campo próprio. É esta opção que realmente remove o telefone da
+     *   tela (clássico E blocos).
+     * - `disabled` — "Deixar a configuração nativa do WooCommerce": o plugin NÃO
+     *   gerencia o telefone; o que o lojista configurou no WooCommerce (toggle do
+     *   editor de blocos / Personalizar) é o que vale. Nenhum campo é gerado.
+     *
+     * @return bool
+     */
+    private function phone_mode_disables_native() {
+        return 'disabled_native' === $this->get_phone_mode();
+    }
+
+    /**
+     * Indica se o modo NÃO gerencia o telefone (nem campo próprio, nem celular).
+     *
+     * @return bool
+     */
+    private function phone_mode_is_unmanaged() {
+        return in_array($this->get_phone_mode(), array('disabled', 'disabled_native'), true);
     }
 
     /**
@@ -4131,7 +4159,7 @@ class WcBetterShippingCalculatorForBrazil
      * @return bool
      */
     private function phone_mode_hides_native_option() {
-        return 'disabled' !== $this->get_phone_mode();
+        return ! $this->phone_mode_is_unmanaged();
     }
 
     /**
@@ -4157,6 +4185,14 @@ class WcBetterShippingCalculatorForBrazil
      * @return bool
      */
     private function phone_mode_adds_cellphone_field() {
+        // Nos modos "deixar o nativo" e "desabilitar o telefone" o plugin não gera
+        // campo de celular nenhum — nem visível, nem oculto. Sem este curto-circuito
+        // uma option residual `enable_cellphone_field = yes` (de uma configuração
+        // anterior) continuava criando o "Celular" mesmo com o telefone desabilitado.
+        if ( $this->phone_mode_is_unmanaged() ) {
+            return false;
+        }
+
         if ( 'cellphone_only' === $this->get_phone_mode() ) {
             return true;
         }
@@ -4239,13 +4275,12 @@ class WcBetterShippingCalculatorForBrazil
             $previous = get_option('woo_better_calc_phone_field_previous', false);
             $owns_hidden = ($previous !== false);
 
-            // O woo-better só oculta o nativo quando ELE injeta o campo próprio do
-            // telefone — ou seja, em qualquer modo gerenciado (todos exceto
-            // "Desabilitar"). O "Destaque do Campo Telefone" apenas REPOSICIONA o
-            // campo do plugin; NÃO deve ocultar o nativo por conta própria (senão,
-            // no modo "Desabilitar" — que não injeta campo nenhum — o telefone
-            // sumiria). Por isso o gate é só o modo.
-            $should_hide = $this->phone_mode_hides_native_option();
+            // O woo-better oculta o nativo quando ELE injeta o campo próprio do
+            // telefone (modos gerenciados) OU quando o modo escolhido é "Desabilitar
+            // o campo de telefone" (disabled_native), que existe justamente para
+            // desligar o nativo. No modo "Deixar a configuração nativa do WooCommerce"
+            // (disabled) o sync não mexe: vale o que o lojista configurou no WC.
+            $should_hide = $this->phone_mode_hides_native_option() || $this->phone_mode_disables_native();
 
             if ($should_hide) {
                 if ($native_phone !== 'hidden') {
@@ -4301,7 +4336,9 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // Recurso desabilitado → não mexe no nativo (é restaurado ao original).
-        if (! $this->phone_mode_hides_native_option()) {
+        // Exceção: "Desabilitar o campo de telefone" (disabled_native) também dita o
+        // `hidden` — senão o toggle do editor de blocos reativaria o telefone.
+        if (! $this->phone_mode_hides_native_option() && ! $this->phone_mode_disables_native()) {
             return;
         }
 
