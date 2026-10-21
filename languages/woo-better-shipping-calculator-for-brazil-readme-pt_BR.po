@@ -13,8 +13,8 @@ msgstr ""
 
 #. Short description.
 #, gp-priority: high
-msgid "Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce."
-msgstr "Campos de finalização de compra no Brasil (CPF/CNPJ, número do endereço, bairro e telefone) com preenchimento automático do endereço por CEP para o WooCommerce."
+msgid "Brazilian checkout fields: CPF/CNPJ, address number, neighborhood and phone, with automatic CEP address pre-filling and much more for WooCommerce."
+msgstr "Campos de finalização de compra brasileiros: CPF/CNPJ, número do endereço, bairro e telefone, com preenchimento automático do endereço pelo CEP e muito mais para o WooCommerce."
 
 #. Plugin name.
 #, gp-priority: high
@@ -114,8 +114,8 @@ msgid "Contributions"
 msgstr "Contribuidores"
 
 #. Found in description paragraph.
-msgid "Complete Brazilian checkout fields designed specifically for <strong><a href=\"https://www.linknacional.com.br/wordpress/woocommerce/\">WooCommerce</a> stores in Brazil</strong>, making it easier and significantly improving the data entry flow on the checkout pages."
-msgstr "Campos de finalização de compra no Brasil, concluídos e projetados especificamente para <strong><a href=\"https://www.linknacional.com.br/wordpress/woocommerce/\">lojas WooCommerce</a> no Brasil</strong>, facilitando e melhorando significativamente o fluxo de inserção de dados nas páginas de finalização de compra."
+msgid "Complete <a href=\"https://www.linknacional.com.br/wordpress/woocommerce/checkout-brasileiro/\">Brazilian checkout</a> fields designed specifically for Brazilian Market on <a href=\"https://www.linknacional.com.br/wordpress/woocommerce/\">WooCommerce</a> stores in Brazil, making it easier and significantly improving the data entry flow on the checkout pages."
+msgstr "Campos de <a href=\"https://www.linknacional.com.br/wordpress/woocommerce/checkout-brasileiro/\">finalização de compra brasileira</a> completos, projetados especificamente para lojas do Mercado Brasileiro no <a href=\"https://www.linknacional.com.br/wordpress/woocommerce/\">WooCommerce</a> no Brasil, facilitando e melhorando significativamente o fluxo de inserção de dados nas páginas de finalização de compra."
 
 #. Found in description paragraph.
 msgid "This version includes <strong>full compatibility with Shortcodes and Gutenberg themes</strong>, allowing you to use the Brazilian checkout fields anywhere on your site with maximum flexibility."
@@ -126,24 +126,24 @@ msgid "This <a href=\"https://www.linknacional.com.br/wordpress/\">WordPress</a>
 msgstr "Este <a href=\"https://www.linknacional.com.br/wordpress/\">plugin do WordPress</a> garante uma verificação de endereço mais rápida e uma gestão de formulários mais simples, resultando em uma melhor experiência do usuário e menos carrinhos abandonados."
 
 #. Found in description paragraph.
-msgid "&gt; <strong>Note:</strong> The shipping calculator features have moved to the <a href=\"https://wordpress.org/plugins/shipping-simulator-for-woocommerce/\">Shipping Simulator for WooCommerce</a> plugin."
-msgstr "&gt; <strong>Observação:</strong> os recursos da calculadora de frete foram movidos para o plugin <a href=\"https://wordpress.org/plugins/shipping-simulator-for-woocommerce/\">Shipping Simulator for WooCommerce</a>."
+msgid "&gt; <strong>Note:</strong> The shipping calculator features have moved to a dedicated plugin: <a href=\"/plugins/shipping-simulator-for-woocommerce/\">Shipping Simulator for WooCommerce</a>."
+msgstr "&gt; <strong>Observação:</strong> os recursos da calculadora de frete foram movidos para um plugin dedicado: <a href=\"/plugins/shipping-simulator-for-woocommerce/\">Shipping Simulator for WooCommerce</a>."
 
 #. Found in description header.
-msgid "🚀 Complete Brazilian Checkout"
-msgstr "🚀 Finalização de compra brasileira completa"
+msgid "🚀 Full and Free Brazilian Checkout"
+msgstr "🚀 Finalização de compra brasileira completa e gratuita"
 
 #. Found in description paragraph.
-msgid "We have expanded the plugin capabilities to offer a full checkout solution for the Brazilian market, managing <strong>Custom Checkout Fields</strong> essential for Brazilian logistics and invoicing. Every field is listed — with its meta key and what it does — in the <strong>Checkout fields</strong> section below."
-msgstr "Expandimos as capacidades do plugin para oferecer uma solução completa de finalização de compra para o mercado brasileiro, gerenciando <strong>Campos personalizados de finalização de compra</strong> essenciais para a logística e a emissão de notas fiscais no Brasil. Todos os campos estão listados — com a chave do meta e o que cada um faz — na seção <strong>Campos da finalização de compra</strong> abaixo."
+msgid "We have expanded the plugin capabilities to offer a full checkout solution for the Brazilian Market on WooCommerce, managing <strong>Custom Checkout Fields</strong> essential for Brazilian logistics and fiscal invoicing. Every field is listed — with its meta key and what it does — in the <strong>Checkout fields</strong> section below."
+msgstr "Expandimos as capacidades do plugin para oferecer uma solução completa de finalização de compra para o Mercado Brasileiro no WooCommerce, gerenciando <strong>Campos personalizados de finalização de compra</strong> essenciais para a logística e a emissão de notas fiscais no Brasil. Todos os campos estão listados — com a chave do meta e o que cada um faz — na seção <strong>Campos da finalização de compra</strong> abaixo."
 
 #. Found in description header.
 msgid "✅ ERP &amp; \"Brazilian Market\" Compatibility"
 msgstr "✅ Compatibilidade do ERP com o mercado brasileiro"
 
 #. Found in description paragraph.
-msgid "This is a major update for store owners who need to issue invoices (Nota Fiscal). The plugin is now fully compatible with the data standards used by the <strong>Brazilian Market on WooCommerce</strong> plugin (by Claudio Sanches)."
-msgstr "Esta é uma atualização importante para os proprietários de lojas que precisam emitir notas fiscais. O plugin agora está totalmente compatível com os padrões de dados utilizados pelo plugin <strong>Mercado Brasileiro no WooCommerce</strong> (por Claudio Sanches)."
+msgid "This is a major update for store owners who need to issue invoices (Nota Fiscal). The plugin is now fully compatible with other payment's plugin for the data standards used by the <strong>Brazilian Market on WooCommerce</strong> plugin by Claudio Sanches."
+msgstr "Esta é uma grande atualização para lojistas que precisam emitir notas fiscais. O plugin agora é totalmente compatível com outros plugins de pagamento quanto aos padrões de dados usados pelo plugin <strong>Brazilian Market on WooCommerce</strong>, de Claudio Sanches."
 
 #. Found in description paragraph.
 msgid ""
@@ -278,14 +278,18 @@ msgstr "Quando precisar de ajuda, por favor crie um tópico no <a href=\"https:/
 #. Found in description paragraph.
 msgid ""
 "** Recommended Plugins **\n"
-"* <a href=\"https://wordpress.org/plugins/shipping-simulator-for-woocommerce/\">Shipping Simulator for WooCommerce</a> - Shipping calculator for the product and cart pages, free shipping rules and more.\n"
-"* <a href=\"https://wordpress.org/plugins/invoice-payment-for-woocommerce/\">Link Invoice Payment for WooCommerce</a> - Integrate custom payment methods and offer invoice-based payments in your WooCommerce store.\n"
-"* <a href=\"https://br.wordpress.org/plugins/payment-gateway-pix-for-woocommerce/\">Pix For WooCommerce</a> - Integrate Pix, Brazil’s revolutionary instant payment system, into your WooCommerce store"
+"* <a href=\"/plugins/shipping-simulator-for-woocommerce/\">Shipping Simulator for WooCommerce</a> - Shipping calculator for the product and cart pages, free shipping rules and more.\n"
+"* <a href=\"/plugins/invoice-payment-for-woocommerce/\">Link Invoice Payment for WooCommerce</a> - Integrate custom payment methods and offer invoice-based payments in your WooCommerce store.\n"
+"* <a href=\"/plugins/payment-gateway-pix-for-woocommerce/\">Pix For WooCommerce</a> - Integrate Pix, Brazil’s revolutionary instant payment system, into your WooCommerce store\n"
+"* <a href=\"/plugins/fraud-and-scam-detection-for-woocommerce/\">AntiFraude</a> - Fraud and Scam Detection For WooCommerce\n"
+"* <a href=\"/plugins/woo-force-authentification-before-checkout/\">Authentification and OTP for WooCommerce</a> - OTP and Force customer to log in or register before checkout to increase your conversion rate."
 msgstr ""
 "** Plugins Recomendados **\n"
-"* <a href=\"https://wordpress.org/plugins/shipping-simulator-for-woocommerce/\">Shipping Simulator for WooCommerce</a> - Calculadora de frete para as páginas de produto e carrinho, regras de frete grátis e mais.\n"
-"* <a href=\"https://wordpress.org/plugins/invoice-payment-for-woocommerce/\">Link Invoice Payment for WooCommerce</a> - Integre métodos de pagamento personalizados e ofereça pagamentos por fatura na sua loja WordPress com WooCommerce.\n"
-"* <a href=\"https://br.wordpress.org/plugins/payment-gateway-pix-for-woocommerce/\">Pix For WooCommerce</a> - Integre Pix, o revolucionário sistema de pagamento instantâneo do Brasil, na sua loja WooCommerce"
+"* <a href=\"/plugins/shipping-simulator-for-woocommerce/\">Shipping Simulator for WooCommerce</a> - Calculadora de frete para as páginas de produto e carrinho, regras de frete grátis e mais.\n"
+"* <a href=\"/plugins/invoice-payment-for-woocommerce/\">Link Invoice Payment for WooCommerce</a> - Integre meios de pagamento personalizados e ofereça pagamento por fatura na sua loja WooCommerce.\n"
+"* <a href=\"/plugins/payment-gateway-pix-for-woocommerce/\">Pix For WooCommerce</a> - Integre o Pix, o sistema de pagamento instantâneo brasileiro, na sua loja WooCommerce\n"
+"* <a href=\"/plugins/fraud-and-scam-detection-for-woocommerce/\">AntiFraude</a> - Detecção de fraude e golpes para WooCommerce\n"
+"* <a href=\"/plugins/woo-force-authentification-before-checkout/\">Authentification and OTP for WooCommerce</a> - OTP e obrigar o cliente a entrar ou se cadastrar antes de finalizar a compra para aumentar sua taxa de conversão."
 
 #. Found in description header.
 msgid "PRO version"
