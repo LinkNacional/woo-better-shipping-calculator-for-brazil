@@ -4,9 +4,13 @@
  * Regressão: dependência pai → filho ("join") na tela de configurações ANTIGA.
  *
  * A branch de release (5.2.0) não tem o template de abas/cards, então a chave
- * `join` do array de campos não é consumida por template nenhum: quem aplica a
- * dependência nesta tela é a lista `joinPairs` de
- * Admin/js/WcBetterShippingCalculatorForBrazilAdminSettings.js.
+ * `join` do array de campos não é consumida por template nenhum. O "join" aqui
+ * tem duas partes, em dois bundles:
+ *
+ *   A) JUNÇÃO visual — `targetComponentCartNames` em ...AdminLayout.js move o
+ *      `.forminp` do filho para dentro do card do pai e remove a `<tr>` órfã;
+ *   B) COMPORTAMENTO — a lista `joinPairs` em ...AdminSettings.js trava o filho
+ *      quando o pai está em "Desabilitar".
  *
  * Contrato travado:
  *  1. "Obrigatoriedade do Campo de RG" é FILHO de "Campo de RG": declarado com
@@ -27,6 +31,8 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..', '..');
 
 const SETTINGS_SOURCE = path.join(ROOT, 'Admin/js/WcBetterShippingCalculatorForBrazilAdminSettings.js');
+const LAYOUT_SOURCE = path.join(ROOT, 'Admin/js/WcBetterShippingCalculatorForBrazilAdminLayout.js');
+const LAYOUT_COMPILED = path.join(ROOT, 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js');
 const SETTINGS_COMPILED = path.join(ROOT, 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.js');
 const PARTIAL = path.join(ROOT, 'Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php');
 
@@ -94,6 +100,19 @@ test('[join] o PHP declara `join` no filho (paridade com o layout novo)', () => 
     );
 });
 
+test('[join] a JUNÇÃO visual declara o par (targetComponentCartNames)', () => {
+    const src = read(LAYOUT_SOURCE);
+
+    assert.ok(
+        src.includes('targetComponentCartNames'),
+        'A tela antiga junta os campos por `targetComponentCartNames`.'
+    );
+    assert.ok(
+        new RegExp(`'${CHILD}'\\s*:\\s*'${PARENT}'`).test(src),
+        "O mapa precisa de 'woo_better_calc_rg_required': 'woo_better_calc_enable_rg_field' — sem isso o campo fica numa linha solta."
+    );
+});
+
 test('[join] os COMPILADOS estão atualizados', () => {
     const src = read(SETTINGS_SOURCE);
     const compiled = read(SETTINGS_COMPILED);
@@ -109,5 +128,12 @@ test('[join] os COMPILADOS estão atualizados', () => {
     assert.ok(
         compiled.includes('disabled=') || compiled.includes('disabled = '),
         'O bundle precisa conter a lógica que desabilita o filho. Rode `npm run build:admin`.'
+    );
+
+    // A junção visual vive no OUTRO bundle: precisa ter sido recompilada também.
+    const layoutCompiled = read(LAYOUT_COMPILED);
+    assert.ok(
+        layoutCompiled.includes(PARENT) && layoutCompiled.includes(CHILD),
+        'O bundle de layout precisa conter o par — rode `npm run build:admin` depois de editar o AdminLayout.js.'
     );
 });

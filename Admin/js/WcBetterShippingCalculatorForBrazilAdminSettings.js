@@ -89,9 +89,12 @@ document.addEventListener('DOMContentLoaded', function () {
         updateBirthdateRequiredState(); // estado inicial
     }
 
-    // ── Dependências pai → filho ("join") ─────────────────────────────────
-    // Basta declarar o id do campo PAI e o id do campo FILHO e eles são
-    // ligados: enquanto o pai estiver em "Desabilitar", o filho fica travado.
+    // ── Dependências pai → filho ("join"): parte COMPORTAMENTO ────────────
+    // O "join" tem duas partes:
+    //   1. JUNÇÃO visual (ninhar o campo filho dentro do card do pai) —
+    //      `targetComponentCartNames` em ...AdminLayout.js;
+    //   2. COMPORTAMENTO (travar o filho quando o pai está em "Desabilitar") —
+    //      a lista `joinPairs` abaixo. Mantenha as duas em sincronia.
     // O valor salvo do filho não é reescrito — rádio desabilitado não vai no
     // POST, então a opção é preservada e volta como estava quando o pai é
     // reabilitado. Mesmo comportamento do layout novo (abas/cards).
