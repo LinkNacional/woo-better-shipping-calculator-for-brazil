@@ -189,6 +189,43 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Adiciona o campo de Inscrição Municipal (IM) ao checkout, exclusivo para Pessoas Jurídicas. Complementa o IE para emissão de NF-e/NFS-e. A IM não possui padrão nacional de validação (regra municipal).', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+                'enable_rg_field' => array(
+                    'title'    => __('Campo de RG', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_enable_rg_field',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Adiciona o campo de RG no checkout para Pessoa Física.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Habilite para exibir o campo "RG" no endereço de cobrança do checkout. Ele aparece junto com o CPF, quando o cliente é Pessoa Física, e fica oculto para CNPJ (Pessoa Jurídica). Quem usa aplicativo de Nota Fiscal encontra o RG já preenchido. Requer que o campo "Tipo de Cliente" esteja configurado como "Pessoa Física" ou "Pessoa Física e Pessoa Jurídica".', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Adiciona o campo de RG (Registro Geral) ao checkout, exclusivo para Pessoas Físicas. Ajuda a conferir a identidade do cliente e a emitir nota fiscal.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
+                // Campo FILHO do "Campo de RG": a chave `join` guarda o id do PAI.
+                // Nesta tela (layout antigo, sem o template de abas/cards) quem
+                // aplica a dependência é a lista `joinPairs` em
+                // Admin/js/WcBetterShippingCalculatorForBrazilAdminSettings.js.
+                'rg_required' => array(
+                    'title'    => __('Obrigatoriedade do Campo de RG', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_rg_required',
+                    'join'     => 'woo_better_calc_enable_rg_field',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Define se o campo de RG é obrigatório ou opcional quando visível.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Escolha "Habilitar" para exigir o preenchimento do RG sempre que o campo estiver visível (Pessoa Física com CPF) ou "Desabilitar" para deixar a critério do cliente.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Controla a obrigatoriedade do campo de RG quando ele está habilitado. Cada estado tem uma regra própria de RG, por isso o campo não é validado.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
                 'enable_neighborhood_field' => array(
                     'title'    => __('Campo de Bairro', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_enable_neighborhood_field',

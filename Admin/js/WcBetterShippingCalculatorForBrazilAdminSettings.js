@@ -88,4 +88,42 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         updateBirthdateRequiredState(); // estado inicial
     }
+
+    // ── Dependências pai → filho ("join"): parte COMPORTAMENTO ────────────
+    // O "join" tem duas partes:
+    //   1. JUNÇÃO visual (ninhar o campo filho dentro do card do pai) —
+    //      `targetComponentCartNames` em ...AdminLayout.js;
+    //   2. COMPORTAMENTO (travar o filho quando o pai está em "Desabilitar") —
+    //      a lista `joinPairs` abaixo. Mantenha as duas em sincronia.
+    // O valor salvo do filho não é reescrito — rádio desabilitado não vai no
+    // POST, então a opção é preservada e volta como estava quando o pai é
+    // reabilitado. Mesmo comportamento do layout novo (abas/cards).
+    const joinPairs = [
+        { parent: 'woo_better_calc_enable_rg_field', child: 'woo_better_calc_rg_required' }
+    ];
+
+    function applyJoinDependency(pair) {
+        const parentRadios = document.querySelectorAll('input[name="' + pair.parent + '"]');
+        const childRadios = document.querySelectorAll('input[name="' + pair.child + '"]');
+
+        if (!parentRadios.length || !childRadios.length) return;
+
+        function syncChildState() {
+            const enabled = Array.prototype.some.call(parentRadios, function (radio) {
+                return radio.checked && radio.value === 'yes';
+            });
+
+            childRadios.forEach(function (radio) {
+                radio.disabled = !enabled;
+                radio.style.cursor = enabled ? '' : 'not-allowed';
+            });
+        }
+
+        parentRadios.forEach(function (radio) {
+            radio.addEventListener('change', syncChildState);
+        });
+        syncChildState(); // estado inicial
+    }
+
+    joinPairs.forEach(applyJoinDependency);
 });

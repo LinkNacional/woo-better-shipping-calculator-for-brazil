@@ -244,9 +244,14 @@ class WcBetterShippingCalculatorForBrazilPublic
             // (não dividem a linha com outro campo). Só há efeito no bloco.
             $ie_field_enabled = get_option('woo_better_calc_enable_ie_field', 'no');
             $im_field_enabled = get_option('woo_better_calc_enable_im_field', 'no');
+            $rg_field_enabled = get_option('woo_better_calc_enable_rg_field', 'no');
+            // O RG usa a MESMA folha de estilos (largura cheia) no bloco.
+            $rg_field_shows = ($rg_field_enabled === 'yes' && ($person_type === 'physical' || $person_type === 'both'));
             if (
-                ($ie_field_enabled === 'yes' || $im_field_enabled === 'yes') &&
-                ($person_type === 'legal' || $person_type === 'both')
+                (
+                    ($ie_field_enabled === 'yes' || $im_field_enabled === 'yes') &&
+                    ($person_type === 'legal' || $person_type === 'both')
+                ) || $rg_field_shows
             ) {
                 wp_enqueue_style(
                     $this->plugin_name . '-inscricao-fields',
@@ -281,6 +286,22 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
             wp_enqueue_style($this->plugin_name . '-phone-require', plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilPhoneRequire.COMPILED.css', array(), $this->version, 'all');
+
+            // Campos OCULTOS do plugin no checkout clássico/shortcode (DDI do telefone
+            // etc.): o WooCommerce envolve TODO campo num `<p class="form-row">` — até
+            // os `type="hidden"` —, e esse wrapper herda padding/margin do formulário,
+            // deixando um vão vazio entre os campos. O wrapper é marcado com a classe
+            // `woo-better-hidden-field` nas definições (Includes/) e o CSS zera o
+            // espaçamento. No checkout em blocos não existe esse wrapper.
+            if ($is_checkout_classic && 'disabled' !== $this->phone_mode()) {
+                wp_enqueue_style(
+                    $this->plugin_name . '-hidden-fields',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilHiddenFields.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
 
             // Campo "Celular" ESCONDIDO (shim) no checkout clássico/shortcode: zera o
             // espaço vertical do `.form-row` do campo oculto. Só no modo shim.
@@ -325,6 +346,19 @@ class WcBetterShippingCalculatorForBrazilPublic
                 $this->version,
                 'all'
             );
+
+            // Campos OCULTOS do plugin na edição de endereço (DDI do telefone): o
+            // WooCommerce envolve todo campo num `<p class="form-row">`, inclusive os
+            // `type="hidden"`, e o wrapper herda padding/margin do formulário.
+            if ('disabled' !== $this->phone_mode()) {
+                wp_enqueue_style(
+                    $this->plugin_name . '-edit-address-hidden-fields',
+                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilHiddenFields.COMPILED.css',
+                    array(),
+                    $this->version,
+                    'all'
+                );
+            }
 
             $person_type = get_option('woo_better_calc_person_type_select', 'none');
             if ($person_type !== 'none') {
@@ -626,6 +660,48 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'WooBetterIMConfig',
                     array(
                         'person_type' => $person_type,
+                    )
+                );
+            }
+
+            // Registrar script para o campo RG no checkout de blocos (vinculado ao CPF)
+            $rg_field_enabled = get_option('woo_better_calc_enable_rg_field', 'no');
+            if ($rg_field_enabled === 'yes' && ($person_type === 'physical' || $person_type === 'both')) {
+                $billing_rg = '';
+
+                if (function_exists('WC') && WC()->session) {
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_rg = get_user_meta($user_id, 'billing_rg', true);
+                    }
+
+                    if (empty($billing_rg)) {
+                        $billing_rg = WC()->session->get('billing_rg', '');
+                    }
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-gutenberg-rg-field',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergRGField.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-rg-field',
+                    'WooBetterRGData',
+                    array(
+                        'billing_rg' => sanitize_text_field($billing_rg),
+                    )
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-gutenberg-rg-field',
+                    'WooBetterRGConfig',
+                    array(
+                        'person_type' => $person_type,
+                        'required'    => ('yes' === get_option('woo_better_calc_rg_required', 'no')),
                     )
                 );
             }
@@ -1019,6 +1095,50 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'WooBetterIMConfig',
                     array(
                         'person_type' => $person_type_for_im
+                    )
+                );
+            }
+
+            // Registrar script para o campo RG no checkout shortcode (tradicional)
+            $rg_field_enabled = get_option('woo_better_calc_enable_rg_field', 'no');
+            $person_type_for_rg = get_option('woo_better_calc_person_type_select', 'none');
+
+            if ($rg_field_enabled === 'yes' && ($person_type_for_rg === 'physical' || $person_type_for_rg === 'both')) {
+                $billing_rg = '';
+
+                if (function_exists('WC') && WC()->session) {
+                    if (is_user_logged_in()) {
+                        $user_id = get_current_user_id();
+                        $billing_rg = get_user_meta($user_id, 'billing_rg', true);
+                    }
+
+                    if (empty($billing_rg)) {
+                        $billing_rg = WC()->session->get('billing_rg', '');
+                    }
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-shortcode-rg-field',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeRGField.COMPILED.js',
+                    array(),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-shortcode-rg-field',
+                    'WooBetterRGData',
+                    array(
+                        'billing_rg' => sanitize_text_field($billing_rg)
+                    )
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-shortcode-rg-field',
+                    'WooBetterRGConfig',
+                    array(
+                        'person_type' => $person_type_for_rg,
+                        'required'    => ('yes' === get_option('woo_better_calc_rg_required', 'no')),
                     )
                 );
             }
@@ -1474,6 +1594,51 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
+            // Script para o campo RG na edição de endereço de cobrança
+            $rg_field_enabled = get_option('woo_better_calc_enable_rg_field', 'no');
+            $person_type_for_rg = get_option('woo_better_calc_person_type_select', 'none');
+
+            if (
+                $rg_field_enabled === 'yes' &&
+                ($person_type_for_rg === 'physical' || $person_type_for_rg === 'both')
+            ) {
+                $billing_rg = '';
+
+                if (is_user_logged_in()) {
+                    $user_id = get_current_user_id();
+                    $billing_rg = get_user_meta($user_id, 'billing_rg', true);
+                }
+
+                if (empty($billing_rg) && function_exists('WC') && WC()->session) {
+                    $billing_rg = WC()->session->get('billing_rg', '');
+                }
+
+                wp_enqueue_script(
+                    $this->plugin_name . '-edit-address-rg-field',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeRGField.COMPILED.js',
+                    array('jquery'),
+                    $this->version,
+                    false
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-rg-field',
+                    'WooBetterRGData',
+                    array(
+                        'billing_rg' => sanitize_text_field($billing_rg)
+                    )
+                );
+
+                wp_localize_script(
+                    $this->plugin_name . '-edit-address-rg-field',
+                    'WooBetterRGConfig',
+                    array(
+                        'person_type' => $person_type_for_rg,
+                        'required'    => ('yes' === get_option('woo_better_calc_rg_required', 'no')),
+                    )
+                );
+            }
+
             // Scripts para campo de bairro
             $neighborhood_enabled = get_option('woo_better_calc_enable_neighborhood_field', 'no');
             
@@ -1710,7 +1875,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                 $this->plugin_name . '-frontend',
                 'wc_better_shipping_calculator_for_brazil_params',
                 [
-                    'postcode_placeholder' => esc_attr__('Type your postcode', 'woo-better-shipping-calculator-for-brazil'),
+                    'postcode_placeholder' => esc_attr__('Digite seu CEP', 'woo-better-shipping-calculator-for-brazil'),
                     'postcode_input_type' => 'tel',
                     'selectors' => [
                         'postcode' => '#calc_shipping_postcode',

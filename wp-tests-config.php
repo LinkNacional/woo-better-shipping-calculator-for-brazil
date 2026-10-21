@@ -62,7 +62,11 @@ $table_prefix = 'wptests_';
 define( 'WP_TESTS_DOMAIN', 'example.org' );
 define( 'WP_TESTS_EMAIL', 'admin@example.org' );
 define( 'WP_TESTS_TITLE', 'Test Blog' );
-define( 'WP_PHP_BINARY', 'php' );
+// O wp-phpunit instala o WordPress num SUBPROCESSO com este binário. No Local WP
+// o `php` do PATH (sistema) não tem mysqli/pdo_mysql, então o install falha com
+// "Call to undefined function mysqli_report()". Permite apontar para o binário
+// do Local via `WP_PHP_BINARY=/caminho/do/php vendor/bin/phpunit`.
+define( 'WP_PHP_BINARY', getenv( 'WP_PHP_BINARY' ) ?: 'php' );
 
 /* -------------------------------------------------------------------------- */
 /*  Configuração de multisite (desabilitado por padrão)                       */

@@ -548,6 +548,7 @@
               'woo_better_calc_contact_field_position': 'woo_better_calc_phone_mode',
               'woo_better_calc_enable_cellphone_shim': 'woo_better_calc_phone_mode',
               'woo_better_calc_cellphone_required': 'woo_better_calc_enable_cellphone_field',
+              'woo_better_calc_rg_required': 'woo_better_calc_enable_rg_field',
             };
 
             forminp.innerHTML = ''; // Limpa o conteúdo original
