@@ -514,11 +514,23 @@ class WcBetterShippingCalculatorForBrazil
             sanitize_text_field(wp_unslash($_GET['page'])) === 'wc-settings' &&
             sanitize_text_field(wp_unslash($_GET['tab'])) === 'wc-better-calc-checkout'
         ) {
+            // Cache-busting por mtime: os bundles de admin são recompilados sem
+            // que a versão do plugin mude (iterações dentro da mesma release), e
+            // usar a constante deixava o navegador rodando o arquivo antigo mesmo
+            // depois de um refresh — o ajuste só aparecia com hard refresh.
+            $asset_version = function ($relative_path) {
+                $absolute_path = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_DIR . $relative_path;
+
+                return file_exists($absolute_path)
+                    ? (string) filemtime($absolute_path)
+                    : WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
+            };
+
             wp_enqueue_script(
                 'wc-better-calc-settings-layout',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js',
                 array(),
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js'),
                 true
             );
 
@@ -535,7 +547,7 @@ class WcBetterShippingCalculatorForBrazil
                 'wc-better-calc-footer-message',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.js',
                 array(),
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.js'),
                 true
             );
 
