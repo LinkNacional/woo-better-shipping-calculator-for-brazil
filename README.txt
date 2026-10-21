@@ -138,6 +138,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 == Changelog ==
 
 # 5.3.0 - 2026-10-21
+* New: the "Phone Field Behavior" option now has TWO ways to disable it, with different meanings. "Disable the phone field" turns off the WooCommerce native phone field (no phone and no cellphone is shown). "Keep the WooCommerce native configuration" generates no field at all and keeps whatever you configured in WooCommerce itself (the "Phone" toggle in the block editor).
+* Fix: with the phone disabled, the "Cellphone" field is no longer generated on checkout. Previously, a leftover "Cellphone Field" setting made the field come back even with the phone turned off.
+* Fix: when the phone is disabled, the "Cellphone Field", "Cellphone Required" and "Phone (Contact) Required" options are turned off automatically — nothing stays required in a form that no longer shows the phone.
 * New: the checkout settings screen is now split into four tabs (Address and Postcode, Documents and Person, Phone and Cellphone, Personal Data) with cards, instead of one long page.
 * New: a sidebar card gathers the support channels (WhatsApp and Telegram) and presents the PRO version highlights.
 * New: the PRO-only blocks (Local Pickup and Delivery Time) now show up on the settings screen together with the Brazilian fields, and become editable once the PRO plugin is active.

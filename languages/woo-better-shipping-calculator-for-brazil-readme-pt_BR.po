@@ -326,6 +326,21 @@ msgstr "5.3.0 - 2026-10-21"
 
 #. Found in changelog list item.
 #, gp-priority: low
+msgid "New: the \"Phone Field Behavior\" option now has TWO ways to disable it, with different meanings. \"Disable the phone field\" turns off the WooCommerce native phone field (no phone and no cellphone is shown). \"Keep the WooCommerce native configuration\" generates no field at all and keeps whatever you configured in WooCommerce itself (the \"Phone\" toggle in the block editor)."
+msgstr "Novo: a opção \"Comportamento do Campo de Telefone\" agora tem DUAS formas de desabilitar, com significados diferentes. \"Desabilitar o campo de telefone\" desliga o telefone nativo do WooCommerce (nada de telefone nem de celular aparece). \"Deixar a configuração nativa do WooCommerce\" não gera campo nenhum e mantém o que foi configurado no próprio WooCommerce (toggle \"Telefone\" do editor de blocos)."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: with the phone disabled, the \"Cellphone\" field is no longer generated on checkout. Previously, a leftover \"Cellphone Field\" setting made the field come back even with the phone turned off."
+msgstr "Correção: com o telefone desabilitado, o campo \"Celular\" não é mais gerado no checkout. Antes, uma configuração anterior de \"Campo de Celular\" fazia o campo reaparecer mesmo com o telefone desligado."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: when the phone is disabled, the \"Cellphone Field\", \"Cellphone Required\" and \"Phone (Contact) Required\" options are turned off automatically — nothing stays required in a form that no longer shows the phone."
+msgstr "Correção: ao desabilitar o telefone, as opções \"Campo de Celular\", \"Celular Obrigatório\" e \"Telefone (Contato) Obrigatório\" são desligadas automaticamente — nada fica obrigatório num formulário que não exibe mais o telefone."
+
+#. Found in changelog list item.
+#, gp-priority: low
 msgid "New: the checkout settings screen is now split into four tabs (Address and Postcode, Documents and Person, Phone and Cellphone, Personal Data) with cards, instead of one long page."
 msgstr "Novo: a tela de configurações da finalização de compra agora é dividida em quatro abas (Endereço e CEP, Documentos e Pessoa, Telefone e Celular, Dados Pessoais) com cards, em vez de uma única página longa."
 
