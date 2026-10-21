@@ -266,14 +266,15 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     'default'  => 'phone_and_cellphone',
                     'type'     => 'select',
                     'options'  => array(
-                        'disabled'            => __('Desabilitar o campo de telefone', 'woo-better-shipping-calculator-for-brazil'),
+                        'disabled_native'     => __('Desabilitar o campo de telefone', 'woo-better-shipping-calculator-for-brazil'),
+                        'disabled'            => __('Deixar a configuração nativa do WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
                         'phone_and_cellphone' => __('Permitir Telefone Celular e Fixo', 'woo-better-shipping-calculator-for-brazil'),
                         'cellphone_only'      => __('Permitir somente Telefone Celular', 'woo-better-shipping-calculator-for-brazil'),
                         'landline_only'       => __('Permitir somente Telefone Fixo', 'woo-better-shipping-calculator-for-brazil'),
                     ),
                     'custom_attributes' => array(
                         'data-desc-tip' => __('Define como o campo de telefone se comporta no checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Define o comportamento do campo de telefone no checkout clássico (shortcode): "Permitir Telefone Celular e Fixo" exibe o telefone e permite adicionar o campo de Celular; "Permitir somente Telefone Celular" usa apenas o celular; "Permitir somente Telefone Fixo" usa apenas o telefone; "Desabilitar o campo de telefone" remove o telefone. No checkout em blocos apenas o telefone nativo é manipulado.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Define o comportamento do campo de telefone no checkout: "Permitir Telefone Celular e Fixo" exibe o telefone e permite adicionar o campo de Celular; "Permitir somente Telefone Celular" usa apenas o celular; "Permitir somente Telefone Fixo" usa apenas o telefone. As duas opções de desabilitar fazem coisas diferentes: "Desabilitar o campo de telefone" desliga o telefone NATIVO do WooCommerce e nenhum campo de telefone ou celular é exibido; "Deixar a configuração nativa do WooCommerce" não gera campo nenhum e deixa valer o que você configurou no próprio WooCommerce (toggle "Telefone" do editor de blocos).', 'woo-better-shipping-calculator-for-brazil'),
                         'data-title-description' => __('Controla o comportamento do campo de telefone no checkout.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
@@ -507,6 +508,21 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
             if ('cellphone_only' === $mode) {
                 update_option('woo_better_calc_enable_cellphone_field', 'no');
                 update_option('woo_better_calc_cellphone_required', 'no');
+            }
+
+            // Modos em que o plugin NÃO gerencia o telefone ("Desabilitar o campo de
+            // telefone" e "Deixar a configuração nativa do WooCommerce"): zera as
+            // opções do bloco "Campo de Celular" e solta a obrigatoriedade.
+            //
+            // REASON: sem isso, uma option residual `enable_cellphone_field = yes` de
+            // uma configuração anterior continuava criando o campo "Celular" no
+            // checkout mesmo com o telefone desabilitado. E manter o telefone como
+            // obrigatório num formulário onde ele não é mais exibido gerava erro de
+            // validação ("é um campo obrigatório") no checkout clássico.
+            if (in_array($mode, array('disabled', 'disabled_native'), true)) {
+                update_option('woo_better_calc_enable_cellphone_field', 'no');
+                update_option('woo_better_calc_cellphone_required', 'no');
+                update_option('woo_better_calc_contact_required', 'no');
             }
 
             // "Celular Oculto" só se aplica ao modo "Permitir Telefone Celular e Fixo".

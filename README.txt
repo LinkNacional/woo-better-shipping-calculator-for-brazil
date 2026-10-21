@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.2.0
+Stable tag: 5.2.1
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -125,6 +125,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.2.1 - 2026-10-21
+* New: the "Phone Field Behavior" option now has TWO ways to disable it, with different meanings. "Disable the phone field" turns off the WooCommerce native phone field (no phone and no cellphone is shown). "Keep the WooCommerce native configuration" generates no field at all and keeps whatever you configured in WooCommerce itself (the "Phone" toggle in the block editor).
+* Fix: with the phone disabled, the "Cellphone" field is no longer generated on checkout. Previously, a leftover "Cellphone Field" setting made the field come back even with the phone turned off.
+* Fix: when the phone is disabled, the "Cellphone Field", "Cellphone Required" and "Phone (Contact) Required" options are turned off automatically — nothing stays required in a form that no longer shows the phone.
 
 # 5.2.0 - 2026-10-21
 * New: RG (general registry) field on checkout. It shows for individuals, next to the CPF, stays hidden for companies (CNPJ) and filling it in is optional.
