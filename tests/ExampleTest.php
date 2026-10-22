@@ -50,6 +50,11 @@ class ExampleTest extends WP_UnitTestCase {
      */
     public function test_plugin_constants_are_defined(): void {
         $this->assertTrue( defined( 'WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION' ) );
-        $this->assertEquals( '5.3.0', WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION );
+        // Compara com a versão do próprio arquivo principal (não fixa o número: o
+        // bump de release não deve quebrar o teste).
+        $main = file_get_contents( dirname( __DIR__ ) . '/wc-better-shipping-calculator-for-brazil.php' );
+        preg_match( "/define\('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION', '([^']+)'\)/", $main, $m );
+        $this->assertNotEmpty( $m, 'Versão não declarada no arquivo principal.' );
+        $this->assertEquals( $m[1], WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION );
     }
 }

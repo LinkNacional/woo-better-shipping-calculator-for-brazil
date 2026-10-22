@@ -150,6 +150,12 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * Tweak: the PRO version links now point to each plugin's commercial page.
 * Note: no saved setting changed its name, so existing configurations keep working as before.
 
+# 5.2.1 - 2026-10-21
+* New: the "Phone Field Behavior" option now has TWO ways to disable it, with different meanings. "Disable the phone field" turns off the WooCommerce native phone field (no phone and no cellphone is shown). "Keep the WooCommerce native configuration" generates no field at all and keeps whatever you configured in WooCommerce itself (the "Phone" toggle in the block editor).
+* Fix: with the phone disabled, the "Cellphone" field is no longer generated on checkout. Previously, a leftover "Cellphone Field" setting made the field come back even with the phone turned off.
+* Fix: when the phone is disabled, the "Cellphone Field", "Cellphone Required" and "Phone (Contact) Required" options are turned off automatically — nothing stays required in a form that no longer shows the phone.
+* Fix: options that are locked by a dependency (e.g. the "Cellphone Field" with the phone behavior set to "Allow Cellphone Only") no longer keep the old value stored — the lock is now visual only, so what the screen shows is what gets saved. Previously the screen showed "Disable" while checkout still displayed the "Cellphone" field.
+
 # 5.2.0 - 2026-10-21
 * New: RG (general registry) field on checkout. It shows for individuals, next to the CPF, stays hidden for companies (CNPJ) and filling it in is optional.
 * New: the RG is also on the account's edit-address page, on the user profile and on the order details — including the order-received screen and the order admin panel, where it can be edited.
