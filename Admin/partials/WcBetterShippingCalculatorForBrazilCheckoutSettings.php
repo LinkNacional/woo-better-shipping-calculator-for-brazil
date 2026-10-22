@@ -268,7 +268,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     'options'  => array(
                         'disabled_native'     => __('Desabilitar o campo de telefone', 'woo-better-shipping-calculator-for-brazil'),
                         'disabled'            => __('Deixar a configuração nativa do WooCommerce', 'woo-better-shipping-calculator-for-brazil'),
-                        'phone_and_cellphone' => __('Permitir Telefone Celular e Fixo', 'woo-better-shipping-calculator-for-brazil'),
+                        'phone_and_cellphone' => __('Permitir Telefone Celular e Fixo (Recomendado)', 'woo-better-shipping-calculator-for-brazil'),
                         'cellphone_only'      => __('Permitir somente Telefone Celular', 'woo-better-shipping-calculator-for-brazil'),
                         'landline_only'       => __('Permitir somente Telefone Fixo', 'woo-better-shipping-calculator-for-brazil'),
                     ),
