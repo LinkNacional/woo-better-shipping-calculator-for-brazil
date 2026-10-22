@@ -98,7 +98,8 @@ class AdminNoticeAndAssetsTest extends WP_UnitTestCase {
 
         foreach ( array( 'AdminLayout', 'AdminSettings' ) as $bundle ) {
             $this->assertMatchesRegularExpression(
-                "/'[^']*" . $bundle . "\.COMPILED\.js',\s*array\(\),\s*\\\$asset_version\(/",
+                // Dependências de script são permitidas (ex.: `wc-better-calc-settings-fake-disabled`).
+                "/'[^']*" . $bundle . "\.COMPILED\.js',\s*array\([^)]*\),\s*\\\$asset_version\(/",
                 $php,
                 "O bundle {$bundle} precisa enfileirar com \$asset_version(...) e não com a constante de versão."
             );

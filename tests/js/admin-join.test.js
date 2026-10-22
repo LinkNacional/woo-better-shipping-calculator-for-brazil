@@ -16,8 +16,10 @@
  *  1. "Obrigatoriedade do Campo de RG" é FILHO de "Campo de RG": declarado com
  *     `join` apontando para o id do pai (paridade com o layout novo);
  *  2. O filho fica travado quando o pai está em "Desabilitar";
- *  3. O valor salvo do filho NÃO é reescrito — rádio `disabled` fica fora do
- *     POST e o WooCommerce preserva a opção (`is_null( $value )` → continue);
+ *  3. O valor salvo do filho NÃO é reescrito (o `checked` não é forçado) e o
+ *     travamento é só VISUAL — `setFakeDisabled` → `window.wcBetterFakeDisabled`.
+ *     O atributo `disabled` não pode ser usado: input `disabled` fica fora do POST
+ *     e a option manteria o valor antigo salvo (AGENTS.md § 7);
  *  4. Os COMPILADOS estão atualizados em relação aos fontes.
  *
  * Execução: npm run test:js
@@ -64,8 +66,8 @@ test('[join] o filho é travado quando o pai está em "Desabilitar"', () => {
     );
 
     assert.ok(
-        /radio\.disabled = !enabled/.test(src),
-        'O filho deve ser desabilitado quando o pai não está habilitado.'
+        /setFakeDisabled\(\[radio\], !enabled\)/.test(src),
+        'O filho deve ficar travado (só visualmente) quando o pai não está habilitado.'
     );
 
     assert.ok(
@@ -126,8 +128,8 @@ test('[join] os COMPILADOS estão atualizados', () => {
         'O bundle compilado precisa conter o par de ids — senão a tela antiga não recebe o ajuste.'
     );
     assert.ok(
-        compiled.includes('disabled=') || compiled.includes('disabled = '),
-        'O bundle precisa conter a lógica que desabilita o filho. Rode `npm run build:admin`.'
+        compiled.includes('wcBetterFakeDisabled'),
+        'O bundle precisa conter a lógica que trava o filho (fake disabled). Rode `npm run build:admin`.'
     );
 
     // A junção visual vive no OUTRO bundle: precisa ter sido recompilada também.

@@ -2,6 +2,7 @@
 * Novo: a opção "Comportamento do Campo de Telefone" agora tem DUAS formas de desabilitar, com significados diferentes. "Desabilitar o campo de telefone" desliga o telefone nativo do WooCommerce (nada de telefone nem de celular aparece). "Deixar a configuração nativa do WooCommerce" não gera campo nenhum e mantém o que foi configurado no próprio WooCommerce (toggle "Telefone" do editor de blocos).
 * Correção: com o telefone desabilitado, o campo "Celular" não é mais gerado no checkout. Antes, uma configuração anterior de "Campo de Celular" fazia o campo reaparecer mesmo com o telefone desligado.
 * Correção: ao desabilitar o telefone, as opções "Campo de Celular", "Celular Obrigatório" e "Telefone (Contato) Obrigatório" são desligadas automaticamente — nada fica obrigatório num formulário que não exibe mais o telefone.
+* Correção: as opções que ficam travadas por dependerem de outra (ex.: "Campo de Celular" com o telefone em "Permitir somente Telefone Celular") não guardam mais o valor antigo — o bloqueio agora é só visual e o valor exibido é o que fica salvo. Antes, a tela mostrava "Desabilitar" e o checkout continuava exibindo o campo "Celular".
 
 # 5.2.0 - 21/10/26
 * Novo: campo de RG (Registro Geral) no checkout. Ele aparece para Pessoa Física, junto com o CPF, fica oculto para CNPJ e o preenchimento é opcional.

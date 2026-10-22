@@ -52,34 +52,40 @@ document.addEventListener('DOMContentLoaded', function () {
 
     linkObserver.observe(document.body, { childList: true, subtree: true });
 
+    // "Desabilitado" apenas VISUAL (AGENTS.md § 7): o atributo `disabled` exclui
+    // o campo do POST e a option mantém o valor antigo salvo.
+    function setFakeDisabled(elements, isDisabled) {
+        Array.prototype.forEach.call(elements, function (element) {
+            if (window.wcBetterFakeDisabled) {
+                window.wcBetterFakeDisabled(element, isDisabled);
+                return;
+            }
+
+            element.removeAttribute('disabled');
+            element.disabled = false;
+            element.style.opacity = isDisabled ? '0.6' : '';
+            element.style.cursor = isDisabled ? 'not-allowed' : '';
+        });
+    }
+
     // ── Dependência: Data de Nascimento → Obrigatoriedade ──────────────────
     const birthdateFieldRadios = document.querySelectorAll('input[name="woo_better_calc_enable_birthdate_field"]');
     const birthdateRequiredRadios = document.querySelectorAll('input[name="woo_better_calc_birthdate_required"]');
-
-    function lockClickHandler(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
 
     function updateBirthdateRequiredState() {
         if (!birthdateRequiredRadios.length) return;
         const selectedValue = Array.from(birthdateFieldRadios).find(r => r.checked)?.value;
         const isLocked = (selectedValue === 'no');
 
-        birthdateRequiredRadios.forEach(radio => {
-            // Visual: parece desabilitado mas sem usar o atributo disabled (que exclui do POST)
-            radio.style.opacity = isLocked ? '0.6' : '';
-            radio.style.pointerEvents = isLocked ? 'none' : '';
-            radio.style.cursor = isLocked ? 'not-allowed' : '';
+        setFakeDisabled(birthdateRequiredRadios, isLocked);
 
-            // Bloqueia clique e força valor 'no' quando está lockado
-            if (isLocked) {
+        // Com o campo travado, o valor coerente ("Não") fica marcado — e agora
+        // ele VAI no POST, então a tela e o banco não divergem mais.
+        if (isLocked) {
+            birthdateRequiredRadios.forEach(radio => {
                 radio.checked = (radio.value === 'no');
-                radio.addEventListener('click', lockClickHandler, true);
-            } else {
-                radio.removeEventListener('click', lockClickHandler, true);
-            }
-        });
+            });
+        }
     }
 
     if (birthdateFieldRadios.length && birthdateRequiredRadios.length) {
@@ -95,9 +101,11 @@ document.addEventListener('DOMContentLoaded', function () {
     //      `targetComponentCartNames` em ...AdminLayout.js;
     //   2. COMPORTAMENTO (travar o filho quando o pai está em "Desabilitar") —
     //      a lista `joinPairs` abaixo. Mantenha as duas em sincronia.
-    // O valor salvo do filho não é reescrito — rádio desabilitado não vai no
-    // POST, então a opção é preservada e volta como estava quando o pai é
-    // reabilitado. Mesmo comportamento do layout novo (abas/cards).
+    // O travamento do filho é só VISUAL (`setFakeDisabled` → `wcBetterFakeDisabled`).
+    // NUNCA usar o atributo `disabled`: input `disabled` não vai no POST, o
+    // WooCommerce mantém o valor antigo da option e a tela passa a divergir do banco
+    // (ver AGENTS.md § 7). O `checked` continua sem ser reescrito — a opção é
+    // preservada e volta como estava quando o pai é reabilitado.
     const joinPairs = [
         { parent: 'woo_better_calc_enable_rg_field', child: 'woo_better_calc_rg_required' }
     ];
@@ -114,8 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             childRadios.forEach(function (radio) {
-                radio.disabled = !enabled;
-                radio.style.cursor = enabled ? '' : 'not-allowed';
+                setFakeDisabled([radio], !enabled);
             });
         }
 

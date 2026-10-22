@@ -165,6 +165,38 @@ composer psalm                     # análise estática
 
 - **NUNCA editar `jsCompiled/*.COMPILED.js`** — são artefatos gerados pelo webpack via `npm run build`. Edite apenas os fontes em `Public/js/*.js` (ou `Admin/js/*.js`) e rode o build para regenerar.
 - Em mudanças de JS que afetam UX (máscara/validação/normalização de campo), aplicar a regra também no handler de digitação ao vivo, não só na carga inicial do valor salvo.
+
+---
+
+## 7. Configurações do admin: "desabilitado" é só VISUAL
+
+**NUNCA** use o atributo `disabled` (nem `element.disabled = true`, `$.prop('disabled', true)`,
+`disabled(...)` no PHP) para fingir que um campo de configuração está desabilitado por
+dependência de outro campo. Use `window.wcBetterFakeDisabled(elementos, true|false)`
+(`Admin/js/WcBetterShippingCalculatorForBrazilAdminFakeDisabled.js` + classe
+`.woo-better-fake-disabled` do `AdminSettings.css`).
+
+**Por quê (bug grotesco da 5.2.0):** input `disabled` **não vai no POST**. O
+`WC_Admin_Settings::save_fields()` recebe `null`, cai no `continue` e **mantém o valor
+antigo da option**. Resultado: a tela mostrava "Não"/cinza (o JS ainda forçava
+`checked = 'no'`), o banco continuava `yes` e o checkout **seguia gerando o campo**
+— era assim que um "Campo de Celular" desabilitado no admin aparecia no checkout, e o
+mesmo valia para "Celular Obrigatório", "Preenchimento Automático por CEP", "DDI",
+"Validar Número de Telefone", "Tempo Mínimo de Preparo" etc.
+
+**Regras:**
+- O input continua **habilitado** e o valor exibido (inclusive o que o JS força em
+  `checked`) é o valor **enviado**. Tela e banco nunca divergem.
+- Bloqueio de interação: clique/`mousedown`/teclado em fase de **captura** (o
+  `preventDefault` no `<label>` também impede a ativação), não `pointer-events`.
+- O valor coerente com o pai desligado continua sendo forçado no JS **e** reforçado no
+  servidor (ex.: `enforce_cellphone_options_for_mode()`), como rede de segurança para
+  quem salva com JS bloqueado.
+- Exceção: campos **sem `name`** cujo valor é lido pelo próprio JS (checkboxes/horários
+  do "Prazo de Entrega", que sincronizam um hidden JSON) podem usar `disabled` real —
+  eles não são enviados pelo POST de qualquer forma.
+- Guarda de regressão: `tests/js/admin-fake-disabled.test.js` falha se voltar
+  `disabled` em campo de opção das telas de configuração.
 - !/bin/bash
 echo "=== 🚀 Assistente de Release (Readme.txt) ==="
 echo "Vamos preparar as informações para o Reasonix atualizar o readme."

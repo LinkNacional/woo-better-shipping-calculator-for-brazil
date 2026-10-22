@@ -1,4 +1,25 @@
 (function ($) {
+  // "Desabilitado" apenas VISUAL (AGENTS.md § 7).
+  //
+  // REASON: input com o atributo `disabled` NÃO vai no POST; o WooCommerce então
+  // MANTÉM o valor antigo da option e a tela passa a mostrar "Não"/desabilitado
+  // enquanto o checkout continua gerando o campo (ex.: "Celular" fantasma).
+  function setDisabledState(elements, isDisabled) {
+    Array.from(elements).forEach(function (element) {
+      if (window.wcBetterFakeDisabled) {
+        window.wcBetterFakeDisabled(element, isDisabled);
+        return;
+      }
+
+      // Fallback (script auxiliar ausente): só aparência — o atributo
+      // `disabled` NUNCA é aplicado.
+      element.removeAttribute('disabled');
+      element.disabled = false;
+      element.style.opacity = isDisabled ? '0.6' : '';
+      element.style.cursor = isDisabled ? 'not-allowed' : '';
+    });
+  }
+
   $(window).on('load', function () {
     const mainForm = document.querySelector('#mainform');
     if (!mainForm) return;
@@ -640,18 +661,19 @@
     function updateAutoAddressState() {
       // Considera habilitado se algum radio do pai estiver marcado como 'yes'
       const enabled = Array.from(positionRadios).some(radio => radio.checked && radio.value === 'yes');
-      autoAddressRadios.forEach(radio => {
-        radio.disabled = !enabled;
-        radio.style.cursor = enabled ? '' : 'not-allowed';
-        if (!enabled) {
-          // Se desabilitar o pai, marca 'no' no filho
+
+      setDisabledState(autoAddressRadios, !enabled);
+
+      if (!enabled) {
+        // Se desabilitar o pai, marca 'no' no filho
+        autoAddressRadios.forEach(radio => {
           if (radio.value === 'no') {
             radio.checked = true;
           } else if (radio.value === 'yes') {
             radio.checked = false;
           }
-        }
-      });
+        });
+      }
     }
     if (positionRadios.length > 0 && autoAddressRadios.length > 0) {
       updateAutoAddressState(); // Estado inicial
@@ -675,17 +697,18 @@
     // show_phone_country_code: desabilita e força 'no' quando a máscara está off.
     function updatePhoneChildState() {
       const enabled = Array.from(applyPhoneMaskRadios).some(radio => radio.checked && radio.value === 'yes');
-      showCountryCodeRadios.forEach(radio => {
-        radio.disabled = !enabled;
-        radio.style.cursor = enabled ? '' : 'not-allowed';
-        if (!enabled) {
+
+      setDisabledState(showCountryCodeRadios, !enabled);
+
+      if (!enabled) {
+        showCountryCodeRadios.forEach(radio => {
           if (radio.value === 'no') {
             radio.checked = true;
           } else if (radio.value === 'yes') {
             radio.checked = false;
           }
-        }
-      });
+        });
+      }
     }
 
     // "Validar Número de Telefone" (filho do "Telefone (Contato) Obrigatório"):
@@ -696,13 +719,13 @@
       const cellphoneOn = Array.from(enableCellphoneRadios).some(radio => radio.checked && radio.value === 'yes');
       const requiredOn = Array.from(contactRequiredRadios).some(radio => radio.checked && radio.value === 'yes')
         || (cellphoneOn && Array.from(cellphoneRequiredRadios).some(radio => radio.checked && radio.value === 'yes'));
-      const modeOk = !phoneModeSelect || phoneModeSelect.value !== 'disabled';
+      // Modo "Desabilitar" nas duas formas: "Deixar a configuração nativa" e
+      // "Desabilitar o campo de telefone" — espelha `phone_mode_is_unmanaged()`.
+      const modeOk = !phoneModeSelect
+        || (phoneModeSelect.value !== 'disabled' && phoneModeSelect.value !== 'disabled_native');
       const on = maskOn && requiredOn && modeOk;
 
-      validateDddRadios.forEach(radio => {
-        radio.disabled = !on;
-        radio.style.cursor = on ? '' : 'not-allowed';
-      });
+      setDisabledState(validateDddRadios, !on);
     }
 
     // "Celular Obrigatório" só fica ativo quando o "Campo de Celular" está habilitado
@@ -715,10 +738,11 @@
       const on = enableYes && modeAllows;
 
       cellphoneRequiredRadios.forEach(function (radio) {
-        radio.disabled = !on;
-        radio.style.cursor = on ? '' : 'not-allowed';
+        setDisabledState([radio], !on);
+
         // No modo "somente Celular" marca "Desabilitar" (o valor é reforçado no
-        // servidor; o disabled é só visual, pois radios disabled não são enviados).
+        // servidor). O bloqueio é só VISUAL: o radio segue habilitado e o "Não"
+        // VAI no POST — antes, `disabled` fazia o WooCommerce manter o valor antigo.
         if (!modeAllows && radio.value === 'no') {
           radio.checked = true;
         }
@@ -735,12 +759,10 @@
       // "Desabilitar o campo de telefone" (disabled_native).
       const enabled = mode !== 'disabled' && mode !== 'disabled_native';
 
-      // Recursos do bloco de telefone: desabilitados no modo "Desabilitar".
+      // Recursos do bloco de telefone: desabilitados (só VISUALMENTE) nos modos em
+      // que o plugin não gerencia o telefone.
       [applyPhoneMaskRadios, showCountryCodeRadios, contactRequiredRadios, contactFieldPositionRadios].forEach(function (group) {
-        group.forEach(function (radio) {
-          radio.disabled = !enabled;
-          radio.style.cursor = enabled ? '' : 'not-allowed';
-        });
+        setDisabledState(group, !enabled);
       });
 
       // "Celular Oculto" só existe no modo "Permitir Telefone Celular e Fixo". Nos
@@ -772,8 +794,8 @@
       //    forçamos o valor e reforçamos no servidor).
       const cellphoneModeBlocked = (mode === 'cellphone_only') || shimOn;
       enableCellphoneRadios.forEach(function (radio) {
-        radio.disabled = cellphoneModeBlocked;
-        radio.style.cursor = cellphoneModeBlocked ? 'not-allowed' : '';
+        setDisabledState([radio], cellphoneModeBlocked);
+
         if (cellphoneModeBlocked && radio.value === 'no') {
           radio.checked = true;
         }
