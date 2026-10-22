@@ -72,18 +72,21 @@ class AdminNoticeAndAssetsTest extends WP_UnitTestCase {
         );
     }
 
-    public function test_card_de_novidades_esta_ativo() {
+    public function test_card_de_novidades_esta_desativado() {
+        // 5.2.1 não adiciona recursos novos — só correções. O card "Atualização vX"
+        // anunciaria o campo de RG (recurso da 5.2.0) para usuários veteranos, então
+        // a constante precisa ficar em `false`.
         $main = file_get_contents( $this->main_file() );
 
         $this->assertMatchesRegularExpression(
-            "/define\(\s*'WC_BETTER_SHIPPING_NEW_FEATURES'\s*,\s*true\s*\)/",
+            "/define\(\s*'WC_BETTER_SHIPPING_NEW_FEATURES'\s*,\s*false\s*\)/",
             $main,
-            'A constante precisa estar em `true`, senão o card não é exibido para usuários veteranos.'
+            'A constante precisa estar em `false`: esta versão não traz recursos novos, então o card de novidades não deve aparecer.'
         );
 
-        $this->assertTrue(
+        $this->assertFalse(
             WC_BETTER_SHIPPING_NEW_FEATURES,
-            'A constante carregada em runtime também precisa ser `true`.'
+            'A constante carregada em runtime também precisa ser `false`.'
         );
     }
 

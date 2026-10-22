@@ -79,8 +79,11 @@ if (! defined('WC_BETTER_SHIPPING_PRODUCT_QUANTITY')) {
 
 // Define se esta versão contém novas funcionalidades (true) ou apenas correções de bug (false).
 // Quando false, o notice de atualização não é exibido para usuários veteranos.
+//
+// 5.2.1 = só correções → false. Ao lançar uma versão com recursos novos, volte
+// para true e atualize o card de novidades.
 if (! defined('WC_BETTER_SHIPPING_NEW_FEATURES')) {
-    define('WC_BETTER_SHIPPING_NEW_FEATURES', true);
+    define('WC_BETTER_SHIPPING_NEW_FEATURES', false);
 }
 
 /**
