@@ -18,6 +18,10 @@
  *      - tela NOVA: `initRgFieldState()` em
  *        Admin/js/...AdminLayoutBehaviors.js.
  *
+ * O travamento é sempre VISUAL (`setDisabledState` → `window.wcBetterFakeDisabled`):
+ * o atributo `disabled` não pode ser usado, porque input `disabled` não vai no POST e
+ * a option mantém o valor antigo salvo (AGENTS.md § 7).
+ *
  * O teste aceita qualquer das duas implementações, então vale nas duas
  * branches — o que ele NÃO aceita é o join desaparecer.
  *
@@ -94,7 +98,7 @@ test('[join] o COMPORTAMENTO de travar o filho existe (tela antiga OU behaviors)
         return src.includes('initRgFieldState')
             && src.includes(PARENT)
             && src.includes(CHILD)
-            && /\.disabled\s*=/.test(src);
+            && src.includes('setDisabledState(');
     })();
 
     assert.ok(
@@ -103,9 +107,10 @@ test('[join] o COMPORTAMENTO de travar o filho existe (tela antiga OU behaviors)
     );
 });
 
-test('[join] travar o filho NÃO reescreve o valor salvo (só `disabled`)', () => {
-    // A opção é preservada: rádio `disabled` não vai no POST e o WooCommerce
-    // mantém o valor (`is_null( $value )` → continue em save_fields).
+test('[join] travar o filho NÃO reescreve o valor salvo (só aparência)', () => {
+    // A opção é preservada porque o `checked` não é reescrito — e o valor que está
+    // marcado VAI no POST (o travamento é visual, nunca o atributo `disabled`).
+    // Ver AGENTS.md § 7 e tests/js/admin-fake-disabled.test.js.
     const alvos = [SETTINGS_SOURCE, BEHAVIORS_SOURCE].filter(exists);
 
     let verificados = 0;

@@ -16,6 +16,35 @@
 (function () {
 	'use strict';
 
+	// ── 0. "Desabilitado" apenas VISUAL (ver AGENTS.md § 7) ────────────────
+	/**
+	 * Trava um grupo de campos SEM usar o atributo `disabled`.
+	 *
+	 * REASON: input `disabled` não é enviado no POST. O WooCommerce mantém a
+	 * option com o valor ANTIGO, então a tela mostrava "Não"/desabilitado e o
+	 * checkout continuava gerando o campo (ex.: "Celular" fantasma). O bloqueio
+	 * aqui é só de aparência: o valor exibido segue indo no submit.
+	 *
+	 * @param {NodeList|Array} elements   Campos alvo.
+	 * @param {boolean}       isDisabled Se devem parecer desabilitados.
+	 * @return {void}
+	 */
+	function setDisabledState(elements, isDisabled) {
+		Array.prototype.forEach.call(elements, function (element) {
+			if (window.wcBetterFakeDisabled) {
+				window.wcBetterFakeDisabled(element, isDisabled);
+				return;
+			}
+
+			// Fallback (script auxiliar ausente): só aparência — o atributo
+			// `disabled` NUNCA é aplicado.
+			element.removeAttribute('disabled');
+			element.disabled = false;
+			element.style.opacity = isDisabled ? '0.6' : '';
+			element.style.cursor = isDisabled ? 'not-allowed' : '';
+		});
+	}
+
 	// ── 2. Exclusão mútua entre os preenchimentos por CEP ──────────────────
 	function handleAddressFillMutualExclusion() {
 		var autoRadios = document.querySelectorAll('input[name="woo_better_calc_enable_auto_address_fill"]');
@@ -90,10 +119,7 @@
 		function updateRgRequiredState() {
 			var enabled = isRgEnabled();
 
-			rgRequiredRadios.forEach(function (radio) {
-				radio.disabled = !enabled;
-				radio.style.cursor = enabled ? '' : 'not-allowed';
-			});
+			setDisabledState(rgRequiredRadios, !enabled);
 		}
 
 		updateRgRequiredState();
@@ -122,19 +148,28 @@
 			});
 		}
 
+		// Modos em que o plugin NÃO gerencia o telefone: "Deixar a configuração
+		// nativa do WooCommerce" (`disabled`) e "Desabilitar o campo de telefone"
+		// (`disabled_native`). Espelha `phone_mode_is_unmanaged()` no PHP.
+		function isUnmanagedMode() {
+			return !!phoneModeSelect
+				&& (phoneModeSelect.value === 'disabled' || phoneModeSelect.value === 'disabled_native');
+		}
+
 		function updateAutoAddressState() {
 			var enabled = isYes(positionRadios);
-			autoAddressRadios.forEach(function (radio) {
-				radio.disabled = !enabled;
-				radio.style.cursor = enabled ? '' : 'not-allowed';
-				if (!enabled) {
+
+			setDisabledState(autoAddressRadios, !enabled);
+
+			if (!enabled) {
+				autoAddressRadios.forEach(function (radio) {
 					if (radio.value === 'no') {
 						radio.checked = true;
 					} else if (radio.value === 'yes') {
 						radio.checked = false;
 					}
-				}
-			});
+				});
+			}
 		}
 
 		if (positionRadios.length > 0 && autoAddressRadios.length > 0) {
@@ -147,17 +182,18 @@
 		// show_phone_country_code: desabilita e força 'no' quando a máscara está off.
 		function updatePhoneChildState() {
 			var enabled = isYes(applyPhoneMaskRadios);
-			showCountryCodeRadios.forEach(function (radio) {
-				radio.disabled = !enabled;
-				radio.style.cursor = enabled ? '' : 'not-allowed';
-				if (!enabled) {
+
+			setDisabledState(showCountryCodeRadios, !enabled);
+
+			if (!enabled) {
+				showCountryCodeRadios.forEach(function (radio) {
 					if (radio.value === 'no') {
 						radio.checked = true;
 					} else if (radio.value === 'yes') {
 						radio.checked = false;
 					}
-				}
-			});
+				});
+			}
 		}
 
 		// "Validar Número de Telefone": só faz sentido com máscara on, contato obrigatório
@@ -166,13 +202,9 @@
 			var maskOn = isYes(applyPhoneMaskRadios);
 			var cellphoneOn = isYes(enableCellphoneRadios);
 			var requiredOn = isYes(contactRequiredRadios) || (cellphoneOn && isYes(cellphoneRequiredRadios));
-			var modeOk = !phoneModeSelect || phoneModeSelect.value !== 'disabled';
-			var on = maskOn && requiredOn && modeOk;
+			var on = maskOn && requiredOn && !isUnmanagedMode();
 
-			validateDddRadios.forEach(function (radio) {
-				radio.disabled = !on;
-				radio.style.cursor = on ? '' : 'not-allowed';
-			});
+			setDisabledState(validateDddRadios, !on);
 		}
 
 		// "Celular Obrigatório" só fica ativo quando o "Campo de Celular" está habilitado
@@ -182,13 +214,15 @@
 			var modeAllows = !phoneModeSelect || phoneModeSelect.value !== 'cellphone_only';
 			var on = enableYes && modeAllows;
 
-			cellphoneRequiredRadios.forEach(function (radio) {
-				radio.disabled = !on;
-				radio.style.cursor = on ? '' : 'not-allowed';
-				if (!modeAllows && radio.value === 'no') {
-					radio.checked = true;
-				}
-			});
+			setDisabledState(cellphoneRequiredRadios, !on);
+
+			if (!modeAllows) {
+				cellphoneRequiredRadios.forEach(function (radio) {
+					if (radio.value === 'no') {
+						radio.checked = true;
+					}
+				});
+			}
 		}
 
 		function updatePhoneModeChildState() {
@@ -196,13 +230,10 @@
 				return;
 			}
 			var mode = phoneModeSelect.value;
-			var enabled = mode !== 'disabled';
+			var enabled = !isUnmanagedMode();
 
 			[applyPhoneMaskRadios, showCountryCodeRadios, contactRequiredRadios, contactFieldPositionRadios].forEach(function (group) {
-				group.forEach(function (radio) {
-					radio.disabled = !enabled;
-					radio.style.cursor = enabled ? '' : 'not-allowed';
-				});
+				setDisabledState(group, !enabled);
 			});
 
 			// "Celular Oculto" só existe no modo "Permitir Telefone Celular e Fixo".
@@ -221,16 +252,20 @@
 			}
 			var shimOn = isYes(cellphoneShimRadios);
 
-			// O bloco "Campo de Celular" fica desabilitado quando o modo é
-			// "Permitir somente Telefone Celular" ou quando o "Celular Oculto" está ligado.
+			// O bloco "Campo de Celular" fica desabilitado (só VISUALMENTE — o valor
+			// precisa ir no POST) quando o modo é "Permitir somente Telefone Celular"
+			// ou quando o "Celular Oculto" está ligado.
 			var cellphoneModeBlocked = (mode === 'cellphone_only') || shimOn;
-			enableCellphoneRadios.forEach(function (radio) {
-				radio.disabled = cellphoneModeBlocked;
-				radio.style.cursor = cellphoneModeBlocked ? 'not-allowed' : '';
-				if (cellphoneModeBlocked && radio.value === 'no') {
-					radio.checked = true;
-				}
-			});
+
+			setDisabledState(enableCellphoneRadios, cellphoneModeBlocked);
+
+			if (cellphoneModeBlocked) {
+				enableCellphoneRadios.forEach(function (radio) {
+					if (radio.value === 'no') {
+						radio.checked = true;
+					}
+				});
+			}
 
 			updateCellphoneRequiredState();
 

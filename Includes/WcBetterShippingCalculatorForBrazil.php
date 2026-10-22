@@ -532,6 +532,18 @@ class WcBetterShippingCalculatorForBrazil
                     : WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
             };
 
+            // "Desabilitado" apenas VISUAL (`window.wcBetterFakeDisabled`). REASON:
+            // um input com o atributo `disabled` NÃO vai no POST, então a option
+            // mantinha o valor antigo salvo e o recurso seguia ativo no checkout
+            // (tela mostrava "Não" + campo fantasma). Ver AGENTS.md § 7.
+            wp_enqueue_script(
+                'wc-better-calc-settings-fake-disabled',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminFakeDisabled.COMPILED.js',
+                array(),
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminFakeDisabled.COMPILED.js'),
+                true
+            );
+
             wp_enqueue_script(
                 'wc-better-calc-settings-layout-tabs',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutTabs.COMPILED.js',
@@ -543,7 +555,7 @@ class WcBetterShippingCalculatorForBrazil
             wp_enqueue_script(
                 'wc-better-calc-settings-layout-behaviors',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.COMPILED.js',
-                array(),
+                array('wc-better-calc-settings-fake-disabled'),
                 $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.COMPILED.js'),
                 true
             );
@@ -551,7 +563,7 @@ class WcBetterShippingCalculatorForBrazil
             wp_enqueue_script(
                 'wc-better-calc-footer-message',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.js',
-                array(),
+                array('wc-better-calc-settings-fake-disabled'),
                 $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.js'),
                 true
             );
@@ -561,7 +573,7 @@ class WcBetterShippingCalculatorForBrazil
             wp_enqueue_script(
                 'wc-better-calc-settings-delivery-fields',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminDeliveryFields.COMPILED.js',
-                array(),
+                array('wc-better-calc-settings-fake-disabled'),
                 $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminDeliveryFields.COMPILED.js'),
                 true
             );
@@ -6138,7 +6150,11 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // Adiciona o checkbox apenas se ambas as condições permitirem
-        if ($fill_checkout_address === 'no' || $cep_position === 'no') {
+        // Só adiciona o checkbox quando as DUAS opções estão explicitamente ligadas.
+        // REASON: a comparação negativa (`=== 'no'`) deixava qualquer valor fora do
+        // par yes/no — option vazia de um salvamento antigo, por exemplo — cair no
+        // ramo do "adiciona", e o checkbox aparecia no checkout com a opção desligada.
+        if ($fill_checkout_address !== 'yes' || $cep_position !== 'yes') {
             return $fields;
         }
 

@@ -97,3 +97,22 @@
         padding-top: 40px !important;
     }
 }
+
+/*
+ * "Desabilitado" apenas VISUAL (ver AGENTS.md § 7).
+ *
+ * NUNCA usar o atributo `disabled` para fingir que um campo de configuração
+ * está desabilitado: input `disabled` não vai no POST e a option mantém o valor
+ * antigo salvo (a tela mostra "Não" e o checkout continua com o recurso ativo).
+ * A classe abaixo é aplicada por `window.wcBetterFakeDisabled()` — o bloqueio de
+ * clique/teclado é em captura, no JS de AdminFakeDisabled.
+ */
+.woo-better-fake-disabled {
+    opacity: 0.6;
+    cursor: not-allowed !important;
+}
+
+.woo-better-fake-disabled.admin-layout-radio-label,
+.woo-better-fake-disabled .admin-layout-radio-label-text {
+    cursor: not-allowed !important;
+}

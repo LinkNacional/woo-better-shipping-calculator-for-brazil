@@ -15,6 +15,27 @@
 (function () {
     const PREFIX = 'woo_better_';
 
+    // ── Utility: "desabilitado" apenas VISUAL (AGENTS.md § 7) ──
+    // O atributo `disabled` exclui o campo do POST; o WooCommerce então MANTÉM o
+    // valor antigo salvo e a tela passa a divergir do banco.
+    function setFakeDisabled(elements, isDisabled) {
+        const list = elements.nodeType === 1 ? [elements] : elements;
+
+        Array.prototype.forEach.call(list, function (element) {
+            if (!element) return;
+
+            if (window.wcBetterFakeDisabled) {
+                window.wcBetterFakeDisabled(element, isDisabled);
+                return;
+            }
+
+            element.removeAttribute('disabled');
+            element.disabled = false;
+            element.style.opacity = isDisabled ? '0.6' : '';
+            element.style.cursor = isDisabled ? 'not-allowed' : '';
+        });
+    }
+
     // ── Utility: sync schedule table to hidden JSON field ──
     function syncScheduleJSON() {
         const jsonField = document.querySelector('.wc-better-pro-delivery-schedule-json');
@@ -88,7 +109,9 @@
                 }
             }
 
-            // Enable/disable checkboxes and time inputs
+            // Enable/disable checkboxes and time inputs. Os checkboxes/horários
+            // NÃO têm `name` (o valor vive no hidden JSON, lido pelo JS), então o
+            // `disabled` real aqui não perde dado no submit.
             if (scheduleTable) {
                 const checkboxes = scheduleTable.querySelectorAll('.wc-better-pro-delivery-day-checkbox');
                 const timeInputs = scheduleTable.querySelectorAll('input[type="time"]');
@@ -113,19 +136,15 @@
                 }
             }
 
-            // Disable/enable dependent fields: min preparation hours + ignore local pickup
+            // Dependent fields: min preparation hours + ignore local pickup. Estes
+            // SÃO opções do banco (têm `name`) → "desabilitado" só visual.
             const prepInput = document.getElementById(PREFIX + 'min_preparation_hours');
             if (prepInput) {
-                prepInput.disabled = !isEnabled;
-                prepInput.style.backgroundColor = isEnabled ? '' : '#f1f1f1';
-                prepInput.style.cursor = isEnabled ? '' : 'not-allowed';
+                setFakeDisabled(prepInput, !isEnabled);
             }
 
             const ignoreRadios = document.querySelectorAll('input[name="' + PREFIX + 'ignore_local_pickup"]');
-            ignoreRadios.forEach(function (r) {
-                r.disabled = !isEnabled;
-                r.style.cursor = isEnabled ? '' : 'not-allowed';
-            });
+            setFakeDisabled(ignoreRadios, !isEnabled);
         }
 
         toggleState();
@@ -152,6 +171,9 @@
 
             function toggleTimeInputs() {
                 const isChecked = checkbox.checked;
+                // Os horários NÃO têm `name`: o valor é lido pelo `syncScheduleJSON()`,
+                // então o `disabled` real não perde dado no submit (diferente dos
+                // campos de opção, que precisam ficar habilitados — AGENTS.md § 7).
                 if (timeStart) {
                     timeStart.disabled = !isChecked;
                     timeStart.style.backgroundColor = isChecked ? '' : '#f1f1f1';
