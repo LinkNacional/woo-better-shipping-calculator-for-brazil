@@ -382,7 +382,7 @@ msgid "Desabilitar o campo de telefone"
 msgstr ""
 
 #: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:270
-msgid "Permitir Telefone Celular e Fixo"
+msgid "Permitir Telefone Celular e Fixo (Recomendado)"
 msgstr ""
 
 #: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:271
