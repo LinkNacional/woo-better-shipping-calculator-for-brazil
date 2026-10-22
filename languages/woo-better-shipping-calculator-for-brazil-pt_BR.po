@@ -571,8 +571,8 @@ msgid "Desabilitar o campo de telefone"
 msgstr "Desabilitar o campo de telefone"
 
 #: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:270
-msgid "Permitir Telefone Celular e Fixo"
-msgstr "Permitir Telefone Celular e Fixo"
+msgid "Permitir Telefone Celular e Fixo (Recomendado)"
+msgstr "Permitir Telefone Celular e Fixo (Recomendado)"
 
 #: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:271
 msgid "Permitir somente Telefone Celular"
