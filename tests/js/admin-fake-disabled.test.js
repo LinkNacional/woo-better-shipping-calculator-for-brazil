@@ -96,7 +96,7 @@ test('[fake-disabled] o helper é enfileirado antes das telas de settings', () =
     );
 
     // Todo script de settings que usa o helper precisa depender dele.
-    ['AdminLayoutBehaviors', 'AdminSettings', 'AdminDeliveryFields'].forEach((nome) => {
+    ['AdminLayout', 'AdminLayoutBehaviors', 'AdminSettings', 'AdminDeliveryFields'].forEach((nome) => {
         if (!bloco.includes(`WcBetterShippingCalculatorForBrazil${nome}.COMPILED.js`)) {
             return;
         }
