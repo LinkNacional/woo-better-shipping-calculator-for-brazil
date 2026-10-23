@@ -63,7 +63,7 @@ $wb_card_versions = isset( $versions ) ? $versions : '';
 			</div>
 			<div class="linkn-contact-links">
 				<?php if ( '' !== $wb_card_whatsapp ) : ?>
-					<a href="<?php echo esc_url( 'https://chat.whatsapp.com/C6S3my9Adr818hbeJphPBm' ); ?>" target="_blank" rel="noopener noreferrer">
+					<a href="<?php echo esc_url( 'https://www.linknacional.com.br/assets/whatsapp-grupo-wordpress' ); ?>" target="_blank" rel="noopener noreferrer">
 						<img src="<?php echo esc_url( $wb_card_whatsapp ); ?>" alt="Whatsapp Icon" class="linkn-contact-icon">
 					</a>
 				<?php endif; ?>
