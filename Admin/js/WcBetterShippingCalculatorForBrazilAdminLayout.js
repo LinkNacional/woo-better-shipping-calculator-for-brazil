@@ -569,7 +569,6 @@
               'woo_better_calc_contact_field_position': 'woo_better_calc_phone_mode',
               'woo_better_calc_enable_cellphone_shim': 'woo_better_calc_phone_mode',
               'woo_better_calc_cellphone_required': 'woo_better_calc_enable_cellphone_field',
-              'woo_better_calc_rg_required': 'woo_better_calc_enable_rg_field',
             };
 
             forminp.innerHTML = ''; // Limpa o conteúdo original
@@ -719,10 +718,7 @@
       const cellphoneOn = Array.from(enableCellphoneRadios).some(radio => radio.checked && radio.value === 'yes');
       const requiredOn = Array.from(contactRequiredRadios).some(radio => radio.checked && radio.value === 'yes')
         || (cellphoneOn && Array.from(cellphoneRequiredRadios).some(radio => radio.checked && radio.value === 'yes'));
-      // Modo "Desabilitar" nas duas formas: "Deixar a configuração nativa" e
-      // "Desabilitar o campo de telefone" — espelha `phone_mode_is_unmanaged()`.
-      const modeOk = !phoneModeSelect
-        || (phoneModeSelect.value !== 'disabled' && phoneModeSelect.value !== 'disabled_native');
+      const modeOk = !phoneModeSelect || phoneModeSelect.value !== 'disabled';
       const on = maskOn && requiredOn && modeOk;
 
       setDisabledState(validateDddRadios, !on);

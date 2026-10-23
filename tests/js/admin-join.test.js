@@ -1,26 +1,29 @@
 'use strict';
 
 /**
- * Regressão: dependência pai → filho ("join") na tela de configurações ANTIGA.
+ * Regressão: dependência pai → filho ("join") do campo de RG na tela de
+ * configurações de campos brasileiros.
  *
- * A branch de release (5.2.0) não tem o template de abas/cards, então a chave
- * `join` do array de campos não é consumida por template nenhum. O "join" aqui
- * tem duas partes, em dois bundles:
+ * O "join" precisa de DUAS partes, e cada tela as implementa de um jeito:
  *
- *   A) JUNÇÃO visual — `targetComponentCartNames` em ...AdminLayout.js move o
- *      `.forminp` do filho para dentro do card do pai e remove a `<tr>` órfã;
- *   B) COMPORTAMENTO — a lista `joinPairs` em ...AdminSettings.js trava o filho
- *      quando o pai está em "Desabilitar".
+ *   A) JUNÇÃO visual (ninhar o campo filho dentro do card do pai)
+ *      - tela ANTIGA (release 5.2.0): `targetComponentCartNames` em
+ *        Admin/js/...AdminLayout.js move o `.forminp` e remove a `<tr>`;
+ *      - tela NOVA (abas/cards): o template
+ *        Admin/templates/...AdminSettingsLayout.php renderiza o filho dentro
+ *        do bloco do pai lendo a chave `join` do array de campos.
  *
- * Contrato travado:
- *  1. "Obrigatoriedade do Campo de RG" é FILHO de "Campo de RG": declarado com
- *     `join` apontando para o id do pai (paridade com o layout novo);
- *  2. O filho fica travado quando o pai está em "Desabilitar";
- *  3. O valor salvo do filho NÃO é reescrito (o `checked` não é forçado) e o
- *     travamento é só VISUAL — `setFakeDisabled` → `window.wcBetterFakeDisabled`.
- *     O atributo `disabled` não pode ser usado: input `disabled` fica fora do POST
- *     e a option manteria o valor antigo salvo (AGENTS.md § 7);
- *  4. Os COMPILADOS estão atualizados em relação aos fontes.
+ *   B) COMPORTAMENTO (travar o filho quando o pai está em "Desabilitar")
+ *      - tela ANTIGA: `joinPairs` em Admin/js/...AdminSettings.js;
+ *      - tela NOVA: `initRgFieldState()` em
+ *        Admin/js/...AdminLayoutBehaviors.js.
+ *
+ * O travamento é sempre VISUAL (`setDisabledState` → `window.wcBetterFakeDisabled`):
+ * o atributo `disabled` não pode ser usado, porque input `disabled` não vai no POST e
+ * a option mantém o valor antigo salvo (AGENTS.md § 7).
+ *
+ * O teste aceita qualquer das duas implementações, então vale nas duas
+ * branches — o que ele NÃO aceita é o join desaparecer.
  *
  * Execução: npm run test:js
  */
@@ -32,11 +35,17 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
+const PARTIAL = path.join(ROOT, 'Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php');
+
+// Tela ANTIGA (release 5.2.0)
 const SETTINGS_SOURCE = path.join(ROOT, 'Admin/js/WcBetterShippingCalculatorForBrazilAdminSettings.js');
+const SETTINGS_COMPILED = path.join(ROOT, 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.js');
 const LAYOUT_SOURCE = path.join(ROOT, 'Admin/js/WcBetterShippingCalculatorForBrazilAdminLayout.js');
 const LAYOUT_COMPILED = path.join(ROOT, 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js');
-const SETTINGS_COMPILED = path.join(ROOT, 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.js');
-const PARTIAL = path.join(ROOT, 'Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php');
+
+// Tela NOVA (abas/cards)
+const BEHAVIORS_SOURCE = path.join(ROOT, 'Admin/js/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.js');
+const LAYOUT_TEMPLATE = path.join(ROOT, 'Admin/templates/WcBetterShippingCalculatorForBrazilAdminSettingsLayout.php');
 
 const PARENT = 'woo_better_calc_enable_rg_field';
 const CHILD = 'woo_better_calc_rg_required';
@@ -46,53 +55,11 @@ function read(file) {
     return fs.readFileSync(file, 'utf8');
 }
 
-test('[join] o par RG → Obrigatoriedade está declarado no script da tela antiga', () => {
-    const src = read(SETTINGS_SOURCE);
+function exists(file) {
+    return fs.existsSync(file);
+}
 
-    assert.ok(src.includes('joinPairs'), 'A lista `joinPairs` deve existir (mecanismo de join da tela antiga).');
-    assert.ok(
-        src.includes(`parent: '${PARENT}'`) && src.includes(`child: '${CHILD}'`),
-        'O par precisa ser { parent: enable_rg_field, child: rg_required }.'
-    );
-});
-
-test('[join] o filho é travado quando o pai está em "Desabilitar"', () => {
-    const src = read(SETTINGS_SOURCE);
-
-    // Ligado apenas quando o pai tem um rádio 'yes' marcado.
-    assert.ok(
-        /radio\.checked && radio\.value === 'yes'/.test(src),
-        'O estado do filho deve seguir o rádio "yes" do pai.'
-    );
-
-    assert.ok(
-        /setFakeDisabled\(\[radio\], !enabled\)/.test(src),
-        'O filho deve ficar travado (só visualmente) quando o pai não está habilitado.'
-    );
-
-    assert.ok(
-        /radio\.addEventListener\('change', syncChildState\)/.test(src),
-        'Mudar o pai precisa reavaliar o filho (estado inicial também é aplicado).'
-    );
-});
-
-test('[join] o valor salvo do filho é PRESERVADO (não força "no")', () => {
-    const src = read(SETTINGS_SOURCE);
-
-    // Recorta SÓ o mecanismo de join: o bloco de "Data de Nascimento" (que já
-    // existia) reescreve `checked` de propósito, então não pode entrar aqui.
-    const inicio = src.indexOf('function applyJoinDependency');
-    assert.ok(inicio > -1, 'applyJoinDependency deve existir.');
-
-    const joinBody = src.slice(inicio);
-
-    assert.ok(
-        !/\.checked\s*=/.test(joinBody),
-        'O join NÃO pode reescrever `checked`: desabilitar é só visual e a opção salva é mantida.'
-    );
-});
-
-test('[join] o PHP declara `join` no filho (paridade com o layout novo)', () => {
+test('[join] o PHP declara `join` no filho (fonte única das duas telas)', () => {
     const php = read(PARTIAL);
 
     assert.ok(php.includes("'rg_required' => array("), 'O campo rg_required deve existir na tela.');
@@ -102,40 +69,93 @@ test('[join] o PHP declara `join` no filho (paridade com o layout novo)', () => 
     );
 });
 
-test('[join] a JUNÇÃO visual declara o par (targetComponentCartNames)', () => {
-    const src = read(LAYOUT_SOURCE);
+test('[join] a JUNÇÃO visual existe (tela antiga OU template novo)', () => {
+    // Tela antiga: mapa que move o .forminp do filho para o card do pai.
+    const telaAntiga = exists(LAYOUT_SOURCE)
+        && new RegExp(`'${CHILD}'\\s*:\\s*'${PARENT}'`).test(read(LAYOUT_SOURCE));
+
+    // Tela nova: o template renderiza o filho dentro do bloco do pai via `join`.
+    const telaNova = exists(LAYOUT_TEMPLATE)
+        && /\[\s*'join'\s*\]/.test(read(LAYOUT_TEMPLATE))
+        && /children/i.test(read(LAYOUT_TEMPLATE));
 
     assert.ok(
-        src.includes('targetComponentCartNames'),
-        'A tela antiga junta os campos por `targetComponentCartNames`.'
-    );
-    assert.ok(
-        new RegExp(`'${CHILD}'\\s*:\\s*'${PARENT}'`).test(src),
-        "O mapa precisa de 'woo_better_calc_rg_required': 'woo_better_calc_enable_rg_field' — sem isso o campo fica numa linha solta."
+        telaAntiga || telaNova,
+        'O join precisa de uma junção visual: targetComponentCartNames (tela antiga) ou o template de cards (tela nova).'
     );
 });
 
-test('[join] os COMPILADOS estão atualizados', () => {
-    const src = read(SETTINGS_SOURCE);
-    const compiled = read(SETTINGS_COMPILED);
+test('[join] o COMPORTAMENTO de travar o filho existe (tela antiga OU behaviors)', () => {
+    // Tela antiga: lista `joinPairs` em AdminSettings.js.
+    const antigoSource = read(SETTINGS_SOURCE);
+    const telaAntiga = antigoSource.includes('joinPairs')
+        && antigoSource.includes(`parent: '${PARENT}'`)
+        && antigoSource.includes(`child: '${CHILD}'`);
 
-    assert.ok(src.includes('applyJoinDependency'), 'A função deve existir no fonte.');
+    // Tela nova: initRgFieldState() em AdminLayoutBehaviors.js.
+    const telaNova = exists(BEHAVIORS_SOURCE) && (() => {
+        const src = read(BEHAVIORS_SOURCE);
+        return src.includes('initRgFieldState')
+            && src.includes(PARENT)
+            && src.includes(CHILD)
+            && src.includes('setDisabledState(');
+    })();
 
-    // O bundle é MINIFICADO (webpack production + babel), então os nomes
-    // somem: a checagem é pelos ids e pela lógica de travar o filho.
     assert.ok(
-        compiled.includes(PARENT) && compiled.includes(CHILD),
-        'O bundle compilado precisa conter o par de ids — senão a tela antiga não recebe o ajuste.'
+        telaAntiga || telaNova,
+        'O join precisa ser aplicado: `joinPairs` (tela antiga) ou `initRgFieldState` (tela nova).'
     );
-    assert.ok(
-        compiled.includes('wcBetterFakeDisabled'),
-        'O bundle precisa conter a lógica que trava o filho (fake disabled). Rode `npm run build:admin`.'
-    );
+});
 
-    // A junção visual vive no OUTRO bundle: precisa ter sido recompilada também.
-    const layoutCompiled = read(LAYOUT_COMPILED);
+test('[join] travar o filho NÃO reescreve o valor salvo (só aparência)', () => {
+    // A opção é preservada porque o `checked` não é reescrito — e o valor que está
+    // marcado VAI no POST (o travamento é visual, nunca o atributo `disabled`).
+    // Ver AGENTS.md § 7 e tests/js/admin-fake-disabled.test.js.
+    const alvos = [SETTINGS_SOURCE, BEHAVIORS_SOURCE].filter(exists);
+
+    let verificados = 0;
+    for (const arquivo of alvos) {
+        const src = read(arquivo);
+        const marcador = src.indexOf(arquivo === SETTINGS_SOURCE ? 'function applyJoinDependency' : 'function initRgFieldState');
+        if (marcador < 0) continue;
+
+        // Recorta só a função que trava o filho.
+        const corpo = src.slice(marcador, marcador + 2000);
+        assert.ok(
+            !/\.checked\s*=/.test(corpo),
+            `${path.basename(arquivo)}: o join não pode reescrever \`checked\` — a opção salva é preservada.`
+        );
+        verificados++;
+    }
+
+    assert.ok(verificados > 0, 'Nenhuma implementação de join encontrada para verificar.');
+});
+
+test('[join] os COMPILADOS acompanham o mecanismo usado nesta tela', () => {
+    // Tela antiga: o bundle de settings e o de layout precisam ter o par.
+    if (read(SETTINGS_SOURCE).includes('joinPairs')) {
+        const compilado = read(SETTINGS_COMPILED);
+        assert.ok(
+            compilado.includes(PARENT) && compilado.includes(CHILD),
+            'O bundle de settings precisa conter o par — rode `npm run build:admin`.'
+        );
+
+        if (exists(LAYOUT_COMPILED) && read(LAYOUT_SOURCE).includes('targetComponentCartNames')) {
+            const layoutCompilado = read(LAYOUT_COMPILED);
+            assert.ok(
+                layoutCompilado.includes(PARENT) && layoutCompilado.includes(CHILD),
+                'O bundle de layout precisa conter o par — rode `npm run build:admin`.'
+            );
+        }
+        return;
+    }
+
+    // Tela nova: a dependência vive no bundle de behaviors.
+    const behaviorsCompilado = path.join(ROOT, 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.COMPILED.js');
+    assert.ok(exists(behaviorsCompilado), 'O bundle de behaviors deve existir nesta tela.');
+    const compilado = read(behaviorsCompilado);
     assert.ok(
-        layoutCompiled.includes(PARENT) && layoutCompiled.includes(CHILD),
-        'O bundle de layout precisa conter o par — rode `npm run build:admin` depois de editar o AdminLayout.js.'
+        compilado.includes(PARENT) && compilado.includes(CHILD),
+        'O bundle de behaviors precisa conter o par — rode `npm run build:admin`.'
     );
 });

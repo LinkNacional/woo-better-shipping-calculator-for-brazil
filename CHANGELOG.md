@@ -1,3 +1,16 @@
+# 5.3.0 - 21/10/26
+* Novo: a tela de configurações do checkout passou a ser dividida em quatro abas (Endereço e CEP, Documentos e Pessoa, Telefone e Celular, Dados Pessoais) com cards, em vez de uma página única e longa.
+* Novo: um cartão lateral reúne os canais de suporte (WhatsApp e Telegram) e apresenta os recursos da versão PRO.
+* Novo: os blocos exclusivos da versão PRO (Retirada no Local e Prazo de Entrega) agora aparecem na tela de configurações do checkout, junto dos campos brasileiros, e ficam editáveis quando o plugin PRO está ativo.
+* Ajuste: as opções que dependem de outra agora ficam aninhadas logo abaixo dela.
+* Ajuste: títulos, subtítulos e descrições dos campos foram reposicionados para facilitar a leitura de cada opção.
+* Ajuste: os links da versão PRO passaram a apontar para as páginas comerciais de cada plugin.
+* Nota: nenhuma configuração salva muda de nome, então os ajustes já feitos continuam valendo.
+* Novo: a opção "Comportamento do Campo de Telefone" agora tem DUAS formas de desabilitar, com significados diferentes. "Desabilitar o campo de telefone" desliga o telefone nativo do WooCommerce (nada de telefone nem de celular aparece). "Deixar a configuração nativa do WooCommerce" não gera campo nenhum e mantém o que foi configurado no próprio WooCommerce (toggle "Telefone" do editor de blocos).
+* Correção: com o telefone desabilitado, o campo "Celular" não é mais gerado no checkout. Antes, uma configuração anterior de "Campo de Celular" fazia o campo reaparecer mesmo com o telefone desligado.
+* Correção: ao desabilitar o telefone, as opções "Campo de Celular", "Celular Obrigatório" e "Telefone (Contato) Obrigatório" são desligadas automaticamente — nada fica obrigatório num formulário que não exibe mais o telefone.
+* Correção: as opções que ficam travadas por dependerem de outra (ex.: "Campo de Celular" com o telefone em "Permitir somente Telefone Celular") não guardam mais o valor antigo — o bloqueio agora é só visual e o valor exibido é o que fica salvo. Antes, a tela mostrava "Desabilitar" e o checkout continuava exibindo o campo "Celular".
+
 # 5.2.1 - 21/10/26
 * Novo: a opção "Comportamento do Campo de Telefone" agora tem DUAS formas de desabilitar, com significados diferentes. "Desabilitar o campo de telefone" desliga o telefone nativo do WooCommerce (nada de telefone nem de celular aparece). "Deixar a configuração nativa do WooCommerce" não gera campo nenhum e mantém o que foi configurado no próprio WooCommerce (toggle "Telefone" do editor de blocos).
 * Correção: com o telefone desabilitado, o campo "Celular" não é mais gerado no checkout. Antes, uma configuração anterior de "Campo de Celular" fazia o campo reaparecer mesmo com o telefone desligado.

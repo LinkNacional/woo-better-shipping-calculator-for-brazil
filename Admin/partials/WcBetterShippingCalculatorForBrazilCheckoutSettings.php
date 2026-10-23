@@ -2,6 +2,8 @@
 
 namespace Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials;
 
+use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -20,10 +22,12 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
     {
             $checkoutSettings = array(
                 // TAB 5: Configurações de Checkout
+                // Bloco: Endereço e CEP
                 'checkout_settings' => array(
-                    'title' => __('Checkout', 'woo-better-shipping-calculator-for-brazil'),
+                    'title' => __('Endereço e CEP', 'woo-better-shipping-calculator-for-brazil'),
                     'type'  => 'title',
-                    'id'    => 'woo_better_calc_title_checkout'
+                    'id'    => 'woo_better_calc_title_endereco',
+                    'block_id' => 'endereco'
                 ),
                 'cep_field_position' => array(
                     'title'    => __('Destaque do Campo CEP', 'woo-better-shipping-calculator-for-brazil'),
@@ -44,6 +48,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                 'enable_auto_address_fill' => array(
                     'title'    => __('Sugestão de Endereço por CEP', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_enable_auto_address_fill',
+                    'join' => 'woo_better_calc_cep_field_position',
                     'desc_tip' => false,
                     'default'  => 'no',
                     'type'     => 'radio',
@@ -60,6 +65,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                 'enable_silent_address_fill' => array(
                     'title'    => __('Preenchimento Automático Silencioso por CEP', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_enable_silent_address_fill',
+                    'join' => 'woo_better_calc_cep_field_position',
                     'desc_tip' => false,
                     'default'  => 'no',
                     'type'     => 'radio',
@@ -72,6 +78,47 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-description' => __('Com esta opção ativada, assim que o CEP for digitado e validado, os campos de endereço (Rua, Bairro, Cidade, Estado) serão preenchidos automaticamente, sem que o cliente precise confirmar nada. Atenção: dados já digitados pelo cliente serão sobrescritos. Não pode ser usado ao mesmo tempo que a opção "Sugestão de Endereço por CEP".', 'woo-better-shipping-calculator-for-brazil'),
                         'data-title-description' => __('Preenche o endereço automaticamente ao digitar o CEP, sem confirmação do cliente.', 'woo-better-shipping-calculator-for-brazil')
                     )
+                ),
+                'enable_neighborhood_field' => array(
+                    'title'    => __('Campo de Bairro', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_enable_neighborhood_field',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Adiciona um campo obrigatório de Bairro no formulário de endereço do checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Habilite para adicionar o campo "Bairro" tanto nos endereços de cobrança quanto de entrega.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Adiciona o campo de Bairro, posicionado após o endereço principal.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
+                'number_required' => array(
+                    'title'    => __('Campo de Número do Endereço', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_number_required',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-subtitle' => __('Adicionar Campo de Número (Obrigatório)', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Adiciona um campo de Número de preenchimento obrigatório ao formulário de endereço no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Habilite para adicionar um campo de "Número" ao endereço. Inclui checkbox para endereços "Sem Número" e torna o campo obrigatório no checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Adiciona o campo de Número, posicionado logo após o campo principal do endereço (Rua).', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
+
+                // Bloco: Documentos e Pessoa
+                'title_documentos' => array(
+                    'title' => __('Documentos e Pessoa', 'woo-better-shipping-calculator-for-brazil'),
+                    'type'  => 'title',
+                    'id'    => 'woo_better_calc_title_documentos',
+                    'block_id' => 'documentos'
                 ),
                 'person_type_select' => array(
                     'title'    => __('Tipo de Cliente', 'woo-better-shipping-calculator-for-brazil'),
@@ -189,6 +236,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Adiciona o campo de Inscrição Municipal (IM) ao checkout, exclusivo para Pessoas Jurídicas. Complementa o IE para emissão de NF-e/NFS-e. A IM não possui padrão nacional de validação (regra municipal).', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+
                 'enable_rg_field' => array(
                     'title'    => __('Campo de RG', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_enable_rg_field',
@@ -201,14 +249,10 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     ),
                     'custom_attributes' => array(
                         'data-desc-tip' => __('Adiciona o campo de RG no checkout para Pessoa Física.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Habilite para exibir o campo "RG" no endereço de cobrança do checkout. Ele aparece junto com o CPF, quando o cliente é Pessoa Física, e fica oculto para CNPJ (Pessoa Jurídica). Quem usa aplicativo de Nota Fiscal encontra o RG já preenchido. Requer que o campo "Tipo de Cliente" esteja configurado como "Pessoa Física" ou "Pessoa Física e Pessoa Jurídica".', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Habilite para exibir o campo "RG" no endereço de cobrança do checkout. O campo é vinculado ao CPF: só aparece quando o cliente informar um CPF (Pessoa Física) e fica oculto para CNPJ (Pessoa Jurídica). Quem usa aplicativo de Nota Fiscal encontra o RG já preenchido. Requer que o campo "Tipo de Cliente" esteja configurado como "Pessoa Física" ou "Pessoa Física e Pessoa Jurídica".', 'woo-better-shipping-calculator-for-brazil'),
                         'data-title-description' => __('Adiciona o campo de RG (Registro Geral) ao checkout, exclusivo para Pessoas Físicas. Ajuda a conferir a identidade do cliente e a emitir nota fiscal.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
-                // Campo FILHO do "Campo de RG": a chave `join` guarda o id do PAI.
-                // Nesta tela (layout antigo, sem o template de abas/cards) quem
-                // aplica a dependência é a lista `joinPairs` em
-                // Admin/js/WcBetterShippingCalculatorForBrazilAdminSettings.js.
                 'rg_required' => array(
                     'title'    => __('Obrigatoriedade do Campo de RG', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_rg_required',
@@ -226,38 +270,13 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Controla a obrigatoriedade do campo de RG quando ele está habilitado. Cada estado tem uma regra própria de RG, por isso o campo não é validado.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
-                'enable_neighborhood_field' => array(
-                    'title'    => __('Campo de Bairro', 'woo-better-shipping-calculator-for-brazil'),
-                    'id'       => 'woo_better_calc_enable_neighborhood_field',
-                    'desc_tip' => false,
-                    'default'  => 'no',
-                    'type'     => 'radio',
-                    'options'  => array(
-                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
-                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
-                    ),
-                    'custom_attributes' => array(
-                        'data-desc-tip' => __('Adiciona um campo obrigatório de Bairro no formulário de endereço do checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Habilite para adicionar o campo "Bairro" tanto nos endereços de cobrança quanto de entrega.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-title-description' => __('Adiciona o campo de Bairro, posicionado após o endereço principal.', 'woo-better-shipping-calculator-for-brazil')
-                    )
-                ),
-                'number_required' => array(
-                    'title'    => __('Campo de Número do Endereço', 'woo-better-shipping-calculator-for-brazil'),
-                    'id'       => 'woo_better_calc_number_required',
-                    'desc_tip' => false,
-                    'default'  => 'no',
-                    'type'     => 'radio',
-                    'options'  => array(
-                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
-                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
-                    ),
-                    'custom_attributes' => array(
-                        'data-subtitle' => __('Adicionar Campo de Número (Obrigatório)', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-desc-tip' => __('Adiciona um campo de Número de preenchimento obrigatório ao formulário de endereço no checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Habilite para adicionar um campo de "Número" ao endereço. Inclui checkbox para endereços "Sem Número" e torna o campo obrigatório no checkout.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-title-description' => __('Adiciona o campo de Número, posicionado logo após o campo principal do endereço (Rua).', 'woo-better-shipping-calculator-for-brazil')
-                    )
+
+                // Bloco: Telefone e Celular
+                'title_telefone' => array(
+                    'title' => __('Telefone e Celular', 'woo-better-shipping-calculator-for-brazil'),
+                    'type'  => 'title',
+                    'id'    => 'woo_better_calc_title_telefone',
+                    'block_id' => 'telefone'
                 ),
                 'phone_mode' => array(
                     'title'    => __('Comportamento do Campo de Telefone', 'woo-better-shipping-calculator-for-brazil'),
@@ -281,6 +300,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                 'enable_cellphone_shim' => array(
                     'title'    => __('Celular Oculto', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_enable_cellphone_shim',
+                    'join' => 'woo_better_calc_phone_mode',
                     'desc_tip' => false,
                     'default'  => 'no',
                     'type'     => 'radio',
@@ -298,6 +318,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                 'apply_phone_mask' => array(
                     'title'    => __('Telefone com Máscara e DDI', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_apply_phone_mask',
+                    'join' => 'woo_better_calc_phone_mode',
                     'desc_tip' => false,
                     'default'  => get_option('woo_better_calc_contact_required', 'no'),
                     'type'     => 'radio',
@@ -315,6 +336,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                 'show_phone_country_code' => array(
                     'title'    => __('Exibir Código do País (DDI)', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_show_phone_country_code',
+                    'join' => 'woo_better_calc_phone_mode',
                     'desc_tip' => false,
                     'default'  => 'no',
                     'type'     => 'radio',
@@ -332,6 +354,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                 'contact_required' => array(
                     'title'    => __('Telefone (Contato) Obrigatório', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_contact_required',
+                    'join' => 'woo_better_calc_phone_mode',
                     'desc_tip' => false,
                     'default'  => 'no',
                     'type'     => 'radio',
@@ -348,6 +371,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                 'validate_ddd' => array(
                     'title'    => __('Validar Número de Telefone', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_validate_ddd',
+                    'join' => 'woo_better_calc_contact_required',
                     'desc_tip' => false,
                     'default'  => 'yes',
                     'type'     => 'radio',
@@ -365,6 +389,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                 'contact_field_position' => array(
                     'title'    => __('Destaque do Campo Telefone', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_contact_field_position',
+                    'join' => 'woo_better_calc_phone_mode',
                     'desc_tip' => false,
                     'default'  => 'no',
                     'type'     => 'radio',
@@ -397,6 +422,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                 'cellphone_required' => array(
                     'title'    => __('Celular Obrigatório', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_cellphone_required',
+                    'join' => 'woo_better_calc_enable_cellphone_field',
                     'desc_tip' => false,
                     'default'  => 'no',
                     'type'     => 'radio',
@@ -409,6 +435,14 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-description' => __('Quando habilitado, o campo de Celular passa a ser de preenchimento obrigatório.', 'woo-better-shipping-calculator-for-brazil'),
                         'data-title-description' => __('Torna o campo de Celular obrigatório no checkout.', 'woo-better-shipping-calculator-for-brazil')
                     )
+                ),
+
+                // Bloco: Dados Pessoais
+                'title_dados_pessoais' => array(
+                    'title' => __('Dados Pessoais', 'woo-better-shipping-calculator-for-brazil'),
+                    'type'  => 'title',
+                    'id'    => 'woo_better_calc_title_dados_pessoais',
+                    'block_id' => 'dados-pessoais'
                 ),
                 'enable_birthdate_field' => array(
                     'title'    => __('Campo de Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
@@ -429,6 +463,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                 'birthdate_required' => array(
                     'title'    => __('Obrigatoriedade da Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_birthdate_required',
+                    'join' => 'woo_better_calc_enable_birthdate_field',
                     'desc_tip' => false,
                     'default'  => get_option('woo_better_calc_enable_birthdate_field', 'no'),
                     'type'     => 'radio',
@@ -458,9 +493,145 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Adiciona o campo de Gênero para coleta de informações demográficas do cliente.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+
                 'checkout_settings_end' => array(
                     'type' => 'sectionend',
                     'id'   => 'woo_better_calc_checkout_settings'
+                ),
+
+                /*
+                 * ─────────────────────────────────────────────────────────────
+                 * Blocos exclusivos da versão PRO.
+                 *
+                 * Eles aparecem (e são editáveis) também no plugin gratuito para
+                 * o usuário conhecer o recurso, mas `WcBetterShippingCalculatorForBrazilAdminProGate`
+                 * descarta o valor enviado e regrava o `default` a cada salvamento
+                 * enquanto o PRO não estiver ativo. Nenhuma lógica é executada
+                 * aqui: a implementação vive apenas no plugin PRO.
+                 * ─────────────────────────────────────────────────────────────
+                 */
+
+                // Bloco PRO: Retirada no Local
+                'pro_title_retirada_local' => array(
+                    'title' => __('Retirada no Local', 'woo-better-shipping-calculator-for-brazil'),
+                    'type'  => 'title',
+                    'id'    => 'woo_better_calc_pro_title_retirada_local',
+                    'block_id' => 'pro_retirada_local',
+                    'pro'   => true
+                ),
+                'hide_address_on_local_pickup' => array(
+                    'title'    => __('Ocultar Endereço na Retirada Local', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_hide_address_on_local_pickup',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'pro'      => true,
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-subtitle' => __('Ocultar Endereço', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Remove os campos de endereço do checkout quando o cliente escolhe retirar o pedido no local.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Oculta os campos de endereço do checkout na retirada no local.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Os campos de endereço (cobrança e entrega) são ocultados e deixam de ser obrigatórios quando o cliente seleciona a retirada no local.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
+
+                // Bloco PRO: Prazo de Entrega
+                'pro_title_prazo_entrega' => array(
+                    'title' => __('Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                    'type'  => 'title',
+                    'id'    => 'woo_better_calc_pro_title_prazo_entrega',
+                    'block_id' => 'pro_prazo_entrega',
+                    'pro'   => true
+                ),
+                'enable_delivery_schedule' => array(
+                    'title'    => __('Habilitar Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_enable_delivery_schedule',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'pro'      => true,
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-subtitle' => __('Habilitar Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Ative para configurar os dias e horários de funcionamento usados no cálculo do prazo de entrega.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Ativa o cálculo de prazo de entrega a partir dos dias e horários de funcionamento.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Habilite para configurar os dias e horários de funcionamento que serão usados no cálculo do prazo de entrega dos fretes.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
+                'min_preparation_hours' => array(
+                    'title'    => __('Tempo Mínimo de Preparo (Horas)', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_min_preparation_hours',
+                    'desc_tip' => false,
+                    'default'  => '0',
+                    'type'     => 'number',
+                    'pro'      => true,
+                    'custom_attributes' => array(
+                        'min'  => '0',
+                        'step' => '1',
+                        'data-subtitle' => __('Tempo Mínimo de Preparo (Horas)', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Antecedência mínima, em horas, para entregas no mesmo dia.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Define a antecedência mínima em horas para entregas no mesmo dia.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Insira o número de horas necessárias para o preparo. O cliente não poderá selecionar horários de entrega no dia atual que estejam dentro dessa janela de tempo. Ex: 2 (para exigir 2 horas de antecedência).', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
+                'delivery_schedule' => array(
+                    'title'    => __('Dias e Horários de Funcionamento', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_delivery_schedule',
+                    'desc_tip' => false,
+                    'default'  => '{}',
+                    'type'     => 'delivery_schedule',
+                    'pro'      => true,
+                    'custom_attributes' => array(
+                        'data-subtitle' => __('Dias e Horários de Funcionamento', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Selecione os dias da semana e defina o horário de funcionamento.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Marque os dias em que há expediente e defina o horário de início e fim.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Estes dados são usados para calcular o prazo de entrega dos fretes.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
+                'delivery_slots' => array(
+                    'title'    => __('Faixas de Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_delivery_slots',
+                    'desc_tip' => false,
+                    'default'  => '[]',
+                    'type'     => 'delivery_slots',
+                    'pro'      => true,
+                    'custom_attributes' => array(
+                        'data-subtitle' => __('Faixas de Horário de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Defina as faixas de horário que o cliente poderá escolher.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Cadastre as faixas de horário disponíveis para entrega.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('As faixas que não couberem no horário de funcionamento de um dia serão automaticamente ocultadas para aquele dia.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
+
+                // Bloco PRO: Pedidos com Prazo de Entrega
+                'pro_title_delivery_orders' => array(
+                    'title' => __('Pedidos com Prazo de Entrega', 'woo-better-shipping-calculator-for-brazil'),
+                    'type'  => 'title',
+                    'id'    => 'woo_better_calc_pro_title_delivery_orders',
+                    'block_id' => 'pro_delivery_orders',
+                    'pro'   => true
+                ),
+                'delivery_orders_list' => array(
+                    'title'    => __('Pedidos Pendentes', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_delivery_orders_list',
+                    'desc_tip' => false,
+                    'default'  => '[]',
+                    'type'     => 'delivery_orders_list',
+                    // Painel somente de leitura: não é uma opção do banco.
+                    'is_option' => false,
+                    'pro'      => true,
+                    'custom_attributes' => array(
+                        'data-subtitle' => __('Pedidos Pendentes', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Acompanhe os pedidos com prazo de entrega pendente.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Lista de pedidos que ainda não foram concluídos e possuem prazo de entrega definido.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('O status é atualizado automaticamente conforme o pedido é concluído.', 'woo-better-shipping-calculator-for-brazil')
+                    )
                 )
             );
 
@@ -469,13 +640,61 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
 
         public function output()
         {
-            \WC_Admin_Settings::output_fields($this->get_settings());
+            // Layout em cards (template portado da versão PRO). Os campos continuam
+            // vindo de get_settings() e o salvamento segue o fluxo nativo do
+            // WooCommerce (`WC_Admin_Settings::save_fields()` em save()).
+            $form_fields  = $this->get_settings();
+            $method_title = $this->label;
+            $sidebar_card = array(__CLASS__, 'render_settings_card');
+
+            // Cards verdes de novidades do sidebar (um card por item do array).
+            $sidebar_features = array(
+                array(
+                    '<strong>' . __('NOVO:', 'woo-better-shipping-calculator-for-brazil') . '</strong> ' . __('Campo de RG (Registro Geral) no checkout. Ele aparece para Pessoa Física, junto com o CPF, e o preenchimento é opcional.', 'woo-better-shipping-calculator-for-brazil'),
+                ),
+            );
+
+            include WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_DIR . 'Admin/templates/WcBetterShippingCalculatorForBrazilAdminSettingsLayout.php';
+        }
+
+        /**
+         * Card lateral (Link Nacional + versões).
+         *
+         * @return string
+         */
+        public static function render_settings_card()
+        {
+            $versions = 'Woo Better v' . WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
+            if (function_exists('WC') && WC()->version) {
+                $versions .= ' | WooCommerce v' . WC()->version;
+            }
+
+            $icons_dir = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Includes/assets/icons/';
+
+            $backgrounds = array(
+                'right' => $icons_dir . 'backgroundCardRight.svg',
+                'left'  => $icons_dir . 'backgroundCardLeft.svg'
+            );
+            $logo     = $icons_dir . 'linkNacionalLogo.webp';
+            $whatsapp = $icons_dir . 'whatsapp.svg';
+            $telegram = $icons_dir . 'telegram.svg';
+
+            ob_start();
+            include WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_DIR . 'Admin/templates/WcBetterShippingCalculatorForBrazilAdminSettingsLinkCard.php';
+
+            return ob_get_clean();
         }
 
         public function save()
         {
             $settings = $this->get_settings();
-            \WC_Admin_Settings::save_fields($settings);
+
+            // Campos exclusivos da versão PRO: com o PRO inativo o valor enviado
+            // é descartado e a opção volta ao default (ver ProGate); com o PRO
+            // ativo eles são salvos normalmente.
+            \WC_Admin_Settings::save_fields(
+                WcBetterShippingCalculatorForBrazilAdminProGate::guard_settings($settings)
+            );
 
             // REASON: o campo "Comportamento do Campo Empresa" é editado NESTA aba
             // (wc-better-calc-checkout), mas a sincronização com a option nativa do
