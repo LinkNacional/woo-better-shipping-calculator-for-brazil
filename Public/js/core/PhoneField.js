@@ -8,7 +8,7 @@ import {
     brazilMaskType,
     brazilPhoneIsEmpty,
     brazilPhoneInvalid,
-    nationalBrazilDigits
+    phoneValueForStorage
 } from './BrazilPhoneMask.js';
 
 /**
@@ -610,8 +610,9 @@ function buildField(spec, context, insertAfter) {
         // ao store/servidor são só os DÍGITOS (o +55 é concatenado no backend).
         if (input.dataset.wcBetterBrazilMask === 'true') {
             // Máscara BR: o valor do store são os dígitos (um campo só com o `+55`
-            // conta como vazio).
-            val = nationalBrazilDigits(val);
+            // conta como vazio). Um número de OUTRO país é enviado como está, para o
+            // backend não prefixar o `+55` por cima.
+            val = phoneValueForStorage(val);
         }
         valueKeys.forEach(function (key) { S.values[key] = val; });
         refreshActive();

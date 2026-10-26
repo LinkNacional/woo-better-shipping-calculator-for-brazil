@@ -5,12 +5,17 @@
  * nativo do WooCommerce (checkout em blocos, clássico/shortcode e edição de
  * endereço da conta).
  *
- * Regra (rígida): o USUÁRIO só pode digitar dígitos (0-9), com uma única exceção
- * — o "+" como PRIMEIRO caractere (para números internacionais); repetir o "+"
- * é bloqueado. Qualquer outro caractere especial (espaço, "-", "(", ")", ".",
+ * Regra (rígida, padrão): o USUÁRIO só pode digitar dígitos (0-9), com uma única
+ * exceção — o "+" como PRIMEIRO caractere (para números internacionais); repetir o
+ * "+" é bloqueado. Qualquer outro caractere especial (espaço, "-", "(", ")", ".",
  * "/") é inserido EXCLUSIVAMENTE pela biblioteca de formatação — nunca pelo
  * usuário. Também forçamos o teclado numérico em dispositivos móveis via
  * inputmode="numeric".
+ *
+ * EXCEÇÃO — máscara BR sem a lib/DDI (`wc_better_phone_sanitizer_vars.allowPunctuation`):
+ * aí NÃO há lib para formatar, e o cliente pode querer digitar um número de outro
+ * país. Nesse modo espaço, "-", "(", ")", ".", "/" e "+" são permitidos na
+ * digitação; a restrição acontece só no ENVIO (validação brasileira).
  *
  * Como funciona:
  * - "beforeinput": cancela qualquer inserção de texto pelo usuário que não seja
@@ -50,6 +55,15 @@
     ].join(',');
 
     var FLAG = 'wcBetterPhoneSanitized';
+
+    // Máscara BR sem lib: libera a digitação de pontuação (espaço, parênteses,
+    // hífen...). Quem valida é o envio, não a digitação.
+    var CONFIG = (typeof wc_better_phone_sanitizer_vars !== 'undefined') ? wc_better_phone_sanitizer_vars : {};
+    var FREE_TYPING = CONFIG.allowPunctuation === 'true' || CONFIG.allowPunctuation === true;
+
+    // Conjunto que o cliente PODE digitar no modo livre (dígitos + pontuação de
+    // telefone). Letras e outros símbolos continuam bloqueados.
+    var ALLOWED_TYPING = /[^0-9+\-()./\s]/;
 
     /**
      * Substitui a seleção do campo por um texto, disparando "input" para a lib
@@ -129,6 +143,17 @@
             if (!HAS_NON_DIGIT.test(event.data)) {
                 return; // apenas dígitos
             }
+            if (FREE_TYPING) {
+                // Modo livre (máscara BR sem lib): pontuação é permitida; só bloqueia
+                // o que não é telefone (letras, emojis...). O "+" repetido continua
+                // bloqueado para não sujar o número.
+                if (ALLOWED_TYPING.test(event.data)) {
+                    event.preventDefault();
+                } else if (event.data === '+' && !canInsertLeadingPlus(field)) {
+                    event.preventDefault();
+                }
+                return;
+            }
             if (event.data !== '+' || !canInsertLeadingPlus(field)) {
                 event.preventDefault();
             }
@@ -145,6 +170,16 @@
                 return; // só dígitos: o navegador insere normalmente
             }
             event.preventDefault();
+
+            if (FREE_TYPING) {
+                // Modo livre: preserva a pontuação digitada/colada (só letras saem).
+                var free = text.replace(/[^0-9+\-()./\s]/g, '').trim();
+                if (free) {
+                    insertText(field, free);
+                }
+                return;
+            }
+
             var digits = text.replace(/[^0-9]/g, '');
             var hasLeadingPlus = text.trim().charAt(0) === '+';
             var insert = (hasLeadingPlus && canInsertLeadingPlus(field)) ? '+' + digits : digits;
