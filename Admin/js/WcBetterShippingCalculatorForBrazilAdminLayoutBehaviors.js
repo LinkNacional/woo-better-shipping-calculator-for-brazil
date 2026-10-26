@@ -247,22 +247,35 @@
 			}
 		}
 
-		// "Validar Número de Telefone" é ESCOLHA do lojista: NÃO é travada pelo
-		// "Telefone (Contato) Obrigatório" (mesmo contrato da 5.2.2). A validação em si
-		// só age em campo obrigatório (`validate_phone_ddd_classic` no clássico e
-		// `bindValidation` nos blocos), então num checkout com o telefone opcional ela
-		// simplesmente não tem efeito — o texto do card diz exatamente isso. Travar e
-		// forçar "Desabilitar" aqui desfazia a escolha do lojista a cada toggle do
-		// contato. Fica travada APENAS nos modos em que o plugin não gerencia o
-		// telefone, onde não existe campo algum (espelha `phone_mode_is_unmanaged()`).
+		// "Validar Número de Telefone" é CAMADA sobre o "Telefone (Contato) Obrigatório":
+		// a validação só age em campo obrigatório (ver `validate_phone_ddd_classic` e
+		// `bindValidation` no checkout em blocos), então a opção fica travada enquanto
+		// o contato não for obrigatório — senão o lojista liga "Validar", a tela mostra
+		// ativo e NADA é validado no checkout. Fica travada também nos modos em que o
+		// plugin não gerencia o telefone, onde não há campo algum.
 		//
-		// Travamento sempre VISUAL (`setDisabledState` → `wcBetterFakeDisabled`): NUNCA
-		// o atributo `disabled`, porque input `disabled` não vai no POST e a option
-		// guardaria um "yes" fantasma (AGENTS.md § 7).
+		// Travada = marcada em "Desabilitar" E com o fake disabled. Mesmo padrão dos
+		// outros blocos dependentes deste arquivo (`updatePhoneChildState`,
+		// `updateCellphoneRequiredState`): a tela precisa REFLETIR o que o checkout faz,
+		// não só ficar apagada — deixar "Habilitar" marcado enquanto o recurso não age
+		// é o que faz o lojista achar que está validando. O travamento é sempre VISUAL
+		// (`setDisabledState` → `wcBetterFakeDisabled`): NUNCA o atributo `disabled`,
+		// porque input `disabled` não vai no POST e a option guardaria um "yes" fantasma
+		// (AGENTS.md § 7).
 		function updateValidateDddState() {
-			var on = !isUnmanagedMode();
+			var on = !isUnmanagedMode() && isYes(contactRequiredRadios);
 
 			setDisabledState(validateDddRadios, !on);
+
+			if (!on) {
+				validateDddRadios.forEach(function (radio) {
+					if (radio.value === 'no') {
+						radio.checked = true;
+					} else if (radio.value === 'yes') {
+						radio.checked = false;
+					}
+				});
+			}
 
 			updateValidateDddTexts();
 		}
@@ -343,9 +356,11 @@
 		applyPhoneMaskRadios.forEach(function (radio) {
 			radio.addEventListener('change', function () {
 				updatePhoneChildState();
-				// O escopo da validação (todos os países × Brasil) segue a máscara/DDI.
 				updateValidateDddState();
 			});
+		});
+		contactRequiredRadios.forEach(function (radio) {
+			radio.addEventListener('change', updateValidateDddState);
 		});
 		cellphoneRequiredRadios.forEach(function (radio) {
 			radio.addEventListener('change', function () {

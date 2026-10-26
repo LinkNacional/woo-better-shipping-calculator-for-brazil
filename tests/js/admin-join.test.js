@@ -107,11 +107,12 @@ test('[join] o COMPORTAMENTO de travar o filho existe (tela antiga OU behaviors)
     );
 });
 
-test('[join] "Validar Número de Telefone" NÃO é travada pelo contato obrigatório', () => {
+test('[join] "Validar Número de Telefone" é camada do contato obrigatório (trava + marca "Desabilitar")', () => {
     // A validação só age em campo OBRIGATÓRIO (validate_phone_ddd_classic no clássico e
-    // bindValidation no checkout em blocos), mas quem DECIDE ligá-la é o lojista: travar
-    // e forçar "Desabilitar" a cada toggle do contato desfazia a escolha dele (o texto
-    // do card já explica que a validação só age em campo obrigatório).
+    // bindValidation no checkout em blocos). Travada, a opção precisa ficar marcada em
+    // "Desabilitar" — deixar "Habilitar" aceso (ainda que apagado) faz o lojista achar
+    // que está validando. Mesmo padrão de updatePhoneChildState /
+    // updateCellphoneRequiredState neste arquivo.
     const src = read(BEHAVIORS_SOURCE);
 
     const trecho = src.slice(
@@ -121,22 +122,22 @@ test('[join] "Validar Número de Telefone" NÃO é travada pelo contato obrigat�
 
     assert.ok(trecho.length > 0, 'updateValidateDddState() deve existir em AdminLayoutBehaviors.js.');
     assert.ok(
-        !/contactRequiredRadios/.test(trecho),
-        'O estado de "Validar Número de Telefone" NÃO pode depender de `contact_required`.'
-    );
-    assert.ok(
-        /var on = !isUnmanagedMode\(\);/.test(trecho),
-        'Só o modo sem telefone gerenciado trava a opção.'
+        /contactRequiredRadios/.test(trecho),
+        'O estado de "Validar Número de Telefone" deve depender de `contact_required`.'
     );
     assert.ok(
         /setDisabledState\(validateDddRadios/.test(trecho),
         'O travamento precisa ser VISUAL (setDisabledState → fake disabled).'
     );
 
-    // Nada de reescrever o `checked`: o valor escolhido pelo lojista é preservado.
+    // Travado → marca "Desabilitar" (e desmarca "Habilitar").
     assert.ok(
-        !/radio\.checked\s*=/.test(trecho),
-        'A escolha do lojista não pode ser sobrescrita (nada de forçar "Desabilitar").'
+        /if \(!on\) \{[\s\S]*?validateDddRadios\.forEach\([\s\S]*?radio\.value === 'no'[\s\S]*?radio\.checked = true/.test(trecho),
+        'Travado, o radio "Desabilitar" precisa ficar marcado.'
+    );
+    assert.ok(
+        /radio\.value === 'yes'[\s\S]*?radio\.checked = false/.test(trecho),
+        'O radio "Habilitar" precisa ser desmarcado quando a opção trava.'
     );
 
     // NUNCA o atributo `disabled` (AGENTS.md § 7): ele não vai no POST e a option
