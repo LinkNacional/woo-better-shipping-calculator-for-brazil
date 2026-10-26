@@ -264,11 +264,15 @@ test('[brazil-mask] admin: "Validar Número de Telefone" funciona sem a lib (esc
     assert.ok(fs.existsSync(ADMIN_BEHAVIORS), `Arquivo não encontrado: ${ADMIN_BEHAVIORS}`);
     const src = fs.readFileSync(ADMIN_BEHAVIORS, 'utf8');
 
-    // O card deixou de ser dependente da máscara/DDI: sem a lib a validação roda com
-    // a regra brasileira.
+    // O card é ESCOLHA do lojista: não depende da máscara/DDI nem da obrigatoriedade
+    // do contato — só dos modos em que o plugin não gerencia o telefone.
     assert.ok(
-        /function updateValidateDddState\(\) \{[\s\S]*?var on = requiredOn && !isUnmanagedMode\(\);/.test(src),
-        'A validação não deve mais exigir "Telefone com Máscara e DDI".'
+        /function updateValidateDddState\(\) \{\s*var on = !isUnmanagedMode\(\);/.test(src),
+        'A validação deve ficar livre (sem exigir máscara/DDI nem telefone obrigatório).'
+    );
+    assert.ok(
+        /A validação é aplicada quando o telefone\/celular é obrigatório e preenchido\./.test(src),
+        'O texto deve explicar que a validação só age em campo obrigatório.'
     );
     assert.ok(
         /VALIDATE_DDD_TEXTS[\s\S]*?todos os países[\s\S]*?Brasil/.test(src),

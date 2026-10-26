@@ -204,12 +204,12 @@
 			mask: {
 				title: 'Validar o número de telefone no checkout (todos os países)',
 				sub: 'Valida o número de telefone no checkout em todos os países.',
-				body: 'Requer que o telefone/celular seja obrigatório. Com a opção "Telefone com Máscara e DDI" habilitada, a validação usa a base internacional de telefonia (vale para todos os países). Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.'
+				body: 'A validação é aplicada quando o telefone/celular é obrigatório e preenchido. Com a opção "Telefone com Máscara e DDI" habilitada, a validação usa a base internacional de telefonia (vale para todos os países). Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.'
 			},
 			brazil: {
 				title: 'Validar o número de telefone no checkout (Brasil)',
 				sub: 'Valida o número de telefone no checkout apenas para o Brasil.',
-				body: 'Requer que o telefone/celular seja obrigatório. Sem a opção "Telefone com Máscara e DDI", o campo usa a máscara brasileira (fixo/celular) e a validação vale apenas para números do Brasil (DDD válido + 8 dígitos para fixo ou 9 para celular). Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.'
+				body: 'A validação é aplicada quando o telefone/celular é obrigatório e preenchido. Sem a opção "Telefone com Máscara e DDI", o campo usa a máscara brasileira (fixo/celular) e a validação vale apenas para números do Brasil (DDD válido + 8 dígitos para fixo ou 9 para celular). Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.'
 			}
 		};
 
@@ -247,13 +247,12 @@
 			}
 		}
 
-		// "Validar Número de Telefone": só depende do contato/celular obrigatório e do
-		// modo de telefone. NÃO depende mais da máscara/DDI — sem ela o plugin valida
-		// apenas números do Brasil (validação customizada, sem lib).
+		// "Validar Número de Telefone" é ESCOLHA do lojista: não depende mais da
+		// máscara/DDI nem da obrigatoriedade do contato (a validação em si só age em
+		// campos obrigatórios — ver `validate_phone_ddd_classic`). Fica travado apenas
+		// nos modos em que o plugin não gerencia o telefone, onde não há campo algum.
 		function updateValidateDddState() {
-			var cellphoneOn = isYes(enableCellphoneRadios);
-			var requiredOn = isYes(contactRequiredRadios) || (cellphoneOn && isYes(cellphoneRequiredRadios));
-			var on = requiredOn && !isUnmanagedMode();
+			var on = !isUnmanagedMode();
 
 			setDisabledState(validateDddRadios, !on);
 			updateValidateDddTexts();
