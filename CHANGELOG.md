@@ -1,15 +1,23 @@
 # 5.3.0 - 21/10/26
-* Novo: a tela de configurações do checkout passou a ser dividida em quatro abas (Endereço e CEP, Documentos e Pessoa, Telefone e Celular, Dados Pessoais) com cards, em vez de uma página única e longa.
-* Novo: um cartão lateral reúne os canais de suporte (WhatsApp e Telegram) e apresenta os recursos da versão PRO.
-* Novo: os blocos exclusivos da versão PRO (Retirada no Local e Prazo de Entrega) agora aparecem na tela de configurações do checkout, junto dos campos brasileiros, e ficam editáveis quando o plugin PRO está ativo.
-* Ajuste: as opções que dependem de outra agora ficam aninhadas logo abaixo dela.
-* Ajuste: títulos, subtítulos e descrições dos campos foram reposicionados para facilitar a leitura de cada opção.
-* Ajuste: os links da versão PRO passaram a apontar para as páginas comerciais de cada plugin.
-* Nota: nenhuma configuração salva muda de nome, então os ajustes já feitos continuam valendo.
-* Novo: a opção "Comportamento do Campo de Telefone" agora tem DUAS formas de desabilitar, com significados diferentes. "Desabilitar o campo de telefone" desliga o telefone nativo do WooCommerce (nada de telefone nem de celular aparece). "Deixar a configuração nativa do WooCommerce" não gera campo nenhum e mantém o que foi configurado no próprio WooCommerce (toggle "Telefone" do editor de blocos).
-* Correção: com o telefone desabilitado, o campo "Celular" não é mais gerado no checkout. Antes, uma configuração anterior de "Campo de Celular" fazia o campo reaparecer mesmo com o telefone desligado.
-* Correção: ao desabilitar o telefone, as opções "Campo de Celular", "Celular Obrigatório" e "Telefone (Contato) Obrigatório" são desligadas automaticamente — nada fica obrigatório num formulário que não exibe mais o telefone.
-* Correção: as opções que ficam travadas por dependerem de outra (ex.: "Campo de Celular" com o telefone em "Permitir somente Telefone Celular") não guardam mais o valor antigo — o bloqueio agora é só visual e o valor exibido é o que fica salvo. Antes, a tela mostrava "Desabilitar" e o checkout continuava exibindo o campo "Celular".
+* Novo: a tela de configurações da finalização de compra agora é dividida em quatro abas (Endereço e CEP, Documentos e Pessoa, Telefone e Celular, Dados Pessoais) com cards, em vez de uma única página longa.
+* Novo: um card lateral reúne os canais de suporte (WhatsApp e Telegram) e apresenta os destaques da versão PRO.
+* Novo: os blocos exclusivos da versão PRO (Retirada no Local e Prazo de Entrega) agora aparecem na tela de configurações junto com os campos brasileiros, e ficam editáveis quando o plugin PRO está ativo.
+* Ajuste: as opções que dependem de outra opção agora ficam aninhadas logo abaixo dela.
+* Ajuste: títulos, subtítulos e descrições dos campos foram reposicionados para que cada opção seja mais fácil de ler.
+* Ajuste: os links da versão PRO agora apontam para a página comercial de cada plugin.
+* Observação: nenhuma configuração salva mudou de nome, então as configurações existentes continuam funcionando como antes.
+
+# 5.2.2 - 26/10/26
+* Novo: opção "Ocultar Checkbox S/N", filha do campo de Número do endereço. Quando habilitada, o atalho "S/N" (sem número) não é criado dentro do campo de Número no checkout em blocos, no checkout clássico/shortcode e na edição de endereço da conta. O cliente continua podendo digitar "S/N" à mão.
+* Novo: sem a opção "Telefone com Máscara e DDI" o campo de telefone não fica mais sem formatação — ele recebe a máscara brasileira (fixo e celular, detectados pelo tamanho do número), sem bandeira e sem seletor de país. O +55 continua visível quando o número tem o código do país, inclusive no placeholder do campo.
+* Ajuste: com a máscara desligada, espaço, parênteses, hífen e ponto são liberados na digitação — um número de outro país é recusado no envio, sem incluir DDI estrangeiro por cima.
+* Ajuste: o card "Validar Número de Telefone" alterna os textos entre "todos os países" e "Brasil" conforme a opção de máscara, e a validação passou a funcionar sem a biblioteca de DDI (apenas Brasil).
+* Ajuste: o celular agora aparece dentro dos endereços de cobrança E de entrega nas telas de pedido recebido e de detalhes do pedido, logo abaixo do telefone (acima do e-mail na cobrança) e com o mesmo ícone do telefone — ele não é mais listado no bloco "Informações adicionais".
+* Correção: o celular secundário passa a guardar exatamente o que o cliente digitou, só sem os caracteres especiais — o +55 é mantido quando foi digitado e nenhum DDI é incluído quando não foi.
+* Correção: o atalho "S/N" dentro do campo de Número agora fica centralizado dentro do campo no Safari — o elemento em que ele era ancorado era inline, o que fazia a posição depender da caixa de linha.
+* Correção: o checkout em blocos não entra mais em loop ao alternar "usar o mesmo endereço para cobrança" — os campos IE, IM e RG reenviavam o mesmo valor e podiam se ancorar no formulário do outro endereço.
+* Correção: um número de telefone inválido que sobrou no perfil não é mais exibido no campo de telefone do checkout e não sobrescreve mais um telefone válido já salvo.
+* Ajuste: o comportamento de telefone "Permitir Telefone Celular e Fixo" agora aparece marcado como recomendado, e os campos que não são obrigatórios passam a exibir "(opcional)" no checkout em blocos.
 
 # 5.2.1 - 21/10/26
 * Novo: a opção "Comportamento do Campo de Telefone" agora tem DUAS formas de desabilitar, com significados diferentes. "Desabilitar o campo de telefone" desliga o telefone nativo do WooCommerce (nada de telefone nem de celular aparece). "Deixar a configuração nativa do WooCommerce" não gera campo nenhum e mantém o que foi configurado no próprio WooCommerce (toggle "Telefone" do editor de blocos).

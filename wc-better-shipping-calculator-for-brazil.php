@@ -80,8 +80,10 @@ if (! defined('WC_BETTER_SHIPPING_PRODUCT_QUANTITY')) {
 // Define se esta versão contém novas funcionalidades (true) ou apenas correções de bug (false).
 // Quando false, o notice de atualização não é exibido para usuários veteranos.
 //
-// 5.3.0 = só correções e melhorias de layout → false. Ao lançar uma versão com
-// recursos novos, volte para true e atualize o card de novidades.
+// 5.2.1, 5.2.2 e 5.3.0 = false. A 5.2.2 trouxe a máscara brasileira sem a lib de
+// DDI e a opção de ocultar o checkbox S/N; a 5.3.0 traz o novo layout de abas e
+// cards. São ajustes específicos demais para justificar o card. Ao lançar uma
+// versão com recursos de destaque, volte para true e atualize o card de novidades.
 if (! defined('WC_BETTER_SHIPPING_NEW_FEATURES')) {
     define('WC_BETTER_SHIPPING_NEW_FEATURES', false);
 }

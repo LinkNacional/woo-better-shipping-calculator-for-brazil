@@ -73,9 +73,10 @@ class AdminNoticeAndAssetsTest extends WP_UnitTestCase {
     }
 
     public function test_card_de_novidades_esta_desativado() {
-        // 5.3.0 (e 5.2.1) não adicionam recursos novos — só correções/ajustes. O
-        // card "Atualização vX" anunciaria o campo de RG (recurso da 5.2.0) para
-        // usuários veteranos, então a constante precisa ficar em `false`.
+        // 5.2.2 e 5.3.0 não disparam o card de novidades. Os recursos dessas versões
+        // (máscara brasileira sem a lib de DDI, opção de ocultar o checkbox S/N e o
+        // novo layout de abas) são ajustes específicos demais para anunciar, então a
+        // constante precisa ficar em `false`.
         $main = file_get_contents( $this->main_file() );
 
         $this->assertMatchesRegularExpression(
