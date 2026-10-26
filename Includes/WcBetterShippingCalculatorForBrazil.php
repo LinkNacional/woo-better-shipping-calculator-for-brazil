@@ -809,6 +809,39 @@ class WcBetterShippingCalculatorForBrazil
         // Hooks para formatação de telefone no pedido final
         $this->loader->add_filter('woocommerce_order_get_billing_phone', $this, 'format_order_billing_phone', 10, 2);
         $this->loader->add_filter('woocommerce_order_get_shipping_phone', $this, 'format_order_shipping_phone', 10, 2);
+
+        // O "Celular" aparece DENTRO do endereço de cobrança e de entrega, logo
+        // ABAIXO do telefone que o WooCommerce já imprime — NÃO no bloco "Informações
+        // adicionais" (lá ficam só os campos brasileiros que o WC não conhece).
+        // Dois caminhos, um por tipo de tema:
+        //  - `woocommerce_order_details_after_customer_address` (WC >= 8.7): hook
+        //    nativo disparado DENTRO do `<address>` do template
+        //    `order/order-details-customer.php`, exatamente depois do telefone.
+        //    Cobre order-received e "ver pedido" da conta no tema CLÁSSICO;
+        //  - `render_block`: tema de BLOCO renderiza o order-confirmation pelo bloco
+        //    `woocommerce/order-confirmation-{billing,shipping}-address`, que NÃO
+        //    dispara aquele hook — o celular é anexado ao fim do bloco (o telefone é
+        //    o último elemento do conteúdo nativo dele).
+        $this->loader->add_action('woocommerce_order_details_after_customer_address', $this, 'render_address_cellphone', 10, 2);
+        $this->loader->add_filter('render_block', $this, 'render_block_address_cellphone', 10, 2);
+
+        // No tema CLÁSSICO o template imprime, nesta ordem: endereço formatado →
+        // telefone → E-MAIL → `woocommerce_order_details_after_customer_address`.
+        // Como o e-mail vem ANTES do hook, o celular caía ABAIXO dele. Para ele ficar
+        // ACIMA do e-mail (logo depois do telefone), o trecho do template é capturado
+        // num buffer curto e as duas linhas são trocadas de lugar:
+        //   · `woocommerce_after_order_details` (dispara IMEDIATAMENTE antes do
+        //     `wc_get_template('order/order-details-customer.php')`) abre o buffer;
+        //   · `woocommerce_order_details_after_customer_details` (dispara dentro do
+        //     template, depois dos endereços) fecha e reordena — prioridade 1 para
+        //     acontecer antes do bloco "Informações adicionais" (prioridade 10).
+        // O buffer só é aberto quando existe MESMO celular próprio na cobrança; e há
+        // redes de segurança (`woocommerce_thankyou`/`wp_footer`) para o caso de um
+        // tema que não dispare o hook interno, para o buffer nunca ficar aberto.
+        $this->loader->add_action('woocommerce_after_order_details', $this, 'start_customer_details_buffer', 1, 1);
+        $this->loader->add_action('woocommerce_order_details_after_customer_details', $this, 'flush_customer_details_buffer', 1, 1);
+        $this->loader->add_action('woocommerce_thankyou', $this, 'flush_customer_details_buffer', 98, 1);
+        $this->loader->add_action('wp_footer', $this, 'flush_customer_details_buffer', 1, 1);
         // Bloco "Informações adicionais" (contato + campos brasileiros) na tela de
         // detalhes do cliente. Renderizado via DOIS hooks para cobrir TODOS os temas:
         //  - `woocommerce_thankyou`: disparado pelo checkout em BLOCOS (pelo bloco
@@ -820,7 +853,18 @@ class WcBetterShippingCalculatorForBrazil
         // detalhes do pedido — NÃO é enviado em e-mails nem vai para o endereço de
         // entrega. As linhas passam pelo filtro `woo_better_customer_details_rows`
         // (padrão: só os campos do woo-better) para permitir extensão.
-        $this->loader->add_action('woocommerce_thankyou', $this, 'render_customer_additional_info', 10, 1);
+        //
+        // PRIORIDADE do `woocommerce_thankyou`: 99 (fallback, por ÚLTIMO).
+        // O core registra `woocommerce_order_details_table` nesse mesmo hook com
+        // prioridade 10, e é ele quem imprime a tabela do pedido E os endereços
+        // (de onde sai o `..._after_customer_details`). Como este plugin é carregado
+        // ANTES do WooCommerce (ordem alfabética das pastas: `woo-better-…` <
+        // `woocommerce`), o nosso callback ficava registrado primeiro e — por causa
+        // do "renderiza uma vez" — o bloco aparecia no TOPO da página de pedido
+        // recebido, antes do resumo e dos endereços. Com 99 o hook natural
+        // (depois dos endereços) sempre vence, e este fica só como rede de
+        // segurança para temas que não renderizam os endereços.
+        $this->loader->add_action('woocommerce_thankyou', $this, 'render_customer_additional_info', 99, 1);
         $this->loader->add_action('woocommerce_order_details_after_customer_details', $this, 'render_customer_additional_info', 10, 1);
         // Hook para validação de CPF/CNPJ no checkout
         $this->loader->add_action('woocommerce_checkout_process', $this, 'validate_person_type_documents');
@@ -939,6 +983,11 @@ class WcBetterShippingCalculatorForBrazil
         
         // Hook para formatação de endereço na página Minha Conta
         $this->loader->add_filter('woocommerce_my_account_my_address_formatted_address', $this, 'my_account_formatted_address', 10, 3);
+
+        // O campo de telefone do checkout CLÁSSICO é preenchido pelo core a partir do
+        // CADASTRO do cliente — sem este filtro, um resíduo inválido salvo no perfil
+        // (ex.: DDI repetido por um build antigo) era exibido no campo.
+        $this->loader->add_filter('woocommerce_checkout_get_value', $this, 'sanitize_checkout_phone_default_value', 10, 2);
 
         // Integração com FunnelKit Checkout: habilita blocos brasileiros no drag-and-drop
         $this->loader->add_filter('pre_option_wcbcf_settings', $this, 'funnelkit_get_wcbcf_settings', 10, 1);
@@ -1939,6 +1988,221 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Linha do "Celular" de um ENDEREÇO do pedido (a que vai abaixo do telefone).
+     *
+     * Reusa o MESMO `phone_display_rows` dos blocos de dados do cliente: a linha só
+     * existe quando o celular é um número PRÓPRIO — quando ele é o próprio telefone
+     * exibido pelo WooCommerce (campo único/espelho/"Somente Celular" com o celular
+     * preenchendo o telefone) não há linha, então nada é duplicado no endereço.
+     *
+     * @param WC_Order $order
+     * @param string   $type 'billing' | 'shipping'
+     * @return array|null array('label' => ..., 'value' => ..., 'is_link' => true)
+     */
+    private function address_cellphone_row($order, $type)
+    {
+        if (! $order instanceof \WC_Order || ! in_array($type, array('billing', 'shipping'), true)) {
+            return null;
+        }
+
+        $rows = $this->phone_display_rows($order, $type);
+
+        return isset($rows['cellphone']) ? $rows['cellphone'] : null;
+    }
+
+    /**
+     * Markup do "Celular" anexado ao endereço de cobrança/entrega do pedido.
+     *
+     * Gate: `woo_better_calc_enable_order_details` (a mesma opção que liga o bloco
+     * "Informações adicionais"). O markup usa a classe do telefone do WooCommerce
+     * (`woocommerce-customer-details--phone`) para o tema aplicar o MESMO ícone e o
+     * mesmo espaçamento da linha de telefone; o nome do campo vai escondido (a11y).
+     *
+     * @param WC_Order|int $order Pedido ou ID.
+     * @param string       $type  'billing' | 'shipping'
+     * @return string HTML já escapado ('' quando não há o que mostrar).
+     */
+    private function address_cellphone_markup($order, $type)
+    {
+        if (get_option('woo_better_calc_enable_order_details', 'yes') !== 'yes') {
+            return '';
+        }
+
+        if (is_numeric($order)) {
+            $order = wc_get_order((int) $order);
+        }
+
+        $row = $this->address_cellphone_row($order, $type);
+
+        if (null === $row) {
+            return '';
+        }
+
+        return sprintf(
+            // Classes do PRÓPRIO WooCommerce: é a linha do telefone (`--phone`) que o
+            // tema decora — Astra põe o ícone (fonte WooCommerce) e o `padding-left`,
+            // temas de bloco põem o emoji —, então o celular herda o MESMO ícone no
+            // lugar do nome. A última classe é só um gancho nosso.
+            '<p class="woocommerce-customer-details--phone woo-better-customer-details--cellphone">'
+            // O nome do campo ("Celular") não é exibido: só o ícone, como no telefone.
+            // Vai num `screen-reader-text` para o leitor de tela continuar dizendo o que
+            // é o número (o `woo-better-sr-only` é a nossa rede de segurança, para tema
+            // que não define `screen-reader-text`).
+            . '<span class="screen-reader-text woo-better-sr-only">%1$s: </span>%2$s</p>',
+            esc_html($row['label']),
+            esc_html($row['value'])
+        );
+    }
+
+    /**
+     * Imprime o "Celular" DENTRO do endereço (tema CLÁSSICO).
+     *
+     * Hook `woocommerce_order_details_after_customer_address` (WooCommerce >= 8.7),
+     * disparado pelo template `order/order-details-customer.php` logo após o telefone
+     * — então o celular fica ABAIXO dele, na cobrança E na entrega.
+     *
+     * @param string       $type  'billing' | 'shipping'
+     * @param WC_Order|int $order Pedido.
+     * @return void
+     */
+    public function render_address_cellphone($type, $order)
+    {
+        echo $this->address_cellphone_markup($order, $type); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- markup escapado no helper.
+    }
+
+    /**
+     * O buffer do bloco de endereços está aberto? (impede abrir/fechar duas vezes)
+     *
+     * @var bool
+     */
+    private static $customer_details_buffer_open = false;
+
+    /**
+     * Abre o buffer do trecho de ENDEREÇOS do template clássico (só quando há celular).
+     *
+     * Hook `woocommerce_after_order_details`: dispara imediatamente antes do
+     * `wc_get_template('order/order-details-customer.php')`, então o buffer cobre
+     * exatamente os endereços (e o nosso celular, impresso pelo hook de endereço).
+     *
+     * NÃO abre nada quando não há o que reordenar (opção de detalhes desligada ou
+     * celular ausente/igual ao telefone) — o caminho comum não paga por um buffer.
+     *
+     * @param WC_Order|int $order Pedido.
+     * @return void
+     */
+    public function start_customer_details_buffer($order = null)
+    {
+        if (self::$customer_details_buffer_open) {
+            return;
+        }
+
+        if (get_option('woo_better_calc_enable_order_details', 'yes') !== 'yes') {
+            return;
+        }
+
+        if (is_numeric($order)) {
+            $order = wc_get_order((int) $order);
+        }
+
+        if (null === $this->address_cellphone_row($order, 'billing')) {
+            return;
+        }
+
+        self::$customer_details_buffer_open = true;
+        ob_start();
+    }
+
+    /**
+     * Fecha o buffer dos endereços e sobe o CELULAR da cobrança para ACIMA do e-mail.
+     *
+     * O template clássico imprime telefone → e-mail → hook do endereço, e o celular
+     * sai no hook (abaixo do e-mail). Aqui as duas linhas são trocadas de lugar, então
+     * a ordem fica endereço → telefone → CELULAR → e-mail. Também é registrado como
+     * rede de segurança em `woocommerce_thankyou` e `wp_footer`: se um tema não
+     * disparar o hook interno, o conteúdo é despejado intacto (o buffer nunca fica
+     * aberto nem engole a página).
+     *
+     * @param WC_Order|int $order Pedido (não usado; o buffer já tem o conteúdo).
+     * @return void
+     */
+    public function flush_customer_details_buffer($order = null)
+    {
+        if (! self::$customer_details_buffer_open) {
+            return;
+        }
+
+        self::$customer_details_buffer_open = false;
+        $html = ob_get_clean();
+
+        if (! is_string($html) || '' === $html) {
+            return;
+        }
+
+        echo $this->move_billing_cellphone_before_email($html); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- conteúdo já renderizado pelo template/WooCommerce.
+    }
+
+    /**
+     * Sobe o parágrafo do CELULAR da cobrança para ANTES do parágrafo do e-mail.
+     *
+     * Método PURO (só string → string) para ser testável sem template. Casa SÓ o par
+     * "e-mail do WooCommerce seguido do NOSSO celular" — o e-mail só existe no
+     * endereço de cobrança, então a entrega (sem e-mail) e qualquer outra linha
+     * ficam intactas. A marca do nosso parágrafo é
+     * `woo-better-customer-details--cellphone`.
+     *
+     * @param string $html HTML do bloco de endereços.
+     * @return string
+     */
+    private function move_billing_cellphone_before_email($html)
+    {
+        $pattern = '#(<p class="[^"]*woocommerce-customer-details--email[^"]*">.*?</p>)(\s*)'
+            . '(<p class="[^"]*woo-better-customer-details--cellphone[^"]*">.*?</p>)#s';
+
+        $reordered = preg_replace($pattern, '$3$2$1', $html, 1);
+
+        return is_string($reordered) ? $reordered : $html;
+    }
+
+    /**
+     * Anexa o "Celular" ao endereço renderizado pelo bloco de order-confirmation
+     * (tema de BLOCO), onde o hook `..._after_customer_address` não dispara.
+     *
+     * O pedido vem do mesmo query var usado pelo bloco
+     * (`AbstractOrderConfirmationBlock::get_order()`); bloco vazio (sem permissão de
+     * visualização) não recebe nada.
+     *
+     * @param string $block_content HTML do bloco.
+     * @param array  $block         Dados do bloco.
+     * @return string
+     */
+    public function render_block_address_cellphone($block_content, $block)
+    {
+        if (! is_string($block_content) || '' === trim($block_content)) {
+            return $block_content;
+        }
+
+        $block_name = isset($block['blockName']) ? (string) $block['blockName'] : '';
+        $types      = array(
+            'woocommerce/order-confirmation-billing-address'  => 'billing',
+            'woocommerce/order-confirmation-shipping-address' => 'shipping',
+        );
+
+        if (! isset($types[$block_name])) {
+            return $block_content;
+        }
+
+        $order_id = absint(get_query_var('order-received'));
+
+        if (! $order_id) {
+            return $block_content;
+        }
+
+        $markup = $this->address_cellphone_markup($order_id, $types[$block_name]);
+
+        return ('' === $markup) ? $block_content : $block_content . $markup;
+    }
+
+    /**
      * Prepare shipping display data
      * 
      * @param WC_Order $order
@@ -2383,6 +2647,15 @@ class WcBetterShippingCalculatorForBrazil
         $billing  = trim((string) $order->get_billing_phone());
         $shipping = trim((string) $order->get_shipping_phone());
 
+        // Valor que não pode ser um telefone NÃO vai para o perfil — e o telefone que
+        // já estava lá é PRESERVADO (não sobrescrevemos com vazio).
+        if (! $this->is_plausible_phone_value($billing)) {
+            $billing = '';
+        }
+        if (! $this->is_plausible_phone_value($shipping)) {
+            $shipping = '';
+        }
+
         if ('' === $billing && '' === $shipping) {
             return;
         }
@@ -2445,7 +2718,16 @@ class WcBetterShippingCalculatorForBrazil
             if ('' === $cc && $brazil_mask) {
                 $cc = '+55';
             }
-            $customer->{"set_{$type}_phone"}($this->format_complete_phone($phone, $cc));
+            $formatted = $this->format_complete_phone($phone, $cc);
+
+            // Valor que não pode ser um telefone é IGNORADO: o core salva o que já
+            // estava no cadastro (não sobrescreve com vazio — o cliente pode ter
+            // errado um dígito). A validação do envio é quem barra o número.
+            if (! $this->is_plausible_phone_value($formatted)) {
+                continue;
+            }
+
+            $customer->{"set_{$type}_phone"}($formatted);
         }
     }
     
@@ -2625,13 +2907,15 @@ class WcBetterShippingCalculatorForBrazil
 
     /**
      * Bloco "Informações adicionais" na tela de detalhes do cliente (order-received /
-     * ver pedido): exibe, no formato "Chave: valor", o CELULAR e os campos brasileiros
+     * ver pedido): exibe, no formato "Chave: valor", os campos brasileiros
      * CONFIGURADOS e preenchidos (tipo de pessoa, CPF/CNPJ, empresa, Inscrição
      * Estadual/Municipal, data de nascimento e gênero), para o próprio cliente conferir
      * após o pedido.
      *
-     * NÃO inclui e-mail nem telefone: o WooCommerce já os exibe (e-mail no resumo do
-     * pedido e telefone no bloco de endereço). Só o celular é exclusivo do plugin.
+     * NÃO inclui e-mail, telefone NEM CELULAR: o WooCommerce já exibe o e-mail (resumo
+     * do pedido) e o telefone no bloco de endereço — e o celular é impresso DENTRO do
+     * endereço de cobrança e de entrega, logo abaixo do telefone (ver
+     * `render_address_cellphone` / `render_block_address_cellphone`).
      *
      * Lê os metadados `_billing_*` do pedido (mesma fonte da NFe) — é só exibição:
      * não grava, não move dados para o endereço de entrega e não é enviado em e-mails.
@@ -2688,17 +2972,11 @@ class WcBetterShippingCalculatorForBrazil
 
         $display = array();
 
-        // E-mail e Telefone NÃO entram aqui: o WooCommerce já os exibe (o e-mail no
-        // resumo do pedido / bloco de endereço e o telefone no bloco de endereço).
-        // Repeti-los duplicaria. Só o CELULAR é exclusivo do plugin (o WC não mostra
-        // `_billing_cellphone`). A linha vem de `phone_display_rows`, que segue o MODO
-        // ATUAL: em "Somente Celular" é a linha "Celular"; nos demais, só existe a
-        // chave `cellphone` quando o celular DIFERE do telefone do WC (aí mostramos;
-        // se for igual, o WC já exibiu o telefone e não repetimos).
-        $phone_rows = $this->phone_display_rows($order, 'billing');
-        if (isset($phone_rows['cellphone'])) {
-            $display[] = $phone_rows['cellphone'];
-        }
+        // E-mail, Telefone e CELULAR NÃO entram aqui: o WooCommerce já exibe o e-mail
+        // (resumo do pedido) e o telefone no bloco de endereço — e o celular passou a
+        // ser impresso DENTRO do endereço de cobrança e de entrega, logo abaixo do
+        // telefone (`render_address_cellphone`/`render_block_address_cellphone`).
+        // Aqui ficam só os campos brasileiros que o WC não conhece.
 
         // Campos brasileiros (tipo de pessoa, CPF/CNPJ, empresa, IE, IM, gênero) e, por
         // ÚLTIMO, a Data de Nascimento.
@@ -2729,35 +3007,36 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
         ?>
-        <section class="woo-better-additional-info">
-            <style>
-                /* Aproxima as linhas "Chave: valor" (o tema dá margens grandes aos <p>). */
-                .woo-better-additional-info__list { margin: 0; }
-                .woo-better-additional-info__item { margin: 0 0 2px; line-height: 1.4; }
-                .woo-better-additional-info__item:last-child { margin-bottom: 0; }
-            </style>
-            <?php
-            // Título renderizado como HEADING BLOCK (igual aos títulos nativos do
-            // order-confirmation, ex.: "Endereço de cobrança"). Passar pelo `do_blocks`
-            // faz o WordPress aplicar a MESMA tipografia fluida (converte o `font-size`
-            // em clamp conforme o tema), então o tamanho casa com os nativos em
-            // qualquer tema — sem hardcode de CSS.
-            echo do_blocks(
-                '<!-- wp:heading {"level":2,"style":{"typography":{"fontSize":"24px"}}} -->'
-                . '<h2 class="wp-block-heading" style="font-size:24px">'
-                . esc_html__('Informações adicionais', 'woo-better-shipping-calculator-for-brazil')
-                . '</h2>'
-                . '<!-- /wp:heading -->'
-            ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML de bloco do core.
-            ?>
-            <div class="woo-better-additional-info__list">
-                <?php foreach ($display as $row) : ?>
-                    <p class="woo-better-additional-info__item">
-                        <strong><?php echo esc_html($row['label']); ?>:</strong>
-                        <?php echo esc_html($row['value']); ?>
-                    </p>
-                <?php endforeach; ?>
-            </div>
+        <?php
+        /*
+         * As classes do WooCommerce aqui NÃO são decorativas: são o contrato de estilo
+         * do core e de TODOS os temas. Os blocos nativos da tela ("Detalhes do pedido",
+         * "Endereço de cobrança/entrega") são templates PHP que imprimem essas classes,
+         * e é por elas que o visual é aplicado:
+         *
+         *  - `woocommerce-order-details` + `woocommerce-order-details__title` → a barra
+         *    do título e a margem inferior (Astra: `.woocommerce-order h2
+         *    .woocommerce-order-details__title`);
+         *  - `woocommerce-table` + `shop_table` → a caixa (borda + raio do core);
+         *  - `tbody th[scope=row]` + `td` → a MESMA linha "Chave: valor" que o
+         *    "Detalhes do pedido" usa no `tfoot` (peso do label + borda de separação;
+         *    a primeira linha não tem borda superior).
+         *
+         * Sem essas classes o bloco fica "solto" em qualquer tema.
+         */
+        ?>
+        <section class="woocommerce-order-details woo-better-additional-info">
+            <h2 class="woocommerce-order-details__title"><?php esc_html_e('Informações adicionais', 'woo-better-shipping-calculator-for-brazil'); ?></h2>
+            <table class="woocommerce-table woocommerce-table--order-details shop_table order_details woo-better-additional-info__table">
+                <tbody>
+                    <?php foreach ($display as $row) : ?>
+                        <tr>
+                            <th scope="row"><?php echo esc_html($row['label']); ?>:</th>
+                            <td><?php echo esc_html($row['value']); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         </section>
         <?php
     }
@@ -7387,6 +7666,76 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * O valor PODE ser um telefone? (descarta LIXO salvo)
+     *
+     * O E.164 limita o número a 15 dígitos; acima disso não é telefone de ninguém
+     * (ex.: `83988888885555555…`, o DDI colado várias vezes por um build antigo).
+     * Serve só para NÃO GRAVAR/SEMEAR lixo — nunca para apagar o que já estava
+     * salvo: um valor recusado aqui é IGNORADO pelos pontos de persistência (o
+     * telefone anterior continua no perfil/sessão) e quem barra o número inválido
+     * é a validação no ENVIO do formulário. Valores PARCIAIS contam como possíveis
+     * (o sync é debounced durante a digitação).
+     *
+     * @param string $value Telefone (com ou sem formatação).
+     * @return bool
+     */
+    private function is_plausible_phone_value($value)
+    {
+        $digits = preg_replace('/[^0-9]/', '', (string) $value);
+
+        return '' === $digits || strlen($digits) <= 15;
+    }
+
+    /**
+     * Valor inicial dos campos de telefone no checkout CLÁSSICO.
+     *
+     * O core monta esse valor a partir do CADASTRO do cliente
+     * (`woocommerce_checkout_get_value`). Um resíduo inválido salvo no perfil
+     * (ex.: `83988888885555555…`) era semeado no campo; aqui ele vira vazio. Qualquer
+     * outro campo/valor segue intocado (devolve `null`, e o core resolve).
+     *
+     * @param mixed  $value Valor já resolvido por terceiros (null = seguir o core).
+     * @param string $input Nome do campo (ex.: `billing_phone`).
+     * @return mixed
+     */
+    public function sanitize_checkout_phone_default_value($value, $input)
+    {
+        if (null !== $value) {
+            return $value;
+        }
+
+        if (! in_array($input, array('billing_phone', 'shipping_phone', 'billing_cellphone', 'shipping_cellphone'), true)) {
+            return $value;
+        }
+
+        if (! function_exists('WC') || ! WC()->customer) {
+            return $value;
+        }
+
+        $method = 'get_' . $input;
+        if (! method_exists(WC()->customer, $method)) {
+            return $value;
+        }
+
+        // O core lê do CADASTRO quando o cliente está logado e do customer/sessão
+        // quando é visitante — checa as duas fontes, para o resíduo não escapar por
+        // `WC()->customer` estar num estado (ex.: guest) diferente do cadastro.
+        $sources = array();
+        if (is_user_logged_in()) {
+            $sources[] = get_user_meta(get_current_user_id(), $input, true);
+        }
+        $sources[] = WC()->customer->{$method}();
+
+        foreach ($sources as $stored) {
+            if (! $this->is_plausible_phone_value($stored)) {
+                return '';
+            }
+        }
+
+        return $value;
+    }
+
+    /**
      * Grava os valores de telefone/celular na sessão e no perfil do usuário.
      *
      * Grava na sessão/perfil as chaves de telefone/celular presentes no payload do
@@ -7400,6 +7749,8 @@ class WcBetterShippingCalculatorForBrazil
         if (! function_exists('WC') || ! WC()->session) {
             return;
         }
+
+        $synced_customer = false;
 
         foreach (array('billing_phone', 'shipping_phone', 'billing_cellphone', 'shipping_cellphone') as $key) {
             if (isset($data[$key])) {
@@ -7417,12 +7768,50 @@ class WcBetterShippingCalculatorForBrazil
                     $value = '';
                 }
 
+                // Valor que não pode ser um telefone (ex.: mais dígitos do que o
+                // E.164 permite, como "+55 838999988999999" digitado com o DDI junto)
+                // é IGNORADO: o que estava salvo fica como está. Aqui NÃO se grava
+                // vazio — isso apagava o telefone bom do perfil/sessão quando o
+                // cliente errava um dígito e a página era recarregada. Quem barra o
+                // número inválido é a validação no ENVIO (clássico e blocos).
+                if (! $this->is_plausible_phone_value($value)) {
+                    continue;
+                }
+
                 WC()->session->set($key, $value);
                 // Sincroniza com o perfil do usuário (como os demais campos customizados).
                 if (is_user_logged_in()) {
                     update_user_meta(get_current_user_id(), $key, $value);
                 }
+
+                if ('cellphone' === substr($key, -9)) {
+                    continue;
+                }
+
+                // Sincroniza o OBJETO do cliente WooCommerce (o "cache" do `WC()`).
+                //
+                // A sessão acima só guarda as chaves do plugin; `WC()->customer`
+                // continua com o valor ANTERIOR até um `save()`. Como o core salva o
+                // customer em toda atualização de carrinho/checkout, ele reescrevia o
+                // valor velho no user meta — era isso que fazia um telefone APAGADO
+                // reaparecer sozinho (nativo, pedido e perfil). Só os telefones: o
+                // celular é meta do plugin, não propriedade do cliente.
+                if (function_exists('WC') && WC()->customer) {
+                    if ('billing_phone' === $key) {
+                        WC()->customer->set_billing_phone($value);
+                    } else {
+                        WC()->customer->set_shipping_phone($value);
+                    }
+
+                    $synced_customer = true;
+                }
             }
+        }
+
+        if ($synced_customer && function_exists('WC') && WC()->customer) {
+            // Persiste o objeto (sessão + user meta) para o próximo request não
+            // voltar ao valor antigo.
+            WC()->customer->save();
         }
     }
 

@@ -26,6 +26,25 @@ class PhoneModeTest extends WP_UnitTestCase {
         return new WcBetterShippingCalculatorForBrazil();
     }
 
+    /**
+     * Garante sessão de cliente do WooCommerce (os campos de telefone dos blocos
+     * gravam nela) e devolve o `WC_Customer` do usuário atual.
+     *
+     * @param int $user_id
+     * @return \WC_Customer
+     */
+    private function boot_customer( $user_id ): \WC_Customer {
+        if ( ! WC()->session ) {
+            WC()->session = new \WC_Session_Handler();
+            WC()->session->init();
+        }
+
+        wp_set_current_user( $user_id );
+        WC()->customer = new \WC_Customer( $user_id );
+
+        return WC()->customer;
+    }
+
     private function billing_fields_with_cellphone(): array {
         return $this->plugin()->add_cellphone_billing_fields( array( 'billing_phone' => array( 'type' => 'tel' ) ) );
     }
@@ -56,6 +75,181 @@ class PhoneModeTest extends WP_UnitTestCase {
     public function test_invalid_mode_falls_back_to_default(): void {
         update_option( 'woo_better_calc_phone_mode', 'banana' );
         $this->assertSame( 'phone_and_cellphone', $this->plugin()->get_phone_mode() );
+    }
+
+    // --- Resíduo inválido no perfil/sessão (DDI repetido) --------------------
+
+    /**
+     * Um valor com o DDI colado várias vezes (`83988888885555555…`, resíduo de um
+     * build antigo) NÃO pode voltar para o campo: o E.164 limita o número a 15
+     * dígitos. Era isso que fazia o telefone "aparecer do nada" no checkout.
+     */
+    public function test_sanitize_stored_phone_discards_repeated_ddi(): void {
+        $public_class = \Lkn\WcBetterShippingCalculatorForBrazil\PublicView\WcBetterShippingCalculatorForBrazilPublic::class;
+
+        $this->assertSame( '', $public_class::sanitize_stored_phone( '839888888855555555555555555555555555555555555' ) );
+        $this->assertSame( '', $public_class::sanitize_stored_phone( str_repeat( '9', 16 ) ) );
+        // Telefone de verdade (com e sem formatação) passa intacto.
+        $this->assertSame( '83988888885', $public_class::sanitize_stored_phone( '83988888885' ) );
+        $this->assertSame( '+55 (83) 98888-8885', $public_class::sanitize_stored_phone( '+55 (83) 98888-8885' ) );
+        $this->assertSame( '', $public_class::sanitize_stored_phone( '' ) );
+        $this->assertSame( '', $public_class::sanitize_stored_phone( 'sem numero' ) );
+    }
+
+    public function test_saved_phone_values_skips_invalid_profile_value(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+
+        $user_id = self::factory()->user->create( array( 'role' => 'customer' ) );
+        $this->boot_customer( $user_id );
+
+        update_user_meta( $user_id, 'billing_phone', '839888888855555555555555555555555555555555555' );
+        update_user_meta( $user_id, 'shipping_phone', '+5583988888885' );
+
+        $public  = new \Lkn\WcBetterShippingCalculatorForBrazil\PublicView\WcBetterShippingCalculatorForBrazilPublic( 'x', '5.3.0' );
+        $values  = $public->saved_phone_values();
+
+        $this->assertSame( '', $values['billing_phone'], 'Valor inválido do perfil não é semeado no campo.' );
+        $this->assertSame( '+5583988888885', $values['shipping_phone'] );
+    }
+
+    /**
+     * Logado, o PERFIL é a fonte da verdade: a sessão não pode ressuscitar um valor
+     * que foi apagado do perfil (era o "apago e ele volta sozinho").
+     */
+    public function test_saved_phone_values_does_not_fall_back_to_the_session_when_logged_in(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+
+        $user_id = self::factory()->user->create( array( 'role' => 'customer' ) );
+        $this->boot_customer( $user_id );
+
+        update_user_meta( $user_id, 'billing_phone', '' );
+        WC()->session->set( 'billing_phone', '83988888885' );
+
+        $public = new \Lkn\WcBetterShippingCalculatorForBrazil\PublicView\WcBetterShippingCalculatorForBrazilPublic( 'x', '5.3.0' );
+
+        $this->assertSame( '', $public->saved_phone_values()['billing_phone'] );
+    }
+
+    /** Visitante (sem perfil): a sessão continua sendo a fonte. */
+    public function test_saved_phone_values_uses_the_session_for_guests(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+
+        if ( ! WC()->session ) {
+            WC()->session = new \WC_Session_Handler();
+            WC()->session->init();
+        }
+
+        wp_set_current_user( 0 );
+        WC()->session->set( 'billing_phone', '83988888885' );
+
+        $public = new \Lkn\WcBetterShippingCalculatorForBrazil\PublicView\WcBetterShippingCalculatorForBrazilPublic( 'x', '5.3.0' );
+
+        $this->assertSame( '83988888885', $public->saved_phone_values()['billing_phone'] );
+
+        WC()->session->set( 'billing_phone', '' );
+    }
+
+    /**
+     * Apagar o telefone precisa refletir no `WC()->customer`.
+     *
+     * Sem isso o core reescrevia o valor ANTIGO no user meta no próximo save do
+     * customer (checkout/carrinho) — o telefone apagado "voltava do cache".
+     */
+    public function test_persist_phone_values_clears_and_syncs_the_customer(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+
+        $user_id = self::factory()->user->create( array( 'role' => 'customer' ) );
+        $this->boot_customer( $user_id );
+
+        WC()->customer->set_billing_phone( '+5583988888885' );
+        WC()->customer->set_shipping_phone( '+5583988888885' );
+        WC()->customer->save();
+
+        $this->plugin()->handle_phone_update(
+            array(
+                'billing_phone'  => '',
+                'shipping_phone' => '',
+            )
+        );
+
+        $this->assertSame( '', WC()->customer->get_billing_phone() );
+        $this->assertSame( '', WC()->customer->get_shipping_phone() );
+        $this->assertSame( '', WC()->session->get( 'billing_phone' ) );
+        $this->assertSame( '', WC()->session->get( 'shipping_phone' ) );
+        $this->assertSame( '', get_user_meta( $user_id, 'billing_phone', true ) );
+        $this->assertSame( '', get_user_meta( $user_id, 'shipping_phone', true ) );
+    }
+
+    /**
+     * No checkout CLÁSSICO o valor inicial vem do cadastro do cliente: um resíduo
+     * inválido não pode ser semeado no campo (e os demais campos ficam em paz).
+     */
+    public function test_classic_checkout_phone_default_value_discards_invalid_value(): void {
+        $user_id = self::factory()->user->create( array( 'role' => 'customer' ) );
+        $customer = $this->boot_customer( $user_id );
+
+        $customer->set_shipping_phone( '839888888855555555555555555555555555555555555' );
+        $customer->set_billing_phone( '+5583988888885' );
+
+        $this->assertSame( '', $this->plugin()->sanitize_checkout_phone_default_value( null, 'shipping_phone' ) );
+
+        // Resíduo no CADASTRO com o customer "limpo" (o core lê o cadastro).
+        $customer->set_shipping_phone( '' );
+        update_user_meta( $user_id, 'shipping_phone', '839888888855555555555555555555555555555555555' );
+        $this->assertSame( '', $this->plugin()->sanitize_checkout_phone_default_value( null, 'shipping_phone' ) );
+        $this->assertNull( $this->plugin()->sanitize_checkout_phone_default_value( null, 'billing_phone' ) );
+        // Outros campos e valores já resolvidos por terceiros seguem intactos.
+        $this->assertNull( $this->plugin()->sanitize_checkout_phone_default_value( null, 'billing_postcode' ) );
+        $this->assertSame( 'via-third-party', $this->plugin()->sanitize_checkout_phone_default_value( 'via-third-party', 'shipping_phone' ) );
+    }
+
+    /**
+     * Valor que não pode ser telefone é IGNORADO — nunca apaga o que está salvo.
+     *
+     * Regressão: um número digitado com dígitos a mais (ex.: "+55 838999988999999")
+     * gravava vazio na sessão/perfil, então ao recarregar o checkout o campo aparecia
+     * vazio e o telefone bom que estava salvo tinha sido perdido. A validação do
+     * número acontece no ENVIO do formulário; aqui a regra é só "não gravar lixo".
+     */
+    public function test_persist_phone_values_ignores_invalid_value_without_erasing(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+
+        $user_id = self::factory()->user->create( array( 'role' => 'customer' ) );
+        $this->boot_customer( $user_id );
+
+        // Telefone BOM já salvo (perfil + sessão + customer).
+        WC()->customer->set_billing_phone( '+5583988888885' );
+        WC()->customer->save();
+        WC()->session->set( 'billing_phone', '+5583988888885' );
+
+        $this->plugin()->handle_phone_update(
+            array(
+                'billing_phone'  => '+55 838999988999999',   // inválido (DDI + 15 díg.)
+                'shipping_phone' => '83988888885',           // válido
+            )
+        );
+
+        $this->assertSame( '+5583988888885', get_user_meta( $user_id, 'billing_phone', true ), 'O telefone salvo não pode ser apagado.' );
+        $this->assertSame( '+5583988888885', WC()->session->get( 'billing_phone' ) );
+        $this->assertSame( '+5583988888885', WC()->customer->get_billing_phone() );
+        $this->assertSame( '83988888885', WC()->session->get( 'shipping_phone' ) );
+    }
+
+    /** O campo apagado pelo cliente continua sendo gravado como vazio. */
+    public function test_persist_phone_values_still_accepts_an_explicit_clear(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+
+        $user_id = self::factory()->user->create( array( 'role' => 'customer' ) );
+        $this->boot_customer( $user_id );
+
+        WC()->customer->set_billing_phone( '+5583988888885' );
+        WC()->customer->save();
+
+        $this->plugin()->handle_phone_update( array( 'billing_phone' => '' ) );
+
+        $this->assertSame( '', WC()->session->get( 'billing_phone' ) );
+        $this->assertSame( '', WC()->customer->get_billing_phone() );
+        $this->assertSame( '', get_user_meta( $user_id, 'billing_phone', true ) );
     }
 
     // --- Campo de celular ----------------------------------------------------

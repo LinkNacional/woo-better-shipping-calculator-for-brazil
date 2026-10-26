@@ -1,3 +1,5 @@
+import { placeChainField } from './core/CheckoutFieldOrder.js';
+
 document.addEventListener("DOMContentLoaded", function () {
 	let ieInput = null
 	let isentoCheckbox = null
@@ -10,6 +12,9 @@ document.addEventListener("DOMContentLoaded", function () {
 	let savedIEData = {
 		billing_ie: typeof WooBetterIEData !== 'undefined' && WooBetterIEData.billing_ie ? WooBetterIEData.billing_ie : ''
 	}
+
+	// Último valor enviado ao carrinho: evita POST repetido com o mesmo dado.
+	let lastSentIEValue = null
 
 	function isUsingSameAddressForBilling() {
 		const checkbox = document.querySelector('.wc-block-checkout__use-address-for-billing input[type="checkbox"]')
@@ -110,6 +115,16 @@ document.addEventListener("DOMContentLoaded", function () {
 				// Silenciar erro de integração para não quebrar a UI do checkout.
 			}
 		}
+
+		// REASON: `extensionCartUpdate` dispara um POST no Store API e RESETA o
+		// checkout em blocos. Na recriação do campo (ex.: ao alternar "usar o mesmo
+		// endereço para cobrança") o `setInputValue` dispara `input` com o MESMO
+		// valor, o que reenviaria o POST e realimentaria o reset — loop infinito.
+		// Só envia quando o valor realmente mudou.
+		if (lastSentIEValue === payload.billing_ie) {
+			return
+		}
+		lastSentIEValue = payload.billing_ie
 
 		if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
 			window.wc.blocksCheckout.extensionCartUpdate({
@@ -260,8 +275,12 @@ document.addEventListener("DOMContentLoaded", function () {
 			return rgContainer
 		}
 
+		// `#billing_document` é GLOBAL (pode estar no container de entrega quando
+		// "usar o mesmo endereço" está ligado): só serve de âncora se estiver DENTRO
+		// deste formulário — ancorar no de outro lugar jogava o IE para o formulário
+		// errado e a recriação entrava em loop.
 		const documentInput = document.getElementById('billing_document')
-		if (documentInput) {
+		if (documentInput && container.contains(documentInput)) {
 			const documentContainer = documentInput.closest('.wc-block-components-text-input')
 			if (documentContainer) {
 				return documentContainer
@@ -575,8 +594,14 @@ document.addEventListener("DOMContentLoaded", function () {
 			return
 		}
 
+		// O campo pertence ao formulário do contexto atual (cobrança/entrega).
+		// A checagem olha o PAI REAL no DOM — antes comparava só a flag
+		// `fieldContainerType`, que podia dizer "cobrança" enquanto o campo estava
+		// fisicamente na entrega (os ids são globais: `billing_document` pode ser
+		// criado dentro do container de entrega). Nesse estado o campo ficava no
+		// formulário errado para sempre.
 		const currentContainer = getIEContainer()
-		if (currentContainer && fieldContainerType && fieldContainerType !== context.containerType) {
+		if (currentContainer && currentContainer.parentElement !== context.container) {
 			currentContainer.remove()
 			ieInput = null
 			isentoCheckbox = null
@@ -591,9 +616,15 @@ document.addEventListener("DOMContentLoaded", function () {
 		// cedo (DOMContentLoaded), antes de Empresa/CPF-CNPJ existirem, e nesse
 		// caso cai no fallback de sobrenome. Quando a Empresa/CPF-CNPJ aparecem,
 		// movemos o IE para logo abaixo do ancoradouro correto.
+		//
+		// A posição vem da cadeia canônica (`core/CheckoutFieldOrder.js`). Antes a
+		// checagem era `previousElementSibling !== referencia`: com dois campos
+		// resolvendo a MESMA referência (IE e RG caem no container do documento
+		// quando a Empresa está desabilitada), eles se empurravam infinitamente e
+		// travavam o checkout em loop de mutações.
 		const existingContainer = getIEContainer()
-		if (existingContainer && existingContainer.previousElementSibling !== referenceElement) {
-			referenceElement.insertAdjacentElement('afterend', existingContainer)
+		if (existingContainer && existingContainer.parentElement === context.container) {
+			placeChainField(context.container, 'ie', existingContainer, context.containerType)
 		}
 
 		createIEField(referenceElement)

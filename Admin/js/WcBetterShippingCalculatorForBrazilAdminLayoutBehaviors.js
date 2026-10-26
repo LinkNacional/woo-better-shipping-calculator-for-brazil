@@ -247,14 +247,36 @@
 			}
 		}
 
-		// "Validar Número de Telefone" é ESCOLHA do lojista: não depende mais da
-		// máscara/DDI nem da obrigatoriedade do contato (a validação em si só age em
-		// campos obrigatórios — ver `validate_phone_ddd_classic`). Fica travado apenas
-		// nos modos em que o plugin não gerencia o telefone, onde não há campo algum.
+		// "Validar Número de Telefone" é CAMADA sobre o "Telefone (Contato) Obrigatório":
+		// a validação só age em campo obrigatório (ver `validate_phone_ddd_classic` e
+		// `bindValidation` no checkout em blocos), então a opção fica travada enquanto
+		// o contato não for obrigatório — senão o lojista liga "Validar", a tela mostra
+		// ativo e NADA é validado no checkout. Fica travada também nos modos em que o
+		// plugin não gerencia o telefone, onde não há campo algum.
+		//
+		// Travada = marcada em "Desabilitar" E com o fake disabled. Mesmo padrão dos
+		// outros blocos dependentes deste arquivo (`updatePhoneChildState`,
+		// `updateCellphoneRequiredState`): a tela precisa REFLETIR o que o checkout faz,
+		// não só ficar apagada — deixar "Habilitar" marcado enquanto o recurso não age
+		// é o que faz o lojista achar que está validando. O travamento é sempre VISUAL
+		// (`setDisabledState` → `wcBetterFakeDisabled`): NUNCA o atributo `disabled`,
+		// porque input `disabled` não vai no POST e a option guardaria um "yes" fantasma
+		// (AGENTS.md § 7).
 		function updateValidateDddState() {
-			var on = !isUnmanagedMode();
+			var on = !isUnmanagedMode() && isYes(contactRequiredRadios);
 
 			setDisabledState(validateDddRadios, !on);
+
+			if (!on) {
+				validateDddRadios.forEach(function (radio) {
+					if (radio.value === 'no') {
+						radio.checked = true;
+					} else if (radio.value === 'yes') {
+						radio.checked = false;
+					}
+				});
+			}
+
 			updateValidateDddTexts();
 		}
 

@@ -7,6 +7,10 @@ document.addEventListener("DOMContentLoaded", function () {
         use_shipping_as_billing: 'false'
     };
 
+    // Último valor enviado: evita reenviar o mesmo estado (e, com isso, disparar
+    // um POST no Store API sem necessidade).
+    let lastSentShippingAsBilling = null;
+
     /**
      * Observer para monitorar o checkbox "Usar o mesmo endereço para cobrança"
      */
@@ -94,11 +98,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /**
      * Salvar estado do checkbox no Extension Data do WooCommerce
+     *
+     * REASON: aqui NÃO se usa `extensionCartUpdate`. Ele dispara um POST no Store
+     * API e RESETA o checkout em blocos; como este checkbox também é observado
+     * pelos campos injetados (PersonType/Birthdate/Gender/IE/IM/RG), cada reset
+     * apagava e recriava esses campos, que reenviam dados ao carrinho — fechando
+     * um loop infinito de requisições (a página travava e consumia toda a RAM).
+     *
+     * O valor não precisa ir ao servidor agora: ele viaja no POST do checkout em
+     * `extensions.woo_better_shipping_as_billing`, que é justamente o que o PHP lê
+     * em `process_shipping_as_billing_from_request()`.
      */
     function saveShippingAsBillingToExtensionData() {
         const data = {
             use_shipping_as_billing: savedShippingAsBillingData.use_shipping_as_billing
         };
+
+        // Nada mudou desde o último envio: não reenvia.
+        if (lastSentShippingAsBilling === data.use_shipping_as_billing) {
+            return;
+        }
+        lastSentShippingAsBilling = data.use_shipping_as_billing;
 
         // Usar setExtensionData (método principal)
         if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
@@ -113,14 +133,6 @@ document.addEventListener("DOMContentLoaded", function () {
             } catch (error) {
                 console.warn('WooBetter: Erro ao usar setExtensionData:', error);
             }
-        }
-
-        // Usar extensionCartUpdate como backup
-        if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-            window.wc.blocksCheckout.extensionCartUpdate({
-                namespace: 'woo_better_shipping_as_billing',
-                data: data
-            });
         }
     }
 

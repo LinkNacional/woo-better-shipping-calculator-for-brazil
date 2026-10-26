@@ -8,7 +8,8 @@ import {
     brazilMaskType,
     brazilPhoneIsEmpty,
     brazilPhoneInvalid,
-    phoneValueForStorage
+    phoneValueForStorage,
+    phoneValueVerbatim
 } from './BrazilPhoneMask.js';
 
 /**
@@ -89,6 +90,33 @@ function phoneNamespace() {
 /** Namespace do campo "Celular" (fallback quando não localizado pelo PHP). */
 function cellphoneNamespace() {
     return cfgValue('cellphoneNamespace') || 'woo_better_cellphone';
+}
+
+/**
+ * Sufixo "(opcional)" das labels de campo NÃO obrigatório.
+ *
+ * O WooCommerce blocks monta a label como `sprintf('%s (optional)')` e o clássico
+ * (`address-i18n.js`) anexa `<span class="optional">(opcional)</span>`. Como o
+ * plugin cria a própria label, ele precisa fazer o mesmo — senão só os campos
+ * nativos mostram "(opcional)". O texto vem traduzido do PHP (domínio do
+ * WooCommerce, que já tem "opcional" no pt_BR).
+ *
+ * @returns {string}
+ */
+function optionalSuffix() {
+    var suffix = cfgValue('optionalLabel');
+
+    return (typeof suffix === 'string' && suffix !== '') ? suffix : ' (opcional)';
+}
+
+/**
+ * Label exibida de um campo: nome + "(opcional)" quando não é obrigatório.
+ *
+ * @param {object} spec { label, required }
+ * @returns {string}
+ */
+function displayLabel(spec) {
+    return spec.required ? spec.label : (spec.label + optionalSuffix());
 }
 
 /** Valor atual de uma chave (sempre string). */
@@ -564,7 +592,7 @@ function buildField(spec, context, insertAfter) {
 
     var label = document.createElement('label');
     label.setAttribute('for', id);
-    label.textContent = spec.label;
+    label.textContent = displayLabel(spec);
 
     container.appendChild(input);
     container.appendChild(label);
@@ -604,6 +632,12 @@ function buildField(spec, context, insertAfter) {
         container.classList.toggle('is-active', document.activeElement === input || input.value.trim() !== '');
     };
 
+    // O "Celular" SECUNDÁRIO não recebe DDI no backend: o valor gravado tem que ser
+    // o digitado, só sem os caracteres especiais (o `+55` digitado é MANTIDO; sem
+    // `+55` digitado, nada é somado). O telefone/celular PRINCIPAL continua mandando
+    // só os dígitos, porque o backend concatena o DDI.
+    var verbatimValue = (spec.kind === 'cellphone' && spec.secondary === true);
+
     var onInput = function () {
         var val = input.value.trim();
         // Máscara BR (sem lib/DDI): o campo é exibido formatado, mas o valor que vai
@@ -611,8 +645,9 @@ function buildField(spec, context, insertAfter) {
         if (input.dataset.wcBetterBrazilMask === 'true') {
             // Máscara BR: o valor do store são os dígitos (um campo só com o `+55`
             // conta como vazio). Um número de OUTRO país é enviado como está, para o
-            // backend não prefixar o `+55` por cima.
-            val = phoneValueForStorage(val);
+            // backend não prefixar o `+55` por cima. O celular secundário é a exceção:
+            // vai como o cliente digitou, só sem pontuação (`phoneValueVerbatim`).
+            val = verbatimValue ? phoneValueVerbatim(val) : phoneValueForStorage(val);
         }
         valueKeys.forEach(function (key) { S.values[key] = val; });
         refreshActive();
@@ -900,6 +935,25 @@ function bindValidation() {
 }
 
 /**
+ * Redesenha a label do campo (inclui/remove o "(opcional)").
+ *
+ * O campo é criado uma vez e reaproveitado nos re-renders do React, mas a
+ * obrigatoriedade pode mudar (ex.: "Campo de Celular" obrigatório).
+ *
+ * @param {HTMLInputElement} input
+ * @param {object}           spec { label, required }
+ */
+function refreshFieldLabel(input, spec) {
+    var container = input.closest('.wc-block-components-text-input');
+    var label = container ? container.querySelector('label') : null;
+    var text = displayLabel(spec);
+
+    if (label && label.textContent !== text) {
+        label.textContent = text;
+    }
+}
+
+/**
  * Executa todos os boots registrados (idempotente; recria o que faltar).
  */
 function runAll() {
@@ -927,6 +981,7 @@ function runAll() {
         var sel = '.wc-better-' + spec.kind + '-field .wc-better-tel-input';
         Array.prototype.forEach.call(document.querySelectorAll(sel), function (input) {
             input.dataset.wcBetterRequired = spec.required ? 'true' : 'false';
+            refreshFieldLabel(input, spec);
         });
     });
 

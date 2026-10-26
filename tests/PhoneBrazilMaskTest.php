@@ -151,6 +151,47 @@ class PhoneBrazilMaskTest extends WP_UnitTestCase {
         );
     }
 
+    // --- Labels no checkout em blocos ---------------------------------------
+
+    /**
+     * O JS dos blocos monta a própria label. O sufixo "(opcional)" tem que vir
+     * traduzido (domínio do WooCommerce, o mesmo texto que os campos nativos usam).
+     */
+    public function test_phone_fields_config_has_the_optional_label(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+
+        $config = $this->phone_fields_config();
+
+        $this->assertArrayHasKey( 'optionalLabel', $config );
+        // Texto no domínio do WooCommerce (o mesmo dos campos nativos); o idioma do
+        // ambiente define a tradução, então comparamos com a própria string.
+        $this->assertSame( ' (' . __( 'optional', 'woocommerce' ) . ')', $config['optionalLabel'] );
+        $this->assertSame( 'Celular/Telefone', $config['phoneLabel'], 'No "Celular e Fixo" o campo principal aceita os dois tipos.' );
+        $this->assertSame( 'Celular', $config['cellphoneLabel'] );
+    }
+
+    public function test_phone_fields_config_labels_follow_the_mode(): void {
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+
+        update_option( 'woo_better_calc_phone_mode', 'landline_only' );
+        $this->assertSame( 'Telefone', $this->phone_fields_config()['phoneLabel'] );
+
+        update_option( 'woo_better_calc_phone_mode', 'cellphone_only' );
+        $this->assertSame( 'Celular', $this->phone_fields_config()['phoneLabel'] );
+    }
+
+    /**
+     * Payload `WooBetterPhoneFieldsData` (o que o JS dos blocos recebe).
+     *
+     * @return array
+     */
+    private function phone_fields_config(): array {
+        $public = new WcBetterShippingCalculatorForBrazilPublic( 'wc-better-shipping-calculator-for-brazil', '5.3.0' );
+
+        return $public->phone_fields_config();
+    }
+
     // --- Métodos usados no enqueue não podem faltar -------------------------
 
     public function test_phone_mode_is_managed(): void {

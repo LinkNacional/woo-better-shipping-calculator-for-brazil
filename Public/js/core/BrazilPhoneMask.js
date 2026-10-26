@@ -116,6 +116,29 @@ export function phoneValueForStorage(value) {
 }
 
 /**
+ * Valor a ENVIAR/gravar de um campo cujo número NÃO recebe DDI do backend.
+ *
+ * É o caso do campo "Celular" SECUNDÁRIO (o separado do telefone): a meta dele é
+ * gravada como o cliente digitou, só SEM os caracteres especiais — nada de DDI
+ * inferido e nada de DDI digitado removido. Ou seja:
+ *
+ *  - "+55 (83) 98888-8885" → "+5583988888885" (o DDI digitado é PRESERVADO);
+ *  - "(83) 98888-8885"     → "83988888885"   (sem DDI digitado, nada é somado).
+ *
+ * Não confundir com `phoneValueForStorage`, que devolve só os DÍGITOS nacionais
+ * porque o telefone/celular principal recebe o `+55` no backend.
+ *
+ * @param {*} value Valor cru do campo.
+ * @returns {string}
+ */
+export function phoneValueVerbatim(value) {
+    var raw = String(value == null ? '' : value).trim();
+    var digits = onlyDigits(raw);
+
+    return (raw.charAt(0) === '+') ? ('+' + digits) : digits;
+}
+
+/**
  * Tipo de máscara de um campo.
  *
  * @param {string} kind 'phone' | 'cellphone'

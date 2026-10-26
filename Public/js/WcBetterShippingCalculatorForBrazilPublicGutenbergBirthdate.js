@@ -1,3 +1,5 @@
+import { isUsingSameAddress } from './core/CheckoutSameAddress.js';
+
 document.addEventListener("DOMContentLoaded", function () {
     let billingBlockFound = false
     let submitFound = false
@@ -13,17 +15,17 @@ document.addEventListener("DOMContentLoaded", function () {
         billing_birthdate: ''
     };
 
+    // Último valor enviado: evita reenviar o mesmo dado ao carrinho.
+    let lastSentBirthdateData = null;
+
     // Função para verificar se está usando mesmo endereço para cobrança
+    // O checkbox vem de `core/CheckoutSameAddress.js`: o seletor antigo
+    // (`id^="checkbox-control"`) pegava o PRIMEIRO checkbox da página (o WooCommerce
+    // numera em sequência conforme as seções montam/desmontam) e este script podia
+    // concluir "entrega" enquanto IE/IM/RG concluíam "cobrança" — os campos iam e
+    // voltavam entre os dois formulários e o checkout travava em loop.
     function isUsingSameAddressForBilling() {
-        const checkbox = document.querySelector('input[type="checkbox"][id^="checkbox-control"]');
-        if (checkbox) {
-            // Verifica se o checkbox está dentro do container correto
-            const checkboxContainer = checkbox.closest('.wc-block-checkout__use-address-for-billing');
-            if (checkboxContainer) {
-                return checkbox.checked;
-            }
-        }
-        return false;
+        return isUsingSameAddress();
     }
 
     // Função para remover campos de birthdate
@@ -64,13 +66,11 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // Usar extensionCartUpdate como backup
-        if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
-            window.wc.blocksCheckout.extensionCartUpdate({
-                namespace: 'woo_better_birthdate',
-                data: emptyData
-            });
-        }
+        // REASON: o `extensionCartUpdate` (POST no Store API) foi removido daqui.
+        // Esta função roda quando o campo é REMOVIDO (recriação ao alternar "usar o
+        // mesmo endereço para cobrança" ou troca de país) — evento estrutural, não
+        // mudança de valor do usuário. O POST resetava o checkout, que recriava o
+        // campo e reenviava dados, fechando um loop infinito de requisições.
     }
 
     /**
@@ -550,7 +550,14 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // Usar extensionCartUpdate como backup
+        // REASON: `extensionCartUpdate` dispara um POST no Store API e RESETA o
+        // checkout em blocos (que recria o campo e chama este envio de novo). Só
+        // envia quando o valor realmente mudou.
+        if (lastSentBirthdateData === data.billing_birthdate) {
+            return;
+        }
+        lastSentBirthdateData = data.billing_birthdate;
+
         if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
             window.wc.blocksCheckout.extensionCartUpdate({
                 namespace: 'woo_better_birthdate',
