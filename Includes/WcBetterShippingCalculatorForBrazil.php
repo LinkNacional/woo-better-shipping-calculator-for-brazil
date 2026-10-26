@@ -3501,6 +3501,12 @@ class WcBetterShippingCalculatorForBrazil
             return null;
         }
 
+        // Máscara BR (sem lib/DDI): o campo é do Brasil. Um DDI de OUTRO país
+        // explícito (`+1...`) reprova — a validação é só brasileira.
+        if ($this->is_phone_brazil_mask_active() && strpos($normalized, '+') === 0 && strpos($normalized, '+55') !== 0) {
+            return 'invalid';
+        }
+
         $phone_util = \libphonenumber\PhoneNumberUtil::getInstance();
 
         try {
@@ -4107,6 +4113,29 @@ class WcBetterShippingCalculatorForBrazil
     private function is_phone_brazil_mask_active()
     {
         return $this->phone_mode_hides_native_option() && ! $this->is_phone_mask_active();
+    }
+
+    /**
+     * Placeholder dos campos de telefone/celular.
+     *
+     * Com a máscara BR (sem lib/DDI) o `+55` entra no placeholder: nesse modo não há
+     * bandeira nem seletor de país, então é ali que o cliente vê o código do país.
+     *
+     * @param string|null $fallback Texto já traduzido a usar quando a máscara BR NÃO
+     *                              está ativa (null = padrão `(00) 00000-0000`).
+     * @return string
+     */
+    private function phone_field_placeholder($fallback = null)
+    {
+        if ($this->is_phone_brazil_mask_active()) {
+            return __('+55 (00) 00000-0000', 'woo-better-shipping-calculator-for-brazil');
+        }
+
+        if (null !== $fallback) {
+            return $fallback;
+        }
+
+        return __('(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil');
     }
 
     /**
@@ -6107,7 +6136,7 @@ class WcBetterShippingCalculatorForBrazil
                 $fields['billing']['billing_phone'] = array(
                     'type'        => 'tel',
                     'label'       => $this->get_phone_field_label(),
-                    'placeholder' => __('Digite o telefone', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => $this->phone_field_placeholder(__('Digite o telefone', 'woo-better-shipping-calculator-for-brazil')),
                     'required'    => ($phone_required === 'yes'),
                     'class'       => array('form-row-wide'),
                     'priority'    => 92,
@@ -6119,6 +6148,9 @@ class WcBetterShippingCalculatorForBrazil
                     'default'     => '+55',
                     'required'    => false,
                 );
+                if ($this->is_phone_brazil_mask_active()) {
+                    $fields['billing']['billing_phone']['placeholder'] = $this->phone_field_placeholder();
+                }
             }
 
             if (!isset($fields['shipping']['shipping_phone'])) {
@@ -6131,7 +6163,7 @@ class WcBetterShippingCalculatorForBrazil
                 $fields['shipping']['shipping_phone'] = array(
                     'type'        => 'tel',
                     'label'       => $this->get_phone_field_label(),
-                    'placeholder' => __('Digite o telefone', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => $this->phone_field_placeholder(__('Digite o telefone', 'woo-better-shipping-calculator-for-brazil')),
                     'required'    => ($phone_required === 'yes'),
                     'class'       => array('form-row-wide'),
                     'priority'    => 92,
@@ -6143,6 +6175,9 @@ class WcBetterShippingCalculatorForBrazil
                     'default'     => '+55',
                     'required'    => false,
                 );
+                if ($this->is_phone_brazil_mask_active()) {
+                    $fields['shipping']['shipping_phone']['placeholder'] = $this->phone_field_placeholder();
+                }
             }
 
 
@@ -7816,7 +7851,7 @@ class WcBetterShippingCalculatorForBrazil
         $fields[ $key ] = array(
             'type'              => 'tel',
             'label'             => __( 'Celular', 'woo-better-shipping-calculator-for-brazil' ),
-            'placeholder'       => __( '(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil' ),
+            'placeholder'       => $this->phone_field_placeholder(),
             'required'          => $required,
             'class'             => array( 'form-row-wide' ),
             'priority'          => 93,
@@ -8674,7 +8709,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_main_cellphone = ( 'cellphone_only' === $this->get_phone_mode() );
             $fields['billing_cellphone'] = array(
                 'label'             => __( 'Celular', 'woo-better-shipping-calculator-for-brazil' ),
-                'placeholder'       => __( '(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil' ),
+                'placeholder'       => $this->phone_field_placeholder(),
                 'required'          => $is_main_cellphone ? ( $phone_required === 'yes' ) : $this->is_cellphone_required(),
                 'class'             => array( 'form-row-wide' ),
                 'priority'          => $is_main_cellphone ? $phone_priority : 200,
@@ -8700,10 +8735,13 @@ class WcBetterShippingCalculatorForBrazil
             if (isset($fields['billing_phone'])) {
                 $fields['billing_phone']['label']    = $this->get_phone_field_label();
                 $fields['billing_phone']['required'] = ($phone_required === 'yes');
+                if ($this->is_phone_brazil_mask_active()) {
+                    $fields['billing_phone']['placeholder'] = $this->phone_field_placeholder();
+                }
             } else {
                 $fields['billing_phone'] = array(
                     'label'       => $this->get_phone_field_label(),
-                    'placeholder' => __('(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => $this->phone_field_placeholder(),
                     'required'    => ($phone_required === 'yes'),
                     'class'       => array('form-row-wide'),
                     'priority'    => $phone_priority,
@@ -9060,7 +9098,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_main_cellphone = ( 'cellphone_only' === $this->get_phone_mode() );
             $fields['shipping_cellphone'] = array(
                 'label'             => __( 'Celular', 'woo-better-shipping-calculator-for-brazil' ),
-                'placeholder'       => __( '(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil' ),
+                'placeholder'       => $this->phone_field_placeholder(),
                 'required'          => $is_main_cellphone ? ( $phone_required === 'yes' ) : $this->is_cellphone_required(),
                 'class'             => array( 'form-row-wide' ),
                 'priority'          => $is_main_cellphone ? $phone_priority : 200,
@@ -9084,10 +9122,13 @@ class WcBetterShippingCalculatorForBrazil
             if (isset($fields['shipping_phone'])) {
                 $fields['shipping_phone']['label']    = $this->get_phone_field_label();
                 $fields['shipping_phone']['required'] = ($phone_required === 'yes');
+                if ($this->is_phone_brazil_mask_active()) {
+                    $fields['shipping_phone']['placeholder'] = $this->phone_field_placeholder();
+                }
             } else {
                 $fields['shipping_phone'] = array(
                     'label'       => $this->get_phone_field_label(),
-                    'placeholder' => __('(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => $this->phone_field_placeholder(),
                     'required'    => ($phone_required === 'yes'),
                     'class'       => array('form-row-wide'),
                     'priority'    => $phone_priority,

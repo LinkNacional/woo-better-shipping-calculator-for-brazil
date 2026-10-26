@@ -151,6 +151,61 @@ class PhoneBrazilMaskTest extends WP_UnitTestCase {
         );
     }
 
+    // --- Placeholder (sem lib o +55 vai no placeholder) ---------------------
+
+    public function test_placeholder_carries_the_ddi_without_the_lib(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+
+        $fields = $this->plugin()->add_cellphone_billing_fields( array( 'billing_phone' => array( 'type' => 'tel' ) ) );
+
+        $this->assertSame( '+55 (00) 00000-0000', $fields['billing_cellphone']['placeholder'] );
+    }
+
+    public function test_placeholder_has_no_ddi_with_the_lib(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+
+        $fields = $this->plugin()->add_cellphone_billing_fields( array( 'billing_phone' => array( 'type' => 'tel' ) ) );
+
+        $this->assertSame( '(00) 00000-0000', $fields['billing_cellphone']['placeholder'] );
+    }
+
+    public function test_checkout_phone_placeholder_follows_the_mask_mode(): void {
+        update_option( 'woo_better_calc_phone_mode', 'landline_only' );
+
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+        $fields = $this->plugin()->wc_better_calc_checkout_fields( array( 'billing' => array(), 'shipping' => array() ) );
+        $this->assertSame( '+55 (00) 00000-0000', $fields['billing']['billing_phone']['placeholder'] ?? '' );
+
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+        $fields = $this->plugin()->wc_better_calc_checkout_fields( array( 'billing' => array(), 'shipping' => array() ) );
+        // Com a lib o DDI vem do seletor de país → o texto do checkout não muda.
+        $this->assertSame( 'Digite o telefone', $fields['billing']['billing_phone']['placeholder'] ?? '' );
+    }
+
+    // --- Sanitizador: digitação livre no modo sem lib -----------------------
+
+    /**
+     * @dataProvider brazil_only_fixtures
+     */
+    public function test_phone_mask_is_brazil_only( string $mode, string $mask, bool $expected ): void {
+        $this->assertSame(
+            $expected,
+            WcBetterShippingCalculatorForBrazilPublic::phone_mask_is_brazil_only( $mode, $mask )
+        );
+    }
+
+    public static function brazil_only_fixtures(): array {
+        return array(
+            'sem a lib → máscara BR apenas' => array( 'phone_and_cellphone', 'no', true ),
+            'com a lib → não é só BR' => array( 'phone_and_cellphone', 'yes', false ),
+            'modo desabilitado → não enfileira nada' => array( 'disabled', 'no', false ),
+        );
+    }
+
     // --- Normalização do telefone do pedido ---------------------------------
 
     public function test_order_phone_gets_brazilian_ddi_without_mask_lib(): void {
@@ -238,6 +293,42 @@ class PhoneBrazilMaskTest extends WP_UnitTestCase {
         $this->assertNotEmpty( $this->error_notices(), 'Número sem DDD deve ser bloqueado pela validação BR.' );
 
         unset( $_POST['billing_phone'] );
+    }
+
+    public function test_validation_rejects_foreign_country_code_without_lib(): void {
+        $this->ensure_wc_ready();
+
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+        update_option( 'woo_better_calc_contact_required', 'yes' );
+        update_option( 'woo_better_calc_validate_ddd', 'yes' );
+
+        // Pode ser digitado, mas a validação da máscara BR é só brasileira.
+        $_POST['billing_phone'] = '+1 (415) 555-2671';
+
+        $this->plugin()->validate_phone_ddd_classic();
+
+        $this->assertNotEmpty( $this->error_notices(), 'Número de outro país deve ser bloqueado sem a lib.' );
+
+        unset( $_POST['billing_phone'] );
+    }
+
+    public function test_validation_accepts_foreign_number_with_the_lib(): void {
+        $this->ensure_wc_ready();
+
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+        update_option( 'woo_better_calc_contact_required', 'yes' );
+        update_option( 'woo_better_calc_validate_ddd', 'yes' );
+
+        $_POST['billing_phone'] = '+1 (415) 555-2671';
+        $_POST['billing_phone_country'] = '+1';
+
+        $this->plugin()->validate_phone_ddd_classic();
+
+        $this->assertEmpty( $this->error_notices(), 'Com a lib a validação cobre todos os países.' );
+
+        unset( $_POST['billing_phone'], $_POST['billing_phone_country'] );
     }
 
     public function test_validation_respects_the_option(): void {

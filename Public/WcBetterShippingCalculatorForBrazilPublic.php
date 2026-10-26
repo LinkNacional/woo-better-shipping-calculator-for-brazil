@@ -173,6 +173,18 @@ class WcBetterShippingCalculatorForBrazilPublic
     }
 
     /**
+     * A máscara de telefone ativa é apenas a BRASILEIRA (sem lib/DDI)?
+     *
+     * @param string $phone_mode         Comportamento do Campo de Telefone.
+     * @param string $phone_mask_enabled Valor da option "Telefone com Máscara e DDI".
+     * @return bool
+     */
+    public static function phone_mask_is_brazil_only($phone_mode, $phone_mask_enabled)
+    {
+        return 'WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskBrazil' === self::phone_mask_script_for($phone_mode, $phone_mask_enabled);
+    }
+
+    /**
      * Initialize the class and set its properties.
      *
      * @since    1.0.0
@@ -194,6 +206,10 @@ class WcBetterShippingCalculatorForBrazilPublic
      * telefone, tanto no campo próprio do plugin quanto no nativo do WooCommerce,
      * em todos os cenários (blocos, clássico/shortcode e edição de endereço).
      *
+     * Com a máscara BR (sem lib/DDI) o sanitizador NÃO trava espaço/parênteses/
+     * hífen: o cliente pode digitar livremente (inclusive números de outros países).
+     * A restrição fica só no envio, pela validação.
+     *
      * @since    5.0.0
      */
     private function enqueue_phone_sanitizer()
@@ -204,6 +220,19 @@ class WcBetterShippingCalculatorForBrazilPublic
             array(),
             $this->version,
             false
+        );
+
+        wp_localize_script(
+            $this->plugin_name . '-phone-sanitizer',
+            'wc_better_phone_sanitizer_vars',
+            array(
+                // Sem lib/DDI a máscara BR não deve impedir a digitação de
+                // pontuação (o cliente pode estar digitando um número de fora).
+                'allowPunctuation' => self::phone_mask_is_brazil_only(
+                    $this->phone_mode(),
+                    get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'))
+                ) ? 'true' : 'false'
+            )
         );
     }
 

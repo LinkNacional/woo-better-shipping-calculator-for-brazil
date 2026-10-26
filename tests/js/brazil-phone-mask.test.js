@@ -34,6 +34,11 @@ const COMPILED_BRAZIL = path.join(
     ROOT,
     'Public/jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskBrazil.COMPILED.js'
 );
+const SANITIZER = path.join(ROOT, 'Public/js/WcBetterShippingCalculatorForBrazilPublicPhoneSanitizer.js');
+const COMPILED_SANITIZER = path.join(
+    ROOT,
+    'Public/jsCompiled/WcBetterShippingCalculatorForBrazilPublicPhoneSanitizer.COMPILED.js'
+);
 const COMPILED_SHORTCODE = path.join(
     ROOT,
     'Public/jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.js'
@@ -131,13 +136,18 @@ test('[brazil-mask] campo só com o DDI conta como VAZIO (obrigatoriedade)', () 
     assert.strictEqual(mask.brazilPhoneIsEmpty('(85) 98888-8888'), false);
 });
 
-test('[brazil-mask] número internacional explícito (+) não é reformatado nem bloqueado', () => {
-    // O sanitizador permite um "+" inicial; a máscara é só do padrão brasileiro.
+test('[brazil-mask] número internacional explícito (+) pode ser digitado, mas reprova no envio', () => {
+    // A máscara não mexe no número estrangeiro (o cliente pode digitar).
     assert.strictEqual(mask.formatBrazilPhone('+15551234567', 'auto'), '+15551234567');
     assert.strictEqual(mask.formatBrazilPhone('+351912345678', 'auto'), '+351912345678');
-    assert.strictEqual(mask.brazilPhoneInvalid('+15551234567', 'auto'), false);
+    assert.strictEqual(mask.brazilPhoneInvalid('+15551234567', 'auto'), true, 'A validação da máscara BR é só brasileira.');
+    assert.strictEqual(mask.brazilPhoneInvalid('+351912345678', 'auto'), true);
     // O "+55" é o DDI do Brasil: continua visível no campo (ver teste acima).
     assert.strictEqual(mask.formatBrazilPhone('+55', 'auto'), '+55');
+    // E o valor a enviar preserva o DDI estrangeiro (para o backend não prefixar +55).
+    assert.strictEqual(mask.phoneValueForStorage('+1 (415) 555-2671'), '+1 (415) 555-2671');
+    assert.strictEqual(mask.phoneValueForStorage('+55 (85) 98888-8888'), '85988888888');
+    assert.strictEqual(mask.phoneValueForStorage('(85) 98888-8888'), '85988888888');
 });
 
 test('[brazil-mask] validação BR: aceita fixo e celular válidos', () => {
@@ -236,6 +246,35 @@ test('[brazil-mask] bundle com lib: validação sem exigir a máscara e só em c
         /import \{ isRequiredPhoneField, showBrazilPhoneError \} from '\.\/core\/BrazilPhoneMask\.js';/.test(src)
         && /showBrazilPhoneError\(invalidField\)/.test(src),
         'O bundle com lib deve reaproveitar os helpers do núcleo da máscara BR.'
+    );
+});
+
+test('[brazil-mask] sanitizador não trava espaço/parênteses/hífen no modo sem lib', () => {
+    assert.ok(fs.existsSync(SANITIZER), `Arquivo não encontrado: ${SANITIZER}`);
+    const src = fs.readFileSync(SANITIZER, 'utf8');
+
+    assert.ok(
+        /FREE_TYPING = CONFIG\.allowPunctuation/.test(src),
+        'O sanitizador deve ler a flag `allowPunctuation` (máscara BR sem lib).'
+    );
+    assert.ok(
+        /if \(FREE_TYPING\) \{[\s\S]*?ALLOWED_TYPING\.test\(event\.data\)/.test(src),
+        'No modo livre a digitação de pontuação não pode ser travada.'
+    );
+    assert.ok(
+        /ALLOWED_TYPING = \/\[\^0-9\+\\-\(\)\.\/\\s\]\//.test(src),
+        'O conjunto permitido na digitação livre deve ser dígitos + pontuação de telefone.'
+    );
+    // Sem a flag, a regra rígida continua (só dígitos + um "+" inicial).
+    assert.ok(
+        /event\.data !== '\+' \|\| !canInsertLeadingPlus\(field\)/.test(src),
+        'Fora do modo livre o bloqueio rígido de caracteres deve continuar.'
+    );
+
+    assert.ok(fs.existsSync(COMPILED_SANITIZER), `Arquivo não encontrado: ${COMPILED_SANITIZER}`);
+    assert.ok(
+        fs.readFileSync(COMPILED_SANITIZER, 'utf8').indexOf('allowPunctuation') !== -1,
+        'Compilado do sanitizador desatualizado: rode npm run build:public.'
     );
 });
 

@@ -94,6 +94,28 @@ export function brazilPhoneIsEmpty(value) {
 }
 
 /**
+ * Valor a ENVIAR/gravar para um campo com a máscara BR.
+ *
+ * - Número brasileiro (com ou sem o `+55` exibido) → só os DÍGITOS nacionais (o
+ *   backend concatena o `+55`).
+ * - Número de OUTRO país (`+1...`) → devolve o valor como está, para o backend
+ *   não prefixar o `+55` em cima de um DDI estrangeiro.
+ *
+ * @param {*} value Valor cru do campo.
+ * @returns {string}
+ */
+export function phoneValueForStorage(value) {
+    var raw = String(value == null ? '' : value).trim();
+    var digits = onlyDigits(raw);
+
+    if (raw.charAt(0) === '+' && !hasBrazilDdi(raw, digits)) {
+        return raw;
+    }
+
+    return nationalBrazilDigits(raw);
+}
+
+/**
  * Tipo de máscara de um campo.
  *
  * @param {string} kind 'phone' | 'cellphone'
@@ -200,10 +222,10 @@ export function formatBrazilPhone(value, type) {
 export function brazilPhoneInvalid(value, type) {
     var raw = String(value == null ? '' : value);
 
-    // Número internacional explícito (+<outro DDI>): fora do escopo da regra BR —
-    // quem decide é o backend (libphonenumber). Um `+55` é nacional.
+    // DDI de OUTRO país (`+1...`): a validação da máscara BR é só brasileira, então
+    // reprova no envio (o cliente pode digitar, mas o checkout não aceita).
     if (raw.trim().charAt(0) === '+' && !hasBrazilDdi(raw, onlyDigits(raw))) {
-        return false;
+        return true;
     }
 
     var digits = nationalBrazilDigits(raw);
