@@ -99,7 +99,18 @@ class WcBetterShippingCalculatorForBrazilPublic
      */
     private function phone_field_label()
     {
-        switch ($this->phone_mode()) {
+        return self::phone_field_label_for($this->phone_mode());
+    }
+
+    /**
+     * Label do campo de telefone (principal) para um modo.
+     *
+     * @param string $phone_mode Valor de `woo_better_calc_phone_mode`.
+     * @return string
+     */
+    public static function phone_field_label_for($phone_mode)
+    {
+        switch ($phone_mode) {
             case 'landline_only':
                 return __('Telefone', 'woo-better-shipping-calculator-for-brazil');
             case 'cellphone_only':
@@ -108,6 +119,129 @@ class WcBetterShippingCalculatorForBrazilPublic
                 // "Celular e Fixo": o campo principal aceita os dois tipos.
                 return __('Celular/Telefone', 'woo-better-shipping-calculator-for-brazil');
         }
+    }
+
+    /**
+     * Telefone salvo, DESCARTANDO lixo na hora de SEMEAR o campo.
+     *
+     * O perfil/sessão podem guardar um resíduo antigo com o DDI repetido
+     * (`83988888885555555…` — um build antigo colava o `+55` a cada sync). O E.164
+     * limita o número a 15 dígitos, então algo acima disso não é telefone e não é
+     * exibido no campo (era o que fazia o valor "aparecer do nada").
+     *
+     * Só filtra a EXIBIÇÃO: valores que batem um formato possível passam intactos
+     * (a máscara formata o que der) e NADA é apagado do perfil/sessão — quem recusa
+     * o número inválido é a validação no envio do formulário.
+     *
+     * @param string $value Valor cru (com ou sem formatação).
+     * @return string O valor original quando pode ser um telefone; '' caso contrário.
+     */
+    public static function sanitize_stored_phone($value)
+    {
+        $value = trim((string) $value);
+
+        if ('' === $value) {
+            return '';
+        }
+
+        $digits = preg_replace('/[^0-9]/', '', $value);
+
+        if ('' === $digits || strlen($digits) > 15) {
+            return '';
+        }
+
+        return $value;
+    }
+
+    /**
+     * Valores já salvos dos 4 campos de telefone/celular.
+     *
+     * Logado → PERFIL (user meta) é a fonte da verdade; visitante → sessão. Não se
+     * mistura os dois: usar a sessão como fallback do perfil fazia um telefone
+     * APAGADO do perfil "voltar" no checkout (a sessão guardava o valor velho). Como
+     * o sync do campo já grava no perfil (`persist_phone_values`), nada se perde.
+     *
+     * Os dois passam pelo `sanitize_stored_phone`, para um resíduo inválido não ser
+     * semeado no campo.
+     *
+     * @return array
+     */
+    public function saved_phone_values()
+    {
+        $values = array(
+            'billing_phone'      => '',
+            'shipping_phone'     => '',
+            'billing_cellphone'  => '',
+            'shipping_cellphone' => '',
+        );
+
+        $source = null;
+
+        if (is_user_logged_in()) {
+            $user_id = get_current_user_id();
+            $source  = function ($key) use ($user_id) {
+                return get_user_meta($user_id, $key, true);
+            };
+        } elseif (function_exists('WC') && WC()->session) {
+            $source = function ($key) {
+                return WC()->session->get($key, '');
+            };
+        }
+
+        if (! $source) {
+            return $values;
+        }
+
+        foreach (array_keys($values) as $key) {
+            $values[$key] = self::sanitize_stored_phone($source($key));
+        }
+
+        return $values;
+    }
+
+    /**
+     * Payload `WooBetterPhoneFieldsData` dos campos de telefone/celular dos BLOCOS.
+     *
+     * Separado do enfileiramento para ser testável sem renderizar o checkout (o
+     * enfileiramento só roda com o bloco `woocommerce/checkout` na página).
+     *
+     * @param array $values Valores já resolvidos (sessão/perfil) por campo:
+     *                      billing_phone, shipping_phone, billing_cellphone,
+     *                      shipping_cellphone.
+     * @return array
+     */
+    public function phone_fields_config(array $values = array())
+    {
+        $phone_mode         = $this->phone_mode();
+        $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
+
+        return array(
+            'mode'              => $phone_mode,
+            'namespace'         => \Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazil::CELLPHONE_EXTENSION_NAMESPACE,
+            'phoneNamespace'    => \Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazil::PHONE_EXTENSION_NAMESPACE,
+            'cellphoneNamespace' => \Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazil::CELLPHONE_EXTENSION_NAMESPACE,
+            'phoneLabel'        => self::phone_field_label_for($phone_mode),
+            'cellphoneLabel'    => __('Celular', 'woo-better-shipping-calculator-for-brazil'),
+            // Sufixo das labels de campo NÃO obrigatório. Usa o domínio do
+            // WooCommerce de propósito: é o MESMO texto que os campos nativos exibem
+            // (`sprintf('%s (optional)')` nos blocos), já traduzido no pt_BR.
+            'optionalLabel'     => sprintf(' (%s)', __('optional', 'woocommerce')),
+            'maskEnabled'       => $phone_mask_enabled === 'yes' ? 'true' : 'false',
+            // Nos modos "Desabilitar" o telefone é do WooCommerce (sem máscara nossa).
+            // Mesma regra do enfileiramento (`phone_mask_script_for`).
+            'managesPhone'      => self::phone_mode_is_managed($phone_mode) ? 'true' : 'false',
+            'showCountryCode'   => get_option('woo_better_calc_show_phone_country_code', 'no') === 'yes' ? 'true' : 'false',
+            'validateDdd'       => get_option('woo_better_calc_validate_ddd', 'yes') === 'yes' ? 'true' : 'false',
+            'required'          => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false',
+            'cellphoneRequired' => get_option('woo_better_calc_cellphone_required', 'no') === 'yes' ? 'true' : 'false',
+            'enableCellphone'   => get_option('woo_better_calc_enable_cellphone_field', 'no') === 'yes' ? 'true' : 'false',
+            'enableCellphoneShim' => get_option('woo_better_calc_enable_cellphone_shim', 'no') === 'yes' ? 'true' : 'false',
+            'highlight'         => get_option('woo_better_calc_contact_field_position', 'no') === 'yes' ? 'true' : 'false',
+            'billing_phone'     => isset($values['billing_phone']) ? $values['billing_phone'] : '',
+            'shipping_phone'    => isset($values['shipping_phone']) ? $values['shipping_phone'] : '',
+            'billing_cellphone' => isset($values['billing_cellphone']) ? $values['billing_cellphone'] : '',
+            'shipping_cellphone' => isset($values['shipping_cellphone']) ? $values['shipping_cellphone'] : '',
+        );
     }
 
     /**
@@ -474,6 +608,25 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
         }
+
+        // Tela de pedido (recebido / "ver pedido"): bloco "Informações adicionais".
+        //
+        // O bloco reaproveita as classes canônicas do WooCommerce, então herda a barra
+        // do título e as margens do tema; só a CAIXA do conteúdo é nossa (no core ela
+        // pertence ao `table.shop_table`/`address`) — daí esta folha de estilos, que
+        // só é carregada onde o bloco aparece.
+        if (
+            (function_exists('is_order_received_page') && is_order_received_page())
+            || (function_exists('is_view_order_page') && is_view_order_page())
+        ) {
+            wp_enqueue_style(
+                $this->plugin_name . '-order-details',
+                plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilOrderDetails.COMPILED.css',
+                array(),
+                $this->version,
+                'all'
+            );
+        }
     }
 
     /**
@@ -828,48 +981,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             // Celular" (enable_cellphone_field) pode adicionar um "Celular" SEPARADO
             // (mantendo o telefone nativo) — por isso também entramos aqui nesse caso.
             if ( 'disabled' !== $this->phone_mode() || get_option('woo_better_calc_enable_cellphone_field', 'no') === 'yes' ) {
-                $billing_phone      = '';
-                $shipping_phone     = '';
-                $billing_cellphone  = '';
-                $shipping_cellphone = '';
-
-                if (function_exists('WC') && WC()->session) {
-                    if (is_user_logged_in()) {
-                        $user_id            = get_current_user_id();
-                        $billing_phone      = get_user_meta($user_id, 'billing_phone', true);
-                        $shipping_phone     = get_user_meta($user_id, 'shipping_phone', true);
-                        $billing_cellphone  = get_user_meta($user_id, 'billing_cellphone', true);
-                        $shipping_cellphone = get_user_meta($user_id, 'shipping_cellphone', true);
-                    }
-                    if (empty($billing_phone)) { $billing_phone = WC()->session->get('billing_phone', ''); }
-                    if (empty($shipping_phone)) { $shipping_phone = WC()->session->get('shipping_phone', ''); }
-                    if (empty($billing_cellphone)) { $billing_cellphone = WC()->session->get('billing_cellphone', ''); }
-                    if (empty($shipping_cellphone)) { $shipping_cellphone = WC()->session->get('shipping_cellphone', ''); }
-                }
-
-                $phone_fields_config = array(
-                    'mode'              => $this->phone_mode(),
-                    'namespace'         => \Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazil::CELLPHONE_EXTENSION_NAMESPACE,
-                    'phoneNamespace'    => \Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazil::PHONE_EXTENSION_NAMESPACE,
-                    'cellphoneNamespace' => \Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazil::CELLPHONE_EXTENSION_NAMESPACE,
-                    'phoneLabel'        => $this->phone_field_label(),
-                    'cellphoneLabel'    => __('Celular', 'woo-better-shipping-calculator-for-brazil'),
-                    'maskEnabled'       => $phone_mask_enabled === 'yes' ? 'true' : 'false',
-                    // Nos modos "Desabilitar" o telefone é do WooCommerce (sem máscara
-                    // nossa). Mesma regra do enfileiramento (`phone_mask_script_for`).
-                    'managesPhone'      => self::phone_mode_is_managed($this->phone_mode()) ? 'true' : 'false',
-                    'showCountryCode'   => get_option('woo_better_calc_show_phone_country_code', 'no') === 'yes' ? 'true' : 'false',
-                    'validateDdd'       => get_option('woo_better_calc_validate_ddd', 'yes') === 'yes' ? 'true' : 'false',
-                    'required'          => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false',
-                    'cellphoneRequired' => get_option('woo_better_calc_cellphone_required', 'no') === 'yes' ? 'true' : 'false',
-                    'enableCellphone'   => get_option('woo_better_calc_enable_cellphone_field', 'no') === 'yes' ? 'true' : 'false',
-                    'enableCellphoneShim' => get_option('woo_better_calc_enable_cellphone_shim', 'no') === 'yes' ? 'true' : 'false',
-                    'highlight'         => $phone_highlight === 'yes' ? 'true' : 'false',
-                    'billing_phone'     => $billing_phone,
-                    'shipping_phone'    => $shipping_phone,
-                    'billing_cellphone' => $billing_cellphone,
-                    'shipping_cellphone' => $shipping_cellphone
-                );
+                $phone_fields_config = $this->phone_fields_config($this->saved_phone_values());
 
                 // Um script por campo, conforme o modo.
                 $phone_field_scripts = array();

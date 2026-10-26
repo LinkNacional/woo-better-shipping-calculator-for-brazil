@@ -150,6 +150,23 @@ test('[brazil-mask] número internacional explícito (+) pode ser digitado, mas 
     assert.strictEqual(mask.phoneValueForStorage('(85) 98888-8888'), '85988888888');
 });
 
+test('[brazil-mask] celular SECUNDÁRIO grava o valor digitado (só sem os caracteres especiais)', () => {
+    // O campo secundário NÃO recebe DDI do backend: o valor gravado é o digitado,
+    // sem pontuação. O "+55" digitado é MANTIDO (não vira dígitos nacionais).
+    assert.strictEqual(mask.phoneValueVerbatim('+55 (83) 98888-8885'), '+5583988888885');
+    assert.strictEqual(mask.phoneValueVerbatim('+5583988888885'), '+5583988888885');
+    assert.strictEqual(mask.phoneValueVerbatim('+55 83 98888 8885'), '+5583988888885');
+    // Sem DDI digitado, NADA é somado — só a pontuação sai.
+    assert.strictEqual(mask.phoneValueVerbatim('(83) 98888-8885'), '83988888885');
+    assert.strictEqual(mask.phoneValueVerbatim('83 98888 8885'), '83988888885');
+    // Um "+" que não é o do DDI também é preservado (número de outro país digitado).
+    assert.strictEqual(mask.phoneValueVerbatim('+1 (415) 555-2671'), '+14155552671');
+    // Vazio/parcial não vira "+".
+    assert.strictEqual(mask.phoneValueVerbatim(''), '');
+    assert.strictEqual(mask.phoneValueVerbatim(null), '');
+    assert.strictEqual(mask.phoneValueVerbatim('  '), '');
+});
+
 test('[brazil-mask] validação BR: aceita fixo e celular válidos', () => {
     assert.strictEqual(mask.brazilPhoneInvalid('(85) 98888-8888', 'auto'), false);
     assert.strictEqual(mask.brazilPhoneInvalid('(85) 3232-3232', 'auto'), false);
@@ -224,6 +241,30 @@ test('[brazil-mask] blocos: sem a lib, o campo recebe a máscara BR (e a valida�
     assert.ok(
         /if \(!spec\.secondary \|\| !truthy\(cfgValue\('maskEnabled'\)\)\)/.test(src),
         'O "Celular" secundário deve receber a máscara BR quando a lib está desligada.'
+    );
+});
+
+test('[brazil-mask] blocks: label mostra "(opcional)" nos campos não obrigatórios', () => {
+    assert.ok(fs.existsSync(BLOCKS_CORE), `Arquivo não encontrado: ${BLOCKS_CORE}`);
+    const src = fs.readFileSync(BLOCKS_CORE, 'utf8');
+
+    // Mesma regra do WooCommerce blocks (`sprintf('%s (optional)')`) — o texto vem do
+    // PHP no domínio do WooCommerce, que já traz "opcional" traduzido.
+    assert.ok(
+        /function optionalSuffix\(\) \{[\s\S]*?cfgValue\('optionalLabel'\)/.test(src),
+        'O sufixo "(opcional)" deve vir da config (`optionalLabel`).'
+    );
+    assert.ok(
+        /function displayLabel\(spec\) \{\s*return spec\.required \? spec\.label : \(spec\.label \+ optionalSuffix\(\)\);/.test(src),
+        'Label obrigatória = nome; opcional = nome + "(opcional)".'
+    );
+    assert.ok(
+        /label\.textContent = displayLabel\(spec\);/.test(src),
+        'A label criada em buildField deve usar displayLabel().'
+    );
+    assert.ok(
+        /refreshFieldLabel\(input, spec\);/.test(src) && /function refreshFieldLabel\(input, spec\)/.test(src),
+        'A label deve ser redesenhada quando a obrigatoriedade muda.'
     );
 });
 
@@ -337,8 +378,9 @@ test('[brazil-mask] admin: "Validar Número de Telefone" funciona sem a lib (esc
     assert.ok(fs.existsSync(ADMIN_BEHAVIORS), `Arquivo não encontrado: ${ADMIN_BEHAVIORS}`);
     const src = fs.readFileSync(ADMIN_BEHAVIORS, 'utf8');
 
-    // O card é ESCOLHA do lojista: não depende da máscara/DDI nem da obrigatoriedade
-    // do contato — só dos modos em que o plugin não gerencia o telefone.
+    // O card é CAMADA sobre o "Telefone (Contato) Obrigatório": só destrava quando o
+    // contato é obrigatório (a validação só age em campo obrigatório) e o plugin
+    // gerencia o telefone. Não depende da máscara/DDI.
     assert.ok(
         /function updateValidateDddState\(\) \{[\s\S]*?const on = modeOk;/.test(src),
         'A validação deve ficar livre (sem exigir máscara/DDI nem telefone obrigatório).'
