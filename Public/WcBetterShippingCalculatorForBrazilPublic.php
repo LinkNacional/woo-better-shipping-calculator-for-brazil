@@ -149,6 +149,22 @@ class WcBetterShippingCalculatorForBrazilPublic
     }
 
     /**
+     * O plugin GERENCIA o telefone nesse modo?
+     *
+     * Espelha `WcBetterShippingCalculatorForBrazil::phone_mode_hides_native_option()`
+     * (privado no Includes) sem depender dele: os modos "Desabilitar" — "Deixar a
+     * configuração nativa do WooCommerce" (`disabled`) e "Desabilitar o campo de
+     * telefone" (`disabled_native`) — deixam o telefone com o WooCommerce.
+     *
+     * @param string $phone_mode Valor de `woo_better_calc_phone_mode`.
+     * @return bool
+     */
+    public static function phone_mode_is_managed($phone_mode)
+    {
+        return ! in_array($phone_mode, array('disabled', 'disabled_native'), true);
+    }
+
+    /**
      * Bundle da MÁSCARA de telefone a enfileirar (checkout clássico e edit-address).
      *
      * - Nos dois modos "Desabilitar" o plugin não gerencia o telefone: nada a fazer.
@@ -163,7 +179,7 @@ class WcBetterShippingCalculatorForBrazilPublic
      */
     public static function phone_mask_script_for($phone_mode, $phone_mask_enabled)
     {
-        if (in_array($phone_mode, array('disabled', 'disabled_native'), true)) {
+        if (! self::phone_mode_is_managed($phone_mode)) {
             return '';
         }
 
@@ -839,9 +855,9 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'phoneLabel'        => $this->phone_field_label(),
                     'cellphoneLabel'    => __('Celular', 'woo-better-shipping-calculator-for-brazil'),
                     'maskEnabled'       => $phone_mask_enabled === 'yes' ? 'true' : 'false',
-                    // Espelha `phone_mode_hides_native_option()`: nos modos
-                    // "Desabilitar" o telefone é do WooCommerce (sem máscara nossa).
-                    'managesPhone'      => $this->phone_mode_hides_native_option() ? 'true' : 'false',
+                    // Nos modos "Desabilitar" o telefone é do WooCommerce (sem máscara
+                    // nossa). Mesma regra do enfileiramento (`phone_mask_script_for`).
+                    'managesPhone'      => self::phone_mode_is_managed($this->phone_mode()) ? 'true' : 'false',
                     'showCountryCode'   => get_option('woo_better_calc_show_phone_country_code', 'no') === 'yes' ? 'true' : 'false',
                     'validateDdd'       => get_option('woo_better_calc_validate_ddd', 'yes') === 'yes' ? 'true' : 'false',
                     'required'          => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false',
