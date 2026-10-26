@@ -81,6 +81,19 @@ export function nationalBrazilDigits(value) {
 }
 
 /**
+ * O campo está VAZIO para efeito de obrigatoriedade?
+ *
+ * Um valor com apenas o DDI (`+55`) não é um telefone preenchido — sem esta regra
+ * o "só +55" passaria na validação de campo obrigatório.
+ *
+ * @param {*} value Valor cru do campo.
+ * @returns {boolean}
+ */
+export function brazilPhoneIsEmpty(value) {
+    return nationalBrazilDigits(value) === '';
+}
+
+/**
  * Tipo de máscara de um campo.
  *
  * @param {string} kind 'phone' | 'cellphone'
@@ -99,24 +112,17 @@ export function brazilMaskType(kind, mode) {
     return 'auto';
 }
 
+/** Prefixo do DDI brasileiro exibido no campo (sem a bandeira/seletor de país). */
+var BR_DDI_PREFIX = '+55 ';
+
 /**
- * Formata os dígitos de um telefone brasileiro.
+ * Aplica a máscara brasileira nos dígitos NACIONAIS (sem DDI).
  *
- * @param {*}      value Valor cru (formatado ou não).
- * @param {string} type  'auto' | 'mobile' | 'landline'
+ * @param {string} digits Dígitos do número nacional.
+ * @param {string} type   'auto' | 'mobile' | 'landline'
  * @returns {string}
  */
-export function formatBrazilPhone(value, type) {
-    var raw = String(value == null ? '' : value);
-
-    // Número internacional EXPLÍCITO (o sanitizador permite um "+" inicial): não
-    // mexe — a máscara é só do padrão brasileiro. `+55` continua sendo tratado como
-    // número nacional (o DDI do Brasil).
-    if (raw.trim().charAt(0) === '+' && !hasBrazilDdi(raw, onlyDigits(raw))) {
-        return raw;
-    }
-
-    var digits = nationalBrazilDigits(raw);
+function formatNationalBrazilDigits(digits, type) {
     var max = (type === 'landline') ? BR_LANDLINE_DIGITS : BR_MAX_DIGITS;
 
     if (digits.length === 0) {
@@ -146,6 +152,39 @@ export function formatBrazilPhone(value, type) {
     }
 
     return '(' + ddd + ') ' + body;
+}
+
+/**
+ * Formata os dígitos de um telefone brasileiro.
+ *
+ * Quando o valor traz o DDI do Brasil (o cliente digitou `+55` ou o número já está
+ * salvo em E.164), o campo MOSTRA esse `+55` antes do número — nesse modo não há
+ * bandeira nem seletor de país indicando o DDI, então o prefixo é a única pista.
+ * O prefixo é só de exibição: o valor enviado/gravado continua sendo os dígitos (o
+ * backend concatena o `+55`).
+ *
+ * @param {*}      value Valor cru (formatado ou não).
+ * @param {string} type  'auto' | 'mobile' | 'landline'
+ * @returns {string}
+ */
+export function formatBrazilPhone(value, type) {
+    var raw = String(value == null ? '' : value);
+    var digits = onlyDigits(raw);
+
+    // Número internacional EXPLÍCITO de OUTRO país (o sanitizador permite um "+"
+    // inicial): não mexe — a máscara é só do padrão brasileiro.
+    if (raw.trim().charAt(0) === '+' && !hasBrazilDdi(raw, digits)) {
+        return raw;
+    }
+
+    // DDI do Brasil presente: preserva o "+55" na frente do número formatado.
+    if (hasBrazilDdi(raw, digits)) {
+        var national = formatNationalBrazilDigits(digits.slice(2), type);
+
+        return (national === '') ? BR_DDI_PREFIX.trim() : (BR_DDI_PREFIX + national);
+    }
+
+    return formatNationalBrazilDigits(digits, type);
 }
 
 /**
