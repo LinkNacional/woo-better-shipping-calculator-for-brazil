@@ -128,6 +128,37 @@
 		});
 	}
 
+	// ── 3.2 Campo de Número: o checkbox "S/N" só faz sentido com o campo ligado ──
+	//
+	// "Ocultar Checkbox S/N" é filho (join) do "Campo de Número do Endereço":
+	// sem o campo de número não existe checkbox para ocultar, então a opção fica
+	// travada enquanto o pai está em "Desabilitar". Travamento só VISUAL
+	// (`setDisabledState` → `wcBetterFakeDisabled`), nunca o atributo `disabled`
+	// (AGENTS.md § 7).
+	function initNumberSnState() {
+		var numberRadios = document.querySelectorAll('input[name="woo_better_calc_number_required"]');
+		var hideSnRadios = document.querySelectorAll('input[name="woo_better_calc_number_hide_sn_checkbox"]');
+
+		if (numberRadios.length === 0 || hideSnRadios.length === 0) {
+			return;
+		}
+
+		function isNumberEnabled() {
+			return Array.prototype.some.call(numberRadios, function (radio) {
+				return radio.checked && radio.value === 'yes';
+			});
+		}
+
+		function updateHideSnState() {
+			setDisabledState(hideSnRadios, !isNumberEnabled());
+		}
+
+		updateHideSnState();
+		numberRadios.forEach(function (radio) {
+			radio.addEventListener('change', updateHideSnState);
+		});
+	}
+
 	// ── 3. Estados de dependência ──────────────────────────────────────────
 	function initDependencies() {
 		var positionRadios = document.querySelectorAll('input[name="woo_better_calc_cep_field_position"]');
@@ -389,6 +420,7 @@
 
 		initDependencies();
 		initRgFieldState();
+		initNumberSnState();
 	}
 
 	if (document.readyState === 'loading') {

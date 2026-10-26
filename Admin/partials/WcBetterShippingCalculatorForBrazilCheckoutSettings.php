@@ -112,6 +112,27 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Adiciona o campo de Número, posicionado logo após o campo principal do endereço (Rua).', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+                // FILHO do "Campo de Número do Endereço": sem o campo de número não há
+                // checkbox para ocultar, então a opção fica travada (join) e é forçada
+                // a "Desabilitar" nesse caso.
+                'hide_number_sn_checkbox' => array(
+                    'title'    => __('Ocultar Checkbox "S/N"', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_number_hide_sn_checkbox',
+                    'join'     => 'woo_better_calc_number_required',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-subtitle' => __('Remover o checkbox "S/N" do campo de Número', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Remove o atalho "S/N" (Sem Número) que fica dentro do campo de Número.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Quando habilitada, o checkbox "S/N" NÃO é exibido no campo de Número — nem no checkout em blocos, nem no checkout clássico/shortcode, nem na edição de endereço da conta. O cliente continua podendo digitar "S/N" no próprio campo (o campo não fica travado); sem o checkbox, o endereço sem número passa a ser digitado à mão.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Remove o checkbox "S/N" de dentro do campo de Número.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
 
                 // Bloco: Documentos e Pessoa
                 'title_documentos' => array(

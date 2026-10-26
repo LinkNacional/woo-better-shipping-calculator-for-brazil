@@ -245,6 +245,23 @@ class WcBetterShippingCalculatorForBrazilPublic
     }
 
     /**
+     * A opção "Ocultar Checkbox S/N" está ligada?
+     *
+     * Ela é FILHA do "Campo de Número do Endereço" (`woo_better_calc_number_required`)
+     * e vale para TODAS as superfícies do campo de Número: checkout em blocos,
+     * checkout clássico/shortcode e edição de endereço da conta. Quando ligada, o
+     * atalho "S/N" não é criado — e, como sem o checkbox o cliente não teria como
+     * destravar o campo, o travamento automático do valor "S/N" também é desligado
+     * no JS (ver `Public/js/...GutenbergNumberField.js`/`...ShortNumberField.js`).
+     *
+     * @return bool
+     */
+    public static function number_hide_sn_checkbox()
+    {
+        return 'yes' === get_option('woo_better_calc_number_hide_sn_checkbox', 'no');
+    }
+
+    /**
      * Modo do "Comportamento do Campo de Telefone" (woo_better_calc_phone_mode).
      *
      * @return string
@@ -799,7 +816,10 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'WooBetterNumberData',
                     array(
                         'billing_number' => $billing_number,
-                        'shipping_number' => $shipping_number
+                        'shipping_number' => $shipping_number,
+                        // Opção "Ocultar Checkbox S/N": o JS não cria o atalho
+                        // (nem trava o campo quando o valor salvo é "S/N").
+                        'hideSnCheckbox' => self::number_hide_sn_checkbox() ? 'true' : 'false'
                     )
                 );
             }
@@ -1630,7 +1650,10 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'wc_better_checkout_shortcode_number_vars',
                     array(
                         'billing_number' => $billing_number,
-                        'shipping_number' => $shipping_number
+                        'shipping_number' => $shipping_number,
+                        // Opção "Ocultar Checkbox S/N": não injeta o atalho e não
+                        // trava o campo quando o valor salvo é "S/N".
+                        'hideSnCheckbox' => self::number_hide_sn_checkbox() ? 'true' : 'false'
                     )
                 );
             }
@@ -1966,7 +1989,10 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'wc_better_checkout_shortcode_number_vars',
                     array(
                         'billing_number' => $billing_number,
-                        'shipping_number' => $shipping_number
+                        'shipping_number' => $shipping_number,
+                        // Opção "Ocultar Checkbox S/N": não injeta o atalho e não
+                        // trava o campo quando o valor salvo é "S/N".
+                        'hideSnCheckbox' => self::number_hide_sn_checkbox() ? 'true' : 'false'
                     )
                 );
             }
