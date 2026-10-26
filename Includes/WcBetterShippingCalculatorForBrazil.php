@@ -2291,7 +2291,8 @@ class WcBetterShippingCalculatorForBrazil
      * Mantém apenas dígitos e um "+" inicial, prefixando o DDI quando houver.
      * O número fica "tudo junto" (+DDInúmero), sem espaços, parênteses, hífens ou
      * outros caracteres especiais. Atua no campo nativo `billing_phone`/
-     * `shipping_phone` e na meta `_<type>_cellphone`. Só roda com a máscara ativa.
+     * `shipping_phone` e na meta `_<type>_cellphone`. Roda com a máscara/DDI ativa e
+     * também com a MÁSCARA BRASILEIRA sem lib (nesse caso o DDI é sempre `+55`).
      *
      * @param WC_Order $order
      * @param string   $type         'billing' | 'shipping'
@@ -2301,15 +2302,23 @@ class WcBetterShippingCalculatorForBrazil
     private function normalize_order_phone($order, $type, $country_code)
     {
         $mask_active       = $this->is_phone_mask_active();
+        $brazil_mask       = $this->is_phone_brazil_mask_active();
         $stores_cellphone  = $this->phone_mode_stores_cellphone();
 
-        if (! $mask_active && ! $stores_cellphone) {
+        if (! $mask_active && ! $brazil_mask && ! $stores_cellphone) {
             return;
         }
 
-        // Telefone NATIVO -> E.164 — só quando o plugin GERENCIA o telefone
-        // (máscara/DDI ativa; no modo "Desabilitar" não tocamos no nativo).
-        if ($mask_active) {
+        // Máscara BR (sem DDI): o campo não tem seletor de país, então o DDI é
+        // sempre o do Brasil — concatena o `+55` mesmo quando nada foi postado.
+        if ($brazil_mask && '' === trim((string) $country_code)) {
+            $country_code = '+55';
+        }
+
+        // Telefone NATIVO -> E.164 — quando o plugin GERENCIA o telefone
+        // (máscara/DDI ativa E também na máscara BR sem lib; no modo "Desabilitar"
+        // não tocamos no nativo).
+        if ($mask_active || $brazil_mask) {
             $phone = ($type === 'shipping') ? $order->get_shipping_phone() : $order->get_billing_phone();
             if (! empty($phone)) {
                 $normalized = $this->format_complete_phone($phone, $country_code);
@@ -2415,8 +2424,11 @@ class WcBetterShippingCalculatorForBrazil
     public function sync_customer_phone_on_classic_checkout($customer, $data)
     {
         // Só normaliza quando o plugin GERENCIA e NORMALIZA o telefone nativo — a MESMA
-        // regra de `normalize_order_phone` (evita divergir do valor gravado no pedido).
-        if (! $this->is_phone_mask_active() || ! $customer instanceof \WC_Customer) {
+        // regra de `normalize_order_phone` (evita divergir do valor gravado no pedido:
+        // máscara/DDI ativa OU máscara BR sem lib).
+        $brazil_mask = $this->is_phone_brazil_mask_active();
+
+        if ((! $this->is_phone_mask_active() && ! $brazil_mask) || ! $customer instanceof \WC_Customer) {
             return;
         }
         if (! is_array($data)) {
@@ -2429,6 +2441,10 @@ class WcBetterShippingCalculatorForBrazil
                 continue;
             }
             $cc = isset($data["{$type}_phone_country"]) ? (string) $data["{$type}_phone_country"] : '';
+            // Máscara BR (sem DDI): o país é sempre o Brasil.
+            if ('' === $cc && $brazil_mask) {
+                $cc = '+55';
+            }
             $customer->{"set_{$type}_phone"}($this->format_complete_phone($phone, $cc));
         }
     }
@@ -3578,7 +3594,9 @@ class WcBetterShippingCalculatorForBrazil
      * Valida o número de telefone no checkout clássico (shortcode).
      *
      * Aplica somente quando a opção "Validar Número de Telefone" está habilitada.
-     * No checkout em blocos a validação é feita no cliente (intl-tel-input).
+     * Com a máscara/DDI a validação usa o DDI informado (todos os países); sem ela
+     * (máscara BR), o número é sempre nacional — valida apenas o Brasil. No checkout
+     * em blocos a validação é feita no cliente.
      *
      * @return void
      */
@@ -3591,12 +3609,16 @@ class WcBetterShippingCalculatorForBrazil
 
         $validate_enabled = get_option('woo_better_calc_validate_ddd', 'yes');
 
-        if ($validate_enabled !== 'yes' || ! $this->is_phone_mask_active()) {
+        // A validação vale com a lib/DDI E também sem ela (máscara BR): nesse caso o
+        // número é sempre nacional, então a validação é a do Brasil (DDI +55).
+        if ($validate_enabled !== 'yes') {
             return;
         }
 
+        $default_country = $this->is_phone_brazil_mask_active() ? '+55' : '';
+
         $billing_phone = isset($_POST['billing_phone']) ? sanitize_text_field(wp_unslash($_POST['billing_phone'])) : '';
-        $billing_country = isset($_POST['billing_phone_country']) ? sanitize_text_field(wp_unslash($_POST['billing_phone_country'])) : '';
+        $billing_country = ! empty($_POST['billing_phone_country']) ? sanitize_text_field(wp_unslash($_POST['billing_phone_country'])) : $default_country;
 
         // Só valida (tipo/DDD) quando o campo é OBRIGATÓRIO. Campo opcional não é
         // validado, mesmo preenchido.
@@ -3624,7 +3646,7 @@ class WcBetterShippingCalculatorForBrazil
         $ship_to_different = isset($_POST['ship_to_different_address']) ? sanitize_text_field(wp_unslash($_POST['ship_to_different_address'])) : '';
         if ($ship_to_different) {
             $shipping_phone = isset($_POST['shipping_phone']) ? sanitize_text_field(wp_unslash($_POST['shipping_phone'])) : '';
-            $shipping_country = isset($_POST['shipping_phone_country']) ? sanitize_text_field(wp_unslash($_POST['shipping_phone_country'])) : '';
+            $shipping_country = ! empty($_POST['shipping_phone_country']) ? sanitize_text_field(wp_unslash($_POST['shipping_phone_country'])) : $default_country;
 
             if ($phone_required && '' !== trim($shipping_phone) && null !== $this->phone_validation_error($shipping_phone, $shipping_country, $billing_kind)) {
                 wc_add_notice(__('Número de telefone de entrega inválido.', 'woo-better-shipping-calculator-for-brazil'), 'error');
@@ -3889,6 +3911,13 @@ class WcBetterShippingCalculatorForBrazil
         $this->normalize_order_phone($order, 'billing', $billing_country_code);
         $this->normalize_order_phone($order, 'shipping', $shipping_country_code);
 
+        // Máscara BR (sem DDI): o país do telefone é sempre o Brasil — registra o
+        // `+55` no pedido para a exibição (recibo/admin) continuar montando o E.164.
+        if ($this->is_phone_brazil_mask_active()) {
+            $billing_country_code  = $billing_country_code ? $billing_country_code : '+55';
+            $shipping_country_code = $shipping_country_code ? $shipping_country_code : '+55';
+        }
+
         // Reafirma o telefone do PERFIL do usuário com o valor normalizado do pedido
         // (o WC core, no checkout, salva o customer a partir do campo nativo cru).
         $this->sync_customer_phone_from_order($order);
@@ -4059,6 +4088,24 @@ class WcBetterShippingCalculatorForBrazil
     private function is_phone_mask_active() {
         return $this->phone_mode_hides_native_option()
             && get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no')) === 'yes';
+    }
+
+    /**
+     * Indica se o telefone usa a MÁSCARA BRASILEIRA sem a lib/DDI.
+     *
+     * É o cenário da opção "Telefone com Máscara e DDI" DESLIGADA com o plugin
+     * ainda GERENCIANDO o telefone (qualquer modo exceto os dois "Desabilitar"): o
+     * front formata apenas o padrão brasileiro (fixo/celular, com autodetecção) e
+     * NÃO há seletor de país — o DDI é sempre o do Brasil (+55).
+     *
+     * Como o número é sempre nacional, o backend continua concatenando o `+55` e
+     * normalizando o telefone do pedido em E.164 (`normalize_order_phone`).
+     *
+     * @return bool
+     */
+    private function is_phone_brazil_mask_active()
+    {
+        return $this->phone_mode_hides_native_option() && ! $this->is_phone_mask_active();
     }
 
     /**
@@ -4463,6 +4510,13 @@ class WcBetterShippingCalculatorForBrazil
         // sem caracteres especiais), concatenando o DDI ao número.
         $this->normalize_order_phone($order, 'billing', $billing_country_code);
         $this->normalize_order_phone($order, 'shipping', $shipping_country_code);
+
+        // Máscara BR (sem DDI): o país do telefone é sempre o Brasil — registra o
+        // `+55` no pedido para a exibição (recibo/admin) continuar montando o E.164.
+        if ($this->is_phone_brazil_mask_active()) {
+            $billing_country_code  = $billing_country_code ? $billing_country_code : '+55';
+            $shipping_country_code = $shipping_country_code ? $shipping_country_code : '+55';
+        }
 
         // Reafirma o telefone do PERFIL do usuário com o valor normalizado do pedido
         // (o WC core, no Store API, salva o customer a partir do campo nativo cru).

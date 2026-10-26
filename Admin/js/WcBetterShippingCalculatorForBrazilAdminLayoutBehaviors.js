@@ -196,15 +196,67 @@
 			}
 		}
 
-		// "Validar Número de Telefone": só faz sentido com máscara on, contato obrigatório
-		// e o modo de telefone diferente de "Desabilitar".
+		// Textos do card "Validar Número de Telefone": o ESCOPO da validação muda com a
+		// opção "Telefone com Máscara e DDI". Ligada, a validação usa a base
+		// internacional (todos os países); desligada, o campo tem apenas a máscara
+		// brasileira e a validação vale só para o Brasil.
+		var VALIDATE_DDD_TEXTS = {
+			mask: {
+				title: 'Validar o número de telefone no checkout (todos os países)',
+				sub: 'Valida o número de telefone no checkout em todos os países.',
+				body: 'Requer que o telefone/celular seja obrigatório. Com a opção "Telefone com Máscara e DDI" habilitada, a validação usa a base internacional de telefonia (vale para todos os países). Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.'
+			},
+			brazil: {
+				title: 'Validar o número de telefone no checkout (Brasil)',
+				sub: 'Valida o número de telefone no checkout apenas para o Brasil.',
+				body: 'Requer que o telefone/celular seja obrigatório. Sem a opção "Telefone com Máscara e DDI", o campo usa a máscara brasileira (fixo/celular) e a validação vale apenas para números do Brasil (DDD válido + 8 dígitos para fixo ou 9 para celular). Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.'
+			}
+		};
+
+		/**
+		 * Troca título/subtítulo/descrição do card "Validar Número de Telefone"
+		 * conforme o escopo da validação (com ou sem lib/DDI).
+		 *
+		 * @return {void}
+		 */
+		function updateValidateDddTexts() {
+			if (!validateDddRadios.length) {
+				return;
+			}
+
+			var wrapper = validateDddRadios[0].closest('.admin-layout-field-component-bg')
+				|| validateDddRadios[0].closest('.forminp');
+
+			if (!wrapper) {
+				return;
+			}
+
+			var texts = isYes(applyPhoneMaskRadios) ? VALIDATE_DDD_TEXTS.mask : VALIDATE_DDD_TEXTS.brazil;
+			var title = wrapper.querySelector('.admin-layout-label-text');
+			var sub = wrapper.querySelector('.admin-layout-block-sub-title');
+			var body = wrapper.querySelector('.admin-layout-field-body-description');
+
+			if (title) {
+				title.textContent = texts.title;
+			}
+			if (sub) {
+				sub.textContent = texts.sub;
+			}
+			if (body) {
+				body.textContent = texts.body;
+			}
+		}
+
+		// "Validar Número de Telefone": só depende do contato/celular obrigatório e do
+		// modo de telefone. NÃO depende mais da máscara/DDI — sem ela o plugin valida
+		// apenas números do Brasil (validação customizada, sem lib).
 		function updateValidateDddState() {
-			var maskOn = isYes(applyPhoneMaskRadios);
 			var cellphoneOn = isYes(enableCellphoneRadios);
 			var requiredOn = isYes(contactRequiredRadios) || (cellphoneOn && isYes(cellphoneRequiredRadios));
-			var on = maskOn && requiredOn && !isUnmanagedMode();
+			var on = requiredOn && !isUnmanagedMode();
 
 			setDisabledState(validateDddRadios, !on);
+			updateValidateDddTexts();
 		}
 
 		// "Celular Obrigatório" só fica ativo quando o "Campo de Celular" está habilitado

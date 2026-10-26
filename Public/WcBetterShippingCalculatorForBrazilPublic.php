@@ -149,6 +149,30 @@ class WcBetterShippingCalculatorForBrazilPublic
     }
 
     /**
+     * Bundle da MÁSCARA de telefone a enfileirar (checkout clássico e edit-address).
+     *
+     * - Nos dois modos "Desabilitar" o plugin não gerencia o telefone: nada a fazer.
+     * - Com a opção "Telefone com Máscara e DDI" LIGADA usa o bundle com a lib
+     *   (`...CheckoutPhoneMaskShortcode`, intl-tel-input + DDI).
+     * - DESLIGADA usa o bundle LEVE (`...CheckoutPhoneMaskBrazil`), com a máscara
+     *   brasileira (fixo/celular) e sem carregar o intl-tel-input.
+     *
+     * @param string $phone_mode         Comportamento do Campo de Telefone.
+     * @param string $phone_mask_enabled Valor da option "Telefone com Máscara e DDI".
+     * @return string Nome base do bundle (sem sufixo). Vazio = não enfileira.
+     */
+    public static function phone_mask_script_for($phone_mode, $phone_mask_enabled)
+    {
+        if (in_array($phone_mode, array('disabled', 'disabled_native'), true)) {
+            return '';
+        }
+
+        return ('yes' === $phone_mask_enabled)
+            ? 'WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode'
+            : 'WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskBrazil';
+    }
+
+    /**
      * Initialize the class and set its properties.
      *
      * @since    1.0.0
@@ -786,6 +810,9 @@ class WcBetterShippingCalculatorForBrazilPublic
                     'phoneLabel'        => $this->phone_field_label(),
                     'cellphoneLabel'    => __('Celular', 'woo-better-shipping-calculator-for-brazil'),
                     'maskEnabled'       => $phone_mask_enabled === 'yes' ? 'true' : 'false',
+                    // Espelha `phone_mode_hides_native_option()`: nos modos
+                    // "Desabilitar" o telefone é do WooCommerce (sem máscara nossa).
+                    'managesPhone'      => $this->phone_mode_hides_native_option() ? 'true' : 'false',
                     'showCountryCode'   => get_option('woo_better_calc_show_phone_country_code', 'no') === 'yes' ? 'true' : 'false',
                     'validateDdd'       => get_option('woo_better_calc_validate_ddd', 'yes') === 'yes' ? 'true' : 'false',
                     'required'          => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false',
@@ -1340,20 +1367,30 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
 
             // Máscara de telefone no checkout clássico/shortcode. Só quando o
-            // woo-better gerencia o telefone (no modo "Desabilitar" não aplicamos a
-            // máscara no telefone nativo).
-            if ($phone_mask_enabled === 'yes' && $is_checkout_classic && 'disabled' !== $this->phone_mode()) {
-                wp_enqueue_style(
-                    $this->plugin_name . '-checkout-phone-mask-shortcode',
-                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.css',
-                    array(),
-                    $this->version,
-                    'all'
-                );
+            // woo-better gerencia o telefone (nos dois modos "Desabilitar" não há
+            // telefone do plugin para formatar).
+            //
+            // Com "Telefone com Máscara e DDI" DESLIGADA o script continua sendo
+            // necessário — mas usa um bundle LEVE (`...PhoneMaskBrazil`), sem a lib
+            // do intl-tel-input: só a MÁSCARA BRASILEIRA (fixo/celular).
+            $phone_mask_script = self::phone_mask_script_for($this->phone_mode(), $phone_mask_enabled);
+
+            if ($is_checkout_classic && '' !== $phone_mask_script) {
+
+                // O bundle sem lib não tem CSS (nada de bandeira/DDI para estilizar).
+                if ($phone_mask_enabled === 'yes') {
+                    wp_enqueue_style(
+                        $this->plugin_name . '-checkout-phone-mask-shortcode',
+                        plugin_dir_url(__FILE__) . 'cssCompiled/' . $phone_mask_script . '.COMPILED.css',
+                        array(),
+                        $this->version,
+                        'all'
+                    );
+                }
 
                 wp_enqueue_script(
                     $this->plugin_name . '-checkout-phone-mask-shortcode',
-                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.js',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/' . $phone_mask_script . '.COMPILED.js',
                     array('jquery'),
                     $this->version,
                     false
@@ -1671,34 +1708,46 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
-            // Scripts para máscara de telefone (DDI + formatação). Só quando o
-            // woo-better gerencia o telefone (modo "Desabilitar" não aplica máscara).
+            // Scripts para máscara de telefone (DDI + formatação). Sem a option
+            // "Telefone com Máscara e DDI" o script também roda, mas num bundle LEVE
+            // (só a MÁSCARA BRASILEIRA, sem a lib do intl-tel-input). Nos dois modos
+            // "Desabilitar" não há telefone do plugin para formatar.
             $phone_mask_enabled = get_option('woo_better_calc_apply_phone_mask', get_option('woo_better_calc_contact_required', 'no'));
-            
-            if ($phone_mask_enabled === 'yes' && 'disabled' !== $this->phone_mode()) {
+
+            $phone_mask_script = self::phone_mask_script_for($this->phone_mode(), $phone_mask_enabled);
+
+            if ('' !== $phone_mask_script) {
+
                 wp_enqueue_script(
                     $this->plugin_name . '-edit-address-phone-mask',
-                    plugin_dir_url(__FILE__) . 'jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.js',
+                    plugin_dir_url(__FILE__) . 'jsCompiled/' . $phone_mask_script . '.COMPILED.js',
                     array('jquery'),
                     $this->version,
                     false
                 );
                 
-                wp_enqueue_style(
-                    $this->plugin_name . '-edit-address-phone-mask-style',
-                    plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.css',
-                    array(),
-                    $this->version,
-                    'all'
-                );
+                // O bundle sem lib não tem CSS (nada de bandeira/DDI para estilizar).
+                if ($phone_mask_enabled === 'yes') {
+                    wp_enqueue_style(
+                        $this->plugin_name . '-edit-address-phone-mask-style',
+                        plugin_dir_url(__FILE__) . 'cssCompiled/' . $phone_mask_script . '.COMPILED.css',
+                        array(),
+                        $this->version,
+                        'all'
+                    );
+                }
 
                 wp_localize_script(
                     $this->plugin_name . '-edit-address-phone-mask',
                     'wc_better_checkout_phone_mask_vars',
                     array(
-                        'phoneMaskEnabled' => 'true',
+                        'phoneMaskEnabled' => $phone_mask_enabled === 'yes' ? 'true' : 'false',
                         'showCountryCode' => get_option('woo_better_calc_show_phone_country_code', 'no') === 'yes' ? 'true' : 'false',
-                        'validateDdd' => get_option('woo_better_calc_validate_ddd', 'yes') === 'yes' ? 'true' : 'false'
+                        'validateDdd' => get_option('woo_better_calc_validate_ddd', 'yes') === 'yes' ? 'true' : 'false',
+                        'phoneRequired' => get_option('woo_better_calc_contact_required', 'no') === 'yes' ? 'true' : 'false',
+                        // Sem essa opção o script não sabe qual campo recebe a máscara
+                        // (no modo "Somente Celular" é o `*_cellphone`).
+                        'phoneMode' => $this->phone_mode()
                     )
                 );
             }
