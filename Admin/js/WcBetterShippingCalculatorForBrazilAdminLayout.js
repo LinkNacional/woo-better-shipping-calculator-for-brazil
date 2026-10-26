@@ -570,6 +570,10 @@
               'woo_better_calc_enable_cellphone_shim': 'woo_better_calc_phone_mode',
               'woo_better_calc_cellphone_required': 'woo_better_calc_enable_cellphone_field',
               'woo_better_calc_rg_required': 'woo_better_calc_enable_rg_field',
+              // "Ocultar Checkbox S/N" é FILHO do campo de Número: sem ele não há
+              // checkbox para ocultar. Comportamento (travar quando o pai está em
+              // "Desabilitar") fica em `joinPairs` no ...AdminSettings.js.
+              'woo_better_calc_number_hide_sn_checkbox': 'woo_better_calc_number_required',
             };
 
             forminp.innerHTML = ''; // Limpa o conteúdo original

@@ -107,7 +107,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // (ver AGENTS.md § 7). O `checked` continua sem ser reescrito — a opção é
     // preservada e volta como estava quando o pai é reabilitado.
     const joinPairs = [
-        { parent: 'woo_better_calc_enable_rg_field', child: 'woo_better_calc_rg_required' }
+        { parent: 'woo_better_calc_enable_rg_field', child: 'woo_better_calc_rg_required' },
+        // "Ocultar Checkbox S/N" é filho do campo de Número: sem o campo não existe
+        // checkbox para ocultar, então a opção fica travada (só visual).
+        { parent: 'woo_better_calc_number_required', child: 'woo_better_calc_number_hide_sn_checkbox' }
     ];
 
     function applyJoinDependency(pair) {

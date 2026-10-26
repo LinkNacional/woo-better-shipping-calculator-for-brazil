@@ -1,4 +1,10 @@
 document.addEventListener("DOMContentLoaded", function () {
+    // Opção "Ocultar Checkbox S/N": quando ligada, o atalho "S/N" NÃO é criado (nem
+    // no billing nem no shipping) e o valor "S/N" salvo NÃO trava o campo — sem o
+    // checkbox o cliente não teria como destravar, o que viraria um beco sem saída.
+    const numberConfig = (typeof WooBetterNumberData !== 'undefined') ? WooBetterNumberData : {};
+    const hideSnCheckbox = numberConfig.hideSnCheckbox === true || numberConfig.hideSnCheckbox === 'true';
+
     let shippingBlockFound = false
     let billingBlockFound = false
     let submitFound = false
@@ -149,8 +155,11 @@ document.addEventListener("DOMContentLoaded", function () {
                         label.setAttribute('for', 'shipping-number');
                         label.textContent = 'Número';
 
-                        // Overlay S/N dentro do fieldMainWrapper (igual ao campo IE)
-                        input.style.paddingRight = '80px';
+                        // Overlay S/N dentro do fieldMainWrapper (igual ao campo IE).
+                        // Com a opção "Ocultar Checkbox S/N" o atalho não é criado.
+                        if (!hideSnCheckbox) {
+                            input.style.paddingRight = '80px';
+                        }
 
                         const fieldMainWrapper = document.createElement('div');
                         fieldMainWrapper.className = 'wc-better-number-main-wrapper';
@@ -186,7 +195,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         fieldMainWrapper.appendChild(input);
                         fieldMainWrapper.appendChild(label);
-                        fieldMainWrapper.appendChild(snOverlay);
+
+                        // Opção "Ocultar Checkbox S/N": o overlay (e o checkbox) é
+                        // montado mas NÃO entra no DOM — sem elemento, nada de atalho.
+                        if (!hideSnCheckbox) {
+                            fieldMainWrapper.appendChild(snOverlay);
+                        }
 
                         customInputDiv.appendChild(fieldMainWrapper);
 
@@ -227,8 +241,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         checkboxInput.className = 'wc-block-components-checkbox__input';
                         checkboxInput.type = 'checkbox';
                         checkboxInput.setAttribute('aria-invalid', 'false');
-                        // Estado inicial do checkbox/input
-                        if (initialValue === 'S/N') {
+                        // Estado inicial do checkbox/input. Com o checkbox oculto NÃO
+                        // trava: sem o atalho o cliente não teria como destravar.
+                        if (!hideSnCheckbox && initialValue === 'S/N') {
                             checkboxInput.checked = true;
                             input.readOnly = true;
                             input.classList.add('wc-better-readonly-disabled');
@@ -282,8 +297,10 @@ document.addEventListener("DOMContentLoaded", function () {
                             snOverlay.style.width = `${overlayWidth}px`;
                             input.style.paddingRight = `${overlayWidth + 12}px`;
                         };
-                        applySnOverlayLayout();
-                        setTimeout(applySnOverlayLayout, 50);
+                        if (!hideSnCheckbox) {
+                            applySnOverlayLayout();
+                            setTimeout(applySnOverlayLayout, 50);
+                        }
 
                         input.addEventListener('focus', () => {
                             customInputDiv.classList.add('is-active');
@@ -343,6 +360,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
             const checkboxInterval = setInterval(() => {
+                // Com o checkbox oculto não há o que procurar (nem evento a ligar).
+                if (hideSnCheckbox) {
+                    clearInterval(checkboxInterval)
+                    return
+                }
+
                 const shippingCheckboxInput = document.getElementById('wc-shipping-better-checkbox')
 
                 shippingNumberInput = document.getElementById('shipping-number');
@@ -578,8 +601,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 label.setAttribute('for', 'billing-number');
                 label.textContent = 'Número';
 
-                // Overlay S/N dentro do fieldMainWrapper (igual ao campo IE)
-                input.style.paddingRight = '80px';
+                // Overlay S/N dentro do fieldMainWrapper (igual ao campo IE).
+                // Com a opção "Ocultar Checkbox S/N" o atalho não é criado.
+                if (!hideSnCheckbox) {
+                    input.style.paddingRight = '80px';
+                }
 
                 const fieldMainWrapper = document.createElement('div');
                 fieldMainWrapper.className = 'wc-better-number-main-wrapper';
@@ -615,7 +641,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 fieldMainWrapper.appendChild(input);
                 fieldMainWrapper.appendChild(label);
-                fieldMainWrapper.appendChild(snOverlay);
+
+                // Opção "Ocultar Checkbox S/N": overlay/checkbox fora do DOM.
+                if (!hideSnCheckbox) {
+                    fieldMainWrapper.appendChild(snOverlay);
+                }
 
                 customInputDiv.appendChild(fieldMainWrapper);
 
@@ -656,8 +686,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 checkboxInput.className = 'wc-block-components-checkbox__input';
                 checkboxInput.type = 'checkbox';
                 checkboxInput.setAttribute('aria-invalid', 'false');
-                // Estado inicial do checkbox/input
-                if (initialValue === 'S/N') {
+                // Estado inicial do checkbox/input. Com o checkbox oculto NÃO trava
+                // (sem o atalho o cliente não teria como destravar o campo).
+                if (!hideSnCheckbox && initialValue === 'S/N') {
                     checkboxInput.checked = true;
                     input.readOnly = true;
                     input.classList.add('wc-better-readonly-disabled');
@@ -711,8 +742,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     snOverlay.style.width = `${overlayWidth}px`;
                     input.style.paddingRight = `${overlayWidth + 12}px`;
                 };
-                applySnOverlayLayout();
-                setTimeout(applySnOverlayLayout, 50);
+                if (!hideSnCheckbox) {
+                    applySnOverlayLayout();
+                    setTimeout(applySnOverlayLayout, 50);
+                }
 
                 input.addEventListener('focus', () => {
                     customInputDiv.classList.add('is-active');
