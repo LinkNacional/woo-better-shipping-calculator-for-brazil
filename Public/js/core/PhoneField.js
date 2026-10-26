@@ -3,6 +3,12 @@ import '../../css/WcBetterShippingCalculatorForBrazilIntlTelInputOverrides.css';
 import intlTelInput from 'intl-tel-input';
 import intlTelInputUtils from 'intl-tel-input/build/js/utils.js';
 import { pt } from 'intl-tel-input/i18n';
+import {
+    attachBrazilPhoneMask,
+    brazilMaskType,
+    brazilPhoneInvalid,
+    nationalBrazilDigits
+} from './BrazilPhoneMask.js';
 
 /**
  * Núcleo do campo de telefone/celular no checkout em BLOCOS do WooCommerce.
@@ -11,6 +17,10 @@ import { pt } from 'intl-tel-input/i18n';
  * "script de campo" (um por campo) chama `bootPhoneField()` com o seu tipo; este
  * núcleo monta o input do zero seguindo as opções (Máscara + DDI, Exibir DDI,
  * Validar, Obrigatório e Destaque), como o campo de destaque do plugin.
+ *
+ * Sem a opção "Telefone com Máscara e DDI" não há lib/DDI: o campo recebe apenas a
+ * MÁSCARA BRASILEIRA (fixo/celular, ver `core/BrazilPhoneMask.js`) e a validação
+ * passa a ser a do Brasil.
  *
  * Como são 4 bundles separados (um por campo), o estado é COMPARTILHADO via
  * `window.__wcBetterPhoneFields` para que o `setExtensionData` envie sempre os 4
@@ -387,7 +397,29 @@ function applyCountryRadius(input) {
 }
 
 /**
+ * O plugin GERENCIA o telefone? (nos modos "Desabilitar" o campo é do WooCommerce)
+ *
+ * @returns {boolean}
+ */
+function managesPhone() {
+    var flag = cfgValue('managesPhone');
+
+    // A flag vem do PHP (`phone_mode_hides_native_option()`), para os dois lados não
+    // divergirem se um modo novo aparecer. Fallback: lista conhecida.
+    if (flag !== '' && typeof flag !== 'undefined') {
+        return truthy(flag);
+    }
+
+    var mode = cfgValue('mode') || 'phone_and_cellphone';
+    return mode !== 'disabled' && mode !== 'disabled_native';
+}
+
+/**
  * Aplica a máscara/DDI (intl-tel-input) no input, quando a opção está ligada.
+ *
+ * Sem a opção ("Telefone com Máscara e DDI" desligada) o campo NÃO fica cru: ele
+ * recebe a máscara BRASILEIRA (fixo/celular, sem bandeira e sem DDI), exceto nos
+ * modos em que o plugin não gerencia o telefone.
  *
  * @param {HTMLInputElement} input
  * @param {string}           kind    'phone' | 'cellphone'
@@ -401,6 +433,13 @@ function applyMask(input, kind, context) {
     input.setAttribute('inputmode', 'numeric');
 
     if (!truthy(cfgValue('maskEnabled'))) {
+        if (!managesPhone()) {
+            return;
+        }
+        // Máscara BR pura: o "Telefone" do modo "Celular e Fixo" aceita as DUAS
+        // máscaras (autodetecção pelo tamanho); "Somente Fixo" e o campo "Celular"
+        // têm máscara própria.
+        attachBrazilPhoneMask(input, brazilMaskType(kind, cfgValue('mode')));
         return;
     }
 
@@ -566,6 +605,11 @@ function buildField(spec, context, insertAfter) {
 
     var onInput = function () {
         var val = input.value.trim();
+        // Máscara BR (sem lib/DDI): o campo é exibido formatado, mas o valor que vai
+        // ao store/servidor são só os DÍGITOS (o +55 é concatenado no backend).
+        if (input.dataset.wcBetterBrazilMask === 'true') {
+            val = nationalBrazilDigits(val);
+        }
         valueKeys.forEach(function (key) { S.values[key] = val; });
         refreshActive();
 
@@ -588,8 +632,9 @@ function buildField(spec, context, insertAfter) {
 
     insertAfter.insertAdjacentElement('afterend', container);
 
-    // Campo SECUNDÁRIO NÃO recebe a lib (intl-tel-input): é um campo simples.
-    if (!spec.secondary) {
+    // Campo SECUNDÁRIO NÃO recebe a lib (intl-tel-input): é um campo simples. Sem a
+    // lib, porém, ele recebe a máscara BR do celular (mesma apresentação do telefone).
+    if (!spec.secondary || !truthy(cfgValue('maskEnabled'))) {
         applyMask(input, spec.kind, context);
     }
     refreshActive();
@@ -746,10 +791,16 @@ function mountField(spec) {
 
 function fieldInvalid(field) {
     var iti = field.wcBetterIti;
-    if (!iti || typeof iti.isValidNumberPrecise !== 'function') {
-        return false;
+    if (iti && typeof iti.isValidNumberPrecise === 'function') {
+        return iti.isValidNumberPrecise() === false;
     }
-    return iti.isValidNumberPrecise() === false;
+
+    // Sem a lib (máscara BR): valida só números do Brasil.
+    if (field.dataset.wcBetterBrazilMask === 'true') {
+        return brazilPhoneInvalid(field.value, field.dataset.wcBetterBrazilMaskType);
+    }
+
+    return false;
 }
 
 /**
@@ -822,15 +873,15 @@ function bindValidation() {
             document.querySelectorAll('.wc-better-tel-input')
         );
         var validateDdd = truthy(cfgValue('validateDdd'));
-        var maskEnabled = truthy(cfgValue('maskEnabled'));
         var invalid = fields.find(function (field) {
             var required = field.dataset.wcBetterRequired === 'true';
             if (required && !field.value.trim()) {
                 return true;
             }
             // Só valida o tipo/DDD quando o campo é OBRIGATÓRIO (campo opcional não
-            // é validado, mesmo preenchido).
-            return required && validateDdd && maskEnabled && field.value.trim() && fieldInvalid(field);
+            // é validado, mesmo preenchido). Sem a lib/DDI, `fieldInvalid` aplica a
+            // regra brasileira (DDD + 8 ou 9 dígitos).
+            return required && validateDdd && field.value.trim() && fieldInvalid(field);
         });
         if (invalid) {
             event.stopPropagation();

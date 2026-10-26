@@ -1,0 +1,276 @@
+<?php
+/**
+ * Regressão: MÁSCARA BRASILEIRA sem a lib/DDI.
+ *
+ * Cenário do chamado: com a opção "Telefone com Máscara e DDI" DESLIGADA e o
+ * plugin ainda gerenciando o telefone ("Permitir Telefone Celular e Fixo",
+ * "Somente Celular" ou "Somente Fixo"), o campo continua formatado — só que
+ * apenas no padrão brasileiro (fixo/celular), SEM bandeira e SEM seletor de país.
+ *
+ * No backend isso significa:
+ *   - `is_phone_brazil_mask_active()` ligado (e `is_phone_mask_active()` desligado);
+ *   - o telefone do pedido continua sendo normalizado em E.164 com o DDI do Brasil
+ *     (+55), como no modo com lib;
+ *   - a opção "Validar Número de Telefone" passa a valer SEM a lib, validando
+ *     apenas números do Brasil;
+ *   - no modo "Desabilitar" nada muda (o telefone não é do plugin).
+ *
+ * A máscara em si (digitação) é coberta em tests/js/brazil-phone-mask.test.js.
+ *
+ * @package WcBetterShippingCalculatorForBrazil\Tests
+ */
+
+namespace Lkn\WcBetterShippingCalculatorForBrazil\Tests;
+
+use WP_UnitTestCase;
+use Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazil;
+use Lkn\WcBetterShippingCalculatorForBrazil\PublicView\WcBetterShippingCalculatorForBrazilPublic;
+
+class PhoneBrazilMaskTest extends WP_UnitTestCase {
+
+    private function plugin(): WcBetterShippingCalculatorForBrazil {
+        return new WcBetterShippingCalculatorForBrazil();
+    }
+
+    /**
+     * Garante sessão do WC + `woocommerce_init` disparado (pré-requisitos de
+     * `wc_add_notice()`/notices de validação).
+     */
+    private function ensure_wc_ready() {
+        if ( ! WC()->session ) {
+            WC()->session = new \WC_Session_Handler();
+            WC()->session->init();
+        }
+
+        if ( ! did_action( 'woocommerce_init' ) ) {
+            do_action( 'woocommerce_init' );
+        }
+
+        if ( ! WC()->session ) {
+            $this->markTestSkipped( 'Sessão do WooCommerce indisponível no ambiente de testes.' );
+        }
+
+        WC()->session->set( 'wc_notices', array() );
+
+        return WC()->session;
+    }
+
+    private function error_notices(): array {
+        $notices = WC()->session ? WC()->session->get( 'wc_notices', array() ) : array();
+
+        return isset( $notices['error'] ) ? $notices['error'] : array();
+    }
+
+    private function invoke_private( string $method, array $args ) {
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, $method );
+        $ref->setAccessible( true );
+
+        return $ref->invokeArgs( $this->plugin(), $args );
+    }
+
+    private function normalize_phone( string $phone, string $country_code = '' ): string {
+        $order = new \WC_Order();
+        $order->set_billing_phone( $phone );
+
+        $this->invoke_private( 'normalize_order_phone', array( $order, 'billing', $country_code ) );
+
+        return (string) $order->get_billing_phone();
+    }
+
+    // --- Estado da opção ----------------------------------------------------
+
+    public function test_brazil_mask_is_active_when_mask_option_is_off(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+
+        $this->assertTrue( $this->invoke_private( 'is_phone_brazil_mask_active', array() ) );
+        $this->assertFalse( $this->invoke_private( 'is_phone_mask_active', array() ) );
+    }
+
+    public function test_brazil_mask_is_off_when_mask_option_is_on(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+
+        $this->assertFalse( $this->invoke_private( 'is_phone_brazil_mask_active', array() ) );
+        $this->assertTrue( $this->invoke_private( 'is_phone_mask_active', array() ) );
+    }
+
+    public function test_brazil_mask_is_off_in_unmanaged_modes(): void {
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+
+        update_option( 'woo_better_calc_phone_mode', 'disabled' );
+        $this->assertFalse( $this->invoke_private( 'is_phone_brazil_mask_active', array() ) );
+
+        update_option( 'woo_better_calc_phone_mode', 'disabled_native' );
+        $this->assertFalse( $this->invoke_private( 'is_phone_brazil_mask_active', array() ) );
+    }
+
+    // --- Bundle enfileirado (checkout clássico e edit-address) --------------
+
+    /**
+     * @dataProvider mask_script_fixtures
+     */
+    public function test_phone_mask_script_for( string $mode, string $mask, string $expected, string $msg ): void {
+        $this->assertSame(
+            $expected,
+            WcBetterShippingCalculatorForBrazilPublic::phone_mask_script_for( $mode, $mask ),
+            $msg
+        );
+    }
+
+    public static function mask_script_fixtures(): array {
+        return array(
+            'Com a lib/DDI ligada usa o bundle completo' => array(
+                'phone_and_cellphone', 'yes',
+                'WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode',
+                'Com a máscara/DDI ligada o campo precisa do intl-tel-input.',
+            ),
+            'Sem a lib usa o bundle LEVE (só máscara BR)' => array(
+                'phone_and_cellphone', 'no',
+                'WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskBrazil',
+                'Sem a lib basta a máscara brasileira (bundle leve).',
+            ),
+            'Somente Celular sem a lib usa o bundle leve' => array(
+                'cellphone_only', 'no',
+                'WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskBrazil',
+                'O campo "Celular" também recebe a máscara BR.',
+            ),
+            'Somente Fixo sem a lib usa o bundle leve' => array(
+                'landline_only', 'no',
+                'WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskBrazil',
+                'O telefone fixo também recebe a máscara BR.',
+            ),
+            '"Deixar a configuração nativa" não enfileira nada' => array(
+                'disabled', 'no', '',
+                'Nesse modo o telefone não é do plugin.',
+            ),
+            '"Desabilitar o campo de telefone" não enfileira nada' => array(
+                'disabled_native', 'yes', '',
+                'Sem campo de telefone não há o que formatar (nem com a lib ligada).',
+            ),
+        );
+    }
+
+    // --- Normalização do telefone do pedido ---------------------------------
+
+    public function test_order_phone_gets_brazilian_ddi_without_mask_lib(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+
+        // Máscara BR aplicada no front: o POST chega formatado.
+        $this->assertSame(
+            '+5585988888888',
+            $this->normalize_phone( '(85) 98888-8888' ),
+            'Sem a lib, o telefone ainda é normalizado em E.164 com o DDI do Brasil.'
+        );
+
+        // Fixo (10 dígitos) também.
+        $this->assertSame( '+558532323232', $this->normalize_phone( '(85) 3232-3232' ) );
+    }
+
+    public function test_order_phone_keeps_existing_ddi(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+
+        $this->assertSame( '+5585988888888', $this->normalize_phone( '+5585988888888' ) );
+        $this->assertSame( '+5585988888888', $this->normalize_phone( '5585988888888' ) );
+    }
+
+    public function test_unmanaged_mode_does_not_touch_native_phone(): void {
+        update_option( 'woo_better_calc_phone_mode', 'disabled' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+
+        $this->assertSame( '(85) 98888-8888', $this->normalize_phone( '(85) 98888-8888' ) );
+    }
+
+    // --- Validação "Validar Número de Telefone" ------------------------------
+
+    public function test_validation_runs_without_mask_lib(): void {
+        $this->ensure_wc_ready();
+
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+        update_option( 'woo_better_calc_contact_required', 'yes' );
+        update_option( 'woo_better_calc_validate_ddd', 'yes' );
+
+        $_POST['billing_phone'] = '(11) 1234-5678';
+
+        $this->plugin()->validate_phone_ddd_classic();
+
+        $errors = $this->error_notices();
+        $this->assertNotEmpty( $errors, 'Sem a lib, a validação brasileira deve bloquear um número inválido.' );
+
+        unset( $_POST['billing_phone'] );
+    }
+
+    public function test_validation_accepts_valid_brazilian_numbers_without_lib(): void {
+        $this->ensure_wc_ready();
+
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+        update_option( 'woo_better_calc_contact_required', 'yes' );
+        update_option( 'woo_better_calc_validate_ddd', 'yes' );
+
+        $_POST['billing_phone'] = '(85) 98888-8888';
+        $this->plugin()->validate_phone_ddd_classic();
+        $this->assertEmpty( $this->error_notices(), 'Celular válido não deve bloquear o checkout.' );
+
+        $_POST['billing_phone'] = '(85) 3232-3232';
+        $this->plugin()->validate_phone_ddd_classic();
+        $this->assertEmpty( $this->error_notices(), 'Fixo válido não deve bloquear o checkout.' );
+
+        unset( $_POST['billing_phone'] );
+    }
+
+    public function test_validation_rejects_number_without_ddd_without_lib(): void {
+        $this->ensure_wc_ready();
+
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+        update_option( 'woo_better_calc_contact_required', 'yes' );
+        update_option( 'woo_better_calc_validate_ddd', 'yes' );
+
+        // 9 dígitos (sem DDD): não é um telefone brasileiro válido.
+        $_POST['billing_phone'] = '98888-8888';
+
+        $this->plugin()->validate_phone_ddd_classic();
+
+        $this->assertNotEmpty( $this->error_notices(), 'Número sem DDD deve ser bloqueado pela validação BR.' );
+
+        unset( $_POST['billing_phone'] );
+    }
+
+    public function test_validation_respects_the_option(): void {
+        $this->ensure_wc_ready();
+
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+        update_option( 'woo_better_calc_contact_required', 'yes' );
+        update_option( 'woo_better_calc_validate_ddd', 'no' );
+
+        $_POST['billing_phone'] = '(11) 1234-5678';
+
+        $this->plugin()->validate_phone_ddd_classic();
+
+        $this->assertEmpty( $this->error_notices(), 'Com a validação desabilitada nada é bloqueado.' );
+
+        unset( $_POST['billing_phone'] );
+    }
+
+    public function test_validation_is_skipped_for_optional_phone(): void {
+        $this->ensure_wc_ready();
+
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+        update_option( 'woo_better_calc_contact_required', 'no' );
+        update_option( 'woo_better_calc_validate_ddd', 'yes' );
+
+        $_POST['billing_phone'] = '(11) 1234-5678';
+
+        $this->plugin()->validate_phone_ddd_classic();
+
+        $this->assertEmpty( $this->error_notices(), 'Campo opcional não é validado.' );
+
+        unset( $_POST['billing_phone'] );
+    }
+}

@@ -308,7 +308,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     'custom_attributes' => array(
                         'data-subtitle' => __('Aplicar Máscara + Captura de DDI', 'woo-better-shipping-calculator-for-brazil'),
                         'data-desc-tip' => __('Ativa a formatação do telefone e adiciona o recurso de captura do Código de País (DDI).', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Habilite para aplicar máscara de formatação no campo de telefone e incluir o código de país (DDI) ou desabilite para manter o comportamento padrão.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Habilite para aplicar máscara de formatação no campo de telefone e incluir o código de país (DDI). Ao desabilitar, o campo continua com a máscara brasileira (fixo e celular, sem bandeira e sem DDI) e o número é salvo com o código do Brasil (+55).', 'woo-better-shipping-calculator-for-brazil'),
                         'data-title-description' => __('No checkout, o campo de telefone receberá formatação e passará a incluir o código de país (DDI).', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
@@ -357,8 +357,8 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     ),
                     'custom_attributes' => array(
                         'data-subtitle' => __('Validar o número de telefone no checkout', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-desc-tip' => __('Valida se o número de telefone informado é válido.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Requer que a opção "Telefone com Máscara e DDI" esteja habilitada e que o telefone/celular seja obrigatório. Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Valida se o número de telefone informado é válido (todos os países com a máscara/DDI; apenas Brasil sem ela).', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Requer que o telefone/celular seja obrigatório. Com a opção "Telefone com Máscara e DDI" habilitada, a validação usa a base internacional de telefonia (vale para todos os países); sem ela, o campo usa a máscara brasileira (fixo/celular) e a validação vale apenas para números do Brasil (DDD válido + 8 dígitos para fixo ou 9 para celular). Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.', 'woo-better-shipping-calculator-for-brazil'),
                         'data-title-description' => __('Valida o número de telefone no checkout.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),

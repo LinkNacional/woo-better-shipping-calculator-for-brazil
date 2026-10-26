@@ -711,11 +711,68 @@
       }
     }
 
+    // Textos do card "Validar Número de Telefone": o ESCOPO da validação muda com a
+    // opção "Telefone com Máscara e DDI". Ligada, a validação usa a base
+    // internacional (todos os países); desligada, o campo tem apenas a máscara
+    // brasileira e a validação vale só para o Brasil.
+    const VALIDATE_DDD_TEXTS = {
+      mask: {
+        title: 'Validar o número de telefone no checkout (todos os países)',
+        sub: 'Valida o número de telefone no checkout em todos os países.',
+        body: 'Requer que o telefone/celular seja obrigatório. Com a opção "Telefone com Máscara e DDI" habilitada, a validação usa a base internacional de telefonia (vale para todos os países). Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.'
+      },
+      brazil: {
+        title: 'Validar o número de telefone no checkout (Brasil)',
+        sub: 'Valida o número de telefone no checkout apenas para o Brasil.',
+        body: 'Requer que o telefone/celular seja obrigatório. Sem a opção "Telefone com Máscara e DDI", o campo usa a máscara brasileira (fixo/celular) e a validação vale apenas para números do Brasil (DDD válido + 8 dígitos para fixo ou 9 para celular). Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.'
+      }
+    };
+
+    /**
+     * Troca título/subtítulo/descrição do card "Validar Número de Telefone"
+     * conforme o escopo da validação (com ou sem lib/DDI).
+     *
+     * Este arquivo monta o card no layout ANTIGO (`woo-forminp-header` +
+     * `p.description`), por isso os seletores abaixo.
+     *
+     * @return {void}
+     */
+    function updateValidateDddTexts() {
+      if (!validateDddRadios.length) {
+        return;
+      }
+
+      const wrapper = validateDddRadios[0].closest('.forminp')
+        || validateDddRadios[0].closest('fieldset');
+
+      if (!wrapper) {
+        return;
+      }
+
+      const texts = Array.from(applyPhoneMaskRadios).some(radio => radio.checked && radio.value === 'yes')
+        ? VALIDATE_DDD_TEXTS.mask
+        : VALIDATE_DDD_TEXTS.brazil;
+
+      const title = wrapper.querySelector('.woo-forminp-header-text');
+      const sub = wrapper.querySelector('.woo-forminp-header span');
+      const body = wrapper.querySelector('.description');
+
+      if (title) {
+        title.textContent = texts.title;
+      }
+      if (sub) {
+        sub.textContent = texts.sub;
+      }
+      if (body) {
+        body.textContent = texts.body;
+      }
+    }
+
     // "Validar Número de Telefone" (filho do "Telefone (Contato) Obrigatório"):
-    // só é habilitado quando a máscara está on, o telefone/celular é obrigatório e o
-    // modo não é "Desabilitar". Só então a validação faz sentido.
+    // só depende do telefone/celular ser obrigatório e do modo não ser "Desabilitar".
+    // NÃO depende mais da máscara/DDI — sem ela o plugin valida apenas números do
+    // Brasil (validação customizada, sem lib).
     function updateValidateDddState() {
-      const maskOn = Array.from(applyPhoneMaskRadios).some(radio => radio.checked && radio.value === 'yes');
       const cellphoneOn = Array.from(enableCellphoneRadios).some(radio => radio.checked && radio.value === 'yes');
       const requiredOn = Array.from(contactRequiredRadios).some(radio => radio.checked && radio.value === 'yes')
         || (cellphoneOn && Array.from(cellphoneRequiredRadios).some(radio => radio.checked && radio.value === 'yes'));
@@ -723,9 +780,10 @@
       // "Desabilitar o campo de telefone" — espelha `phone_mode_is_unmanaged()`.
       const modeOk = !phoneModeSelect
         || (phoneModeSelect.value !== 'disabled' && phoneModeSelect.value !== 'disabled_native');
-      const on = maskOn && requiredOn && modeOk;
+      const on = requiredOn && modeOk;
 
       setDisabledState(validateDddRadios, !on);
+      updateValidateDddTexts();
     }
 
     // "Celular Obrigatório" só fica ativo quando o "Campo de Celular" está habilitado
