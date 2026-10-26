@@ -378,12 +378,17 @@ test('[brazil-mask] admin: "Validar Número de Telefone" funciona sem a lib (esc
     assert.ok(fs.existsSync(ADMIN_BEHAVIORS), `Arquivo não encontrado: ${ADMIN_BEHAVIORS}`);
     const src = fs.readFileSync(ADMIN_BEHAVIORS, 'utf8');
 
-    // O card é CAMADA sobre o "Telefone (Contato) Obrigatório": só destrava quando o
-    // contato é obrigatório (a validação só age em campo obrigatório) e o plugin
+    // O card é CAMADA sobre a obrigatoriedade do telefone: só destrava quando existe
+    // campo OBRIGATÓRIO (contato obrigatório ou "Celular" obrigatório) e o plugin
     // gerencia o telefone. Não depende da máscara/DDI.
     assert.ok(
-        /function updateValidateDddState\(\) \{[\s\S]*?const on = modeOk;/.test(src),
-        'A validação deve ficar livre (sem exigir máscara/DDI nem telefone obrigatório).'
+        /function updateValidateDddState\(\) \{[\s\S]*?const requiredOn = [\s\S]*?contactRequiredRadios[\s\S]*?const on = requiredOn && modeOk;/.test(src),
+        'A validação só deve destravar com um campo obrigatório (telefone ou celular).'
+    );
+    // Travada → marca "Desabilitar" e desmarca "Habilitar" (a tela reflete o checkout).
+    assert.ok(
+        /if \(!on\) \{[\s\S]*?radio\.value === 'no'[\s\S]*?radio\.checked = true[\s\S]*?radio\.value === 'yes'[\s\S]*?radio\.checked = false/.test(src),
+        'Travada, a opção precisa aparecer marcada em "Desabilitar".'
     );
     assert.ok(
         /A validação é aplicada quando o telefone\/celular é obrigatório e preenchido\./.test(src),
