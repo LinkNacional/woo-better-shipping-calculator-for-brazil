@@ -76,7 +76,7 @@ test('[join] o filho é travado quando o pai está em "Desabilitar"', () => {
     );
 });
 
-test('[join] o valor salvo do filho é PRESERVADO (não força "no")', () => {
+test('[join] o valor salvo do filho é preservado, EXCETO nos pares com resetWhenLocked', () => {
     const src = read(SETTINGS_SOURCE);
 
     // Recorta SÓ o mecanismo de join: o bloco de "Data de Nascimento" (que já
@@ -86,9 +86,32 @@ test('[join] o valor salvo do filho é PRESERVADO (não força "no")', () => {
 
     const joinBody = src.slice(inicio);
 
+    // A reescrita de `checked` existe, mas é GUARDADA pela flag do par: só os pares
+    // que a declaram voltam ao default quando o pai desliga (hoje, só o "S/N").
     assert.ok(
-        !/\.checked\s*=/.test(joinBody),
-        'O join NÃO pode reescrever `checked`: desabilitar é só visual e a opção salva é mantida.'
+        /if \(!enabled && pair\.resetWhenLocked\)/.test(joinBody),
+        'A reescrita de `checked` precisa ser condicionada a `pair.resetWhenLocked`.'
+    );
+
+    // Cada par declara (ou não) a flag — nada implícito: o par do RG NÃO reseta.
+    assert.ok(
+        /\{ parent: 'woo_better_calc_enable_rg_field', child: 'woo_better_calc_rg_required' \}/.test(src),
+        'O par do RG não pode ganhar `resetWhenLocked` (a escolha é preservada).'
+    );
+    assert.ok(
+        /\{ parent: 'woo_better_calc_number_required', child: 'woo_better_calc_number_hide_sn_checkbox', resetWhenLocked: true \}/.test(src),
+        'O par do "S/N" precisa de `resetWhenLocked: true`.'
+    );
+
+    // E o `checked` recebido tem que ser o valor COERENTE ("Desabilitar"), que
+    // continua indo no POST — nunca o atributo `disabled` (AGENTS.md § 7).
+    assert.ok(
+        /radio\.checked = \(radio\.value === 'no'\)/.test(joinBody),
+        'O reset deve marcar "Desabilitar".'
+    );
+    assert.ok(
+        !/setAttribute\(\s*'disabled'/.test(joinBody) && !/\.disabled\s*=/.test(joinBody),
+        'O bloqueio continua só visual (fake disabled).'
     );
 });
 
