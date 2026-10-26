@@ -376,12 +376,11 @@ test('[brazil-mask] admin: "Validar Número de Telefone" funciona sem a lib (esc
     assert.ok(fs.existsSync(ADMIN_BEHAVIORS), `Arquivo não encontrado: ${ADMIN_BEHAVIORS}`);
     const src = fs.readFileSync(ADMIN_BEHAVIORS, 'utf8');
 
-    // O card é CAMADA sobre o "Telefone (Contato) Obrigatório": só destrava quando o
-    // contato é obrigatório (a validação só age em campo obrigatório) e o plugin
-    // gerencia o telefone. Não depende da máscara/DDI.
+    // O card é ESCOLHA do lojista: NÃO depende do "Telefone (Contato) Obrigatório"
+    // nem da máscara/DDI. Só trava nos modos sem telefone gerenciado.
     assert.ok(
-        /function updateValidateDddState\(\) \{\s*var on = !isUnmanagedMode\(\) && isYes\(contactRequiredRadios\);/.test(src),
-        'A validação só deve destravar com o telefone obrigatório.'
+        /function updateValidateDddState\(\) \{\s*var on = !isUnmanagedMode\(\);/.test(src),
+        'A validação deve ficar livre (só travada nos modos sem telefone gerenciado).'
     );
     assert.ok(
         /A validação é aplicada quando o telefone\/celular é obrigatório e preenchido\./.test(src),

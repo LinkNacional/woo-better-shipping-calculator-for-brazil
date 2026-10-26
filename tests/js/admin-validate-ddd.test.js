@@ -1,18 +1,19 @@
 'use strict';
 
 /**
- * Regressão: "Validar Número de Telefone" é CAMADA do "Telefone (Contato)
- * Obrigatório" na tela de configurações do checkout.
+ * Regressão: "Validar Número de Telefone" é ESCOLHA do lojista (não é travada pelo
+ * "Telefone (Contato) Obrigatório").
  *
- * O recurso de validação só age em campo OBRIGATÓRIO (`validate_phone_ddd_classic`
- * no checkout clássico e `bindValidation` no checkout em blocos). Se a tela
- * deixasse "Validar" marcado em "Habilitar" com o contato opcional, o lojista
- * ligaria a opção, veria ativo e nada seria validado no checkout — foi o bug
- * relatado ("o número inválido passou").
+ * A validação em si só age em campo OBRIGATÓRIO (`validate_phone_ddd_classic` no
+ * clássico e `bindValidation` no checkout em blocos) — o texto do card diz isso —,
+ * mas travar a opção e forçar "Desabilitar" a cada toggle do contato desfazia a
+ * escolha do lojista (bug relatado: com o contato em "Desabilitar" a opção de baixo
+ * aparecia marcada em "Desabilitar" e com o fake disabled).
  *
- * O comportamento esperado, ao escolher "Desabilitar" no contato obrigatório:
- *   1. o radio "Desabilitar" de "Validar" fica MARCADO (a tela reflete o checkout);
- *   2. os radios ficam com o fake disabled (aparência de desabilitado);
+ * Contrato coberto aqui:
+ *   1. alternar o contato obrigatório NÃO marca/desmarca nem trava "Validar";
+ *   2. a opção fica travada APENAS nos modos em que o plugin não gerencia o
+ *      telefone (`disabled`/`disabled_native`), onde não existe campo algum;
  *   3. o atributo `disabled` NUNCA é usado — input `disabled` não vai no POST e a
  *      option guardaria um "yes" fantasma (AGENTS.md § 7).
  *
@@ -105,6 +106,11 @@ function boot() {
         },
     };
 
+    // Select do modo de telefone — objeto ÚNICO e mutável (o teste troca o modo e
+    // dispara `change` nele, como o navegador faria).
+    const phoneModeSelect = fakeRadio('select', 'phone_and_cellphone', false);
+    phoneModeSelect.value = 'phone_and_cellphone';
+
     global.document = {
         readyState: 'complete',
         body: fakeRadio('body', '', false),
@@ -115,7 +121,7 @@ function boot() {
 
             // Só o select do modo de telefone é consultado por `querySelector`.
             if (selector.indexOf('woo_better_calc_phone_mode') !== -1) {
-                return { ...fakeRadio('select', 'phone_and_cellphone', false), value: 'phone_and_cellphone' };
+                return phoneModeSelect;
             }
 
             return null;
@@ -148,7 +154,13 @@ function boot() {
         target.fire('change');
     };
 
-    return { groups, fakeDisabledCalls, restore, setContact };
+    // Troca o "Comportamento do Campo de Telefone" (select único) e dispara `change`.
+    const setPhoneMode = (value) => {
+        phoneModeSelect.value = value;
+        phoneModeSelect.fire('change');
+    };
+
+    return { groups, fakeDisabledCalls, restore, setContact, setPhoneMode };
 }
 
 /**
@@ -164,45 +176,62 @@ function validateState(radios) {
     };
 }
 
-test('[validate-ddd] contato obrigatório em "Desabilitar" marca "Desabilitar" na validação', () => {
+test('[validate-ddd] contato obrigatório NÃO mexe na escolha da validação', () => {
     const ctx = boot();
 
     try {
         const radios = ctx.groups.woo_better_calc_validate_ddd;
 
-        // Começa com a validação ligada (é o cenário do bug relatado).
+        // Começa com a validação ligada.
         assert.deepStrictEqual(validateState(radios), { yes: true, no: false });
 
         ctx.setContact('no');
 
         assert.deepStrictEqual(
             validateState(radios),
-            { yes: false, no: true },
-            'Sem o telefone obrigatório a validação não age: a tela deve mostrar "Desabilitar".'
+            { yes: true, no: false },
+            'Desligar o telefone obrigatório não pode forçar "Desabilitar" na validação.'
         );
+
+        // E também não trava (nem apaga) a opção.
+        const calls = ctx.fakeDisabledCalls.filter((call) => radios.indexOf(call.target) !== -1);
+
+        assert.ok(calls.every((call) => false === call.isDisabled), 'Os radios devem continuar editáveis.');
     } finally {
         ctx.restore();
     }
 });
 
-test('[validate-ddd] trava os radios com o fake disabled (nunca o atributo `disabled`)', () => {
+test('[validate-ddd] a escolha "Desabilitar" do lojista é preservada', () => {
     const ctx = boot();
 
     try {
         const radios = ctx.groups.woo_better_calc_validate_ddd;
-        ctx.fakeDisabledCalls.length = 0;
 
+        // Lojista desliga a validação de propósito...
+        radios.forEach((radio) => {
+            radio.checked = radio.value === 'no';
+        });
+
+        // ...e o toggle do contato não reverte a escolha dele.
+        ctx.setContact('yes');
         ctx.setContact('no');
 
-        const calls = ctx.fakeDisabledCalls.filter((call) => radios.indexOf(call.target) !== -1);
+        assert.deepStrictEqual(validateState(radios), { yes: false, no: true });
+    } finally {
+        ctx.restore();
+    }
+});
 
-        assert.ok(calls.length >= radios.length, 'O fake disabled deve ser aplicado nos radios de "Validar".');
-        assert.ok(
-            calls.every((call) => true === call.isDisabled),
-            'Os radios devem ficar com o fake disabled ligado.'
-        );
+test('[validate-ddd] nunca usa o atributo `disabled` nos radios', () => {
+    const ctx = boot();
 
-        // `disabled` de verdade não pode aparecer: o valor não iria no POST.
+    try {
+        const radios = ctx.groups.woo_better_calc_validate_ddd;
+
+        // Modo "Desabilitar o campo de telefone": é o único caso de travamento.
+        ctx.setPhoneMode('disabled_native');
+
         assert.ok(
             radios.every((radio) => false === radio.disabled),
             'O atributo `disabled` não pode ser usado (a option guardaria um "yes" fantasma).'
@@ -212,23 +241,26 @@ test('[validate-ddd] trava os radios com o fake disabled (nunca o atributo `disa
     }
 });
 
-test('[validate-ddd] religar o contato obrigatório destrava a opção', () => {
+test('[validate-ddd] fica travada só nos modos sem telefone gerenciado', () => {
     const ctx = boot();
 
     try {
         const radios = ctx.groups.woo_better_calc_validate_ddd;
+        const callsFor = () => ctx.fakeDisabledCalls.filter((call) => radios.indexOf(call.target) !== -1);
 
-        ctx.setContact('no');
+        // Modo "Desabilitar o campo de telefone": não existe campo, não há o que validar.
         ctx.fakeDisabledCalls.length = 0;
-        ctx.setContact('yes');
+        ctx.setPhoneMode('disabled_native');
 
-        const calls = ctx.fakeDisabledCalls.filter((call) => radios.indexOf(call.target) !== -1);
+        assert.ok(callsFor().length >= radios.length, 'O fake disabled deve ser aplicado no modo sem telefone.');
+        assert.ok(callsFor().every((call) => true === call.isDisabled), 'Travada nos modos não gerenciados.');
 
-        assert.ok(calls.length >= radios.length, 'O fake disabled deve ser reaplicado ao destravar.');
-        assert.ok(
-            calls.every((call) => false === call.isDisabled),
-            'Com o contato obrigatório ligado, a opção fica editável de novo.'
-        );
+        // Voltando para um modo gerenciado, destrava.
+        ctx.fakeDisabledCalls.length = 0;
+        ctx.setPhoneMode('phone_and_cellphone');
+
+        assert.ok(callsFor().length >= radios.length, 'O fake disabled deve ser reaplicado ao destravar.');
+        assert.ok(callsFor().every((call) => false === call.isDisabled), 'Destravada nos modos gerenciados.');
     } finally {
         ctx.restore();
     }
