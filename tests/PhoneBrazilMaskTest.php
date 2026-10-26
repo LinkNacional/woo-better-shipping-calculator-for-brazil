@@ -151,6 +151,66 @@ class PhoneBrazilMaskTest extends WP_UnitTestCase {
         );
     }
 
+    // --- Métodos usados no enqueue não podem faltar -------------------------
+
+    public function test_phone_mode_is_managed(): void {
+        $this->assertTrue( WcBetterShippingCalculatorForBrazilPublic::phone_mode_is_managed( 'phone_and_cellphone' ) );
+        $this->assertTrue( WcBetterShippingCalculatorForBrazilPublic::phone_mode_is_managed( 'cellphone_only' ) );
+        $this->assertTrue( WcBetterShippingCalculatorForBrazilPublic::phone_mode_is_managed( 'landline_only' ) );
+        $this->assertFalse( WcBetterShippingCalculatorForBrazilPublic::phone_mode_is_managed( 'disabled' ) );
+        $this->assertFalse( WcBetterShippingCalculatorForBrazilPublic::phone_mode_is_managed( 'disabled_native' ) );
+    }
+
+    /**
+     * Guarda de regressão: o enqueue do checkout em BLOCOS chamava
+     * `$this->phone_mode_hides_native_option()` — método PRIVADO do Includes — e
+     * derrubava a página com "Call to undefined method". Nenhuma chamada
+     * `$this->metodo()`/`self::metodo()` pode apontar para método inexistente.
+     */
+    public function test_public_class_has_no_orphan_method_calls(): void {
+        $orphans = $this->orphan_method_calls(
+            dirname( __DIR__ ) . '/Public/WcBetterShippingCalculatorForBrazilPublic.php',
+            new WcBetterShippingCalculatorForBrazilPublic( 'wc-better-shipping-calculator-for-brazil', '5.3.0' )
+        );
+
+        $this->assertSame( array(), $orphans, 'Chamadas a métodos inexistentes: ' . implode( ', ', $orphans ) );
+    }
+
+    public function test_includes_class_has_no_orphan_method_calls(): void {
+        $orphans = $this->orphan_method_calls(
+            dirname( __DIR__ ) . '/Includes/WcBetterShippingCalculatorForBrazil.php',
+            $this->plugin()
+        );
+
+        $this->assertSame( array(), $orphans, 'Chamadas a métodos inexistentes: ' . implode( ', ', $orphans ) );
+    }
+
+    /**
+     * Lista as chamadas `$this->x()` / `self::x()` do arquivo sem método na classe.
+     *
+     * @param string $file     Arquivo PHP da classe.
+     * @param object $instance Instância da classe (para o reflection).
+     * @return string[]
+     */
+    private function orphan_method_calls( string $file, $instance ): array {
+        $src = (string) file_get_contents( $file );
+
+        preg_match_all( '/\$this\s*->\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(/', $src, $this_calls );
+        preg_match_all( '/\b(?:self|static)::([A-Za-z_][A-Za-z0-9_]*)\s*\(/', $src, $self_calls );
+
+        $names = array_unique( array_merge( $this_calls[1], $self_calls[1] ) );
+        $class = new \ReflectionClass( $instance );
+
+        $orphans = array();
+        foreach ( $names as $name ) {
+            if ( ! $class->hasMethod( $name ) ) {
+                $orphans[] = $name;
+            }
+        }
+
+        return array_values( $orphans );
+    }
+
     // --- Placeholder (sem lib o +55 vai no placeholder) ---------------------
 
     public function test_placeholder_carries_the_ddi_without_the_lib(): void {
