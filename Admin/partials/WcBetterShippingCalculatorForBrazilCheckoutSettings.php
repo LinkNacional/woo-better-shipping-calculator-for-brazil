@@ -259,6 +259,26 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'data-title-description' => __('Adiciona o campo de Número, posicionado logo após o campo principal do endereço (Rua).', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
+                // FILHO do "Campo de Número do Endereço" (join visual em
+                // `targetComponentCartNames` e de comportamento em `joinPairs`, em
+                // Admin/js): sem o campo de número não há checkbox para ocultar.
+                'hide_number_sn_checkbox' => array(
+                    'title'    => __('Ocultar Checkbox "S/N"', 'woo-better-shipping-calculator-for-brazil'),
+                    'id'       => 'woo_better_calc_number_hide_sn_checkbox',
+                    'desc_tip' => false,
+                    'default'  => 'no',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-subtitle' => __('Remover o checkbox "S/N" do campo de Número', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Remove o atalho "S/N" (Sem Número) que fica dentro do campo de Número.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Quando habilitada, o checkbox "S/N" NÃO é exibido no campo de Número — nem no checkout em blocos, nem no checkout clássico/shortcode, nem na edição de endereço da conta. O cliente continua podendo digitar "S/N" no próprio campo (o campo não fica travado); sem o checkbox, o endereço sem número passa a ser digitado à mão.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Remove o checkbox "S/N" de dentro do campo de Número.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
                 'phone_mode' => array(
                     'title'    => __('Comportamento do Campo de Telefone', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_phone_mode',
@@ -308,7 +328,7 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     'custom_attributes' => array(
                         'data-subtitle' => __('Aplicar Máscara + Captura de DDI', 'woo-better-shipping-calculator-for-brazil'),
                         'data-desc-tip' => __('Ativa a formatação do telefone e adiciona o recurso de captura do Código de País (DDI).', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Habilite para aplicar máscara de formatação no campo de telefone e incluir o código de país (DDI) ou desabilite para manter o comportamento padrão.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Habilite para aplicar máscara de formatação no campo de telefone e incluir o código de país (DDI). Ao desabilitar, o campo continua com a máscara brasileira (fixo e celular, sem bandeira e sem DDI) e o número é salvo com o código do Brasil (+55).', 'woo-better-shipping-calculator-for-brazil'),
                         'data-title-description' => __('No checkout, o campo de telefone receberá formatação e passará a incluir o código de país (DDI).', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
@@ -357,8 +377,8 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     ),
                     'custom_attributes' => array(
                         'data-subtitle' => __('Validar o número de telefone no checkout', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-desc-tip' => __('Valida se o número de telefone informado é válido.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Requer que a opção "Telefone com Máscara e DDI" esteja habilitada e que o telefone/celular seja obrigatório. Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Valida se o número de telefone informado é válido (todos os países com a máscara/DDI; apenas Brasil sem ela).', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('A validação é aplicada quando o telefone/celular é obrigatório e preenchido. Com a opção "Telefone com Máscara e DDI" habilitada, a validação usa a base internacional de telefonia (vale para todos os países); sem ela, o campo usa a máscara brasileira (fixo/celular) e a validação vale apenas para números do Brasil (DDD válido + 8 dígitos para fixo ou 9 para celular). Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.', 'woo-better-shipping-calculator-for-brazil'),
                         'data-title-description' => __('Valida o número de telefone no checkout.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),
@@ -490,6 +510,30 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
             // NÃO são enviados no submit, deixando o valor antigo salvo. Reforçamos no
             // servidor para a lógica nunca depender do envio desses campos.
             self::enforce_cellphone_options_for_mode(get_option('woo_better_calc_phone_mode', 'phone_and_cellphone'));
+
+            // "Ocultar Checkbox S/N" é FILHO do "Campo de Número do Endereço": sem o
+            // campo de número a opção não faz sentido, então volta ao DEFAULT
+            // ("Desabilitar") — mesma regra que o admin aplica no JS.
+            self::enforce_number_hide_sn_option();
+        }
+
+        /**
+         * Devolve "Ocultar Checkbox S/N" ao DEFAULT quando o campo de Número está off.
+         *
+         * É o reforço no SERVIDOR da dependência pai → filho (a mesma que o
+         * `initNumberSnState()` aplica no admin): o filho marca "Desabilitar" e recebe o
+         * fake disabled — que NÃO bloqueia o envio (o valor coerente vai no POST). Aqui
+         * cobrimos quem salva com JS bloqueado/residual: sem o campo de Número não há
+         * checkbox para ocultar, então manter `yes` guardado só criaria estado
+         * inconsistente para a próxima vez que o campo de Número fosse ligado.
+         *
+         * @return void
+         */
+        public static function enforce_number_hide_sn_option()
+        {
+            if ('yes' !== get_option('woo_better_calc_number_required', 'no')) {
+                update_option('woo_better_calc_number_hide_sn_checkbox', 'no');
+            }
         }
 
         /**

@@ -3,15 +3,21 @@ import 'intl-tel-input/build/css/intlTelInput.css';
 import '../css/WcBetterShippingCalculatorForBrazilIntlTelInputOverrides.css';
 import intlTelInputUtils from 'intl-tel-input/build/js/utils.js';
 import { pt } from 'intl-tel-input/i18n';
+import { isRequiredPhoneField, showBrazilPhoneError } from './core/BrazilPhoneMask.js';
 
 /**
- * Máscara de telefone no checkout CLÁSSICO (shortcode [woocommerce_checkout]).
+ * Máscara de telefone no checkout CLÁSSICO (shortcode [woocommerce_checkout]) e na
+ * edição de endereço da conta.
  *
- * Aplica a formatação NATIVA do intl-tel-input (formatAsYouType + loadUtils,
- * API v25) diretamente nos campos nativos do WooCommerce
- * (#billing_phone/#shipping_phone). O antigo motor de formatação caseiro foi
- * removido; a restrição de digitação (apenas dígitos + um "+" inicial) fica a
- * cargo do sanitizador universal (PublicPhoneSanitizer).
+ * Com a opção "Telefone com Máscara e DDI" LIGADA aplica a formatação NATIVA do
+ * intl-tel-input (formatAsYouType + loadUtils, API v25) diretamente nos campos
+ * nativos do WooCommerce (#billing_phone/#shipping_phone). O antigo motor de
+ * formatação caseiro foi removido; a restrição de digitação (apenas dígitos + um
+ * "+" inicial) fica a cargo do sanitizador universal (PublicPhoneSanitizer).
+ *
+ * Com a opção DESLIGADA o PHP enfileira o bundle LEVE
+ * (`...CheckoutPhoneMaskBrazil`), que aplica apenas a máscara brasileira sem
+ * carregar o intl-tel-input.
  *
  * O DDI (bandeira + código do país) só é exibido quando as opções
  * "Telefone com Máscara e DDI" E "Exibir Código do País (DDI)" estão ligadas.
@@ -31,7 +37,8 @@ jQuery(function ($) {
 
     // No modo "apenas celular" o telefone nativo é removido e o campo "Celular"
     // assume o papel de telefone, então ele recebe a máscara/DDI/validação. Nos
-    // demais modos o campo "Celular" (quando existe) é só um campo extra, sem máscara.
+    // demais modos o campo "Celular" (quando existe) é só um campo extra, sem máscara
+    // (quem dá máscara a ele é o bundle sem lib).
     const phoneMode = (typeof config.phoneMode !== 'undefined') ? config.phoneMode : '';
     const PHONE_FIELDS = (phoneMode === 'cellphone_only')
         ? ['#billing_cellphone', '#shipping_cellphone']
@@ -350,7 +357,7 @@ jQuery(function ($) {
     // a validação é feita no PHP (woocommerce_checkout_process), então ignoramos
     // os formulários de checkout aqui.
     function bindDddValidation() {
-        if (!(validateDdd && phoneMaskEnabled)) {
+        if (!validateDdd) {
             return;
         }
 
@@ -372,7 +379,7 @@ jQuery(function ($) {
                 let invalidField = null;
                 PHONE_FIELDS.some(function (sel) {
                     const f = document.querySelector(sel);
-                    if (!f || !f.value.trim()) {
+                    if (!f || !f.value.trim() || !isRequiredPhoneField(f)) {
                         return false;
                     }
                     if (phoneErrorCode(f)) {
@@ -385,25 +392,7 @@ jQuery(function ($) {
                 if (invalidField) {
                     event.preventDefault();
                     event.stopPropagation();
-                    invalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    setTimeout(function () {
-                        invalidField.focus();
-                    }, 250);
-                    // Mensagem de erro inline (sem recarregar a página).
-                    const row = invalidField.closest('.form-row');
-                    if (row) {
-                        row.classList.add('woocommerce-invalid');
-                        const existing = row.querySelector('.wc-better-ddd-error');
-                        if (existing) {
-                            existing.remove();
-                        }
-                        const note = document.createElement('p');
-                        note.className = 'wc-better-ddd-error';
-                        note.style.color = '#b00020';
-                        note.style.margin = '4px 0 0';
-                        note.textContent = 'Número de telefone inválido.';
-                        row.appendChild(note);
-                    }
+                    showBrazilPhoneError(invalidField);
                 }
             });
         });

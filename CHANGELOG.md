@@ -1,3 +1,15 @@
+# 5.2.2 - 26/10/26
+* Novo: opção "Ocultar Checkbox S/N", filha do campo de Número do endereço. Quando habilitada, o atalho "S/N" (sem número) não é criado dentro do campo de Número no checkout em blocos, no checkout clássico/shortcode e na edição de endereço da conta. O cliente continua podendo digitar "S/N" à mão.
+* Novo: sem a opção "Telefone com Máscara e DDI" o campo de telefone não fica mais sem formatação — ele recebe a máscara brasileira (fixo e celular, detectados pelo tamanho do número), sem bandeira e sem seletor de país. O +55 continua visível quando o número tem o código do país, inclusive no placeholder do campo.
+* Ajuste: com a máscara desligada, espaço, parênteses, hífen e ponto são liberados na digitação — um número de outro país é recusado no envio, sem incluir DDI estrangeiro por cima.
+* Ajuste: o card "Validar Número de Telefone" alterna os textos entre "todos os países" e "Brasil" conforme a opção de máscara, e a validação passou a funcionar sem a biblioteca de DDI (apenas Brasil).
+* Ajuste: o celular agora aparece dentro dos endereços de cobrança E de entrega nas telas de pedido recebido e de detalhes do pedido, logo abaixo do telefone (acima do e-mail na cobrança) e com o mesmo ícone do telefone — ele não é mais listado no bloco "Informações adicionais".
+* Correção: o celular secundário passa a guardar exatamente o que o cliente digitou, só sem os caracteres especiais — o +55 é mantido quando foi digitado e nenhum DDI é incluído quando não foi.
+* Correção: o atalho "S/N" dentro do campo de Número agora fica centralizado dentro do campo no Safari — o elemento em que ele era ancorado era inline, o que fazia a posição depender da caixa de linha.
+* Correção: o checkout em blocos não entra mais em loop ao alternar "usar o mesmo endereço para cobrança" — os campos IE, IM e RG reenviavam o mesmo valor e podiam se ancorar no formulário do outro endereço.
+* Correção: um número de telefone inválido que sobrou no perfil não é mais exibido no campo de telefone do checkout e não sobrescreve mais um telefone válido já salvo.
+* Ajuste: o comportamento de telefone "Permitir Telefone Celular e Fixo" agora aparece marcado como recomendado, e os campos que não são obrigatórios passam a exibir "(opcional)" no checkout em blocos.
+
 # 5.2.1 - 21/10/26
 * Novo: a opção "Comportamento do Campo de Telefone" agora tem DUAS formas de desabilitar, com significados diferentes. "Desabilitar o campo de telefone" desliga o telefone nativo do WooCommerce (nada de telefone nem de celular aparece). "Deixar a configuração nativa do WooCommerce" não gera campo nenhum e mantém o que foi configurado no próprio WooCommerce (toggle "Telefone" do editor de blocos).
 * Correção: com o telefone desabilitado, o campo "Celular" não é mais gerado no checkout. Antes, uma configuração anterior de "Campo de Celular" fazia o campo reaparecer mesmo com o telefone desligado.

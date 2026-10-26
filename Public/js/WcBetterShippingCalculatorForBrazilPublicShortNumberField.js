@@ -1,5 +1,12 @@
 document.addEventListener("DOMContentLoaded", function () {
 
+    var config = (typeof wc_better_checkout_shortcode_number_vars !== 'undefined') ? wc_better_checkout_shortcode_number_vars : {};
+
+    // Opção "Ocultar Checkbox S/N": o atalho não é nem CRIADO (checkout clássico e
+    // edição de endereço). Sem o checkbox não existe como destravar o campo, então o
+    // travamento automático do valor "S/N" também é desligado (ver setFieldDisabled).
+    var hideSnCheckbox = config.hideSnCheckbox === true || config.hideSnCheckbox === 'true';
+
     var billingSnCheckbox = null;
     var shippingSnCheckbox = null;
     var billingInitialized = false;
@@ -46,18 +53,44 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         var inputWrapper = fieldWrapperEl.querySelector('.woocommerce-input-wrapper');
-        if (inputWrapper) {
-            inputWrapper.style.position = 'relative';
+
+        // CONTEXTO DE POSICIONAMENTO do atalho.
+        //
+        // No checkout clássico/edit-address o `.woocommerce-input-wrapper` é um
+        // `<span>` INLINE que contém um input block (`block-in-inline`). Com
+        // `position: relative` num elemento inline, o containing block do filho
+        // absoluto passa a ser a CAIXA DE LINHA — não o padding box — e aí cada
+        // navegador resolve a altura de um jeito: no Chrome/Firefox o resultado
+        // coincide com a altura do input; no Safari (desktop) a caixa inline é
+        // medida pela métrica de linha, então `top: 50%` + `translateY(-50%)` joga o
+        // checkbox para fora do campo (o relato do cliente). Forçar `display: block`
+        // no elemento que recebe o `position: relative` torna o containing block o
+        // padding box do wrapper (= altura exata do input) em TODOS os motores.
+        var positionParent = inputWrapper || fieldWrapperEl;
+        positionParent.style.position = 'relative';
+
+        var computedDisplay = (window.getComputedStyle)
+            ? window.getComputedStyle(positionParent).display
+            : '';
+
+        if (computedDisplay === 'inline') {
+            positionParent.style.display = 'block';
         }
 
         var snWrapper = document.createElement('span');
         snWrapper.id = checkboxId + '_wrapper';
         snWrapper.setAttribute('style',
             'display: flex !important; ' +
+            'align-items: center !important; ' +
             'position: absolute !important; ' +
             'right: 12px !important; ' +
-            'top: 50% !important; ' +
-            'transform: translateY(-50%) !important; ' +
+            // `top: 0` + `bottom: 0` (em vez de `top: 50%` + `translateY(-50%)`): o
+            // caixa estica na altura do campo e o `align-items: center` centraliza —
+            // sem depender de porcentagem/transform, que são os pontos onde o Safari
+            // divergia do Chrome.
+            'top: 0 !important; ' +
+            'bottom: 0 !important; ' +
+            'transform: none !important; ' +
             'margin: 0 !important; ' +
             'padding: 0 !important; ' +
             'z-index: 2 !important;'
@@ -107,7 +140,9 @@ document.addEventListener("DOMContentLoaded", function () {
             fieldWrapperEl.appendChild(snWrapper);
         }
 
-        inputEl.style.paddingRight = '72px';
+        if (!hideSnCheckbox) {
+            inputEl.style.paddingRight = '72px';
+        }
 
         checkbox.addEventListener('change', function () {
             onCheckedChange(this.checked);
@@ -132,21 +167,25 @@ document.addEventListener("DOMContentLoaded", function () {
 
         billingInitialized = true;
 
-        billingSnCheckbox = injectSnCheckbox(
-            billingNumberField,
-            billingNumberFieldWrapper,
-            'lkn_billing_checkbox',
-            function (checked) {
-                if (checked) {
-                    setFieldValue(billingNumberField, 'S/N');
-                    setFieldDisabled(billingNumberField, true);
-                } else {
-                    setFieldValue(billingNumberField, '');
-                    setFieldDisabled(billingNumberField, false);
-                    billingNumberField.focus();
+        // Opção "Ocultar Checkbox S/N": o atalho não é criado. Sem o checkbox não há
+        // como o cliente destravar o campo, então NADA de travar o valor "S/N" abaixo.
+        if (!hideSnCheckbox) {
+            billingSnCheckbox = injectSnCheckbox(
+                billingNumberField,
+                billingNumberFieldWrapper,
+                'lkn_billing_checkbox',
+                function (checked) {
+                    if (checked) {
+                        setFieldValue(billingNumberField, 'S/N');
+                        setFieldDisabled(billingNumberField, true);
+                    } else {
+                        setFieldValue(billingNumberField, '');
+                        setFieldDisabled(billingNumberField, false);
+                        billingNumberField.focus();
+                    }
                 }
-            }
-        );
+            );
+        }
 
         // Preenche valor salvo via wp_localize_script
         if (typeof wc_better_checkout_shortcode_number_vars !== 'undefined' && wc_better_checkout_shortcode_number_vars.billing_number) {
@@ -168,21 +207,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
         shippingInitialized = true;
 
-        shippingSnCheckbox = injectSnCheckbox(
-            shippingNumberField,
-            shippingNumberFieldWrapper,
-            'lkn_shipping_checkbox',
-            function (checked) {
-                if (checked) {
-                    setFieldValue(shippingNumberField, 'S/N');
-                    setFieldDisabled(shippingNumberField, true);
-                } else {
-                    setFieldValue(shippingNumberField, '');
-                    setFieldDisabled(shippingNumberField, false);
-                    shippingNumberField.focus();
+        // Opção "Ocultar Checkbox S/N": o atalho não é criado (ver billing acima).
+        if (!hideSnCheckbox) {
+            shippingSnCheckbox = injectSnCheckbox(
+                shippingNumberField,
+                shippingNumberFieldWrapper,
+                'lkn_shipping_checkbox',
+                function (checked) {
+                    if (checked) {
+                        setFieldValue(shippingNumberField, 'S/N');
+                        setFieldDisabled(shippingNumberField, true);
+                    } else {
+                        setFieldValue(shippingNumberField, '');
+                        setFieldDisabled(shippingNumberField, false);
+                        shippingNumberField.focus();
+                    }
                 }
-            }
-        );
+            );
+        }
 
         // Preenche valor salvo via wp_localize_script
         if (typeof wc_better_checkout_shortcode_number_vars !== 'undefined' && wc_better_checkout_shortcode_number_vars.shipping_number) {

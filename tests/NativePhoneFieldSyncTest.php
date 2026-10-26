@@ -196,6 +196,32 @@ class NativePhoneFieldSyncTest extends WP_UnitTestCase {
         $this->assertSame( '+5583988888884', get_user_meta( $user_id, 'shipping_phone', true ) );
     }
 
+    /**
+     * Telefone INVÁLIDO no pedido (mais dígitos do que o E.164 permite) não pode ser
+     * copiado para o perfil — era assim que o resíduo voltava para o checkout.
+     */
+    public function test_sync_customer_phone_from_order_skips_invalid_phone(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+
+        $user_id = self::factory()->user->create();
+        wp_set_current_user( $user_id );
+        WC()->customer = new \WC_Customer( 0 );
+
+        update_user_meta( $user_id, 'billing_phone', '83 98888-8885' );
+
+        $order = new \WC_Order();
+        $order->set_customer_id( $user_id );
+        $order->set_billing_phone( '+5583899998899555555' );   // lixo (19 dígitos)
+        $order->set_shipping_phone( '+5583988888885' );
+
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'sync_customer_phone_from_order' );
+        $ref->setAccessible( true );
+        $ref->invoke( $this->plugin(), $order );
+
+        $this->assertSame( '83 98888-8885', get_user_meta( $user_id, 'billing_phone', true ), 'Lixo não pode sobrescrever o telefone do perfil.' );
+        $this->assertSame( '+5583988888885', get_user_meta( $user_id, 'shipping_phone', true ) );
+    }
+
     public function test_sync_customer_phone_does_nothing_in_disabled_mode(): void {
         update_option( 'woo_better_calc_phone_mode', 'disabled' );
 

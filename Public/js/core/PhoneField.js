@@ -3,6 +3,14 @@ import '../../css/WcBetterShippingCalculatorForBrazilIntlTelInputOverrides.css';
 import intlTelInput from 'intl-tel-input';
 import intlTelInputUtils from 'intl-tel-input/build/js/utils.js';
 import { pt } from 'intl-tel-input/i18n';
+import {
+    attachBrazilPhoneMask,
+    brazilMaskType,
+    brazilPhoneIsEmpty,
+    brazilPhoneInvalid,
+    phoneValueForStorage,
+    phoneValueVerbatim
+} from './BrazilPhoneMask.js';
 
 /**
  * Núcleo do campo de telefone/celular no checkout em BLOCOS do WooCommerce.
@@ -11,6 +19,10 @@ import { pt } from 'intl-tel-input/i18n';
  * "script de campo" (um por campo) chama `bootPhoneField()` com o seu tipo; este
  * núcleo monta o input do zero seguindo as opções (Máscara + DDI, Exibir DDI,
  * Validar, Obrigatório e Destaque), como o campo de destaque do plugin.
+ *
+ * Sem a opção "Telefone com Máscara e DDI" não há lib/DDI: o campo recebe apenas a
+ * MÁSCARA BRASILEIRA (fixo/celular, ver `core/BrazilPhoneMask.js`) e a validação
+ * passa a ser a do Brasil.
  *
  * Como são 4 bundles separados (um por campo), o estado é COMPARTILHADO via
  * `window.__wcBetterPhoneFields` para que o `setExtensionData` envie sempre os 4
@@ -78,6 +90,33 @@ function phoneNamespace() {
 /** Namespace do campo "Celular" (fallback quando não localizado pelo PHP). */
 function cellphoneNamespace() {
     return cfgValue('cellphoneNamespace') || 'woo_better_cellphone';
+}
+
+/**
+ * Sufixo "(opcional)" das labels de campo NÃO obrigatório.
+ *
+ * O WooCommerce blocks monta a label como `sprintf('%s (optional)')` e o clássico
+ * (`address-i18n.js`) anexa `<span class="optional">(opcional)</span>`. Como o
+ * plugin cria a própria label, ele precisa fazer o mesmo — senão só os campos
+ * nativos mostram "(opcional)". O texto vem traduzido do PHP (domínio do
+ * WooCommerce, que já tem "opcional" no pt_BR).
+ *
+ * @returns {string}
+ */
+function optionalSuffix() {
+    var suffix = cfgValue('optionalLabel');
+
+    return (typeof suffix === 'string' && suffix !== '') ? suffix : ' (opcional)';
+}
+
+/**
+ * Label exibida de um campo: nome + "(opcional)" quando não é obrigatório.
+ *
+ * @param {object} spec { label, required }
+ * @returns {string}
+ */
+function displayLabel(spec) {
+    return spec.required ? spec.label : (spec.label + optionalSuffix());
 }
 
 /** Valor atual de uma chave (sempre string). */
@@ -387,7 +426,29 @@ function applyCountryRadius(input) {
 }
 
 /**
+ * O plugin GERENCIA o telefone? (nos modos "Desabilitar" o campo é do WooCommerce)
+ *
+ * @returns {boolean}
+ */
+function managesPhone() {
+    var flag = cfgValue('managesPhone');
+
+    // A flag vem do PHP (`phone_mode_hides_native_option()`), para os dois lados não
+    // divergirem se um modo novo aparecer. Fallback: lista conhecida.
+    if (flag !== '' && typeof flag !== 'undefined') {
+        return truthy(flag);
+    }
+
+    var mode = cfgValue('mode') || 'phone_and_cellphone';
+    return mode !== 'disabled' && mode !== 'disabled_native';
+}
+
+/**
  * Aplica a máscara/DDI (intl-tel-input) no input, quando a opção está ligada.
+ *
+ * Sem a opção ("Telefone com Máscara e DDI" desligada) o campo NÃO fica cru: ele
+ * recebe a máscara BRASILEIRA (fixo/celular, sem bandeira e sem DDI), exceto nos
+ * modos em que o plugin não gerencia o telefone.
  *
  * @param {HTMLInputElement} input
  * @param {string}           kind    'phone' | 'cellphone'
@@ -401,6 +462,13 @@ function applyMask(input, kind, context) {
     input.setAttribute('inputmode', 'numeric');
 
     if (!truthy(cfgValue('maskEnabled'))) {
+        if (!managesPhone()) {
+            return;
+        }
+        // Máscara BR pura: o "Telefone" do modo "Celular e Fixo" aceita as DUAS
+        // máscaras (autodetecção pelo tamanho); "Somente Fixo" e o campo "Celular"
+        // têm máscara própria.
+        attachBrazilPhoneMask(input, brazilMaskType(kind, cfgValue('mode')));
         return;
     }
 
@@ -524,7 +592,7 @@ function buildField(spec, context, insertAfter) {
 
     var label = document.createElement('label');
     label.setAttribute('for', id);
-    label.textContent = spec.label;
+    label.textContent = displayLabel(spec);
 
     container.appendChild(input);
     container.appendChild(label);
@@ -564,8 +632,23 @@ function buildField(spec, context, insertAfter) {
         container.classList.toggle('is-active', document.activeElement === input || input.value.trim() !== '');
     };
 
+    // O "Celular" SECUNDÁRIO não recebe DDI no backend: o valor gravado tem que ser
+    // o digitado, só sem os caracteres especiais (o `+55` digitado é MANTIDO; sem
+    // `+55` digitado, nada é somado). O telefone/celular PRINCIPAL continua mandando
+    // só os dígitos, porque o backend concatena o DDI.
+    var verbatimValue = (spec.kind === 'cellphone' && spec.secondary === true);
+
     var onInput = function () {
         var val = input.value.trim();
+        // Máscara BR (sem lib/DDI): o campo é exibido formatado, mas o valor que vai
+        // ao store/servidor são só os DÍGITOS (o +55 é concatenado no backend).
+        if (input.dataset.wcBetterBrazilMask === 'true') {
+            // Máscara BR: o valor do store são os dígitos (um campo só com o `+55`
+            // conta como vazio). Um número de OUTRO país é enviado como está, para o
+            // backend não prefixar o `+55` por cima. O celular secundário é a exceção:
+            // vai como o cliente digitou, só sem pontuação (`phoneValueVerbatim`).
+            val = verbatimValue ? phoneValueVerbatim(val) : phoneValueForStorage(val);
+        }
         valueKeys.forEach(function (key) { S.values[key] = val; });
         refreshActive();
 
@@ -588,8 +671,9 @@ function buildField(spec, context, insertAfter) {
 
     insertAfter.insertAdjacentElement('afterend', container);
 
-    // Campo SECUNDÁRIO NÃO recebe a lib (intl-tel-input): é um campo simples.
-    if (!spec.secondary) {
+    // Campo SECUNDÁRIO NÃO recebe a lib (intl-tel-input): é um campo simples. Sem a
+    // lib, porém, ele recebe a máscara BR do celular (mesma apresentação do telefone).
+    if (!spec.secondary || !truthy(cfgValue('maskEnabled'))) {
         applyMask(input, spec.kind, context);
     }
     refreshActive();
@@ -746,10 +830,16 @@ function mountField(spec) {
 
 function fieldInvalid(field) {
     var iti = field.wcBetterIti;
-    if (!iti || typeof iti.isValidNumberPrecise !== 'function') {
-        return false;
+    if (iti && typeof iti.isValidNumberPrecise === 'function') {
+        return iti.isValidNumberPrecise() === false;
     }
-    return iti.isValidNumberPrecise() === false;
+
+    // Sem a lib (máscara BR): valida só números do Brasil.
+    if (field.dataset.wcBetterBrazilMask === 'true') {
+        return brazilPhoneInvalid(field.value, field.dataset.wcBetterBrazilMaskType);
+    }
+
+    return false;
 }
 
 /**
@@ -822,15 +912,19 @@ function bindValidation() {
             document.querySelectorAll('.wc-better-tel-input')
         );
         var validateDdd = truthy(cfgValue('validateDdd'));
-        var maskEnabled = truthy(cfgValue('maskEnabled'));
         var invalid = fields.find(function (field) {
             var required = field.dataset.wcBetterRequired === 'true';
-            if (required && !field.value.trim()) {
+            // Na máscara BR o campo pode ter só o `+55`: não é um telefone preenchido.
+            var empty = (field.dataset.wcBetterBrazilMask === 'true')
+                ? brazilPhoneIsEmpty(field.value)
+                : !field.value.trim();
+            if (required && empty) {
                 return true;
             }
             // Só valida o tipo/DDD quando o campo é OBRIGATÓRIO (campo opcional não
-            // é validado, mesmo preenchido).
-            return required && validateDdd && maskEnabled && field.value.trim() && fieldInvalid(field);
+            // é validado, mesmo preenchido). Sem a lib/DDI, `fieldInvalid` aplica a
+            // regra brasileira (DDD + 8 ou 9 dígitos).
+            return required && validateDdd && field.value.trim() && fieldInvalid(field);
         });
         if (invalid) {
             event.stopPropagation();
@@ -838,6 +932,25 @@ function bindValidation() {
             showError(invalid);
         }
     });
+}
+
+/**
+ * Redesenha a label do campo (inclui/remove o "(opcional)").
+ *
+ * O campo é criado uma vez e reaproveitado nos re-renders do React, mas a
+ * obrigatoriedade pode mudar (ex.: "Campo de Celular" obrigatório).
+ *
+ * @param {HTMLInputElement} input
+ * @param {object}           spec { label, required }
+ */
+function refreshFieldLabel(input, spec) {
+    var container = input.closest('.wc-block-components-text-input');
+    var label = container ? container.querySelector('label') : null;
+    var text = displayLabel(spec);
+
+    if (label && label.textContent !== text) {
+        label.textContent = text;
+    }
 }
 
 /**
@@ -868,6 +981,7 @@ function runAll() {
         var sel = '.wc-better-' + spec.kind + '-field .wc-better-tel-input';
         Array.prototype.forEach.call(document.querySelectorAll(sel), function (input) {
             input.dataset.wcBetterRequired = spec.required ? 'true' : 'false';
+            refreshFieldLabel(input, spec);
         });
     });
 

@@ -1,0 +1,410 @@
+'use strict';
+
+/**
+ * Regressão: MÁSCARA BRASILEIRA sem a lib/DDI (opção "Telefone com Máscara e DDI"
+ * desligada, plugin ainda gerenciando o telefone).
+ *
+ * O chamado da cliente: mesmo sem a lib de DDI, o campo de telefone deve continuar
+ * formatado no padrão brasileiro, com autodetecção entre fixo e celular:
+ *   - Celular: (DD) NNNNN-NNNN
+ *   - Fixo:    (DD) NNNN-NNNN
+ * Sem bandeira e sem código de país (o `+55` é concatenado pelo backend).
+ *
+ * Estratégia: carrega `Public/js/core/BrazilPhoneMask.js` num sandbox (vm) — com os
+ * `export` removidos — e testa a formatação/validação REAIS. Também confere que os
+ * dois consumidores (blocos e clássico/shortcode) ligam a máscara quando a lib está
+ * desligada.
+ *
+ * Execução: npm run test:js
+ */
+
+const test = require('node:test');
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+
+const ROOT = path.resolve(__dirname, '..', '..');
+
+const SOURCE = path.join(ROOT, 'Public/js/core/BrazilPhoneMask.js');
+const BLOCKS_CORE = path.join(ROOT, 'Public/js/core/PhoneField.js');
+const SHORTCODE = path.join(ROOT, 'Public/js/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.js');
+const BRAZIL_ENTRY = path.join(ROOT, 'Public/js/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskBrazil.js');
+const COMPILED_BRAZIL = path.join(
+    ROOT,
+    'Public/jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskBrazil.COMPILED.js'
+);
+const SANITIZER = path.join(ROOT, 'Public/js/WcBetterShippingCalculatorForBrazilPublicPhoneSanitizer.js');
+const COMPILED_SANITIZER = path.join(
+    ROOT,
+    'Public/jsCompiled/WcBetterShippingCalculatorForBrazilPublicPhoneSanitizer.COMPILED.js'
+);
+const COMPILED_SHORTCODE = path.join(
+    ROOT,
+    'Public/jsCompiled/WcBetterShippingCalculatorForBrazilCheckoutPhoneMaskShortcode.COMPILED.js'
+);
+const COMPILED_BLOCKS = path.join(
+    ROOT,
+    'Public/jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergPhoneFieldBoth.COMPILED.js'
+);
+// Nesta base (5.2.x) a tela de configurações usa o layout ANTIGO
+// (`AdminLayout.js`); no dev os comportamentos vivem em `AdminLayoutBehaviors.js`.
+const ADMIN_BEHAVIORS = path.join(ROOT, 'Admin/js/WcBetterShippingCalculatorForBrazilAdminLayout.js');
+const COMPILED_ADMIN = path.join(
+    ROOT,
+    'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js'
+);
+
+/**
+ * Carrega o módulo (ESM) num sandbox, removendo os `export`.
+ *
+ * @returns {object} Funções do módulo.
+ */
+function loadModule() {
+    assert.ok(fs.existsSync(SOURCE), `Arquivo não encontrado: ${SOURCE}`);
+
+    const code = fs.readFileSync(SOURCE, 'utf8').replace(/^export /gm, '');
+    const sandbox = { console };
+
+    vm.createContext(sandbox);
+    vm.runInContext(code, sandbox, { filename: SOURCE });
+
+    return sandbox;
+}
+
+const mask = loadModule();
+
+test('[brazil-mask] formata celular (11 dígitos) como (DD) NNNNN-NNNN', () => {
+    assert.strictEqual(mask.formatBrazilPhone('85988888888', 'auto'), '(85) 98888-8888');
+    assert.strictEqual(mask.formatBrazilPhone('85988888888', 'mobile'), '(85) 98888-8888');
+});
+
+test('[brazil-mask] formata fixo (10 dígitos) como (DD) NNNN-NNNN', () => {
+    assert.strictEqual(mask.formatBrazilPhone('8532323232', 'auto'), '(85) 3232-3232');
+    assert.strictEqual(mask.formatBrazilPhone('8532323232', 'landline'), '(85) 3232-3232');
+});
+
+test('[brazil-mask] no modo "auto" a máscara troca sozinha ao chegar o 11º dígito', () => {
+    // Autodetecção: até 10 dígitos parece fixo; com o 11º vira celular.
+    assert.strictEqual(mask.formatBrazilPhone('8598888888', 'auto'), '(85) 9888-8888');
+    assert.strictEqual(mask.formatBrazilPhone('85988888888', 'auto'), '(85) 98888-8888');
+});
+
+test('[brazil-mask] digitação parcial mantém a formatação progressiva', () => {
+    assert.strictEqual(mask.formatBrazilPhone('', 'auto'), '');
+    assert.strictEqual(mask.formatBrazilPhone('8', 'auto'), '(8');
+    assert.strictEqual(mask.formatBrazilPhone('85', 'auto'), '(85');
+    assert.strictEqual(mask.formatBrazilPhone('859', 'auto'), '(85) 9');
+    assert.strictEqual(mask.formatBrazilPhone('8598888', 'auto'), '(85) 9888-8');
+});
+
+test('[brazil-mask] número fora do padrão brasileiro não é formatado', () => {
+    // "Se o usuário digitar outro tipo de número, não pega formatação."
+    assert.strictEqual(mask.formatBrazilPhone('123456789012', 'auto'), '123456789012');
+    assert.strictEqual(mask.formatBrazilPhone('12345678901', 'landline'), '12345678901');
+});
+
+test('[brazil-mask] valor já salvo em E.164 (+55) mantém o DDI visível e é reformatado', () => {
+    // Sem bandeira/seletor de país, o "+55" no campo é a única pista do DDI.
+    assert.strictEqual(mask.formatBrazilPhone('+5585988888888', 'auto'), '+55 (85) 98888-8888');
+    assert.strictEqual(mask.formatBrazilPhone('+558532323232', 'auto'), '+55 (85) 3232-3232');
+    // DDD 55 (RS) com 11 dígitos NÃO é DDI: não pode perder o DDD.
+    assert.strictEqual(mask.formatBrazilPhone('55988888888', 'auto'), '(55) 98888-8888');
+});
+
+test('[brazil-mask] digitar "+55" não apaga: o DDI fica no campo', () => {
+    assert.strictEqual(mask.formatBrazilPhone('+', 'auto'), '+');
+    assert.strictEqual(mask.formatBrazilPhone('+5', 'auto'), '+5');
+    assert.strictEqual(mask.formatBrazilPhone('+55', 'auto'), '+55');
+    // Continuando a digitar, o prefixo é preservado e o número é formatado.
+    assert.strictEqual(mask.formatBrazilPhone('+558', 'auto'), '+55 (8');
+    assert.strictEqual(mask.formatBrazilPhone('+5585', 'auto'), '+55 (85');
+    assert.strictEqual(mask.formatBrazilPhone('+5585988888888', 'auto'), '+55 (85) 98888-8888');
+    // O valor enviado/gravado são só os DÍGITOS do número nacional (sem o +55).
+    assert.strictEqual(mask.nationalBrazilDigits('+55 (85) 98888-8888'), '85988888888');
+    assert.strictEqual(mask.nationalBrazilDigits('+55'), '');
+});
+
+test('[brazil-mask] campo só com o DDI conta como VAZIO (obrigatoriedade)', () => {
+    assert.strictEqual(mask.brazilPhoneIsEmpty('+55'), true);
+    assert.strictEqual(mask.brazilPhoneIsEmpty('+55 '), true);
+    assert.strictEqual(mask.brazilPhoneIsEmpty(''), true);
+    assert.strictEqual(mask.brazilPhoneIsEmpty('+55 '), true, 'DDI com espaço.');
+    assert.strictEqual(mask.brazilPhoneIsEmpty('+55 (8'), false, 'Com dígito do DDD já não é vazio.');
+    assert.strictEqual(mask.brazilPhoneIsEmpty('(85'), false, 'Já tem dígitos: não conta como vazio.');
+    assert.strictEqual(mask.brazilPhoneIsEmpty('+55 (85) 98888-8888'), false);
+    assert.strictEqual(mask.brazilPhoneIsEmpty('(85) 98888-8888'), false);
+});
+
+test('[brazil-mask] número internacional explícito (+) pode ser digitado, mas reprova no envio', () => {
+    // A máscara não mexe no número estrangeiro (o cliente pode digitar).
+    assert.strictEqual(mask.formatBrazilPhone('+15551234567', 'auto'), '+15551234567');
+    assert.strictEqual(mask.formatBrazilPhone('+351912345678', 'auto'), '+351912345678');
+    assert.strictEqual(mask.brazilPhoneInvalid('+15551234567', 'auto'), true, 'A validação da máscara BR é só brasileira.');
+    assert.strictEqual(mask.brazilPhoneInvalid('+351912345678', 'auto'), true);
+    // O "+55" é o DDI do Brasil: continua visível no campo (ver teste acima).
+    assert.strictEqual(mask.formatBrazilPhone('+55', 'auto'), '+55');
+    // E o valor a enviar preserva o DDI estrangeiro (para o backend não prefixar +55).
+    assert.strictEqual(mask.phoneValueForStorage('+1 (415) 555-2671'), '+1 (415) 555-2671');
+    assert.strictEqual(mask.phoneValueForStorage('+55 (85) 98888-8888'), '85988888888');
+    assert.strictEqual(mask.phoneValueForStorage('(85) 98888-8888'), '85988888888');
+});
+
+test('[brazil-mask] celular SECUNDÁRIO grava o valor digitado (só sem os caracteres especiais)', () => {
+    // O campo secundário NÃO recebe DDI do backend: o valor gravado é o digitado,
+    // sem pontuação. O "+55" digitado é MANTIDO (não vira dígitos nacionais).
+    assert.strictEqual(mask.phoneValueVerbatim('+55 (83) 98888-8885'), '+5583988888885');
+    assert.strictEqual(mask.phoneValueVerbatim('+5583988888885'), '+5583988888885');
+    assert.strictEqual(mask.phoneValueVerbatim('+55 83 98888 8885'), '+5583988888885');
+    // Sem DDI digitado, NADA é somado — só a pontuação sai.
+    assert.strictEqual(mask.phoneValueVerbatim('(83) 98888-8885'), '83988888885');
+    assert.strictEqual(mask.phoneValueVerbatim('83 98888 8885'), '83988888885');
+    // Um "+" que não é o do DDI também é preservado (número de outro país digitado).
+    assert.strictEqual(mask.phoneValueVerbatim('+1 (415) 555-2671'), '+14155552671');
+    // Vazio/parcial não vira "+".
+    assert.strictEqual(mask.phoneValueVerbatim(''), '');
+    assert.strictEqual(mask.phoneValueVerbatim(null), '');
+    assert.strictEqual(mask.phoneValueVerbatim('  '), '');
+});
+
+test('[brazil-mask] validação BR: aceita fixo e celular válidos', () => {
+    assert.strictEqual(mask.brazilPhoneInvalid('(85) 98888-8888', 'auto'), false);
+    assert.strictEqual(mask.brazilPhoneInvalid('(85) 3232-3232', 'auto'), false);
+    assert.strictEqual(mask.brazilPhoneInvalid('+5585988888888', 'auto'), false);
+    assert.strictEqual(mask.brazilPhoneInvalid('+55 (85) 98888-8888', 'auto'), false);
+    assert.strictEqual(mask.brazilPhoneInvalid('+55 (85) 8888-8888', 'auto'), true, 'Celular de 10 dígitos continua inválido com o +55 na frente.');
+    assert.strictEqual(mask.brazilPhoneInvalid('+55', 'auto'), false, 'Só o DDI não é um número preenchido.');
+    assert.strictEqual(mask.brazilPhoneInvalid('+55 (85) 98888-8888', 'landline'), true);
+    assert.strictEqual(mask.brazilPhoneInvalid('', 'auto'), false);
+});
+
+test('[brazil-mask] validação BR: rejeita números inválidos', () => {
+    assert.strictEqual(mask.brazilPhoneInvalid('(85) 9888-88', 'auto'), true, 'Curto demais.');
+    assert.strictEqual(mask.brazilPhoneInvalid('(10) 3232-3232', 'auto'), true, 'DDD inválido (10).');
+    assert.strictEqual(mask.brazilPhoneInvalid('(85) 1234-5678', 'auto'), true, 'Fixo não começa em 2–5.');
+    assert.strictEqual(mask.brazilPhoneInvalid('(85) 8232-3232', 'auto'), true, 'Fixo não começa em 2–5.');
+    assert.strictEqual(mask.brazilPhoneInvalid('(85) 8888-8888', 'auto'), true, 'Celular de 10 dígitos não é válido como celular.');
+    assert.strictEqual(mask.brazilPhoneInvalid('(85) 3232-3232', 'mobile'), true, 'Campo Celular exige 11 dígitos.');
+    assert.strictEqual(mask.brazilPhoneInvalid('(85) 98888-8888', 'landline'), true, 'Campo Fixo exige 10 dígitos.');
+});
+
+test('[brazil-mask] tipo da máscara segue o modo do telefone', () => {
+    assert.strictEqual(mask.brazilMaskType('phone', 'landline_only'), 'landline');
+    assert.strictEqual(mask.brazilMaskType('phone', 'phone_and_cellphone'), 'auto');
+    assert.strictEqual(mask.brazilMaskType('phone', 'cellphone_only'), 'auto');
+    assert.strictEqual(mask.brazilMaskType('cellphone', 'phone_and_cellphone'), 'mobile');
+});
+
+test('[brazil-mask] a máscara só formata o que o cliente VÊ (input.value)', () => {
+    const listeners = {};
+    const input = {
+        value: '',
+        dataset: {},
+        setAttribute() {},
+        addEventListener(type, cb) { (listeners[type] = listeners[type] || []).push(cb); },
+        setSelectionRange() {},
+    };
+
+    mask.attachBrazilPhoneMask(input, 'auto');
+    assert.strictEqual(input.dataset.wcBetterBrazilMask, 'true');
+
+    input.value = '85988888888';
+    (listeners.input || []).forEach((cb) => cb());
+    assert.strictEqual(input.value, '(85) 98888-8888');
+
+    // Mesma instância não re-registra (idempotente).
+    mask.attachBrazilPhoneMask(input, 'auto');
+    assert.strictEqual((listeners.input || []).length, 1);
+});
+
+test('[brazil-mask] blocos: sem a lib, o campo recebe a máscara BR (e a validação BR)', () => {
+    assert.ok(fs.existsSync(BLOCKS_CORE), `Arquivo não encontrado: ${BLOCKS_CORE}`);
+    const src = fs.readFileSync(BLOCKS_CORE, 'utf8');
+
+    assert.ok(
+        /import \{[\s\S]*?attachBrazilPhoneMask[\s\S]*?\} from '\.\/BrazilPhoneMask\.js';/.test(src),
+        'PhoneField.js deve importar o módulo da máscara BR.'
+    );
+    assert.ok(
+        /if \(!truthy\(cfgValue\('maskEnabled'\)\)\) \{[\s\S]*?attachBrazilPhoneMask\(input, brazilMaskType\(kind, cfgValue\('mode'\)\)\);/.test(src),
+        'Sem a máscara/DDI, o campo deve receber a máscara BR (fixo/celular).'
+    );
+    assert.ok(
+        /brazilPhoneInvalid\(field\.value, field\.dataset\.wcBetterBrazilMaskType\)/.test(src),
+        'A validação no envio deve usar a regra brasileira quando não há lib.'
+    );
+    assert.ok(
+        /brazilPhoneIsEmpty\(field\.value\)/.test(src),
+        'Um campo só com o +55 deve contar como vazio na obrigatoriedade.'
+    );
+    // O campo "Celular" secundário também recebe a máscara BR sem a lib.
+    assert.ok(
+        /if \(!spec\.secondary \|\| !truthy\(cfgValue\('maskEnabled'\)\)\)/.test(src),
+        'O "Celular" secundário deve receber a máscara BR quando a lib está desligada.'
+    );
+});
+
+test('[brazil-mask] blocks: label mostra "(opcional)" nos campos não obrigatórios', () => {
+    assert.ok(fs.existsSync(BLOCKS_CORE), `Arquivo não encontrado: ${BLOCKS_CORE}`);
+    const src = fs.readFileSync(BLOCKS_CORE, 'utf8');
+
+    // Mesma regra do WooCommerce blocks (`sprintf('%s (optional)')`) — o texto vem do
+    // PHP no domínio do WooCommerce, que já traz "opcional" traduzido.
+    assert.ok(
+        /function optionalSuffix\(\) \{[\s\S]*?cfgValue\('optionalLabel'\)/.test(src),
+        'O sufixo "(opcional)" deve vir da config (`optionalLabel`).'
+    );
+    assert.ok(
+        /function displayLabel\(spec\) \{\s*return spec\.required \? spec\.label : \(spec\.label \+ optionalSuffix\(\)\);/.test(src),
+        'Label obrigatória = nome; opcional = nome + "(opcional)".'
+    );
+    assert.ok(
+        /label\.textContent = displayLabel\(spec\);/.test(src),
+        'A label criada em buildField deve usar displayLabel().'
+    );
+    assert.ok(
+        /refreshFieldLabel\(input, spec\);/.test(src) && /function refreshFieldLabel\(input, spec\)/.test(src),
+        'A label deve ser redesenhada quando a obrigatoriedade muda.'
+    );
+});
+
+test('[brazil-mask] bundle com lib: validação sem exigir a máscara e só em campos obrigatórios', () => {
+    assert.ok(fs.existsSync(SHORTCODE), `Arquivo não encontrado: ${SHORTCODE}`);
+    const src = fs.readFileSync(SHORTCODE, 'utf8');
+
+    // "Validar Número de Telefone" não depende mais da máscara/DDI.
+    assert.ok(
+        /function bindDddValidation\(\) \{\s*if \(!validateDdd\) \{/.test(src),
+        'A validação da edição de endereço não deve exigir a máscara/DDI.'
+    );
+    // Só valida campos OBRIGATÓRIOS (mesma regra do backend).
+    assert.ok(
+        /!isRequiredPhoneField\(f\)/.test(src),
+        'A validação no submit deve ignorar campos opcionais.'
+    );
+    // Erro inline compartilhado com o bundle sem lib (core/BrazilPhoneMask.js).
+    assert.ok(
+        /import \{ isRequiredPhoneField, showBrazilPhoneError \} from '\.\/core\/BrazilPhoneMask\.js';/.test(src)
+        && /showBrazilPhoneError\(invalidField\)/.test(src),
+        'O bundle com lib deve reaproveitar os helpers do núcleo da máscara BR.'
+    );
+});
+
+test('[brazil-mask] sanitizador não trava espaço/parênteses/hífen no modo sem lib', () => {
+    assert.ok(fs.existsSync(SANITIZER), `Arquivo não encontrado: ${SANITIZER}`);
+    const src = fs.readFileSync(SANITIZER, 'utf8');
+
+    assert.ok(
+        /FREE_TYPING = CONFIG\.allowPunctuation/.test(src),
+        'O sanitizador deve ler a flag `allowPunctuation` (máscara BR sem lib).'
+    );
+    assert.ok(
+        /if \(FREE_TYPING\) \{[\s\S]*?ALLOWED_TYPING\.test\(event\.data\)/.test(src),
+        'No modo livre a digitação de pontuação não pode ser travada.'
+    );
+    assert.ok(
+        /ALLOWED_TYPING = \/\[\^0-9\+\\-\(\)\.\/\\s\]\//.test(src),
+        'O conjunto permitido na digitação livre deve ser dígitos + pontuação de telefone.'
+    );
+    // Sem a flag, a regra rígida continua (só dígitos + um "+" inicial).
+    assert.ok(
+        /event\.data !== '\+' \|\| !canInsertLeadingPlus\(field\)/.test(src),
+        'Fora do modo livre o bloqueio rígido de caracteres deve continuar.'
+    );
+
+    assert.ok(fs.existsSync(COMPILED_SANITIZER), `Arquivo não encontrado: ${COMPILED_SANITIZER}`);
+    assert.ok(
+        fs.readFileSync(COMPILED_SANITIZER, 'utf8').indexOf('allowPunctuation') !== -1,
+        'Compilado do sanitizador desatualizado: rode npm run build:public.'
+    );
+});
+
+test('[brazil-mask] bundle LEVE (sem lib) para o modo "máscara BR apenas"', () => {
+    assert.ok(fs.existsSync(BRAZIL_ENTRY), `Arquivo não encontrado: ${BRAZIL_ENTRY}`);
+    const src = fs.readFileSync(BRAZIL_ENTRY, 'utf8');
+
+    assert.ok(
+        !/from '(intl-tel-input|intl-tel-input\/)/.test(src),
+        'O bundle sem lib não pode importar o intl-tel-input (peso desnecessário).'
+    );
+    assert.ok(
+        /if \(maskEnabled\) \{\s*return;/.test(src),
+        'O bundle sem lib só age quando a lib está desligada.'
+    );
+    assert.ok(
+        /attachBrazilPhoneMask\(field, brazilTypeFor\(/.test(src) && /brazilPhoneInvalid\(/.test(src),
+        'O bundle sem lib deve aplicar a máscara e a validação brasileiras.'
+    );
+    assert.ok(
+        /brazilPhoneIsEmpty\(candidate\.value\)/.test(src) && /!isRequiredPhoneField\(candidate\)/.test(src)
+        && /showBrazilPhoneError\(invalidField\)/.test(src),
+        'O bundle sem lib deve validar só campos obrigatórios e usar o erro inline compartilhado.'
+    );
+    // Script no <head>: precisa esperar o DOM (senão `document.body` é null).
+    assert.ok(
+        /document\.readyState === 'loading'/.test(src) && /addEventListener\('DOMContentLoaded', init\)/.test(src),
+        'O bundle sem lib deve aguardar o DOM (é enfileirado no <head>).'
+    );
+
+    assert.ok(fs.existsSync(COMPILED_BRAZIL), `Arquivo não encontrado: ${COMPILED_BRAZIL}`);
+    const compiled = fs.readFileSync(COMPILED_BRAZIL, 'utf8');
+
+    assert.ok(
+        compiled.indexOf('wcBetterBrazilMask') !== -1,
+        'Compilado do bundle sem lib desatualizado: rode npm run build:public.'
+    );
+    assert.ok(
+        compiled.length < 40000,
+        'O bundle sem lib deve continuar leve (sem o intl-tel-input).'
+    );
+});
+
+test('[brazil-mask] bundles COMPILADOS atualizados (rode `npm run build:public`)', () => {
+    // O bundle com lib precisa ter sido recompilado com os helpers compartilhados.
+    assert.ok(fs.existsSync(COMPILED_SHORTCODE), `Arquivo não encontrado: ${COMPILED_SHORTCODE}`);
+    assert.ok(
+        fs.readFileSync(COMPILED_SHORTCODE, 'utf8').indexOf('wc-better-ddd-error') !== -1,
+        'Compilado do bundle com lib desatualizado: rode npm run build:public.'
+    );
+
+    // O bundle dos BLOCOS embute a máscara BR (dataset `wcBetterBrazilMask`).
+    assert.ok(fs.existsSync(COMPILED_BLOCKS), `Arquivo não encontrado: ${COMPILED_BLOCKS}`);
+    assert.ok(
+        fs.readFileSync(COMPILED_BLOCKS, 'utf8').indexOf('wcBetterBrazilMask') !== -1,
+        'Compilado dos blocos desatualizado: rode npm run build:public.'
+    );
+});
+test('[brazil-mask] admin: "Validar Número de Telefone" funciona sem a lib (escopo Brasil)', () => {
+    assert.ok(fs.existsSync(ADMIN_BEHAVIORS), `Arquivo não encontrado: ${ADMIN_BEHAVIORS}`);
+    const src = fs.readFileSync(ADMIN_BEHAVIORS, 'utf8');
+
+    // O card é CAMADA sobre a obrigatoriedade do telefone: só destrava quando existe
+    // campo OBRIGATÓRIO (contato obrigatório ou "Celular" obrigatório) e o plugin
+    // gerencia o telefone. Não depende da máscara/DDI.
+    assert.ok(
+        /function updateValidateDddState\(\) \{[\s\S]*?const requiredOn = [\s\S]*?contactRequiredRadios[\s\S]*?const on = requiredOn && modeOk;/.test(src),
+        'A validação só deve destravar com um campo obrigatório (telefone ou celular).'
+    );
+    // Travada → marca "Desabilitar" e desmarca "Habilitar" (a tela reflete o checkout).
+    assert.ok(
+        /if \(!on\) \{[\s\S]*?radio\.value === 'no'[\s\S]*?radio\.checked = true[\s\S]*?radio\.value === 'yes'[\s\S]*?radio\.checked = false/.test(src),
+        'Travada, a opção precisa aparecer marcada em "Desabilitar".'
+    );
+    assert.ok(
+        /A validação é aplicada quando o telefone\/celular é obrigatório e preenchido\./.test(src),
+        'O texto deve explicar que a validação só age em campo obrigatório.'
+    );
+    assert.ok(
+        /VALIDATE_DDD_TEXTS[\s\S]*?todos os países[\s\S]*?Brasil/.test(src),
+        'Os textos do card devem mudar conforme o escopo (todos os países × Brasil).'
+    );
+
+    // O compilado acompanha o fonte (build:admin).
+    assert.ok(fs.existsSync(COMPILED_ADMIN), `Arquivo não encontrado: ${COMPILED_ADMIN}`);
+    const compiled = fs.readFileSync(COMPILED_ADMIN, 'utf8');
+
+    assert.ok(
+        compiled.indexOf('Validar o número de telefone no checkout (Brasil)') !== -1,
+        'Compilado do admin desatualizado: rode npm run build:admin.'
+    );
+});

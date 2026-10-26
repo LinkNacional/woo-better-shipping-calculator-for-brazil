@@ -1,3 +1,5 @@
+import { placeChainField } from './core/CheckoutFieldOrder.js';
+
 document.addEventListener("DOMContentLoaded", function () {
 	let rgInput = null
 	let placeOrderBound = false
@@ -15,6 +17,9 @@ document.addEventListener("DOMContentLoaded", function () {
 	let savedRGData = {
 		billing_rg: typeof WooBetterRGData !== 'undefined' && WooBetterRGData.billing_rg ? WooBetterRGData.billing_rg : ''
 	}
+
+	// Último valor enviado ao carrinho: evita POST repetido com o mesmo dado.
+	let lastSentRGValue = null
 
 	// Mesmo normalize do servidor (PHP): maiúsculas, sem símbolos estranhos.
 	function sanitizeRGValue(value) {
@@ -135,6 +140,16 @@ document.addEventListener("DOMContentLoaded", function () {
 			}
 		}
 
+		// REASON: `extensionCartUpdate` dispara um POST no Store API e RESETA o
+		// checkout em blocos. Na recriação do campo (ex.: ao alternar "usar o mesmo
+		// endereço para cobrança") o `setInputValue` dispara `input` com o MESMO
+		// valor, o que reenviaria o POST e realimentaria o reset — loop infinito.
+		// Só envia quando o valor realmente mudou.
+		if (lastSentRGValue === payload.billing_rg) {
+			return
+		}
+		lastSentRGValue = payload.billing_rg
+
 		if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
 			window.wc.blocksCheckout.extensionCartUpdate({
 				namespace: 'woo_better_rg_field',
@@ -220,8 +235,12 @@ document.addEventListener("DOMContentLoaded", function () {
 		// ancoram na Empresa (ou no campo RG, quando a Empresa não existe), então
 		// este é o único ponto de ancoragem do RG — evita que dois scripts
 		// reposicionem os campos um do outro em loop no observer.
+		// O `#billing_document` é GLOBAL: com "usar o mesmo endereço" ligado ele pode
+		// estar dentro do container de ENTREGA. Ancorar num elemento de outro
+		// formulário colocava o RG no lugar errado (e a recriação virava loop), por
+		// isso a âncora só vale se estiver dentro do container do contexto atual.
 		const documentInput = document.getElementById('billing_document')
-		if (documentInput) {
+		if (documentInput && container.contains(documentInput)) {
 			const documentContainer = documentInput.closest('.wc-block-components-text-input')
 			if (documentContainer) {
 				return documentContainer
@@ -440,8 +459,14 @@ document.addEventListener("DOMContentLoaded", function () {
 			return
 		}
 
+		// O campo pertence ao formulário do contexto atual (cobrança/entrega).
+		// A checagem olha o PAI REAL no DOM — antes comparava só a flag
+		// `fieldContainerType`, que podia dizer "cobrança" enquanto o campo estava
+		// fisicamente na entrega (os ids são globais: `billing_document` pode ser
+		// criado dentro do container de entrega). Nesse estado o campo ficava no
+		// formulário errado para sempre.
 		const currentContainer = getRGContainer()
-		if (currentContainer && fieldContainerType && fieldContainerType !== context.containerType) {
+		if (currentContainer && currentContainer.parentElement !== context.container) {
 			currentContainer.remove()
 			rgInput = null
 		}
@@ -452,10 +477,14 @@ document.addEventListener("DOMContentLoaded", function () {
 		}
 
 		// Reposiciona o campo quando o ancoradouro correto muda (o campo é criado
-		// cedo, antes do CPF/CNPJ existir).
+		// cedo, antes do CPF/CNPJ existir). A posição é decidida pela cadeia
+		// canônica (`core/CheckoutFieldOrder.js`): RG e IE caem no MESMO container
+		// do documento quando a Empresa não existe, e a checagem antiga
+		// (`previousElementSibling !== referencia`) fazia os dois se empurrarem
+		// para sempre — loop síncrono que travava o checkout.
 		const existingContainer = getRGContainer()
-		if (existingContainer && existingContainer.previousElementSibling !== referenceElement) {
-			referenceElement.insertAdjacentElement('afterend', existingContainer)
+		if (existingContainer && existingContainer.parentElement === context.container) {
+			placeChainField(context.container, 'rg', existingContainer, context.containerType)
 		}
 
 		createRGField(referenceElement)

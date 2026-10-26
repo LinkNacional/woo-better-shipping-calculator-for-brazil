@@ -570,6 +570,10 @@
               'woo_better_calc_enable_cellphone_shim': 'woo_better_calc_phone_mode',
               'woo_better_calc_cellphone_required': 'woo_better_calc_enable_cellphone_field',
               'woo_better_calc_rg_required': 'woo_better_calc_enable_rg_field',
+              // "Ocultar Checkbox S/N" é FILHO do campo de Número: sem ele não há
+              // checkbox para ocultar. Comportamento (travar quando o pai está em
+              // "Desabilitar") fica em `joinPairs` no ...AdminSettings.js.
+              'woo_better_calc_number_hide_sn_checkbox': 'woo_better_calc_number_required',
             };
 
             forminp.innerHTML = ''; // Limpa o conteúdo original
@@ -711,21 +715,104 @@
       }
     }
 
-    // "Validar Número de Telefone" (filho do "Telefone (Contato) Obrigatório"):
-    // só é habilitado quando a máscara está on, o telefone/celular é obrigatório e o
-    // modo não é "Desabilitar". Só então a validação faz sentido.
+    // Textos do card "Validar Número de Telefone": o ESCOPO da validação muda com a
+    // opção "Telefone com Máscara e DDI". Ligada, a validação usa a base
+    // internacional (todos os países); desligada, o campo tem apenas a máscara
+    // brasileira e a validação vale só para o Brasil.
+    const VALIDATE_DDD_TEXTS = {
+      mask: {
+        title: 'Validar o número de telefone no checkout (todos os países)',
+        sub: 'Valida o número de telefone no checkout em todos os países.',
+        body: 'A validação é aplicada quando o telefone/celular é obrigatório e preenchido. Com a opção "Telefone com Máscara e DDI" habilitada, a validação usa a base internacional de telefonia (vale para todos os países). Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.'
+      },
+      brazil: {
+        title: 'Validar o número de telefone no checkout (Brasil)',
+        sub: 'Valida o número de telefone no checkout apenas para o Brasil.',
+        body: 'A validação é aplicada quando o telefone/celular é obrigatório e preenchido. Sem a opção "Telefone com Máscara e DDI", o campo usa a máscara brasileira (fixo/celular) e a validação vale apenas para números do Brasil (DDD válido + 8 dígitos para fixo ou 9 para celular). Quando ativada, o checkout impede o envio caso o número de telefone seja inválido.'
+      }
+    };
+
+    /**
+     * Troca título/subtítulo/descrição do card "Validar Número de Telefone"
+     * conforme o escopo da validação (com ou sem lib/DDI).
+     *
+     * Este arquivo monta o card no layout ANTIGO (`woo-forminp-header` +
+     * `p.description`), por isso os seletores abaixo.
+     *
+     * @return {void}
+     */
+    function updateValidateDddTexts() {
+      if (!validateDddRadios.length) {
+        return;
+      }
+
+      const wrapper = validateDddRadios[0].closest('.forminp')
+        || validateDddRadios[0].closest('fieldset');
+
+      if (!wrapper) {
+        return;
+      }
+
+      const texts = Array.from(applyPhoneMaskRadios).some(radio => radio.checked && radio.value === 'yes')
+        ? VALIDATE_DDD_TEXTS.mask
+        : VALIDATE_DDD_TEXTS.brazil;
+
+      const title = wrapper.querySelector('.woo-forminp-header-text');
+      const sub = wrapper.querySelector('.woo-forminp-header span');
+      const body = wrapper.querySelector('.description');
+
+      if (title) {
+        title.textContent = texts.title;
+      }
+      if (sub) {
+        sub.textContent = texts.sub;
+      }
+      if (body) {
+        body.textContent = texts.body;
+      }
+    }
+
+    // "Validar Número de Telefone" é CAMADA sobre a obrigatoriedade do telefone: a
+    // validação só age em campo OBRIGATÓRIO (`validate_phone_ddd_classic` no clássico
+    // e `bindValidation` nos blocos), então a opção fica travada enquanto não houver
+    // campo obrigatório — senão o lojista liga "Validar", a tela mostra ativo e NADA
+    // é validado no checkout. Fica travada também nos modos em que o plugin não
+    // gerencia o telefone, onde não há campo algum.
+    //
+    // Travada = marcada em "Desabilitar" E com o fake disabled. Mesmo padrão dos
+    // outros blocos dependentes deste arquivo (`updatePhoneChildState`,
+    // `updateCellphoneRequiredState`): a tela precisa REFLETIR o que o checkout faz,
+    // não só ficar apagada — deixar "Habilitar" marcado enquanto o recurso não age é
+    // o que faz o lojista achar que está validando. O travamento é sempre VISUAL
+    // (`setDisabledState` → `wcBetterFakeDisabled`): NUNCA o atributo `disabled`,
+    // porque input `disabled` não vai no POST e a option guardaria um "yes" fantasma
+    // (AGENTS.md § 7).
     function updateValidateDddState() {
-      const maskOn = Array.from(applyPhoneMaskRadios).some(radio => radio.checked && radio.value === 'yes');
+      // A validação vale para o TELEFONE (contato obrigatório) e também para o
+      // "Celular" separado quando ele é obrigatório — espelha as duas checagens de
+      // `validate_phone_ddd_classic()`. Modo "Desabilitar" nas duas formas: "Deixar a
+      // configuração nativa" e "Desabilitar o campo de telefone" — espelha
+      // `phone_mode_is_unmanaged()`.
       const cellphoneOn = Array.from(enableCellphoneRadios).some(radio => radio.checked && radio.value === 'yes');
       const requiredOn = Array.from(contactRequiredRadios).some(radio => radio.checked && radio.value === 'yes')
         || (cellphoneOn && Array.from(cellphoneRequiredRadios).some(radio => radio.checked && radio.value === 'yes'));
-      // Modo "Desabilitar" nas duas formas: "Deixar a configuração nativa" e
-      // "Desabilitar o campo de telefone" — espelha `phone_mode_is_unmanaged()`.
       const modeOk = !phoneModeSelect
         || (phoneModeSelect.value !== 'disabled' && phoneModeSelect.value !== 'disabled_native');
-      const on = maskOn && requiredOn && modeOk;
+      const on = requiredOn && modeOk;
 
       setDisabledState(validateDddRadios, !on);
+
+      if (!on) {
+        validateDddRadios.forEach(radio => {
+          if (radio.value === 'no') {
+            radio.checked = true;
+          } else if (radio.value === 'yes') {
+            radio.checked = false;
+          }
+        });
+      }
+
+      updateValidateDddTexts();
     }
 
     // "Celular Obrigatório" só fica ativo quando o "Campo de Celular" está habilitado

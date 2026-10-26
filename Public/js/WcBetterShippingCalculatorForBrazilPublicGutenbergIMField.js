@@ -1,3 +1,5 @@
+import { placeChainField } from './core/CheckoutFieldOrder.js';
+
 document.addEventListener("DOMContentLoaded", function () {
 	let imInput = null
 	let placeOrderBound = false
@@ -7,6 +9,9 @@ document.addEventListener("DOMContentLoaded", function () {
 	let savedIMData = {
 		billing_im: typeof WooBetterIMData !== 'undefined' && WooBetterIMData.billing_im ? WooBetterIMData.billing_im : ''
 	}
+
+	// Último valor enviado ao carrinho: evita POST repetido com o mesmo dado.
+	let lastSentIMValue = null
 
 	function isUsingSameAddressForBilling() {
 		const checkbox = document.querySelector('.wc-block-checkout__use-address-for-billing input[type="checkbox"]')
@@ -108,6 +113,16 @@ document.addEventListener("DOMContentLoaded", function () {
 			}
 		}
 
+		// REASON: `extensionCartUpdate` dispara um POST no Store API e RESETA o
+		// checkout em blocos. Na recriação do campo (ex.: ao alternar "usar o mesmo
+		// endereço para cobrança") o `setInputValue` dispara `input` com o MESMO
+		// valor, o que reenviaria o POST e realimentaria o reset — loop infinito.
+		// Só envia quando o valor realmente mudou.
+		if (lastSentIMValue === payload.billing_im) {
+			return
+		}
+		lastSentIMValue = payload.billing_im
+
 		if (window.wc && window.wc.blocksCheckout && typeof window.wc.blocksCheckout.extensionCartUpdate === 'function') {
 			window.wc.blocksCheckout.extensionCartUpdate({
 				namespace: 'woo_better_im_field',
@@ -191,7 +206,9 @@ document.addEventListener("DOMContentLoaded", function () {
 		// o MESMO âncora, cada script reposiciona seu campo no observer e os dois
 		// ficam se reordenando mutuamente para sempre — o que trava o checkout em
 		// blocos (loop infinito de mutações no DOM).
-		const ieContainer = document.querySelector('.wc-better-billing-ie')
+		// Só considera o IE deste formulário: o container do IE é global, e usar o de
+		// outro contexto jogava o IM para o formulário errado (recriação em loop).
+		const ieContainer = container.querySelector('.wc-better-billing-ie')
 		if (ieContainer) {
 			return ieContainer
 		}
@@ -202,7 +219,7 @@ document.addEventListener("DOMContentLoaded", function () {
 		}
 
 		const documentInput = document.getElementById('billing_document')
-		if (documentInput) {
+		if (documentInput && container.contains(documentInput)) {
 			const documentContainer = documentInput.closest('.wc-block-components-text-input')
 			if (documentContainer) {
 				return documentContainer
@@ -430,8 +447,14 @@ document.addEventListener("DOMContentLoaded", function () {
 			return
 		}
 
+		// O campo pertence ao formulário do contexto atual (cobrança/entrega).
+		// A checagem olha o PAI REAL no DOM — antes comparava só a flag
+		// `fieldContainerType`, que podia dizer "cobrança" enquanto o campo estava
+		// fisicamente na entrega (os ids são globais: `billing_document` pode ser
+		// criado dentro do container de entrega). Nesse estado o campo ficava no
+		// formulário errado para sempre.
 		const currentContainer = getIMContainer()
-		if (currentContainer && fieldContainerType && fieldContainerType !== context.containerType) {
+		if (currentContainer && currentContainer.parentElement !== context.container) {
 			currentContainer.remove()
 			imInput = null
 		}
@@ -445,9 +468,14 @@ document.addEventListener("DOMContentLoaded", function () {
 		// cedo (DOMContentLoaded), antes de Empresa/CPF-CNPJ existirem, e nesse
 		// caso cai no fallback de sobrenome. Quando a Empresa/CPF-CNPJ aparecem,
 		// movemos o IM para logo abaixo do ancoradouro correto.
+		//
+		// A posição vem da cadeia canônica (`core/CheckoutFieldOrder.js`), que
+		// garante antecessor único por campo — a checagem antiga
+		// (`previousElementSibling !== referencia`) fazia IE e IM (e RG) se
+		// reordenarem mutuamente para sempre, travando o checkout.
 		const existingContainer = getIMContainer()
-		if (existingContainer && existingContainer.previousElementSibling !== referenceElement) {
-			referenceElement.insertAdjacentElement('afterend', existingContainer)
+		if (existingContainer && existingContainer.parentElement === context.container) {
+			placeChainField(context.container, 'im', existingContainer, context.containerType)
 		}
 
 		createIMField(referenceElement)

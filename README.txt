@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.2.1
+Stable tag: 5.2.2
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -125,6 +125,18 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.2.2 - 2026-10-26
+* New: "Hide the S/N Checkbox" option, a child of the address Number field. When enabled, the "S/N" (no number) shortcut is not created inside the Number field on block checkout, on the classic/shortcode checkout and on the account's edit-address page. The customer can still type "S/N" by hand.
+* New: without the "Phone Mask and Country Code" option the phone field is no longer left unformatted — it gets the Brazilian mask (landline and mobile, detected by the number length) with no flag and no country selector. The +55 stays visible when the number has the country code, including in the field placeholder.
+* Tweak: with the mask disabled, spaces, parentheses, hyphens and dots are allowed while typing — an international number is refused on submit, without adding a foreign country code on top of it.
+* Tweak: the "Validate Phone Number" card switches its texts between "all countries" and "Brazil" according to the mask option, and the validation now works without the country-code library (Brazil only).
+* Tweak: the cellphone is now shown inside the billing AND shipping addresses on the order-received and order-details screens, right below the phone (above the e-mail on billing) and with the same icon as the phone — it is no longer listed in the "Additional information" block.
+* Fix: the secondary cellphone stores exactly what the customer typed, only without the special characters — the +55 is kept when it was typed and no country code is added when it was not.
+* Fix: the "S/N" shortcut inside the Number field is now centered inside the field on Safari — the element it was anchored to was inline, which made the position depend on the line box.
+* Fix: block checkout no longer gets stuck in a loop when toggling "use the same address for billing" — the IE, IM and RG fields re-sent the same value and could anchor on the other address form.
+* Fix: an invalid phone number left in the profile is no longer shown in the checkout phone field, and it no longer overwrites a valid phone already saved.
+* Tweak: the "Allow Cellphone and Landline" phone behavior is now marked as recommended, and fields that are not required now show "(optional)" in the block checkout.
 
 # 5.2.1 - 2026-10-21
 * New: the "Phone Field Behavior" option now has TWO ways to disable it, with different meanings. "Disable the phone field" turns off the WooCommerce native phone field (no phone and no cellphone is shown). "Keep the WooCommerce native configuration" generates no field at all and keeps whatever you configured in WooCommerce itself (the "Phone" toggle in the block editor).

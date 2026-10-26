@@ -57,3 +57,23 @@ test('[cellphone-secondary] COMPILADO do CellphoneFieldBoth reflete o build', ()
         'O bundle compilado deve conter o id do campo único (build atualizado).'
     );
 });
+
+test('[cellphone-secondary] grava o valor DIGITADO (sem DDI inferido)', () => {
+    const src = read(SOURCE);
+
+    // O secundário é o único campo cuja meta NÃO recebe `+55` do backend: o store
+    // tem que receber o valor digitado, só sem caracteres especiais — com o `+55`
+    // preservado quando o cliente digitou e sem somar DDI quando não digitou.
+    assert.ok(
+        /var verbatimValue = \(spec\.kind === 'cellphone' && spec\.secondary === true\)/.test(src),
+        'O campo "Celular" secundário deve usar o valor VERBATIM.'
+    );
+    assert.ok(
+        /val = verbatimValue \? phoneValueVerbatim\(val\) : phoneValueForStorage\(val\)/.test(src),
+        'No handler de digitação o secundário usa phoneValueVerbatim (não o de storage).'
+    );
+    assert.ok(
+        /phoneValueForStorage,\s*\n\s*phoneValueVerbatim\s*\n\} from '\.\/BrazilPhoneMask\.js'/.test(src),
+        'PhoneField.js deve importar phoneValueVerbatim.'
+    );
+});

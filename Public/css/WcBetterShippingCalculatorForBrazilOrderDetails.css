@@ -1,0 +1,42 @@
+/**
+ * Bloco "Informações adicionais" na tela de pedido (pedido recebido / "ver pedido").
+ *
+ * O bloco é montado só com as classes canônicas do WooCommerce (ver
+ * `render_customer_additional_info()`): `woocommerce-order-details` +
+ * `woocommerce-order-details__title` (barra do título e margem, do tema) e
+ * `woocommerce-table shop_table order_details` com `<tbody><tr><th scope="row">` /
+ * `<td>` (caixa, peso do label e bordas de separação, do core — as MESMAS linhas
+ * "Chave: valor" do "Detalhes do pedido").
+ *
+ * Daí este arquivo ser mínimo: só o afastamento entre o bloco de informações e o
+ * que vem acima dele. O espaçamento fica no BLOCO (`<section>`), não na `<table>` —
+ * assim o `:last-child { margin-bottom: 0 }` do tema e o `margin-bottom` da tabela
+ * continuam valendo, e a tabela segue alinhada com as outras do pedido (mesma
+ * largura/posição, sem margem própria).
+ *
+ * A cor da borda usada pelo core respeita o tema automaticamente
+ * (`color-mix(currentcolor …)`), então não há nada de cor aqui.
+ */
+
+.woo-better-additional-info {
+	margin-top: 32px;
+}
+
+/**
+ * Nome do campo escondido atrás do ÍCONE (o "Celular" do endereço).
+ *
+ * O tema decora a linha do telefone com um ícone via `::before` (Astra: fonte
+ * WooCommerce; temas de bloco: emoji) e o celular reaproveita essa classe. Como o
+ * ícone substitui o nome, o rótulo só existe para leitores de tela — a regra é a
+ * MESMA do `screen-reader-text` do WooCommerce, repetida aqui (com a nossa classe)
+ * porque nem todo tema define aquela classe.
+ */
+.woo-better-sr-only {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(1px, 1px, 1px, 1px);
+	clip-path: inset(50%);
+	white-space: nowrap;
+}

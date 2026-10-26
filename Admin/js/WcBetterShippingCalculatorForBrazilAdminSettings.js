@@ -107,7 +107,13 @@ document.addEventListener('DOMContentLoaded', function () {
     // (ver AGENTS.md § 7). O `checked` continua sem ser reescrito — a opção é
     // preservada e volta como estava quando o pai é reabilitado.
     const joinPairs = [
-        { parent: 'woo_better_calc_enable_rg_field', child: 'woo_better_calc_rg_required' }
+        // `resetWhenLocked: true` → com o pai desligado o filho volta ao DEFAULT
+        // ("Desabilitar"), em vez de preservar a escolha. Vale para o "S/N": sem o
+        // campo de Número não existe checkbox para ocultar, e um `yes` guardado só
+        // voltaria a valer quando o campo fosse religado. O "RG Obrigatório" (par
+        // abaixo) NÃO reseta — lá a escolha do lojista é preservada.
+        { parent: 'woo_better_calc_enable_rg_field', child: 'woo_better_calc_rg_required' },
+        { parent: 'woo_better_calc_number_required', child: 'woo_better_calc_number_hide_sn_checkbox', resetWhenLocked: true }
     ];
 
     function applyJoinDependency(pair) {
@@ -124,6 +130,15 @@ document.addEventListener('DOMContentLoaded', function () {
             childRadios.forEach(function (radio) {
                 setFakeDisabled([radio], !enabled);
             });
+
+            // Par com `resetWhenLocked`: pai desligado → filho no DEFAULT
+            // ("Desabilitar"). O `checked` é reescrito com o valor COERENTE, que
+            // continua indo no POST (o bloqueio é só visual, nunca `disabled`).
+            if (!enabled && pair.resetWhenLocked) {
+                childRadios.forEach(function (radio) {
+                    radio.checked = (radio.value === 'no');
+                });
+            }
         }
 
         parentRadios.forEach(function (radio) {

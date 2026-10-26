@@ -13,6 +13,10 @@
   --iti-triangle-border: calc(var(--iti-arrow-width) / 2);
   --iti-arrow-padding: 6px;
   --iti-arrow-color: #555;
+  --iti-path-flags-1x: url(../jsCompiled/../cssCompiled/bd95ef49b665a571ca04.webp);
+  --iti-path-flags-2x: url(../jsCompiled/../cssCompiled/bea0200ba7ea874b359f.webp);
+  --iti-path-globe-1x: url(../jsCompiled/../cssCompiled/7fb216c936a98b90918e.webp);
+  --iti-path-globe-2x: url(../jsCompiled/../cssCompiled/5dc7e51d6b5d42fc2be4.webp);
   --iti-flag-sprite-width: 3904px;
   --iti-flag-sprite-height: 12px;
   --iti-mobile-popup-margin: 30px;
@@ -1256,12 +1260,6 @@
   .iti__globe {
     background-image: var(--iti-path-globe-2x);
   }
-}
-:root {
-  --iti-path-flags-1x: url(../jsCompiled/../cssCompiled/bd95ef49b665a571ca04.webp);
-  --iti-path-flags-2x: url(../jsCompiled/../cssCompiled/bea0200ba7ea874b359f.webp);
-  --iti-path-globe-1x: url(../jsCompiled/../cssCompiled/7fb216c936a98b90918e.webp);
-  --iti-path-globe-2x: url(../jsCompiled/../cssCompiled/5dc7e51d6b5d42fc2be4.webp);
 }
 /* Overrides do campo de telefone (intl-tel-input). Importado nos bundles JS
    do telefone para ficar empacotado junto do CSS da própria biblioteca. */
