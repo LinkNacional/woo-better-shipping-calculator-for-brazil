@@ -1,6 +1,7 @@
 import {
     attachBrazilPhoneMask,
     brazilMaskType,
+    brazilPhoneIsEmpty,
     brazilPhoneInvalid,
     isRequiredPhoneField,
     showBrazilPhoneError
@@ -125,7 +126,8 @@ import {
                 MASK_FIELDS.some(function (sel) {
                     var candidate = document.querySelector(sel);
 
-                    if (!candidate || !candidate.value.trim() || !isRequiredPhoneField(candidate)) {
+                    // Um campo só com o DDI (`+55`) conta como vazio.
+                    if (!candidate || brazilPhoneIsEmpty(candidate.value) || !isRequiredPhoneField(candidate)) {
                         return false;
                     }
                     if (brazilPhoneInvalid(candidate.value, brazilTypeFor(sel))) {

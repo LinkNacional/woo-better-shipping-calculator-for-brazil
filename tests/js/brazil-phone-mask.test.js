@@ -99,12 +99,36 @@ test('[brazil-mask] número fora do padrão brasileiro não é formatado', () =>
     assert.strictEqual(mask.formatBrazilPhone('12345678901', 'landline'), '12345678901');
 });
 
-test('[brazil-mask] valor já salvo em E.164 (+55) é reformatado como nacional', () => {
-    // O perfil/pedido guarda +5585988888888; o campo deve mostrar (85) 98888-8888.
-    assert.strictEqual(mask.formatBrazilPhone('+5585988888888', 'auto'), '(85) 98888-8888');
-    assert.strictEqual(mask.formatBrazilPhone('+558532323232', 'auto'), '(85) 3232-3232');
+test('[brazil-mask] valor já salvo em E.164 (+55) mantém o DDI visível e é reformatado', () => {
+    // Sem bandeira/seletor de país, o "+55" no campo é a única pista do DDI.
+    assert.strictEqual(mask.formatBrazilPhone('+5585988888888', 'auto'), '+55 (85) 98888-8888');
+    assert.strictEqual(mask.formatBrazilPhone('+558532323232', 'auto'), '+55 (85) 3232-3232');
     // DDD 55 (RS) com 11 dígitos NÃO é DDI: não pode perder o DDD.
     assert.strictEqual(mask.formatBrazilPhone('55988888888', 'auto'), '(55) 98888-8888');
+});
+
+test('[brazil-mask] digitar "+55" não apaga: o DDI fica no campo', () => {
+    assert.strictEqual(mask.formatBrazilPhone('+', 'auto'), '+');
+    assert.strictEqual(mask.formatBrazilPhone('+5', 'auto'), '+5');
+    assert.strictEqual(mask.formatBrazilPhone('+55', 'auto'), '+55');
+    // Continuando a digitar, o prefixo é preservado e o número é formatado.
+    assert.strictEqual(mask.formatBrazilPhone('+558', 'auto'), '+55 (8');
+    assert.strictEqual(mask.formatBrazilPhone('+5585', 'auto'), '+55 (85');
+    assert.strictEqual(mask.formatBrazilPhone('+5585988888888', 'auto'), '+55 (85) 98888-8888');
+    // O valor enviado/gravado são só os DÍGITOS do número nacional (sem o +55).
+    assert.strictEqual(mask.nationalBrazilDigits('+55 (85) 98888-8888'), '85988888888');
+    assert.strictEqual(mask.nationalBrazilDigits('+55'), '');
+});
+
+test('[brazil-mask] campo só com o DDI conta como VAZIO (obrigatoriedade)', () => {
+    assert.strictEqual(mask.brazilPhoneIsEmpty('+55'), true);
+    assert.strictEqual(mask.brazilPhoneIsEmpty('+55 '), true);
+    assert.strictEqual(mask.brazilPhoneIsEmpty(''), true);
+    assert.strictEqual(mask.brazilPhoneIsEmpty('+55 '), true, 'DDI com espaço.');
+    assert.strictEqual(mask.brazilPhoneIsEmpty('+55 (8'), false, 'Com dígito do DDD já não é vazio.');
+    assert.strictEqual(mask.brazilPhoneIsEmpty('(85'), false, 'Já tem dígitos: não conta como vazio.');
+    assert.strictEqual(mask.brazilPhoneIsEmpty('+55 (85) 98888-8888'), false);
+    assert.strictEqual(mask.brazilPhoneIsEmpty('(85) 98888-8888'), false);
 });
 
 test('[brazil-mask] número internacional explícito (+) não é reformatado nem bloqueado', () => {
@@ -112,15 +136,18 @@ test('[brazil-mask] número internacional explícito (+) não é reformatado nem
     assert.strictEqual(mask.formatBrazilPhone('+15551234567', 'auto'), '+15551234567');
     assert.strictEqual(mask.formatBrazilPhone('+351912345678', 'auto'), '+351912345678');
     assert.strictEqual(mask.brazilPhoneInvalid('+15551234567', 'auto'), false);
-    // O "+55" digitado é o DDI do Brasil: descartado (o backend concatena de novo).
-    assert.strictEqual(mask.formatBrazilPhone('+55', 'auto'), '');
-    assert.strictEqual(mask.formatBrazilPhone('+5585988888888', 'auto'), '(85) 98888-8888');
+    // O "+55" é o DDI do Brasil: continua visível no campo (ver teste acima).
+    assert.strictEqual(mask.formatBrazilPhone('+55', 'auto'), '+55');
 });
 
 test('[brazil-mask] validação BR: aceita fixo e celular válidos', () => {
     assert.strictEqual(mask.brazilPhoneInvalid('(85) 98888-8888', 'auto'), false);
     assert.strictEqual(mask.brazilPhoneInvalid('(85) 3232-3232', 'auto'), false);
     assert.strictEqual(mask.brazilPhoneInvalid('+5585988888888', 'auto'), false);
+    assert.strictEqual(mask.brazilPhoneInvalid('+55 (85) 98888-8888', 'auto'), false);
+    assert.strictEqual(mask.brazilPhoneInvalid('+55 (85) 8888-8888', 'auto'), true, 'Celular de 10 dígitos continua inválido com o +55 na frente.');
+    assert.strictEqual(mask.brazilPhoneInvalid('+55', 'auto'), false, 'Só o DDI não é um número preenchido.');
+    assert.strictEqual(mask.brazilPhoneInvalid('+55 (85) 98888-8888', 'landline'), true);
     assert.strictEqual(mask.brazilPhoneInvalid('', 'auto'), false);
 });
 
@@ -179,6 +206,10 @@ test('[brazil-mask] blocos: sem a lib, o campo recebe a máscara BR (e a valida�
         /brazilPhoneInvalid\(field\.value, field\.dataset\.wcBetterBrazilMaskType\)/.test(src),
         'A validação no envio deve usar a regra brasileira quando não há lib.'
     );
+    assert.ok(
+        /brazilPhoneIsEmpty\(field\.value\)/.test(src),
+        'Um campo só com o +55 deve contar como vazio na obrigatoriedade.'
+    );
     // O campo "Celular" secundário também recebe a máscara BR sem a lib.
     assert.ok(
         /if \(!spec\.secondary \|\| !truthy\(cfgValue\('maskEnabled'\)\)\)/.test(src),
@@ -225,7 +256,8 @@ test('[brazil-mask] bundle LEVE (sem lib) para o modo "máscara BR apenas"', () 
         'O bundle sem lib deve aplicar a máscara e a validação brasileiras.'
     );
     assert.ok(
-        /!isRequiredPhoneField\(candidate\)/.test(src) && /showBrazilPhoneError\(invalidField\)/.test(src),
+        /brazilPhoneIsEmpty\(candidate\.value\)/.test(src) && /!isRequiredPhoneField\(candidate\)/.test(src)
+        && /showBrazilPhoneError\(invalidField\)/.test(src),
         'O bundle sem lib deve validar só campos obrigatórios e usar o erro inline compartilhado.'
     );
     // Script no <head>: precisa esperar o DOM (senão `document.body` é null).

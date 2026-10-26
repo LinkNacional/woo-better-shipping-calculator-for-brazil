@@ -6,6 +6,7 @@ import { pt } from 'intl-tel-input/i18n';
 import {
     attachBrazilPhoneMask,
     brazilMaskType,
+    brazilPhoneIsEmpty,
     brazilPhoneInvalid,
     nationalBrazilDigits
 } from './BrazilPhoneMask.js';
@@ -608,6 +609,8 @@ function buildField(spec, context, insertAfter) {
         // Máscara BR (sem lib/DDI): o campo é exibido formatado, mas o valor que vai
         // ao store/servidor são só os DÍGITOS (o +55 é concatenado no backend).
         if (input.dataset.wcBetterBrazilMask === 'true') {
+            // Máscara BR: o valor do store são os dígitos (um campo só com o `+55`
+            // conta como vazio).
             val = nationalBrazilDigits(val);
         }
         valueKeys.forEach(function (key) { S.values[key] = val; });
@@ -875,7 +878,11 @@ function bindValidation() {
         var validateDdd = truthy(cfgValue('validateDdd'));
         var invalid = fields.find(function (field) {
             var required = field.dataset.wcBetterRequired === 'true';
-            if (required && !field.value.trim()) {
+            // Na máscara BR o campo pode ter só o `+55`: não é um telefone preenchido.
+            var empty = (field.dataset.wcBetterBrazilMask === 'true')
+                ? brazilPhoneIsEmpty(field.value)
+                : !field.value.trim();
+            if (required && empty) {
                 return true;
             }
             // Só valida o tipo/DDD quando o campo é OBRIGATÓRIO (campo opcional não
