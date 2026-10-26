@@ -130,11 +130,14 @@
 
 	// ── 3.2 Campo de Número: o checkbox "S/N" só faz sentido com o campo ligado ──
 	//
-	// "Ocultar Checkbox S/N" é filho (join) do "Campo de Número do Endereço":
-	// sem o campo de número não existe checkbox para ocultar, então a opção fica
-	// travada enquanto o pai está em "Desabilitar". Travamento só VISUAL
-	// (`setDisabledState` → `wcBetterFakeDisabled`), nunca o atributo `disabled`
-	// (AGENTS.md § 7).
+	// "Ocultar Checkbox S/N" é filho (join) do "Campo de Número do Endereço": sem o
+	// campo de número não existe checkbox para ocultar, então a opção fica travada
+	// enquanto o pai está em "Desabilitar" — E VOLTA AO DEFAULT ("Desabilitar"),
+	// para não sobrar um `yes` guardado que só voltaria a valer quando o campo de
+	// Número fosse religado. Travamento só VISUAL (`setDisabledState` →
+	// `wcBetterFakeDisabled`): o radio continua sendo ENVIADO no POST com o valor
+	// coerente — nunca o atributo `disabled` (AGENTS.md § 7). O servidor reforça
+	// (`enforce_number_hide_sn_option()`).
 	function initNumberSnState() {
 		var numberRadios = document.querySelectorAll('input[name="woo_better_calc_number_required"]');
 		var hideSnRadios = document.querySelectorAll('input[name="woo_better_calc_number_hide_sn_checkbox"]');
@@ -150,7 +153,21 @@
 		}
 
 		function updateHideSnState() {
-			setDisabledState(hideSnRadios, !isNumberEnabled());
+			var enabled = isNumberEnabled();
+
+			setDisabledState(hideSnRadios, !enabled);
+
+			// Pai desligado → filho no DEFAULT ("Desabilitar"); religar o pai NÃO
+			// reativa a opção (o lojista escolhe de novo).
+			if (!enabled) {
+				hideSnRadios.forEach(function (radio) {
+					if (radio.value === 'no') {
+						radio.checked = true;
+					} else if (radio.value === 'yes') {
+						radio.checked = false;
+					}
+				});
+			}
 		}
 
 		updateHideSnState();

@@ -54,6 +54,29 @@ class NumberHideSnCheckboxTest extends WP_UnitTestCase {
         $this->assertFalse( WcBetterShippingCalculatorForBrazilPublic::number_hide_sn_checkbox() );
     }
 
+    public function test_server_resets_the_option_when_the_number_field_is_off(): void {
+        // Reforço do servidor (o mesmo que o admin faz no JS): sem o campo de Número
+        // não há checkbox para ocultar, então a opção volta ao DEFAULT. Cobre quem
+        // salva com JS bloqueado — o radio é fake-disabled (continua indo no POST),
+        // mas não dependemos só disso.
+        update_option( 'woo_better_calc_number_hide_sn_checkbox', 'yes' );
+        update_option( 'woo_better_calc_number_required', 'no' );
+
+        \Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilCheckoutSettings::enforce_number_hide_sn_option();
+
+        $this->assertSame( 'no', get_option( 'woo_better_calc_number_hide_sn_checkbox' ) );
+    }
+
+    public function test_server_keeps_the_option_when_the_number_field_is_on(): void {
+        // Com o campo de Número ligado a escolha do lojista é PRESERVADA.
+        update_option( 'woo_better_calc_number_required', 'yes' );
+        update_option( 'woo_better_calc_number_hide_sn_checkbox', 'yes' );
+
+        \Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilCheckoutSettings::enforce_number_hide_sn_option();
+
+        $this->assertSame( 'yes', get_option( 'woo_better_calc_number_hide_sn_checkbox' ) );
+    }
+
     public function test_option_is_declared_with_the_same_id_used_by_the_helper(): void {
         // A declaração vive em Admin/partials/...CheckoutSettings.php; aqui basta
         // garantir que o option id usado pelo helper é o mesmo declarado na tela.

@@ -730,6 +730,30 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
             // NÃO são enviados no submit, deixando o valor antigo salvo. Reforçamos no
             // servidor para a lógica nunca depender do envio desses campos.
             self::enforce_cellphone_options_for_mode(get_option('woo_better_calc_phone_mode', 'phone_and_cellphone'));
+
+            // "Ocultar Checkbox S/N" é FILHO do "Campo de Número do Endereço": sem o
+            // campo de número a opção não faz sentido, então volta ao DEFAULT
+            // ("Desabilitar") — mesma regra que o admin aplica no JS.
+            self::enforce_number_hide_sn_option();
+        }
+
+        /**
+         * Devolve "Ocultar Checkbox S/N" ao DEFAULT quando o campo de Número está off.
+         *
+         * É o reforço no SERVIDOR da dependência pai → filho (a mesma que o
+         * `initNumberSnState()` aplica no admin): o filho marca "Desabilitar" e recebe o
+         * fake disabled — que NÃO bloqueia o envio (o valor coerente vai no POST). Aqui
+         * cobrimos quem salva com JS bloqueado/residual: sem o campo de Número não há
+         * checkbox para ocultar, então manter `yes` guardado só criaria estado
+         * inconsistente para a próxima vez que o campo de Número fosse ligado.
+         *
+         * @return void
+         */
+        public static function enforce_number_hide_sn_option()
+        {
+            if ('yes' !== get_option('woo_better_calc_number_required', 'no')) {
+                update_option('woo_better_calc_number_hide_sn_checkbox', 'no');
+            }
         }
 
         /**
