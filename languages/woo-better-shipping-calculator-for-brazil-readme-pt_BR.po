@@ -2,7 +2,7 @@
 # This file is distributed under the same license as the Plugins - Campos Checkout Brasileiro para WooCommerce - Stable Readme (latest release) package.
 msgid ""
 msgstr ""
-"PO-Revision-Date: 2026-10-21 17:30:00+0000\n"
+"PO-Revision-Date: 2026-10-26 12:00:00+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -290,6 +290,61 @@ msgstr ""
 "* <a href=\"/plugins/payment-gateway-pix-for-woocommerce/\">Pix For WooCommerce</a> - Integre o Pix, o sistema de pagamento instantâneo brasileiro, na sua loja WooCommerce\n"
 "* <a href=\"/plugins/fraud-and-scam-detection-for-woocommerce/\">AntiFraude</a> - Detecção de fraude e golpes para WooCommerce\n"
 "* <a href=\"/plugins/woo-force-authentification-before-checkout/\">Authentification and OTP for WooCommerce</a> - OTP e obrigar o cliente a entrar ou se cadastrar antes de finalizar a compra para aumentar sua taxa de conversão."
+
+#. Found in changelog header.
+#, gp-priority: low
+msgid "5.2.2 - 2026-10-26"
+msgstr "5.2.2 - 2026-10-26"
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "New: \"Hide the S/N Checkbox\" option, a child of the address Number field. When enabled, the \"S/N\" (no number) shortcut is not created inside the Number field on block checkout, on the classic/shortcode checkout and on the account's edit-address page. The customer can still type \"S/N\" by hand."
+msgstr "Novo: opção \"Ocultar Checkbox S/N\", filha do campo de Número do endereço. Quando habilitada, o atalho \"S/N\" (sem número) não é criado dentro do campo de Número no checkout em blocos, no checkout clássico/shortcode e na edição de endereço da conta. O cliente continua podendo digitar \"S/N\" à mão."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "New: without the \"Phone Mask and Country Code\" option the phone field is no longer left unformatted — it gets the Brazilian mask (landline and mobile, detected by the number length) with no flag and no country selector. The +55 stays visible when the number has the country code, including in the field placeholder."
+msgstr "Novo: sem a opção \"Telefone com Máscara e DDI\" o campo de telefone não fica mais sem formatação — ele recebe a máscara brasileira (fixo e celular, detectados pelo tamanho do número), sem bandeira e sem seletor de país. O +55 continua visível quando o número tem o código do país, inclusive no placeholder do campo."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Tweak: with the mask disabled, spaces, parentheses, hyphens and dots are allowed while typing — an international number is refused on submit, without adding a foreign country code on top of it."
+msgstr "Ajuste: com a máscara desligada, espaço, parênteses, hífen e ponto são liberados na digitação — um número de outro país é recusado no envio, sem incluir DDI estrangeiro por cima."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Tweak: the \"Validate Phone Number\" card switches its texts between \"all countries\" and \"Brazil\" according to the mask option, and the validation now works without the country-code library (Brazil only)."
+msgstr "Ajuste: o card \"Validar Número de Telefone\" alterna os textos entre \"todos os países\" e \"Brasil\" conforme a opção de máscara, e a validação passou a funcionar sem a biblioteca de DDI (apenas Brasil)."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Tweak: the cellphone is now shown inside the billing AND shipping addresses on the order-received and order-details screens, right below the phone (above the e-mail on billing) and with the same icon as the phone — it is no longer listed in the \"Additional information\" block."
+msgstr "Ajuste: o celular agora aparece dentro dos endereços de cobrança E de entrega nas telas de pedido recebido e de detalhes do pedido, logo abaixo do telefone (acima do e-mail na cobrança) e com o mesmo ícone do telefone — ele não é mais listado no bloco \"Informações adicionais\"."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: the secondary cellphone stores exactly what the customer typed, only without the special characters — the +55 is kept when it was typed and no country code is added when it was not."
+msgstr "Correção: o celular secundário passa a guardar exatamente o que o cliente digitou, só sem os caracteres especiais — o +55 é mantido quando foi digitado e nenhum DDI é incluído quando não foi."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: the \"S/N\" shortcut inside the Number field is now centered inside the field on Safari — the element it was anchored to was inline, which made the position depend on the line box."
+msgstr "Correção: o atalho \"S/N\" dentro do campo de Número agora fica centralizado dentro do campo no Safari — o elemento em que ele era ancorado era inline, o que fazia a posição depender da caixa de linha."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: block checkout no longer gets stuck in a loop when toggling \"use the same address for billing\" — the IE, IM and RG fields re-sent the same value and could anchor on the other address form."
+msgstr "Correção: o checkout em blocos não entra mais em loop ao alternar \"usar o mesmo endereço para cobrança\" — os campos IE, IM e RG reenviavam o mesmo valor e podiam se ancorar no formulário do outro endereço."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: an invalid phone number left in the profile is no longer shown in the checkout phone field, and it no longer overwrites a valid phone already saved."
+msgstr "Correção: um número de telefone inválido que sobrou no perfil não é mais exibido no campo de telefone do checkout e não sobrescreve mais um telefone válido já salvo."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Tweak: the \"Allow Cellphone and Landline\" phone behavior is now marked as recommended, and fields that are not required now show \"(optional)\" in the block checkout."
+msgstr "Ajuste: o comportamento de telefone \"Permitir Telefone Celular e Fixo\" agora aparece marcado como recomendado, e os campos que não são obrigatórios passam a exibir \"(opcional)\" no checkout em blocos."
 
 #. Found in changelog header.
 #, gp-priority: low
