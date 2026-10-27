@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilCheckoutSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilShippingCalculatorSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdmin;
+use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminDeliveryFields;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilShippingMigration;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilMigrationEmail;
@@ -128,7 +129,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '5.2.2';
+            $this->version = '5.3.0';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -214,6 +215,11 @@ class WcBetterShippingCalculatorForBrazil
         $migration_email = new WcBetterShippingCalculatorForBrazilMigrationEmail();
         $this->loader->add_action('init', $migration_email, 'maybe_schedule_email');
         $this->loader->add_action(WcBetterShippingCalculatorForBrazilMigrationEmail::CRON_HOOK, $migration_email, 'send_migration_email');
+
+        // Widgets com tipo customizado da aba "Campos Brasileiros" (blocos PRO
+        // "Prazo de Entrega" e "Pedidos com Prazo de Entrega", cuja interface é
+        // compartilhada com o plugin gratuito).
+        new WcBetterShippingCalculatorForBrazilAdminDeliveryFields();
 
         // detect state from postcode
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100, 1);
@@ -347,7 +353,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '5.2.1', '5.1.1', '5.1.0', '5.0.4', '5.0.3', '5.0.2', '5.0.1', '5.0.0', '4.17.4', '4.17.3', '4.17.2', '4.17.1', '4.17.0', '4.16.12' );
+            $old_versions   = array( '5.2.1', '5.2.0', '5.1.1', '5.1.0', '5.0.4', '5.0.3', '5.0.2', '5.0.1', '5.0.0', '4.17.4', '4.17.3', '4.17.2', '4.17.1', '4.17.0' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -508,7 +514,7 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_woo_better_footer_page()
     {
-        // Verifica se estamos na página da aba de checkout
+        // Assets da aba de checkout ("Campos Brasileiros").
         if (
             isset($_GET['page'], $_GET['tab']) &&
             sanitize_text_field(wp_unslash($_GET['page'])) === 'wc-settings' &&
@@ -539,21 +545,20 @@ class WcBetterShippingCalculatorForBrazil
             );
 
             wp_enqueue_script(
-                'wc-better-calc-settings-layout',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js',
-                array('wc-better-calc-settings-fake-disabled'),
-                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js'),
+                'wc-better-calc-settings-layout-tabs',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutTabs.COMPILED.js',
+                array('jquery'),
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutTabs.COMPILED.js'),
                 true
             );
 
-            $plugin_path = 'invoice-payment-for-woocommerce/wc-invoice-payment.php';
-            $invoice_plugin_installed = file_exists(WP_PLUGIN_DIR . '/' . $plugin_path);
-
-            wp_localize_script('wc-better-calc-settings-layout', 'wcBetterCalcAjax', array(
-                'install_nonce' => wp_create_nonce('install-plugin_invoice-payment-for-woocommerce'),
-                'plugin_slug' => 'invoice-payment-for-woocommerce',
-                'invoice_plugin_installed' => $invoice_plugin_installed,
-            ));
+            wp_enqueue_script(
+                'wc-better-calc-settings-layout-behaviors',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.COMPILED.js',
+                array('wc-better-calc-settings-fake-disabled'),
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.COMPILED.js'),
+                true
+            );
 
             wp_enqueue_script(
                 'wc-better-calc-footer-message',
@@ -563,44 +568,38 @@ class WcBetterShippingCalculatorForBrazil
                 true
             );
 
+            // Widgets "Prazo de Entrega" / "Pedidos Pendentes" (blocos PRO, cuja
+            // interface é compartilhada com a versão gratuita).
+            wp_enqueue_script(
+                'wc-better-calc-settings-delivery-fields',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminDeliveryFields.COMPILED.js',
+                array('wc-better-calc-settings-fake-disabled'),
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminDeliveryFields.COMPILED.js'),
+                true
+            );
+
+            wp_enqueue_style(
+                'wc-better-calc-style-settings-layout',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutSettings.COMPILED.css',
+                array(),
+                $asset_version('Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutSettings.COMPILED.css'),
+                'all'
+            );
+
+            wp_enqueue_style(
+                'wc-better-calc-style-settings-layout-link-card',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutLinkCard.COMPILED.css',
+                array(),
+                $asset_version('Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutLinkCard.COMPILED.css'),
+                'all'
+            );
+
             wp_enqueue_style(
                 'wc-better-calc-style-settings',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.css',
                 array(),
-                // mtime: a classe `.woo-better-fake-disabled` (ver AGENTS.md § 7) foi
-                // adicionada dentro da MESMA versão — com a constante o navegador
-                // seguiria com o CSS antigo e o "desabilitado" ficaria sem estilo.
                 $asset_version('Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.css'),
                 'all'
-            );
-
-            wp_enqueue_style(
-                'wc-better-calc-style-admin-card-settings',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminCard.COMPILED.css',
-                array(),
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
-                'all'
-            );
-
-            $versions = 'Woo Better v' . $this->version . ' | WooCommerce v' . WC()->version;
-            ;
-
-            wc_get_template(
-                'WcBetterShippingCalculatorForBrazilAdminSettingsCard.php',
-                array(
-                        'backgrounds' => array(
-                            'right' => plugin_dir_url(__FILE__) . 'assets/icons/backgroundCardRight.svg',
-                            'left' => plugin_dir_url(__FILE__) . 'assets/icons/backgroundCardLeft.svg'
-                        ),
-                        'logo' => plugin_dir_url(__FILE__) . 'assets/icons/linkNacionalLogo.webp',
-                        'whatsapp' => plugin_dir_url(__FILE__) . 'assets/icons/whatsapp.svg',
-                        'telegram' => plugin_dir_url(__FILE__) . 'assets/icons/telegram.svg',
-                        'stars' => plugin_dir_url(__FILE__) . 'assets/icons/stars.svg',
-                        'versions' => $versions
-
-                    ),
-                'woocommerce/WcBetterShippingCalculatorForBrazilAdminSettingsCard/',
-                plugin_dir_path(__FILE__) . 'assets/templates/'
             );
         }
     }
@@ -4397,17 +4396,24 @@ class WcBetterShippingCalculatorForBrazil
     /**
      * Placeholder dos campos de telefone/celular.
      *
-     * Com a máscara BR (sem lib/DDI) o `+55` entra no placeholder: nesse modo não há
-     * bandeira nem seletor de país, então é ali que o cliente vê o código do país.
+     * Na máscara BR (sem lib/DDI) o texto descreve o que o cliente DIGITA, não o que
+     * o campo exibe: o `+55` é concatenado no backend (`normalize_order_phone`) e o
+     * cliente nunca digita o DDI — por isso ele fica FORA do placeholder. O texto
+     * segue o "Comportamento do Campo de Telefone" (mesma fonte da label, ver
+     * `get_phone_field_label()`), que é a única peça que o cliente NÃO descobre
+     * sozinho: sem o DDD a máscara formata um número de 9 dígitos e o checkout
+     * reprova com a mensagem genérica.
      *
      * @param string|null $fallback Texto já traduzido a usar quando a máscara BR NÃO
      *                              está ativa (null = padrão `(00) 00000-0000`).
+     * @param string      $kind     'phone' (telefone, aceita fixo/celular conforme o
+     *                              modo) ou 'cellphone' (campo "Celular").
      * @return string
      */
-    private function phone_field_placeholder($fallback = null)
+    private function phone_field_placeholder($fallback = null, $kind = 'phone')
     {
         if ($this->is_phone_brazil_mask_active()) {
-            return __('+55 (00) 00000-0000', 'woo-better-shipping-calculator-for-brazil');
+            return $this->brazil_phone_field_placeholder($kind);
         }
 
         if (null !== $fallback) {
@@ -4415,6 +4421,40 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         return __('(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil');
+    }
+
+    /**
+     * Placeholder da máscara BR (sem lib/DDI) conforme o campo e o modo.
+     *
+     * - "Somente Fixo"        → `(00) 0000-0000` (o modo só aceita fixo).
+     * - "Celular e Fixo"      → `(DDD) número`: aceita as DUAS máscaras (autodetecção
+     *                           pelo tamanho), então nenhum formato fixo é verdadeiro.
+     * - "Somente Celular" e o campo "Celular" → `(00) 00000-0000`.
+     *
+     * @param string $kind 'phone' | 'cellphone'
+     * @return string
+     */
+    private function brazil_phone_field_placeholder($kind = 'phone')
+    {
+        $mode = $this->get_phone_mode();
+
+        if ('cellphone' === $kind || 'cellphone_only' === $mode) {
+            $placeholder = __('(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil');
+        } elseif ('landline_only' === $mode) {
+            $placeholder = __('(00) 0000-0000', 'woo-better-shipping-calculator-for-brazil');
+        } else {
+            /* translators: placeholder do telefone que aceita fixo e celular; "DDD" é o código de área brasileiro. */
+            $placeholder = __('(DDD) número', 'woo-better-shipping-calculator-for-brazil');
+        }
+
+        /**
+         * Filtra o placeholder do telefone na máscara BR (sem lib/DDI).
+         *
+         * @param string $placeholder Texto já traduzido.
+         * @param string $kind        'phone' | 'cellphone'.
+         * @param string $mode        Comportamento do Campo de Telefone.
+         */
+        return apply_filters('wc_better_shipping_calculator_phone_placeholder', $placeholder, $kind, $mode);
     }
 
     /**
@@ -8240,7 +8280,7 @@ class WcBetterShippingCalculatorForBrazil
         $fields[ $key ] = array(
             'type'              => 'tel',
             'label'             => __( 'Celular', 'woo-better-shipping-calculator-for-brazil' ),
-            'placeholder'       => $this->phone_field_placeholder(),
+            'placeholder'       => $this->phone_field_placeholder(null, 'cellphone'),
             'required'          => $required,
             'class'             => array( 'form-row-wide' ),
             'priority'          => 93,
@@ -9098,7 +9138,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_main_cellphone = ( 'cellphone_only' === $this->get_phone_mode() );
             $fields['billing_cellphone'] = array(
                 'label'             => __( 'Celular', 'woo-better-shipping-calculator-for-brazil' ),
-                'placeholder'       => $this->phone_field_placeholder(),
+                'placeholder'       => $this->phone_field_placeholder(null, 'cellphone'),
                 'required'          => $is_main_cellphone ? ( $phone_required === 'yes' ) : $this->is_cellphone_required(),
                 'class'             => array( 'form-row-wide' ),
                 'priority'          => $is_main_cellphone ? $phone_priority : 200,
@@ -9487,7 +9527,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_main_cellphone = ( 'cellphone_only' === $this->get_phone_mode() );
             $fields['shipping_cellphone'] = array(
                 'label'             => __( 'Celular', 'woo-better-shipping-calculator-for-brazil' ),
-                'placeholder'       => $this->phone_field_placeholder(),
+                'placeholder'       => $this->phone_field_placeholder(null, 'cellphone'),
                 'required'          => $is_main_cellphone ? ( $phone_required === 'yes' ) : $this->is_cellphone_required(),
                 'class'             => array( 'form-row-wide' ),
                 'priority'          => $is_main_cellphone ? $phone_priority : 200,

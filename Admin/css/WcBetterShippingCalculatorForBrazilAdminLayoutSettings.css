@@ -1,0 +1,1034 @@
+.admin-layout-page-wrapper {
+    width: 100%;
+    display: flex;
+    padding: 0px 20px;
+    box-sizing: border-box;
+}
+
+.admin-layout-content {
+    display: flex;
+    flex: 1;
+    gap: 32px;
+    margin-bottom: 40px;
+}
+
+.admin-layout-main {
+    flex: 2;
+    min-width: 0;
+}
+
+.admin-layout-sidebar-bar {
+    flex: 1;
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    background: transparent;
+    border-radius: 8px;
+    padding: 188px 0px 0px 18px;
+}
+
+.admin-layout-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+    position: sticky;
+    top: 120px;
+    z-index: 10;
+}
+
+.admin-layout-card {
+    width: 100%;
+    background: transparent;
+    border-radius: 8px;
+    padding: 0;
+    margin-bottom: 8px;
+    box-shadow: none;
+}
+
+.admin-layout-header {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50px;
+    background-color: #f4f4f4;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 32px;
+}
+
+.admin-layout-title {
+    font-size: 2.2em;
+    font-weight: 700;
+    color: #121519;
+    text-align: center;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+.admin-layout-top-menu-outer {
+    position: relative;
+    margin-bottom: -2px;
+}
+
+.admin-layout-top-menu-clip {
+    overflow: hidden;
+    padding-bottom: 2px;
+}
+
+.admin-layout-nav-arrow {
+    display: none;
+    position: absolute;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    font-size: 20px;
+    line-height: 1;
+    color: #555;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,.12);
+    transition: background 0.15s, color 0.15s;
+    width: 26px;
+    height: 26px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.admin-layout-nav-arrow:hover {
+    background: #f0f0f0;
+    color: #121519;
+}
+
+.admin-layout-nav-arrow:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.admin-layout-nav-arrow--prev {
+    left: -30px;
+}
+
+.admin-layout-nav-arrow--next {
+    right: -30px;
+}
+
+.admin-layout-top-menu-outer.has-overflow .admin-layout-nav-arrow {
+    display: flex;
+}
+
+.admin-layout-top-menu {
+    display: flex;
+    gap: 12px;
+    margin: 0px !important;
+    flex-wrap: nowrap;
+    transition: transform 0.3s ease;
+}
+
+/* ── Pílula PRO (blocos exclusivos da versão PRO) ─────────────────────────
+   O bloco PRO aparece também no plugin gratuito: o usuário pode explorar as
+   opções, mas o salvamento regrava o default e a lógica só existe na versão
+   paga. A pílula aponta para a página comercial (constante em
+   `WcBetterShippingCalculatorForBrazilAdminProGate::UPGRADE_URL`). */
+.admin-layout-pro-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: #d63638;
+    color: #fff;
+    font-size: 0.62em;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    line-height: 1.7;
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.admin-layout-pro-pill:hover,
+.admin-layout-pro-pill:focus {
+    background: #b32d2e;
+    color: #fff;
+}
+
+a.admin-layout-pro-pill {
+    cursor: pointer;
+}
+
+.admin-layout-pro-pill--nav {
+    margin-left: 8px;
+    cursor: pointer;
+}
+
+.admin-layout-title-link--pro {
+    border-color: #f0c8c8;
+}
+
+.admin-layout-pro-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 0 0 20px;
+    padding: 10px 14px;
+    background: #fcf0f1;
+    border-left: 4px solid #d63638;
+    border-radius: 4px;
+}
+
+.admin-layout-pro-banner-text {
+    font-size: 0.98em;
+    color: #8a1f1f;
+}
+
+/* ── Widgets do bloco "Prazo de Entrega" ─────────────────────────────── */
+.wc-better-pro-delivery-schedule-wrap {
+    max-width: 640px;
+    overflow-x: auto;
+}
+
+.wc-better-pro-delivery-schedule-table {
+    border-collapse: collapse;
+}
+
+.wc-better-pro-delivery-schedule-table th,
+.wc-better-pro-delivery-schedule-table td {
+    padding: 8px 10px;
+    text-align: left;
+}
+
+.wc-better-pro-delivery-slots-container {
+    max-width: 500px;
+}
+
+.wc-better-pro-delivery-slot-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.wc-better-pro-delivery-slot-row input[type="time"] {
+    width: 130px;
+}
+
+.wc-better-pro-delivery-slot-sep {
+    white-space: nowrap;
+}
+
+.wc-better-pro-delivery-slot-remove {
+    color: #b32d2e;
+}
+
+.wc-better-pro-delivery-slot-add {
+    margin-top: 4px;
+}
+
+/* ── Painel "Pedidos Pendentes" ───────────────────────────────────────── */
+.wc-better-pro-delivery-orders-wrap {
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 12px 16px;
+    background: #fff;
+    max-width: 940px;
+    overflow-x: auto;
+}
+
+.wc-better-pro-delivery-orders-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.wc-better-pro-delivery-orders-search {
+    width: 100%;
+    max-width: 300px;
+    padding: 5px 10px;
+}
+
+.wc-better-pro-delivery-orders-clear {
+    color: #b32d2e;
+    display: none;
+}
+
+.admin-layout-title-link {
+    display: flex;
+    padding: 12px 24px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: #fff;
+    border-radius: 6px 6px 0 0 !important;
+    font-size: 1.2em;
+    color: #8f8f8f;
+    font-weight: 300;
+    text-decoration: none;
+    margin-bottom: -1px;
+    transition: background 0.2s, box-shadow 0.2s, top 0.2s;
+    cursor: pointer;
+    border: 1px solid #e0e0e0;
+    position: relative;
+    outline: none !important;
+    box-shadow: none !important;
+    top: 0;
+    z-index: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.admin-layout-title-link:hover {
+    color: #343b45;
+    background-color: #f7f7f7;
+}
+
+.admin-layout-title-link.active {
+    background: #f5f5f5;
+    color: #121519;
+    border-bottom: none;
+    font-weight: 600;
+    top: 1px;
+    z-index: 3;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.admin-layout-block {
+    display: none;
+    background-color: #f4f4f4;
+    border: 1px solid #e0e0e0;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    padding: 24px 20px;
+}
+
+.admin-layout-block.active {
+    display: block;
+}
+
+.admin-layout-field-parent-flex {
+    display: flex;
+    margin-bottom: 24px;
+    gap: 20px;
+}
+
+.admin-layout-field-label-desc {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 16px 8px;
+    max-width: 240px;
+}
+
+.admin-layout-field-component-bg {
+    flex: 2;
+    background: #fff;
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-layout-label {
+    font-weight: 600;
+    font-size: 1.4em;
+    margin-left: 5px;
+}
+
+/* Título do card com a pílula PRO ao lado (blocos exclusivos da versão PRO). */
+.admin-layout-label--pro {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.admin-layout-description {
+    font-size: 1.1em;
+    color: #8f8f8f;
+    margin-top: 4px;
+    margin-left: 5px;
+}
+
+.admin-layout-component-label {
+    font-size: 1em;
+    margin-bottom: 4px;
+}
+
+.admin-layout-hr {
+    width: 100%;
+    margin: 8px 0;
+    border: none;
+    border-top: 1px solid #e0e0e0;
+}
+
+.admin-layout-field-input-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 20px 0px;
+    margin-left: 5px;
+}
+
+.admin-layout-checkbox-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.admin-layout-checkbox-wrapper + .admin-layout-checkbox-wrapper {
+    margin-top: 16px;
+}
+
+.admin-layout-checkbox-wrapper label {
+    display: flex;
+    align-items: center;
+}
+
+.admin-layout-input-description {
+    font-size: 1.1em;
+    color: #8f8f8f;
+    margin-top: 6px;
+    margin-bottom: 2px;
+}
+
+.admin-layout-input-warning {
+    font-size: 0.85em;
+    color: #8f8f8f;
+    margin-top: 4px;
+}
+
+.admin-layout-input-tab-link {
+    font-size: 0.85em;
+    color: #3c434a;
+    margin-top: 4px;
+    margin-bottom: 2px;
+}
+
+.admin-layout-input-tab-link a {
+    color: #2271b1;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.admin-layout-input-tab-link a:hover {
+    color: #135e96;
+    text-decoration: underline;
+}
+
+.admin-layout-joined-label-desc {
+    width: 100%;
+    flex: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 0 0 0;
+}
+
+.admin-layout-joined-component-bg {
+    padding: 0px;
+    background: none;
+    border-radius: 0;
+}
+
+.admin-layout-button {
+    max-width: 400px;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-size: 1.1em;
+    font-weight: 600;
+    background: #007cba;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.admin-layout-button:hover,
+.admin-layout-button:focus {
+    background: #005fa3;
+}
+
+.admin-layout-input,
+.admin-layout-textarea,
+.admin-layout-select,
+.admin-layout-password,
+.admin-layout-number {
+    width: 100%;
+    max-width: 400px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    font-size: 1.1em;
+    background: #fff;
+    color: #121519;
+    transition: border-color 0.2s;
+}
+
+.admin-layout-input:focus,
+.admin-layout-password:focus,
+.admin-layout-number:focus,
+.admin-layout-select:focus,
+.admin-layout-textarea:focus {
+    border-color: #007cba;
+    outline: none;
+}
+
+.admin-layout-file {
+    width: fit-content;
+}
+
+.admin-layout-textarea {
+    min-height: 80px;
+}
+
+.admin-layout-submit-wrapper {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 16px 0px;
+}
+
+.admin-layout-submit-wrapper button {
+    font-size: 1.2em !important;
+}
+
+p.submit {
+    display: none !important;
+}
+
+/* Card de Status */
+
+.block-status-card {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 8px;
+    background: #f6fff7;
+    border-left: 5px solid #43c463;
+    box-shadow: 0 2px 8px rgba(67, 196, 99, 0.07);
+    padding: 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-sizing: border-box;
+}
+
+.block-status-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.block-status-card-title {
+    color: #43c463;
+    font-size: 1.08em;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+
+.block-status-card-description {
+    font-size: 0.97em;
+    margin: 0;
+    color: #333;
+    line-height: 1.5;
+}
+
+/* Card Promocional */
+
+.block-promotional-card {
+    position: relative;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 24px 28px;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.10);
+    overflow: hidden;
+    max-width: 400px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    box-sizing: border-box;
+}
+
+.block-promotional-card-bg {
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 110px;
+    height: 110px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.block-promotional-card-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.block-promotional-card-title {
+    margin: 0 0 12px 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+    letter-spacing: 0.5px;
+}
+
+.block-promotional-card-description {
+    margin: 0 0 18px 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.block-promotional-card-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.block-promotional-card-btn {
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    border: none;
+    outline: none;
+}
+
+.block-promotional-card-btn-learn {
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #fff;
+    backdrop-filter: blur(10px);
+}
+
+/* O admin do WordPress define `a:hover`/`a:focus`/`a:active` com especificidade
+   (0,1,1) — maior que a classe do botão (0,1,0). Como aqui o botão é um <a>, a cor
+   mudaria no hover; mantemos a cor fixa repetindo-a em todos os estados. */
+.block-promotional-card-btn,
+.block-promotional-card-btn:link,
+.block-promotional-card-btn:visited,
+.block-promotional-card-btn:hover,
+.block-promotional-card-btn:focus,
+.block-promotional-card-btn:active {
+    text-decoration: none;
+}
+
+.block-promotional-card-btn-learn,
+.block-promotional-card-btn-learn:link,
+.block-promotional-card-btn-learn:visited,
+.block-promotional-card-btn-learn:hover,
+.block-promotional-card-btn-learn:focus,
+.block-promotional-card-btn-learn:active {
+    color: #fff;
+}
+
+.block-promotional-card-btn-learn:hover,
+.block-promotional-card-btn-learn:focus {
+    background: rgba(255, 255, 255, 0.28);
+    transform: translateY(-1px);
+}
+
+.block-promotional-card-btn-install,
+.block-promotional-card-btn-install:link,
+.block-promotional-card-btn-install:visited,
+.block-promotional-card-btn-install:hover,
+.block-promotional-card-btn-install:focus,
+.block-promotional-card-btn-install:active {
+    background: rgba(255, 255, 255, 0.95);
+    color: #667eea;
+}
+
+.block-promotional-card-btn-install:hover,
+.block-promotional-card-btn-install:focus {
+    background: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Campo desabilitado */
+
+.setting-field-desactivated {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.admin-layout-radio-label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 1.1em;
+    cursor: pointer;
+}
+
+.admin-layout-radio {
+    margin-right: 8px;
+    accent-color: #007cba;
+}
+
+.admin-layout-radio-label-text {
+    font-size: 1em;
+    color: #121519;
+}
+
+.admin-layout-checkbox-label {
+    display: flex;
+    align-items: center;
+    font-size: 1.1em;
+    cursor: pointer;
+}
+
+.admin-layout-checkbox {
+    margin-right: 8px;
+    accent-color: #007cba;
+}
+
+.admin-layout-checkbox-label-text {
+    margin-top: -4px;
+    font-size: 1em;
+    color: #121519;
+}
+
+.admin-layout-select {
+    width: 100%;
+    max-width: 400px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    font-size: 1.1em;
+    background: #fff;
+    color: #121519;
+    transition: border-color 0.2s;
+}
+
+.admin-layout-field-child-bg {
+    padding: 0px !important;
+}
+
+@media (max-width: 1300px) {
+    .admin-layout-content {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .admin-layout-main {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .admin-layout-sidebar-bar {
+        min-width: 0;
+        width: 100%;
+        margin-top: 24px;
+        padding: 12px 0;
+    }
+
+    .admin-layout-sidebar {
+        position: static;
+        padding: 0px;
+    }
+}
+
+@media (max-width: 700px) {
+    .admin-layout-page-wrapper {
+        flex-direction: column;
+        padding: 0 6px;
+    }
+
+    .admin-layout-header {
+        height: auto;
+        margin-bottom: 18px;
+        padding: 10px 0;
+        font-size: 1.3em;
+    }
+
+    .admin-layout-title {
+        font-size: 1.4em;
+    }
+
+    .admin-layout-title-link {
+        font-size: .95em;
+    }
+
+    .admin-layout-file {
+        max-width: 240px;
+    }
+
+    .admin-layout-block {
+        padding: 16px 8px;
+    }
+
+    .admin-layout-field-parent-flex {
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .admin-layout-field-label-desc {
+        max-width: 100%;
+        padding: 10px 4px;
+    }
+
+    .admin-layout-field-component-bg {
+        padding: 14px;
+    }
+
+    .admin-layout-field-input-wrapper {
+        padding: 10px 0px;
+        margin-left: 0;
+    }
+
+    .block-status-card,
+    .block-promotional-card {
+        max-width: 100%;
+        padding: 14px 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-layout-header {
+        font-size: 1em;
+        padding: 6px 0;
+    }
+
+    .admin-layout-title {
+        font-size: 1.1em;
+    }
+
+    .block-status-card-title,
+    .block-promotional-card-title {
+        font-size: 1em;
+    }
+
+    .block-status-card-description,
+    .block-promotional-card-description {
+        font-size: 0.95em;
+    }
+}
+
+@media screen and (max-width: 782px) {
+    .admin-layout-block {
+        border-top-left-radius: 0px !important;
+        border-top-right-radius: 0px !important;
+    }
+
+    .admin-layout-top-menu {
+        margin-right: -1px !important;
+    }
+
+    input[type=checkbox], input[type=radio] {
+        min-width: 1.5625rem;
+    }
+}
+
+/* Feature Messages (sidebar) */
+
+.custom-feature-message {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px solid #4caf50;
+    border-left-width: 5px;
+    border-left-color: #4caf50;
+    border-radius: 5px;
+    background-color: #e8f5e9;
+    color: #388e3c;
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 370px;
+}
+
+/* ── Campos de cor (swatch + valor) ── */
+.admin-layout-color-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.admin-layout-color-swatch {
+    width: 50px !important;
+    height: 40px !important;
+    min-width: 50px;
+    padding: 0 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    background: none !important;
+    cursor: pointer;
+}
+
+.admin-layout-color-wrapper .admin-layout-input {
+    max-width: 160px;
+    text-transform: lowercase;
+}
+
+/* ── Campos filhos aninhados no card do pai ── */
+/* ── Textos do card (coluna esquerda / cabeçalho / abaixo do campo) ── */
+.admin-layout-field-tip,
+.admin-layout-block-sub-title,
+.admin-layout-field-body-description {
+    display: block;
+    /* `5px` à esquerda para alinhar com `.admin-layout-label`. */
+    margin: 4px 0 0 5px;
+    font-size: 1.1em;
+    line-height: 1.5;
+    color: #8f8f8f;
+}
+
+.admin-layout-field-body-description > *:first-child {
+    margin-top: 0;
+}
+
+.admin-layout-field-body-description > *:last-child {
+    margin-bottom: 0;
+}
+
+.admin-layout-field-body-description {
+    /* O wrapper já tem o `margin-left: 5px` — aqui não pode somar outro. */
+    margin-left: 0;
+    margin-top: 10px;
+}
+
+.admin-layout-nested-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+}
+
+.admin-layout-field-parent-flex.admin-layout-field-nested {
+    /* Alinhado com o conteúdo do card pai (o wrapper já tem `margin-left: 5px`). */
+    display: flex;
+    padding: 12px 0 0;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.admin-layout-field-parent-flex.admin-layout-field-nested > .admin-layout-field-label-desc {
+    display: none;
+}
+
+.admin-layout-field-parent-flex.admin-layout-field-nested .admin-layout-field-component-bg {
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+/* O card aninhado não tem padding: zera o deslocamento extra do rótulo/descrição. */
+.admin-layout-field-parent-flex.admin-layout-field-nested > .admin-layout-field-component-bg > .admin-layout-label,
+.admin-layout-field-parent-flex.admin-layout-field-nested > .admin-layout-field-component-bg > .admin-layout-block-sub-title {
+    margin-left: 0;
+}
+
+.admin-layout-field-parent-flex.admin-layout-field-nested > .admin-layout-field-component-bg > .admin-layout-label {
+    font-size: 1.15em;
+}
+
+.admin-layout-field-parent-flex.admin-layout-field-nested .admin-layout-field-input-wrapper {
+    margin-left: 0;
+    padding: 8px 0;
+}
+
+.admin-layout-field-parent-flex.admin-layout-field-nested .admin-layout-field-body-description {
+    margin-left: 0;
+}
+
+/* O UA do Chrome dá `margin-left: 5px` a radios/checkboxes — alinha com o rótulo. */
+.admin-layout-radio,
+.admin-layout-checkbox {
+    margin-left: 0;
+}
+
+/* ── Card de novidades (mensagem verde) ── */
+/* `.admin-layout-sidebar` + `.admin-layout-card` dão mais especificidade que a
+   regra legada de `...AdminSettings.css` (que fixa 370px / 20px de margem). */
+.admin-layout-sidebar {
+    align-items: flex-start;
+}
+
+.admin-layout-sidebar > .admin-layout-card {
+    /* Mesma largura dos cards de link e promocional. */
+    max-width: 400px;
+}
+
+.admin-layout-sidebar .admin-layout-card > .custom-feature-message {
+    /* Como no layout original: o ícone fica centralizado com o bloco de texto. */
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.custom-feature-message-icon {
+    /* Caixa de exatamente uma linha de texto: o glifo centraliza sozinho,
+       independente da fonte do emoji. */
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 21px;
+    margin-right: 10px;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.custom-feature-message-lines {
+    display: flex;
+    flex-direction: column;
+}
+
+.custom-feature-message-line {
+    margin-bottom: 5px;
+    line-height: 1.5;
+}
+
+.custom-feature-message-line:last-child {
+    margin-bottom: 0;
+}
+
+/* ── HR do card promocional (roxo) ── */
+.block-promotional-card-hr {
+    width: 100%;
+    margin: 0 0 12px;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.35);
+}

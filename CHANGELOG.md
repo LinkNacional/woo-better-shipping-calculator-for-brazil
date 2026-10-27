@@ -1,3 +1,12 @@
+# 5.3.0 - 21/10/26
+* Novo: a tela de configurações da finalização de compra agora é dividida em quatro abas (Endereço e CEP, Documentos e Pessoa, Telefone e Celular, Dados Pessoais) com cards, em vez de uma única página longa.
+* Novo: um card lateral reúne os canais de suporte (WhatsApp e Telegram) e apresenta os destaques da versão PRO.
+* Novo: os blocos exclusivos da versão PRO (Retirada no Local e Prazo de Entrega) agora aparecem na tela de configurações junto com os campos brasileiros, e ficam editáveis quando o plugin PRO está ativo.
+* Ajuste: as opções que dependem de outra opção agora ficam aninhadas logo abaixo dela.
+* Ajuste: títulos, subtítulos e descrições dos campos foram reposicionados para que cada opção seja mais fácil de ler.
+* Ajuste: os links da versão PRO agora apontam para a página comercial de cada plugin.
+* Observação: nenhuma configuração salva mudou de nome, então as configurações existentes continuam funcionando como antes.
+
 # 5.2.2 - 26/10/26
 * Novo: opção "Ocultar Checkbox S/N", filha do campo de Número do endereço. Quando habilitada, o atalho "S/N" (sem número) não é criado dentro do campo de Número no checkout em blocos, no checkout clássico/shortcode e na edição de endereço da conta. O cliente continua podendo digitar "S/N" à mão.
 * Novo: sem a opção "Telefone com Máscara e DDI" o campo de telefone não fica mais sem formatação — ele recebe a máscara brasileira (fixo e celular, detectados pelo tamanho do número), sem bandeira e sem seletor de país. O +55 continua visível quando o número tem o código do país, inclusive no placeholder do campo.

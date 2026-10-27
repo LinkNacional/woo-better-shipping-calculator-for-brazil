@@ -1400,6 +1400,15 @@ msgstr ""
 msgid "(00) 00000-0000"
 msgstr ""
 
+#: Includes/WcBetterShippingCalculatorForBrazil.php:4444
+msgid "(00) 0000-0000"
+msgstr ""
+
+# translators: placeholder do campo de telefone que aceita fixo e celular; "DDD" é o código de área brasileiro.
+#: Includes/WcBetterShippingCalculatorForBrazil.php:4447
+msgid "(DDD) número"
+msgstr ""
+
 #: Includes/WcBetterShippingCalculatorForBrazil.php:8261
 #: Includes/WcBetterShippingCalculatorForBrazil.php:8341
 msgid "Sobrenome"

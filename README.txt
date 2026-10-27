@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.2.2
+Stable tag: 5.3.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -83,6 +83,17 @@ When you need help, please create a topic in the [Plugin Support Forum](https://
 * [AntiFraude](/plugins/fraud-and-scam-detection-for-woocommerce/) - Fraud and Scam Detection For WooCommerce
 * [Authentification and OTP for WooCommerce](/plugins/woo-force-authentification-before-checkout/) - OTP and Force customer to log in or register before checkout to increase your conversion rate.
 
+= PRO version =
+
+Upgrade to **Campos Checkout Brasileiro para WooCommerce PRO** for advanced checkout features:
+
+* Delivery scheduling: let customers choose a delivery date and time slot at checkout
+* Block dates and time slots that are already full, with a minimum preparation time before the first available slot
+* Delivery orders panel, listing orders by the delivery date and time slot chosen by the customer
+* Hide the address fields automatically when the customer selects local pickup
+
+Learn more about the PRO version [here](#).
+
 == Installation ==
 
 1.  Access your [WordPress](https://www.linknacional.com.br/wordpress/) admin and go to **Plugins > Add New**.
@@ -125,6 +136,15 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.3.0 - 2026-10-21
+* New: the checkout settings screen is now split into four tabs (Address and Postcode, Documents and Person, Phone and Cellphone, Personal Data) with cards, instead of one long page.
+* New: a sidebar card gathers the support channels (WhatsApp and Telegram) and presents the PRO version highlights.
+* New: the PRO-only blocks (Local Pickup and Delivery Time) now show up on the settings screen together with the Brazilian fields, and become editable once the PRO plugin is active.
+* Tweak: options that depend on another option are now nested right below it.
+* Tweak: field titles, subtitles and descriptions were repositioned so each option is easier to scan.
+* Tweak: the PRO version links now point to each plugin's commercial page.
+* Note: no saved setting changed its name, so existing configurations keep working as before.
 
 # 5.2.2 - 2026-10-26
 * New: "Hide the S/N Checkbox" option, a child of the address Number field. When enabled, the "S/N" (no number) shortcut is not created inside the Number field on block checkout, on the classic/shortcode checkout and on the account's edit-address page. The customer can still type "S/N" by hand.

@@ -73,9 +73,10 @@ class AdminNoticeAndAssetsTest extends WP_UnitTestCase {
     }
 
     public function test_card_de_novidades_esta_desativado() {
-        // 5.2.2 não dispara o card de novidades. Os recursos da versão (máscara
-        // brasileira sem a lib de DDI e a ocultação do checkbox S/N) são ajustes
-        // específicos demais para anunciar, então a constante fica em `false`.
+        // 5.2.2 e 5.3.0 não disparam o card de novidades. Os recursos dessas versões
+        // (máscara brasileira sem a lib de DDI, opção de ocultar o checkbox S/N e o
+        // novo layout de abas) são ajustes específicos demais para anunciar, então a
+        // constante precisa ficar em `false`.
         $main = file_get_contents( $this->main_file() );
 
         $this->assertMatchesRegularExpression(
@@ -96,15 +97,37 @@ class AdminNoticeAndAssetsTest extends WP_UnitTestCase {
         $this->assertStringContainsString(
             '$asset_version(',
             $php,
-            'Os bundles de admin devem usar a versão baseada em mtime.'
+            'Os assets de admin devem usar a versão baseada em mtime.'
         );
 
-        foreach ( array( 'AdminLayout', 'AdminSettings' ) as $bundle ) {
-            $this->assertMatchesRegularExpression(
-                // Dependências de script são permitidas (ex.: `wc-better-calc-settings-fake-disabled`).
-                "/'[^']*" . $bundle . "\.COMPILED\.js',\s*array\([^)]*\),\s*\\\$asset_version\(/",
-                $php,
-                "O bundle {$bundle} precisa enfileirar com \$asset_version(...) e não com a constante de versão."
+        // Recorta só a função que enfileira os assets da aba de checkout.
+        $inicio = strpos( $php, 'function lkn_woo_better_footer_page' );
+        $this->assertNotFalse( $inicio, 'A função que enfileira os assets da aba deve existir.' );
+
+        $fim = strpos( $php, 'function lkn_add_settings_link', $inicio );
+        $this->assertNotFalse( $fim, 'O fim do bloco de assets deve existir.' );
+
+        $bloco = substr( $php, $inicio, $fim - $inicio );
+
+        // Todo asset compilado enfileirado nesse bloco tem que usar o mtime,
+        // senão o navegador segue com o arquivo antigo dentro da mesma versão.
+        preg_match_all(
+            "/(Admin\/(?:js|css)Compiled\/[A-Za-z0-9_.]+\.COMPILED\.(?:js|css))',\s*\n\s*(?:array\([^)]*\),\s*\n\s*)?([^,\n]+)/",
+            $bloco,
+            $m,
+            PREG_SET_ORDER
+        );
+
+        $this->assertNotEmpty( $m, 'Nenhum asset de admin encontrado para verificar.' );
+
+        foreach ( $m as $achado ) {
+            $arquivo = $achado[1];
+            $versao  = trim( $achado[2] );
+
+            $this->assertStringStartsWith(
+                '$asset_version(',
+                $versao,
+                "O asset {$arquivo} precisa usar \$asset_version(...) e não a constante de versão."
             );
         }
     }

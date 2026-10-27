@@ -9,7 +9,7 @@
 * Tags: woocommerce, checkout, CPF, CNPJ, CEP
 * Testado até: 7.1
 * Requer PHP: 8.2
-* Tag estável: 5.2.2
+* Tag estável: 5.3.0
 * Licença: GPLv2 ou posterior
 * URI da licença: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -39,6 +39,17 @@ Plugin de **campos brasileiros para o checkout do WooCommerce**, facilitando e m
 - Compatibilidade com o modo Legacy e Blocos (Gutenberg).
 
 > **Nota:** A calculadora de frete (página de produto e carrinho) migrou para o plugin [Shipping Simulator for WooCommerce](https://wordpress.org/plugins/shipping-simulator-for-woocommerce/).
+
+## Versão PRO
+
+Conheça o **Campos Checkout Brasileiro para WooCommerce PRO**, com recursos avançados de checkout:
+
+- Agendamento de entrega: o cliente escolhe a data e o turno de entrega no checkout.
+- Bloqueio de datas e turnos esgotados, com prazo mínimo de preparo antes do primeiro horário disponível.
+- Painel de pedidos por entrega, listando os pedidos pela data e turno escolhidos pelo cliente.
+- Ocultação automática dos campos de endereço quando o cliente seleciona retirada no local.
+
+Saiba mais sobre a versão PRO [aqui](#).
 
 ## Como instalar?
 
