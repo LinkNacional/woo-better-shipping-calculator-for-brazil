@@ -330,7 +330,7 @@ export function attachBrazilPhoneMask(input, type) {
 
     input.dataset.wcBetterBrazilMask = 'true';
     input.dataset.wcBetterBrazilMaskType = type || 'auto';
-    input.setAttribute('inputmode', 'numeric');
+    input.setAttribute('inputmode', 'tel');
 
     var apply = function () {
         var raw = input.value;

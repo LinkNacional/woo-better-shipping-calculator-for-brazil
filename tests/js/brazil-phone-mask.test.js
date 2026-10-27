@@ -215,6 +215,34 @@ test('[brazil-mask] a máscara só formata o que o cliente VÊ (input.value)', (
     assert.strictEqual((listeners.input || []).length, 1);
 });
 
+/**
+ * O teclado precisa ser o de TELEFONE (`tel`), não o numérico puro: só o `tel`
+ * expõe o "+" no celular. O campo é `type="tel"`, então `numeric` era uma
+ * restrição imposta pelo plugin (e impedia digitar o DDI de um número estrangeiro).
+ */
+test('[brazil-mask] o campo usa inputmode "tel" (o "+" precisa estar disponível)', () => {
+    const attrs = {};
+    const input = {
+        value: '',
+        dataset: {},
+        setAttribute(name, value) { attrs[name] = value; },
+        addEventListener() {},
+        setSelectionRange() {},
+    };
+
+    mask.attachBrazilPhoneMask(input, 'auto');
+    assert.strictEqual(attrs.inputmode, 'tel');
+
+    // Nenhum dos fontes pode voltar a restringir o teclado aos dígitos.
+    [SOURCE, BLOCKS_CORE, BRAZIL_ENTRY, SHORTCODE, SANITIZER].forEach((file) => {
+        const src = fs.readFileSync(file, 'utf8');
+        assert.ok(
+            !/setAttribute\(\s*'inputmode'\s*,\s*'numeric'\s*\)/.test(src),
+            `${path.basename(file)} não deve forçar inputmode="numeric"`
+        );
+    });
+});
+
 test('[brazil-mask] blocos: sem a lib, o campo recebe a máscara BR (e a validação BR)', () => {
     assert.ok(fs.existsSync(BLOCKS_CORE), `Arquivo não encontrado: ${BLOCKS_CORE}`);
     const src = fs.readFileSync(BLOCKS_CORE, 'utf8');
