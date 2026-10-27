@@ -327,15 +327,16 @@ class PhoneModeTest extends WP_UnitTestCase {
         $this->assertSame( '(00) 00000-0000', $fields['billing_cellphone']['placeholder'] );
     }
 
-    public function test_cellphone_placeholder_shows_ddi_without_the_lib(): void {
+    public function test_cellphone_placeholder_has_no_ddi_without_the_lib(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
-        // Máscara BR (sem lib): não há bandeira, então o +55 vai no placeholder.
+        // Máscara BR (sem lib): o DDI entra sozinho no backend, então o placeholder
+        // descreve só o que o cliente digita.
         update_option( 'woo_better_calc_apply_phone_mask', 'no' );
 
         $fields = $this->billing_fields_with_cellphone();
 
-        $this->assertSame( '+55 (00) 00000-0000', $fields['billing_cellphone']['placeholder'] );
+        $this->assertSame( '(00) 00000-0000', $fields['billing_cellphone']['placeholder'] );
     }
 
     public function test_existing_cellphone_is_overridden_by_woo_better(): void {

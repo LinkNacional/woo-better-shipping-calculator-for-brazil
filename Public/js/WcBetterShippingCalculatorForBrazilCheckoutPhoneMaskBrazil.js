@@ -77,9 +77,10 @@ import {
             return;
         }
 
-        field.setAttribute('inputmode', 'numeric');
-        // Número nacional (sem código do país): reduz a chance do navegador
-        // autocompletar com "+55" embutido no campo.
+        // Teclado de TELEFONE (não o numérico puro): o `type="tel"` já traz o `+`,
+        // `*` e `#`, e por isso `inputmode="tel"` só reafirma o default — sem ele,
+        // um `inputmode="numeric"` restringiria a digitação aos dígitos.
+        field.setAttribute('inputmode', 'tel');
         field.setAttribute('autocomplete', 'tel-national');
 
         attachBrazilPhoneMask(field, brazilTypeFor(selector || field.id || ''));
