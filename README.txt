@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.2.2
+Stable tag: 5.2.3
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -125,6 +125,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.2.3 - 2026-10-27
+* Tweak: the phone field placeholder now follows the "Phone Field Behavior" — the landline format for "Landline Only", the mobile format for "Cellphone Only" and for the Cellphone field, and an area-code hint ("DDD + number") in the mode that accepts both formats. The "+55" was removed from the text: it is added automatically when the order is saved, and the customer never types it.
+* Tweak: the phone field keyboard on mobile is the phone keyboard again (with the "+" key), instead of the digits-only one — so the customer can type a foreign country code. The digits are still the only input accepted by the mask.
 
 # 5.2.2 - 2026-10-26
 * New: "Hide the S/N Checkbox" option, a child of the address Number field. When enabled, the "S/N" (no number) shortcut is not created inside the Number field on block checkout, on the classic/shortcode checkout and on the account's edit-address page. The customer can still type "S/N" by hand.

@@ -1,3 +1,7 @@
+# 5.2.3 - 27/10/26
+* Ajuste: o placeholder do telefone agora segue o "Comportamento do Campo de Telefone" — o formato do fixo no "Somente Fixo", o formato do celular no "Somente Celular" e no campo de Celular, e uma dica de DDD ("(DDD) número") no modo que aceita os dois formatos. O "+55" saiu do texto: ele é incluído automaticamente ao salvar o pedido e o cliente nunca o digita.
+* Ajuste: o teclado do campo de telefone no celular volta a ser o de telefone (com a tecla "+"), em vez do numérico puro — assim o cliente consegue digitar o código do país. A máscara continua aceitando apenas os dígitos.
+
 # 5.2.2 - 26/10/26
 * Novo: opção "Ocultar Checkbox S/N", filha do campo de Número do endereço. Quando habilitada, o atalho "S/N" (sem número) não é criado dentro do campo de Número no checkout em blocos, no checkout clássico/shortcode e na edição de endereço da conta. O cliente continua podendo digitar "S/N" à mão.
 * Novo: sem a opção "Telefone com Máscara e DDI" o campo de telefone não fica mais sem formatação — ele recebe a máscara brasileira (fixo e celular, detectados pelo tamanho do número), sem bandeira e sem seletor de país. O +55 continua visível quando o número tem o código do país, inclusive no placeholder do campo.

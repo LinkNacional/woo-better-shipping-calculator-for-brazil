@@ -16,7 +16,7 @@
  * Plugin Name:       Campos Checkout Brasileiro para WooCommerce
  * Plugin URI:        https://www.linknacional.com.br/wordpress
  * Description:       Brazilian checkout fields (CPF/CNPJ, address number, neighborhood and phone) with automatic CEP address pre-filling for WooCommerce.
- * Version:           5.2.2
+ * Version:           5.2.3
  * Author:            Link Nacional
  * Author URI:        https://linknacional.com.br/
  * Requires PHP:      8.2
@@ -46,7 +46,7 @@ if (! defined('WPINC')) {
  */
 // Consts
 if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
-    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION', '5.2.2');
+    define('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION', '5.2.3');
 }
 
 if (! defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_MIN_GIVE_VERSION')) {
@@ -80,10 +80,10 @@ if (! defined('WC_BETTER_SHIPPING_PRODUCT_QUANTITY')) {
 // Define se esta versão contém novas funcionalidades (true) ou apenas correções de bug (false).
 // Quando false, o notice de atualização não é exibido para usuários veteranos.
 //
-// 5.2.1 e 5.2.2 = false. A 5.2.2 traz recursos novos (máscara brasileira sem a
-// lib de DDI e a opção de ocultar o checkbox S/N), mas são ajustes específicos
-// demais para justificar o card. Ao lançar uma versão com recursos de destaque,
-// volte para true e atualize o card de novidades.
+// 5.2.1, 5.2.2 e 5.2.3 = false. A 5.2.2 traz recursos novos (máscara brasileira sem a
+// lib de DDI e a opção de ocultar o checkbox S/N) e a 5.2.3 só ajusta o placeholder
+// e o teclado do telefone — ajustes específicos demais para justificar o card. Ao
+// lançar uma versão com recursos de destaque, volte para true e atualize o card.
 if (! defined('WC_BETTER_SHIPPING_NEW_FEATURES')) {
     define('WC_BETTER_SHIPPING_NEW_FEATURES', false);
 }
