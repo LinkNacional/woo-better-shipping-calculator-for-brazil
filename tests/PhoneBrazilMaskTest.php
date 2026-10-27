@@ -252,16 +252,22 @@ class PhoneBrazilMaskTest extends WP_UnitTestCase {
         return array_values( $orphans );
     }
 
-    // --- Placeholder (sem lib o +55 vai no placeholder) ---------------------
+    // --- Placeholder (descreve o que se DIGITA, sem o +55) ------------------
 
-    public function test_placeholder_carries_the_ddi_without_the_lib(): void {
+    public function test_placeholder_of_the_cellphone_has_no_ddi_without_the_lib(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_apply_phone_mask', 'no' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
 
-        $fields = $this->plugin()->add_cellphone_billing_fields( array( 'billing_phone' => array( 'type' => 'tel' ) ) );
+        $plugin = $this->plugin();
 
-        $this->assertSame( '+55 (00) 00000-0000', $fields['billing_cellphone']['placeholder'] );
+        $billing = $plugin->add_cellphone_billing_fields( array( 'billing_phone' => array( 'type' => 'tel' ) ) );
+        $this->assertSame( '(00) 00000-0000', $billing['billing_cellphone']['placeholder'] );
+
+        // Cobrança e entrega têm a MESMA regra — a assimetria é onde um `kind`
+        // esquecido passaria despercebido.
+        $shipping = $plugin->add_cellphone_shipping_fields( array( 'shipping_phone' => array( 'type' => 'tel' ) ) );
+        $this->assertSame( '(00) 00000-0000', $shipping['shipping_cellphone']['placeholder'] );
     }
 
     public function test_placeholder_has_no_ddi_with_the_lib(): void {
@@ -277,14 +283,94 @@ class PhoneBrazilMaskTest extends WP_UnitTestCase {
     public function test_checkout_phone_placeholder_follows_the_mask_mode(): void {
         update_option( 'woo_better_calc_phone_mode', 'landline_only' );
 
+        // "Somente Fixo": o modo só aceita 10 dígitos, então o placeholder é o do fixo.
         update_option( 'woo_better_calc_apply_phone_mask', 'no' );
         $fields = $this->plugin()->wc_better_calc_checkout_fields( array( 'billing' => array(), 'shipping' => array() ) );
-        $this->assertSame( '+55 (00) 00000-0000', $fields['billing']['billing_phone']['placeholder'] ?? '' );
+        $this->assertSame( '(00) 0000-0000', $fields['billing']['billing_phone']['placeholder'] ?? '' );
 
         update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
         $fields = $this->plugin()->wc_better_calc_checkout_fields( array( 'billing' => array(), 'shipping' => array() ) );
         // Com a lib o DDI vem do seletor de país → o texto do checkout não muda.
         $this->assertSame( 'Digite o telefone', $fields['billing']['billing_phone']['placeholder'] ?? '' );
+    }
+
+    /**
+     * "Celular e Fixo" aceita as DUAS máscaras (autodetecção pelo tamanho), então
+     * nenhum formato fixo é verdadeiro: o placeholder aponta a composição (DDD +
+     * número) em vez de prometer 5+4. O campo "Celular" continua 5+4.
+     */
+    public function test_auto_mode_phone_placeholder_does_not_promise_a_format(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+
+        $fields = $this->plugin()->wc_better_calc_checkout_fields( array( 'billing' => array(), 'shipping' => array() ) );
+        $this->assertSame( '(DDD) número', $fields['billing']['billing_phone']['placeholder'] ?? '' );
+
+        // O campo "Celular" é adicionado por `add_cellphone_billing_fields` (filtro
+        // `woocommerce_billing_fields`), não pelo checkout_fields — e continua 5+4.
+        $fields = $this->plugin()->add_cellphone_billing_fields( array( 'billing_phone' => array( 'type' => 'tel' ) ) );
+        $this->assertSame( '(00) 00000-0000', $fields['billing_cellphone']['placeholder'] );
+    }
+
+    /**
+     * "Somente Celular": o campo principal carrega o celular, então 5+4 — mesmo
+     * quando o telefone nativo ainda é montado antes de ser removido.
+     */
+    public function test_cellphone_only_placeholder_is_the_mobile_format(): void {
+        update_option( 'woo_better_calc_phone_mode', 'cellphone_only' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+
+        $fields = $this->plugin()->add_cellphone_billing_fields( array( 'billing_phone' => array( 'type' => 'tel' ) ) );
+        $this->assertSame( '(00) 00000-0000', $fields['billing_cellphone']['placeholder'] );
+    }
+
+    /**
+     * A edição de endereço (minha conta) usa a MESMA regra do checkout.
+     */
+    public function test_edit_address_phone_placeholder_follows_the_mode(): void {
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+
+        $incoming = array(
+            'billing_country' => array( 'value' => 'BR' ),
+            'billing_phone'   => array( 'type' => 'tel' ),
+        );
+
+        update_option( 'woo_better_calc_phone_mode', 'landline_only' );
+        $fields = $this->plugin()->add_edit_address_billing_fields( $incoming );
+        $this->assertSame( '(00) 0000-0000', $fields['billing_phone']['placeholder'] ?? '' );
+
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        $fields = $this->plugin()->add_edit_address_billing_fields( $incoming );
+        $this->assertSame( '(DDD) número', $fields['billing_phone']['placeholder'] ?? '' );
+    }
+
+    /**
+     * O placeholder é extensível (mesma convenção dos demais pontos do plugin) e o
+     * filtro recebe o campo e o modo, para um lojista/plugin ajustar só um deles.
+     */
+    public function test_phone_placeholder_is_filterable(): void {
+        update_option( 'woo_better_calc_phone_mode', 'landline_only' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+
+        $captured = array();
+        $callback = function ( $placeholder, $kind, $mode ) use ( &$captured ) {
+            $captured[] = array( $placeholder, $kind, $mode );
+
+            return 'Meu telefone';
+        };
+        add_filter( 'wc_better_shipping_calculator_phone_placeholder', $callback, 10, 3 );
+
+        $fields = $this->plugin()->wc_better_calc_checkout_fields( array( 'billing' => array(), 'shipping' => array() ) );
+
+        remove_filter( 'wc_better_shipping_calculator_phone_placeholder', $callback, 10 );
+
+        $this->assertSame( 'Meu telefone', $fields['billing']['billing_phone']['placeholder'] ?? '' );
+        $this->assertNotEmpty( $captured );
+        $this->assertSame( '(00) 0000-0000', $captured[0][0] );
+        $this->assertSame( 'phone', $captured[0][1] );
+        $this->assertSame( 'landline_only', $captured[0][2] );
     }
 
     // --- Sanitizador: digitação livre no modo sem lib -----------------------

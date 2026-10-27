@@ -9,8 +9,9 @@
  * exceção — o "+" como PRIMEIRO caractere (para números internacionais); repetir o
  * "+" é bloqueado. Qualquer outro caractere especial (espaço, "-", "(", ")", ".",
  * "/") é inserido EXCLUSIVAMENTE pela biblioteca de formatação — nunca pelo
- * usuário. Também forçamos o teclado numérico em dispositivos móveis via
- * inputmode="numeric".
+ * usuário. Em dispositivos móveis usamos o teclado de telefone (`inputmode="tel"`,
+ * que é o default do `type="tel"`): ele expõe o "+" para números internacionais —
+ * o `numeric` escondia o "+" e tornava impossível digitá-lo.
  *
  * EXCEÇÃO — máscara BR sem a lib/DDI (`wc_better_phone_sanitizer_vars.allowPunctuation`):
  * aí NÃO há lib para formatar, e o cliente pode querer digitar um número de outro
@@ -131,8 +132,9 @@
 
         field.dataset[FLAG] = 'true';
 
-        // Força o teclado numérico em dispositivos móveis.
-        field.setAttribute('inputmode', 'numeric');
+        // Teclado de telefone em dispositivos móveis (`tel`, não `numeric`: o `+`
+        // de um número internacional precisa estar disponível).
+        field.setAttribute('inputmode', 'tel');
 
         // Bloqueia digitação de qualquer caractere que não seja dígito, exceto um
         // único "+" no início (números internacionais). Repetir o "+" é bloqueado.

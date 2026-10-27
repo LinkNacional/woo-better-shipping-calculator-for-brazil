@@ -128,7 +128,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '5.2.2';
+            $this->version = '5.2.3';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -347,7 +347,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '5.2.1', '5.1.1', '5.1.0', '5.0.4', '5.0.3', '5.0.2', '5.0.1', '5.0.0', '4.17.4', '4.17.3', '4.17.2', '4.17.1', '4.17.0', '4.16.12' );
+            $old_versions   = array( '5.2.2', '5.2.1', '5.1.1', '5.1.0', '5.0.4', '5.0.3', '5.0.2', '5.0.1', '5.0.0', '4.17.4', '4.17.3', '4.17.2', '4.17.1', '4.17.0' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -4397,17 +4397,24 @@ class WcBetterShippingCalculatorForBrazil
     /**
      * Placeholder dos campos de telefone/celular.
      *
-     * Com a máscara BR (sem lib/DDI) o `+55` entra no placeholder: nesse modo não há
-     * bandeira nem seletor de país, então é ali que o cliente vê o código do país.
+     * Na máscara BR (sem lib/DDI) o texto descreve o que o cliente DIGITA, não o que
+     * o campo exibe: o `+55` é concatenado no backend (`normalize_order_phone`) e o
+     * cliente nunca digita o DDI — por isso ele fica FORA do placeholder. O texto
+     * segue o "Comportamento do Campo de Telefone" (mesma fonte da label, ver
+     * `get_phone_field_label()`), que é a única peça que o cliente NÃO descobre
+     * sozinho: sem o DDD a máscara formata um número de 9 dígitos e o checkout
+     * reprova com a mensagem genérica.
      *
      * @param string|null $fallback Texto já traduzido a usar quando a máscara BR NÃO
      *                              está ativa (null = padrão `(00) 00000-0000`).
+     * @param string      $kind     'phone' (telefone, aceita fixo/celular conforme o
+     *                              modo) ou 'cellphone' (campo "Celular").
      * @return string
      */
-    private function phone_field_placeholder($fallback = null)
+    private function phone_field_placeholder($fallback = null, $kind = 'phone')
     {
         if ($this->is_phone_brazil_mask_active()) {
-            return __('+55 (00) 00000-0000', 'woo-better-shipping-calculator-for-brazil');
+            return $this->brazil_phone_field_placeholder($kind);
         }
 
         if (null !== $fallback) {
@@ -4415,6 +4422,40 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         return __('(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil');
+    }
+
+    /**
+     * Placeholder da máscara BR (sem lib/DDI) conforme o campo e o modo.
+     *
+     * - "Somente Fixo"        → `(00) 0000-0000` (o modo só aceita fixo).
+     * - "Celular e Fixo"      → `(DDD) número`: aceita as DUAS máscaras (autodetecção
+     *                           pelo tamanho), então nenhum formato fixo é verdadeiro.
+     * - "Somente Celular" e o campo "Celular" → `(00) 00000-0000`.
+     *
+     * @param string $kind 'phone' | 'cellphone'
+     * @return string
+     */
+    private function brazil_phone_field_placeholder($kind = 'phone')
+    {
+        $mode = $this->get_phone_mode();
+
+        if ('cellphone' === $kind || 'cellphone_only' === $mode) {
+            $placeholder = __('(00) 00000-0000', 'woo-better-shipping-calculator-for-brazil');
+        } elseif ('landline_only' === $mode) {
+            $placeholder = __('(00) 0000-0000', 'woo-better-shipping-calculator-for-brazil');
+        } else {
+            /* translators: placeholder do telefone que aceita fixo e celular; "DDD" é o código de área brasileiro. */
+            $placeholder = __('(DDD) número', 'woo-better-shipping-calculator-for-brazil');
+        }
+
+        /**
+         * Filtra o placeholder do telefone na máscara BR (sem lib/DDI).
+         *
+         * @param string $placeholder Texto já traduzido.
+         * @param string $kind        'phone' | 'cellphone'.
+         * @param string $mode        Comportamento do Campo de Telefone.
+         */
+        return apply_filters('wc_better_shipping_calculator_phone_placeholder', $placeholder, $kind, $mode);
     }
 
     /**
@@ -8240,7 +8281,7 @@ class WcBetterShippingCalculatorForBrazil
         $fields[ $key ] = array(
             'type'              => 'tel',
             'label'             => __( 'Celular', 'woo-better-shipping-calculator-for-brazil' ),
-            'placeholder'       => $this->phone_field_placeholder(),
+            'placeholder'       => $this->phone_field_placeholder(null, 'cellphone'),
             'required'          => $required,
             'class'             => array( 'form-row-wide' ),
             'priority'          => 93,
@@ -9098,7 +9139,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_main_cellphone = ( 'cellphone_only' === $this->get_phone_mode() );
             $fields['billing_cellphone'] = array(
                 'label'             => __( 'Celular', 'woo-better-shipping-calculator-for-brazil' ),
-                'placeholder'       => $this->phone_field_placeholder(),
+                'placeholder'       => $this->phone_field_placeholder(null, 'cellphone'),
                 'required'          => $is_main_cellphone ? ( $phone_required === 'yes' ) : $this->is_cellphone_required(),
                 'class'             => array( 'form-row-wide' ),
                 'priority'          => $is_main_cellphone ? $phone_priority : 200,
@@ -9487,7 +9528,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_main_cellphone = ( 'cellphone_only' === $this->get_phone_mode() );
             $fields['shipping_cellphone'] = array(
                 'label'             => __( 'Celular', 'woo-better-shipping-calculator-for-brazil' ),
-                'placeholder'       => $this->phone_field_placeholder(),
+                'placeholder'       => $this->phone_field_placeholder(null, 'cellphone'),
                 'required'          => $is_main_cellphone ? ( $phone_required === 'yes' ) : $this->is_cellphone_required(),
                 'class'             => array( 'form-row-wide' ),
                 'priority'          => $is_main_cellphone ? $phone_priority : 200,

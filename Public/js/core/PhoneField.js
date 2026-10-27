@@ -459,7 +459,7 @@ function applyMask(input, kind, context) {
         return;
     }
     input.dataset.wcBetterFieldMask = 'true';
-    input.setAttribute('inputmode', 'numeric');
+    input.setAttribute('inputmode', 'tel');
 
     if (!truthy(cfgValue('maskEnabled'))) {
         if (!managesPhone()) {
@@ -581,7 +581,7 @@ function buildField(spec, context, insertAfter) {
     input.name = id;
     input.setAttribute('autocomplete', 'tel-national');
     input.setAttribute('autocapitalize', 'off');
-    input.setAttribute('inputmode', 'numeric');
+    input.setAttribute('inputmode', 'tel');
     input.setAttribute('aria-label', spec.label);
     input.setAttribute('aria-invalid', 'false');
     if (spec.required) {

@@ -1804,6 +1804,15 @@ msgstr "Informe acima o código postal (CEP)."
 msgid "(00) 00000-0000"
 msgstr "(00) 00000-0000"
 
+#: Includes/WcBetterShippingCalculatorForBrazil.php:4444
+msgid "(00) 0000-0000"
+msgstr "(00) 0000-0000"
+
+# translators: placeholder do campo de telefone que aceita fixo e celular; "DDD" é o código de área brasileiro.
+#: Includes/WcBetterShippingCalculatorForBrazil.php:4447
+msgid "(DDD) número"
+msgstr "(DDD) número"
+
 #: Includes/WcBetterShippingCalculatorForBrazil.php:8261
 #: Includes/WcBetterShippingCalculatorForBrazil.php:8341
 msgid "Sobrenome"
