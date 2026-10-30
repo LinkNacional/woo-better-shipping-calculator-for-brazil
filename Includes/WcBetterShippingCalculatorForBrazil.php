@@ -134,6 +134,11 @@ class WcBetterShippingCalculatorForBrazil
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
         $this->load_dependencies();
+
+        // Fluxo de compra da licença PRO (pop-up + rotas REST de instalar e
+        // ativar). Autoload PSR-4: `Includes/Billing/`.
+        \Lkn\WcBetterShippingCalculatorForBrazil\Includes\Billing\Billing::boot();
+
         $this->define_admin_hooks();
         $this->define_public_hooks();
     }
@@ -601,6 +606,9 @@ class WcBetterShippingCalculatorForBrazil
                 $asset_version('Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.css'),
                 'all'
             );
+
+            // Pop-up de compra da licença PRO (card "Adquirir a licença").
+            \Lkn\WcBetterShippingCalculatorForBrazil\Includes\Billing\Billing::enqueue();
         }
     }
 

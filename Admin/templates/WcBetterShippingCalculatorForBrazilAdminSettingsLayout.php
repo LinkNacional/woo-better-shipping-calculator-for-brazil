@@ -120,6 +120,28 @@ $wb_layout_children_map = function ( $form_fields ) {
 $wb_layout_pro_pill_url = \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::upgrade_url();
 
 /**
+ * Preço mostrado no card de compra do PRO.
+ *
+ * Piso da faixa inicial da licença (anual, cresce com o volume de pedidos).
+ * A origem está no ProGate para ser trocada pela API de billing depois sem
+ * mexer neste template.
+ */
+$wb_layout_pro_price = \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::license_price();
+
+/**
+ * Recursos listados no card de compra do PRO.
+ *
+ * Uma linha por recurso, na linguagem de quem usa a tela: o que muda no
+ * checkout, não como foi implementado.
+ */
+$wb_layout_pro_features = array(
+    __('Agendamento de data e turno de entrega no checkout', 'woo-better-shipping-calculator-for-brazil'),
+    __('Bloqueio de datas e de turnos com capacidade esgotada', 'woo-better-shipping-calculator-for-brazil'),
+    __('Prazo mínimo de preparo por produto ou por região', 'woo-better-shipping-calculator-for-brazil'),
+    __('Retirada no local sem expor o endereço da loja', 'woo-better-shipping-calculator-for-brazil'),
+);
+
+/**
  * Pílula vermelha `PRO` (só aparece enquanto o PRO está inativo).
  *
  * Usada em três lugares: no item do menu de abas (span, porque um `a` não pode
@@ -147,6 +169,26 @@ $wb_layout_pro_pill = function ( $as_link = false ) use ( $wb_layout_pro_pill_ur
 		esc_attr__( 'Conheça a versão PRO', 'woo-better-shipping-calculator-for-brazil' ),
 		esc_html( $label )
 	);
+};
+
+/**
+ * Texto do banner que explica por que o bloco PRO está bloqueado.
+ *
+ * São dois motivos diferentes e o lojista precisa saber qual é o dele:
+ *
+ * - PRO **instalado e ativo, sem licença** (o caso comum de quem baixou o zip e
+ *   ativou o plugin): o recurso existe, o que falta é ativar a licença. Dizer
+ *   "enquanto o PRO não estiver ativo" aqui seria mentira — o PRO está ativo;
+ * - PRO **ausente ou desativado**: aí sim o que falta é o plugin.
+ *
+ * @return string Texto sem escape (o template escapa).
+ */
+$wb_layout_pro_banner_text = function () {
+	if ( \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::is_pro_active() ) {
+		return __( 'Recurso exclusivo da versão PRO. Você pode explorar as opções, mas elas não são salvas enquanto a licença do PRO não estiver ativa.', 'woo-better-shipping-calculator-for-brazil' );
+	}
+
+	return __( 'Recurso exclusivo da versão PRO. Você pode explorar as opções, mas elas não são salvas enquanto o PRO não estiver ativo.', 'woo-better-shipping-calculator-for-brazil' );
 };
 
 /**
@@ -199,11 +241,34 @@ $wb_layout_field = function ( $field_key, $field, $children_map, $depth = 0 ) us
 			</div>
 		<?php endif; ?>
 		<div class="admin-layout-field-component-bg">
-			<span class="admin-layout-label<?php echo $is_pro_card ? ' admin-layout-label--pro' : ''; ?>">
+			<?php
+			/**
+			 * Ações extras alinhadas ao título do card (à direita, ao lado da pílula).
+			 *
+			 * O bloco "Licença" (injetado pelo PRO) usa isto para o botão de
+			 * revalidar: ele pertence ao PRO, não ao layout do gratuito — o
+			 * gratuito só reserva o lugar. Devolver markup vazio mantém o título
+			 * como está hoje (sem wrapper flex).
+			 *
+			 * @param string     $acoes    Markup das ações (vazio por padrão).
+			 * @param string|int $field_id Id do campo.
+			 * @param array      $field    Definição do campo.
+			 */
+			$wb_layout_card_actions = (string) apply_filters( 'wc_better_shipping_calculator_card_title_actions', '', $field_id, $field );
+			$wb_layout_label_class  = trim(
+				( $is_pro_card ? 'admin-layout-label--pro ' : '' )
+				. ( '' !== $wb_layout_card_actions ? 'admin-layout-label--actions' : '' )
+			);
+			?>
+			<span class="admin-layout-label<?php echo '' !== $wb_layout_label_class ? ' ' . esc_attr( $wb_layout_label_class ) : ''; ?>">
 				<span class="admin-layout-label-text"><?php echo esc_html( $card_title ); ?></span>
 				<?php
 				if ( $is_pro_card ) {
 					echo $wb_layout_pro_pill( true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup escapado na closure.
+				}
+
+				if ( '' !== $wb_layout_card_actions ) {
+					echo $wb_layout_card_actions; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- O filtro devolve markup já escapado pelo dono do campo.
 				}
 				?>
 			</span>
@@ -440,6 +505,43 @@ foreach ( $form_fields as $field_key => $field ) {
 $wb_layout_children = $wb_layout_children_map( $form_fields );
 $wb_layout_title    = isset( $method_title ) ? $method_title : __( 'Configurações', 'woo-better-shipping-calculator-for-brazil' );
 
+/*
+ * Qual bloco o nav abre já de saída.
+ *
+ * O padrão é o primeiro. Quando a chegada vem do fluxo de compra —
+ * `Billing::settings_url()` manda `?lkn_open=<bloco>` — o destino é o bloco do
+ * recurso PRO que o cliente acabou de comprar, para ele cair onde vai configurar
+ * o recurso e não na primeira aba.
+ *
+ * A escolha é feita AQUI, no servidor, marcando o bloco como `active` no markup.
+ * Clicar via JS (no evento `load`) dependia da hora em que o handler das abas
+ * ficava pronto e piscava a primeira aba antes de trocar; o JS das abas já parte
+ * do link que tem `.active`, então basta acertar o markup e ele faz o resto
+ * (inclusive rolar o carrossel até a aba).
+ *
+ * Duas guardas: o bloco precisa EXISTIR nesta tela (sem o PRO instalado o bloco
+ * do recurso não está na lista) e não pode estar BLOQUEADO — abrir numa aba com
+ * "recurso exclusivo da versão PRO" seria pior do que abrir na primeira.
+ *
+ * `sanitize_key` e não `sanitize_title`: os ids dos blocos usam `_`
+ * (`pro_prazo_entrega`) e o `sanitize_title` troca `_` por `-`, o que faria a
+ * comparação abaixo falhar sempre.
+ */
+$wb_layout_active_block = $wb_layout_first_block;
+
+if ( isset( $_GET['lkn_open'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- só escolhe a aba inicial.
+	$wb_layout_requested = sanitize_key( wp_unslash( $_GET['lkn_open'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+	if ( isset( $wb_layout_blocks[ $wb_layout_requested ] ) ) {
+		$wb_layout_requested_pro = $wb_layout_blocks[ $wb_layout_requested ]['pro']
+			&& ! \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::is_pro_unlocked();
+
+		if ( ! $wb_layout_requested_pro ) {
+			$wb_layout_active_block = $wb_layout_requested;
+		}
+	}
+}
+
 ?>
 <div class="admin-layout-page-wrapper">
 	<div class="admin-layout-content">
@@ -453,10 +555,10 @@ $wb_layout_title    = isset( $method_title ) ? $method_title : __( 'Configuraç�
 					<div class="admin-layout-top-menu-clip">
 						<nav class="admin-layout-top-menu">
 							<?php foreach ( $wb_layout_blocks as $block_id => $block ) : ?>
-								<a href="#" id="nav-<?php echo esc_attr( $block_id ); ?>" class="admin-layout-title-link<?php echo $block_id === $wb_layout_first_block ? ' active' : ''; ?><?php echo $block['pro'] ? ' admin-layout-title-link--pro' : ''; ?>" data-target="block-<?php echo esc_attr( $block_id ); ?>">
+								<a href="#" id="nav-<?php echo esc_attr( $block_id ); ?>" class="admin-layout-title-link<?php echo $block_id === $wb_layout_active_block ? ' active' : ''; ?><?php echo $block['pro'] ? ' admin-layout-title-link--pro' : ''; ?>" data-target="block-<?php echo esc_attr( $block_id ); ?>">
 									<span class="admin-layout-title-link-text"><?php echo esc_html( '' !== $block['title'] ? $block['title'] : ucfirst( $block_id ) ); ?></span>
 									<?php
-									if ( $block['pro'] && ! \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::is_pro_active() ) {
+									if ( $block['pro'] && ! \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::is_pro_unlocked() ) {
 										echo $wb_layout_pro_pill( false ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup escapado na closure.
 									}
 									?>
@@ -469,12 +571,12 @@ $wb_layout_title    = isset( $method_title ) ? $method_title : __( 'Configuraç�
 			<?php endif; ?>
 
 			<?php foreach ( $wb_layout_blocks as $block_id => $block ) : ?>
-				<?php $wb_layout_pro_block = $block['pro'] && ! \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::is_pro_active(); ?>
-				<div class="admin-layout-block<?php echo $block_id === $wb_layout_first_block ? ' active' : ''; ?><?php echo $wb_layout_pro_block ? ' admin-layout-block--pro' : ''; ?>" id="block-<?php echo esc_attr( $block_id ); ?>">
+				<?php $wb_layout_pro_block = $block['pro'] && ! \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::is_pro_unlocked(); ?>
+				<div class="admin-layout-block<?php echo $block_id === $wb_layout_active_block ? ' active' : ''; ?><?php echo $wb_layout_pro_block ? ' admin-layout-block--pro' : ''; ?>" id="block-<?php echo esc_attr( $block_id ); ?>">
 					<?php if ( $wb_layout_pro_block ) : ?>
 						<div class="admin-layout-pro-banner">
 							<?php echo $wb_layout_pro_pill( true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup escapado na closure. ?>
-							<span class="admin-layout-pro-banner-text"><?php esc_html_e( 'Recurso exclusivo da versão PRO. Você pode explorar as opções, mas elas não são salvas enquanto o PRO não estiver ativo.', 'woo-better-shipping-calculator-for-brazil' ); ?></span>
+							<span class="admin-layout-pro-banner-text"><?php echo esc_html( $wb_layout_pro_banner_text() ); ?></span>
 						</div>
 					<?php endif; ?>
 					<?php if ( ! empty( $block['desc'] ) || ! empty( $block['intro'] ) || ! empty( $block['sub_title'] ) ) : ?>
@@ -548,6 +650,42 @@ $wb_layout_title    = isset( $method_title ) ? $method_title : __( 'Configuraç�
 						</div>
 					</div>
 				<?php endforeach; ?>
+				<?php
+				// UM cartão, nunca os dois: a pergunta é a mesma ("quer o PRO?") e
+				// só muda o que já foi feito.
+				//
+				//  - BRANCO (compra): PRO **fora** do site -> oferece comprar
+				//    plugin + licença, com preço e CTA do pop-up.
+				//  - ROXO (conheça mais): PRO **instalado** (ativo ou não) ->
+				//    comprar não é o assunto; o que resta é conhecer o produto,
+				//    e a licença tem o bloco próprio que o PRO injeta nesta tela.
+				//
+				// `is_pro_installed()` (e não `is_pro_active()`) é o que faz o
+				// plugin desativado não ressuscitar o card de compra.
+				$wb_layout_pro_installed = \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::is_pro_installed();
+				?>
+				<?php if ( \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::should_offer_purchase() ) : ?>
+				<div class="admin-layout-card">
+					<div class="block-pro-offer">
+						<span class="block-pro-offer-eyebrow"><?php esc_html_e( 'Versão PRO', 'woo-better-shipping-calculator-for-brazil' ); ?></span>
+						<h3 class="block-pro-offer-title"><?php esc_html_e( 'Campos Checkout Brasileiro PRO', 'woo-better-shipping-calculator-for-brazil' ); ?></h3>
+						<ul class="block-pro-offer-features">
+							<?php foreach ( $wb_layout_pro_features as $wb_layout_pro_feature ) : ?>
+								<li><?php echo esc_html( $wb_layout_pro_feature ); ?></li>
+							<?php endforeach; ?>
+						</ul>
+						<div class="block-pro-offer-price">
+							<span class="block-pro-offer-price-label"><?php esc_html_e( 'A partir de', 'woo-better-shipping-calculator-for-brazil' ); ?></span>
+							<span class="block-pro-offer-price-value"><?php echo esc_html( 'R$ ' . $wb_layout_pro_price ); ?></span>
+						</div>
+						<p class="block-pro-offer-note"><?php esc_html_e( 'Licença anual. O valor final depende do volume de pedidos do período.', 'woo-better-shipping-calculator-for-brazil' ); ?></p>
+						<?php /* Continua sendo um link (funciona sem JS); com JS o clique abre o pop-up de compra. */ ?>
+						<a class="block-pro-offer-cta" href="<?php echo esc_url( $wb_layout_pro_pill_url ); ?>" data-lkn-billing-open target="_blank" rel="noopener noreferrer">
+							<?php esc_html_e( 'Adquirir a licença', 'woo-better-shipping-calculator-for-brazil' ); ?>
+						</a>
+					</div>
+				</div>
+				<?php else : ?>
 				<div class="admin-layout-card">
 					<div class="block-promotional-card">
 						<div class="block-promotional-card-bg"></div>
@@ -563,7 +701,16 @@ $wb_layout_title    = isset( $method_title ) ? $method_title : __( 'Configuraç�
 						</div>
 					</div>
 				</div>
+				<?php endif; ?>
 			</div>
 		</div>
 	</div>
 </div>
+<?php
+// Pop-up de compra da licença PRO: existe só junto do card branco, ou seja
+// quando o PRO está fora do site. `pro_installed` continua sendo passado (o
+// componente sabe pular a instalação) para o caso de o plugin aparecer no disco
+// entre o render da tela e o clique.
+if ( \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::should_offer_purchase() ) {
+	echo \Lkn\WcBetterShippingCalculatorForBrazil\Includes\Billing\Popup::html( array( 'pro_installed' => $wb_layout_pro_installed ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup já escapado internamente.
+}

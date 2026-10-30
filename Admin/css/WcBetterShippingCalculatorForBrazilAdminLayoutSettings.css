@@ -8,6 +8,16 @@
 .admin-layout-content {
     display: flex;
     flex: 1;
+    /* `min-width: 0` é o que impede a página inteira de ganhar rolagem
+       horizontal. Este elemento é item de flex (de `.admin-layout-page-wrapper`)
+       e o mínimo automático de um item de flex é `min-content`; como o nav de
+       abas é `flex-wrap: nowrap` com uma aba por bloco, esse `min-content` fica
+       maior que a tela — e o `flex: 2` do `.admin-layout-main` só distribui
+       espaço DEPOIS que o mínimo é respeitado. O `overflow: hidden` do
+       `.admin-layout-top-menu-clip` esconde as abas que sobram, mas não encolhe
+       o mínimo: era por isso que o conteúdo do nav "esticava" a página mesmo
+       estando visualmente cortado. */
+    min-width: 0;
     gap: 32px;
     margin-bottom: 40px;
 }
@@ -117,6 +127,26 @@
 
 .admin-layout-nav-arrow--next {
     right: -30px;
+}
+
+/* Com o carrossel ativo as setas ficam DENTRO da caixa do nav, e a caixa ganha
+   o recuo que elas ocupam. Antes elas pendiam 30px para fora de cada lado: numa
+   janela estreita isso empurrava a largura do documento e a página inteira
+   ganhava rolagem horizontal — o `left/right` negativo de um elemento
+   posicionado conta para o overflow do ancestral, que no wp-admin é visível
+   (`#wpbody-content` usa `overflow: visible !important`). O recuo só entra com
+   `.has-overflow` (quando há o que rolar), então o nav sem carrossel não perde
+   largura à toa. */
+.admin-layout-top-menu-outer.has-overflow {
+    padding: 0 30px;
+}
+
+.admin-layout-top-menu-outer.has-overflow .admin-layout-nav-arrow--prev {
+    left: 0;
+}
+
+.admin-layout-top-menu-outer.has-overflow .admin-layout-nav-arrow--next {
+    right: 0;
 }
 
 .admin-layout-top-menu-outer.has-overflow .admin-layout-nav-arrow {
@@ -351,6 +381,15 @@ a.admin-layout-pro-pill {
 }
 
 /* Título do card com a pílula PRO ao lado (blocos exclusivos da versão PRO). */
+.admin-layout-label--actions {
+    /* Título do card com ações à direita (ex.: revalidar a licença). Mesmo
+       alinhamento da pílula PRO, mas sem a pílula. */
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
 .admin-layout-label--pro {
     display: flex;
     align-items: center;
@@ -552,7 +591,157 @@ p.submit {
     line-height: 1.5;
 }
 
-/* Card Promocional */
+/* Card de oferta do PRO (estado "adquirir a licença").
+ *
+ * Substitui o antigo card em degradê, que era decorativo demais para um espaço
+ * onde o usuário compara o que ganha com o que paga. Aqui o desenho é o de uma
+ * ficha técnica: superfície branca, borda fina, lista de recursos, preço e uma
+ * única ação. Sem degradê e sem ornamento — o destaque fica no preço e no CTA.
+ */
+
+.block-pro-offer {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-top: 3px solid #667eea;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.block-pro-offer-eyebrow {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #5b4bc4;
+}
+
+.block-pro-offer-title {
+    margin: 0 0 14px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #1d2327;
+}
+
+.block-pro-offer-features {
+    margin: 0 0 16px;
+    padding: 0;
+    list-style: none;
+}
+
+.block-pro-offer-features li {
+    position: relative;
+    margin: 0 0 7px;
+    padding-left: 22px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #50575e;
+}
+
+.block-pro-offer-features li:last-child {
+    margin-bottom: 0;
+}
+
+/* Marcador desenhado em CSS (não emoji): alinha igual em qualquer SO. */
+.block-pro-offer-features li::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #eef0fe;
+}
+
+.block-pro-offer-features li::after {
+    content: "";
+    position: absolute;
+    /* Centraliza o traço no círculo de 14px (centro em y=10). */
+    top: 6px;
+    left: 5px;
+    width: 4px;
+    height: 7px;
+    border-right: 1.5px solid #5b4bc4;
+    border-bottom: 1.5px solid #5b4bc4;
+    transform: rotate(45deg);
+}
+
+.block-pro-offer-price {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin: 0 0 4px;
+    padding-top: 14px;
+    border-top: 1px solid #f0f0f1;
+}
+
+.block-pro-offer-price-label {
+    font-size: 12px;
+    color: #646970;
+}
+
+.block-pro-offer-price-value {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #1d2327;
+}
+
+.block-pro-offer-note {
+    margin: 0 0 16px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #646970;
+}
+
+/* O admin define `a:hover`/`a:focus` com especificidade maior que a classe;
+   a cor é repetida em todos os estados para o botão não mudar no hover. */
+.block-pro-offer-cta,
+.block-pro-offer-cta:link,
+.block-pro-offer-cta:visited,
+.block-pro-offer-cta:hover,
+.block-pro-offer-cta:focus,
+.block-pro-offer-cta:active {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    padding: 11px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #667eea;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.block-pro-offer-cta:hover,
+.block-pro-offer-cta:focus {
+    background: #5566d6;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
+}
+
+.block-pro-offer-cta:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* Card promocional roxo ("Conheça mais")
+
+   Segundo cartão do sidebar, ao lado do card de compra: é o link para a página
+   comercial e aparece SEMPRE (com ou sem o PRO instalado). O gradiente é o
+   mesmo do resto da comunicação da versão PRO. */
 
 .block-promotional-card {
     position: relative;
@@ -597,6 +786,13 @@ p.submit {
     color: #fff;
     line-height: 1.3;
     letter-spacing: 0.5px;
+}
+
+/* O <hr> do core do admin é cinza (#eee) e some no gradiente. */
+.block-promotional-card-hr {
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.28);
+    margin: 0 0 14px 0;
 }
 
 .block-promotional-card-description {
@@ -657,23 +853,6 @@ p.submit {
 .block-promotional-card-btn-learn:focus {
     background: rgba(255, 255, 255, 0.28);
     transform: translateY(-1px);
-}
-
-.block-promotional-card-btn-install,
-.block-promotional-card-btn-install:link,
-.block-promotional-card-btn-install:visited,
-.block-promotional-card-btn-install:hover,
-.block-promotional-card-btn-install:focus,
-.block-promotional-card-btn-install:active {
-    background: rgba(255, 255, 255, 0.95);
-    color: #667eea;
-}
-
-.block-promotional-card-btn-install:hover,
-.block-promotional-card-btn-install:focus {
-    background: #fff;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Campo desabilitado */
@@ -808,10 +987,14 @@ p.submit {
         margin-left: 0;
     }
 
-    .block-status-card,
-    .block-promotional-card {
+    .block-status-card {
         max-width: 100%;
         padding: 14px 10px;
+    }
+
+    .block-pro-offer {
+        max-width: 100%;
+        padding: 16px;
     }
 }
 
@@ -825,14 +1008,20 @@ p.submit {
         font-size: 1.1em;
     }
 
-    .block-status-card-title,
-    .block-promotional-card-title {
+    .block-status-card-title {
         font-size: 1em;
     }
 
-    .block-status-card-description,
-    .block-promotional-card-description {
+    .block-status-card-description {
         font-size: 0.95em;
+    }
+
+    .block-pro-offer-title {
+        font-size: 15px;
+    }
+
+    .block-pro-offer-price-value {
+        font-size: 22px;
     }
 }
 
@@ -1023,12 +1212,4 @@ p.submit {
 
 .custom-feature-message-line:last-child {
     margin-bottom: 0;
-}
-
-/* ── HR do card promocional (roxo) ── */
-.block-promotional-card-hr {
-    width: 100%;
-    margin: 0 0 12px;
-    border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.35);
 }

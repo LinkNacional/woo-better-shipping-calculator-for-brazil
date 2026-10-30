@@ -165,16 +165,166 @@ aba/página própria** — ele só reage (sanitização, dados, lógica).
 - `WcBetterShippingCalculatorForBrazilAdminProGate`:
   - `is_pro_active()` → `defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_PRO_VERSION')`
     (filtrável por `wc_better_shipping_calculator_is_pro_active`);
-  - `guard_settings($settings)` roda em `save()`: com o PRO inativo os campos
-    `pro` saem da lista do `WC_Admin_Settings::save_fields()` e a option volta
-    ao `default` declarado;
-  - `upgrade_url()` → constante `UPGRADE_URL` (`'#'` até a página comercial
-    existir) ou `WC_BETTER_SHIPPING_CALCULATOR_PRO_UPGRADE_URL` (filtrável).
+  - `is_pro_unlocked()` → **`is_pro_active()` E licença em vigor**. É o que a
+    tela usa para decidir pílula/banner/salvamento (filtrável por
+    `wc_better_shipping_calculator_is_pro_unlocked`);
+  - `guard_settings($settings)` roda em `save()`: sem `is_pro_unlocked()` os
+    campos `pro` saem da lista do `WC_Admin_Settings::save_fields()` e a option
+    volta ao `default` declarado;
+  - `upgrade_url()` → constante `UPGRADE_URL` (página comercial do PRO) ou
+    `WC_BETTER_SHIPPING_CALCULATOR_PRO_UPGRADE_URL` (filtrável);
+  - `is_pro_installed()` → plugin **no disco** (ativo ou não): `is_pro_active()`
+    || `file_exists(WP_PLUGIN_DIR . PRO_BASENAME)`, com varredura por
+    `get_plugins()` em admin para pasta renomeada por reinstalação
+    (`...-pro-1`). Filtrável por `wc_better_shipping_calculator_is_pro_installed`;
+  - `should_offer_purchase()` → `! is_pro_installed()` (filtrável por
+    `wc_better_shipping_calculator_should_offer_purchase`). Ver 5-C.
 - Tipos de campo customizados: o template dispara
   `wc_better_shipping_calculator_admin_field_{type}`; registre o renderizador em
   `WcBetterShippingCalculatorForBrazilAdminDeliveryFields`.
 - UI dos widgets PRO mora no FREE (o usuário explora, o valor não persiste); a
   **lógica** fica só no PRO. Nunca duplique lógica no FREE "para simular".
+
+### Portão: instalar NÃO é licenciar
+
+`is_pro_active()` ("o plugin PRO está carregado") **não** basta para liberar a
+UI. O PRO sem licença não registra nenhum hook de recurso
+(`Manager::features_enabled()` é falso em `define_public_hooks()`), então
+liberar a tela nesse estado é prometer o que o código não faz — era o bug de
+quem baixava o `.zip`, ativava o plugin e via tudo liberado, com as pílulas e o
+banner de aviso sumindo e os campos PRO sendo **gravados** sem efeito nenhum.
+
+A decisão única é `is_pro_unlocked()` = `is_pro_active()` + a resposta do
+`Manager` do PRO (`PRO_LICENSE_MANAGER`, consultado via `instance()` — o MESMO
+objeto que `activate_key()`/`deactivate_site()` invalidam, para não ler estado
+velho de meio de requisição). Se a classe não carregar, o portão **fecha**.
+
+O banner do bloco bloqueado tem dois textos: PRO ativo sem licença fala da
+**licença** ("enquanto a licença do PRO não estiver ativa"), PRO ausente fala
+do **plugin**. O card do sidebar continua decidido por `is_pro_installed()`
+(5-C): licença ausente não ressuscita o card branco de compra.
+
+## 5-C. Sidebar das configurações: UM cartão do PRO por vez
+
+A coluna lateral da tela de configurações termina com **um** cartão do PRO (o
+restante — card da Link Nacional + cards verdes de novidades — vem antes). São
+dois possíveis, mutuamente exclusivos (`if/else` no template):
+
+| Card | Classe | Quando aparece |
+| --- | --- | --- |
+| Branco (compra) | `block-pro-offer` | PRO **fora** do site (`should_offer_purchase()`) |
+| Roxo (conheça mais) | `block-promotional-card` | PRO **instalado**, ativo ou não |
+
+- O branco traz a lista de recursos, o piso do preço (`license_price()`), a nota
+  de licença anual/volume e o CTA `Adquirir a licença`
+  (`data-lkn-billing-open` → pop-up de compra). O pop-up só é impresso junto com
+  ele: **este CTA é o único gatilho** do pop-up na tela.
+- O roxo é o link para `ProGate::upgrade_url()` (botão "Conheça mais"), com
+  gradiente `#667eea → #764ba2`. Não é CTA de compra: é "conhecer o produto".
+- Quem decide é a **presença do plugin** (`is_pro_installed()`), não a licença e
+  nem o "está ativo": desativar o PRO não apaga os arquivos. Duas regressões já
+  vieram daqui — os DOIS cartões juntos (com `is_pro_active()`, o plugin
+  desativado ressuscitava o de compra) e a tela sem cartão nenhum. Instalar o
+  PRO sem comprar deixa o bloco "Licença" (injetado pelo PRO nesta mesma tela)
+  como caminho.
+- `proInstalled` (config do pop-up) usa a mesma detecção: o pop-up nunca tenta
+  instalar por cima de uma pasta que já existe. Na prática ele sai sempre
+  `false`, porque o pop-up só é impresso junto do card branco (PRO ausente) —
+  o parâmetro fica para o caso de o plugin aparecer no disco entre o render e o
+  clique.
+- CSS em `Admin/css/WcBetterShippingCalculatorForBrazilAdminLayoutSettings.css`
+  (`/* Card promocional roxo */`), compilado por `npm run build:css` em
+  `Admin/cssCompiled/*.COMPILED.css` (esse é o arquivo enfileirado).
+- Regressão: `tests/ProPurchaseCardTest.php`.
+
+---
+
+## 5-D. Pop-up de compra da licença (`Includes/Billing/`)
+
+O pop-up vive no FREE e conversa com a API de cobrança (não com a de licença).
+
+**Fluxo (máquina de estados no `assets/billing.js`, markup em `Popup.php`):**
+
+```
+email (e-mail + forma de pagamento) -> pix | card -> (pix: pix-wait)
+      -> fulfilling -> ready -> tasks (instalar/ativar/configurações)
+```
+
+- A **operadora não é perguntada**. O par meio → PSP é fixo em
+  `METHOD_PROVIDER = { pix: 'rede', card: 'cielo' }` (JS) e cada botão de meio
+  carrega `data-lkn-provider`. Antes eram três passos (e-mail → operadora →
+  método) e dava para pedir Pix na Cielo.
+- O **"Continuar" nasce `disabled`** e só libera com e-mail válido **e** um meio
+  marcado (`refreshContinue()`, reavaliado no `input` do e-mail, no clique do
+  meio, ao abrir e ao voltar para a tela). Clicar num meio **só marca**
+  (`aria-pressed` + `.is-selected`): quem avança é o "Continuar".
+- `applyGateways()` roda depois do `/checkout/start` (é ali que a API informa os
+  PSPs habilitados): esconde o meio cujo PSP não veio, pré-marca o único
+  restante e, se o meio já escolhido desapareceu, volta à primeira tela com
+  aviso em vez de mandar um `provider` que a API recusaria (`unknown_provider`).
+- `.lkn-billing__method` é `display: flex`, então **precisa** de
+  `.lkn-billing__method[hidden] { display: none }` — sem isso esconder não
+  esconde.
+- `proInstalled` (config do pop-up) vem de `ProGate::is_pro_installed()`.
+
+**Why:** escolher PSP é decisão que o lojista não tem como tomar bem, e o
+contrato comercial já é fixo; separar meio e operadora só criava combinação
+inválida. **How to apply:** mexer no fluxo = `Popup.php` (markup) + `billing.js`
+(estado) + `Billing.php` (i18n no `wp_add_inline_script`); regressão em
+`tests/ProPurchaseCardTest.php`.
+
+---
+
+## 5-E. Layout das configurações: nunca alargar a página
+
+A tela roda dentro do `#wpbody-content`, que no wp-admin é
+`overflow: visible !important`: **qualquer** coisa que passe da borda direita do
+container vira barra de rolagem horizontal no documento inteiro. Duas regras
+seguram isso, e as duas têm teste (`tests/AdminLayoutOverflowTest.php`):
+
+1. `.admin-layout-content` tem `min-width: 0`. Ele é item de flex de
+   `.admin-layout-page-wrapper` e o mínimo automático de item de flex é
+   `min-content`; como o nav de abas é `flex-wrap: nowrap` com uma aba por
+   bloco, esse mínimo fica maior que a tela. O `overflow: hidden` do
+   `.admin-layout-top-menu-clip` **esconde** as abas que sobram, mas não encolhe
+   o mínimo — era esse o "o nav estica a página mesmo cortado".
+2. As setas do carrossel ficam **dentro** da caixa do nav. Elas eram
+   `left/right: -30px`; offset negativo de elemento posicionado conta para o
+   overflow do ancestral. Com `.has-overflow` a caixa ganha `padding: 0 30px` e
+   as setas vão para `left/right: 0` (o recuo só entra quando há o que rolar).
+
+Ao mexer no layout, confira no navegador: `document.documentElement.scrollWidth`
+tem de ser igual a `clientWidth` em 1920/1440/1024/782/500 px, com e sem o
+carrossel ativo (`.has-overflow`). Edite o CSS **fonte** em `Admin/css/` e rode
+`npm run build:css` — o plugin carrega o `.COMPILED.css`.
+
+---
+
+## 5-F. Link final do fluxo de compra: abre a aba do recurso PRO
+
+O pop-up de compra termina com "Ir para configurações". Esse link não vai para a
+raiz da tela — vai para o bloco do recurso que o cliente acabou de comprar:
+
+| Plugin | Bloco | Constante |
+| --- | --- | --- |
+| woo-better | `pro_prazo_entrega` (Prazo de Entrega) | `Billing::LANDING_BLOCK` |
+| shipping | `pro_popup_cep` (Pop-up de CEP) | `Billing::LANDING_BLOCK` |
+
+`Billing::settings_url()` acrescenta `?lkn_open=<bloco>` (filtrável por
+`wc_better_shipping_calculator_landing_block` / `wc_shipping_simulator_landing_block`;
+string vazia desliga).
+
+**Quem interpreta é o template do layout, no SERVIDOR**: ele marca o bloco pedido
+como `active` no markup. O JS das abas parte do link que já tem `.active` e faz o
+resto (inclusive rolar o carrossel). Não use JS/`load` para isso — depender da
+hora em que o handler das abas fica pronto fazia a primeira aba piscar antes de
+trocar.
+
+Regras: o id vem de `sanitize_key()` (**não** `sanitize_title()`, que troca `_`
+por `-` e quebra `pro_prazo_entrega`); o bloco precisa **existir** na tela; e
+bloco `pro` só é destino com `is_pro_unlocked()` — cair numa aba bloqueada
+(banner de venda) é pior que cair na primeira. O nav tem abas, não âncoras:
+`#bloco` na URL não faz nada.
 
 ## 6. Build & Qualidade
 

@@ -195,7 +195,7 @@ class WcBetterShippingCalculatorForBrazilAdminDeliveryFields
      */
     public function render_delivery_orders_list($field_id, $field, $field_value): void
     {
-        $is_pro = \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::is_pro_active();
+        $is_pro = \Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminProGate::is_pro_unlocked();
         ?>
         <div class="wc-better-pro-delivery-orders-wrap">
             <?php if ($is_pro) : ?>
