@@ -243,17 +243,56 @@ class PhoneDdiStorageTest extends WP_UnitTestCase {
         $this->assertArrayNotHasKey( 'cellphone', $fields );
     }
 
-    public function test_admin_cellphone_ddi_appears_with_the_hidden_shim(): void {
+    public function test_admin_hidden_shim_cellphone_has_no_ddi_field(): void {
+        // No shim o Celular é o ESPELHO do telefone: o DDI é o do telefone (o save do
+        // pedido sincroniza a meta), então ele não ganha um campo de DDI próprio.
         $this->use_brazil_mask();
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
         update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $fields = $this->plugin()->ensure_admin_phone_fields_billing( array(), new \WC_Order() );
 
-        $this->assertSame(
-            array( 'phone_country_code', 'phone', 'cellphone_country_code', 'cellphone' ),
-            array_keys( $fields )
-        );
+        $this->assertSame( array( 'phone_country_code', 'phone', 'cellphone' ), array_keys( $fields ) );
+    }
+
+    /**
+     * O save do PEDIDO é o ponto comum de todos os caminhos (checkout clássico,
+     * blocos, admin, API/HPOS): no shim, o DDI do celular acompanha o do telefone.
+     * Sem isso a meta dele guardaria um DDI antigo — `order_ddi` só cai no telefone
+     * quando ela está VAZIA.
+     */
+    public function test_order_save_syncs_the_hidden_cellphone_ddi(): void {
+        $this->use_brazil_mask();
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '83988888881' );
+        $order->update_meta_data( '_billing_phone_country_code', '+351' );
+        $order->update_meta_data( '_billing_cellphone', '83988888881' );
+        $order->update_meta_data( '_billing_cellphone_country_code', '+55' );
+
+        $this->plugin()->normalize_order_phone_on_save( $order );
+
+        $this->assertSame( '+351', $order->get_meta( '_billing_cellphone_country_code' ), 'O DDI do espelho segue o do telefone.' );
+    }
+
+    public function test_order_save_keeps_the_visible_cellphone_ddi(): void {
+        // Com o "Campo de Celular" LIGADO o celular é um campo próprio: o DDI dele é
+        // dele (não é sobrescrito pelo do telefone).
+        $this->use_brazil_mask();
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'no' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '8332323232' );
+        $order->update_meta_data( '_billing_phone_country_code', '+55' );
+        $order->update_meta_data( '_billing_cellphone', '83988888881' );
+        $order->update_meta_data( '_billing_cellphone_country_code', '+351' );
+
+        $this->plugin()->normalize_order_phone_on_save( $order );
+
+        $this->assertSame( '+351', $order->get_meta( '_billing_cellphone_country_code' ) );
     }
 
     public function test_admin_shows_legacy_e164_without_duplicating_the_ddi(): void {
