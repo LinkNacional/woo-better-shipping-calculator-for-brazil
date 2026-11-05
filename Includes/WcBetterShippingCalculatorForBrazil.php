@@ -1563,7 +1563,7 @@ class WcBetterShippingCalculatorForBrazil
             ? (string) $order->get_meta("_{$type}_cellphone")
             : (string) $order->{"get_{$type}_phone"}('edit');
 
-        $fields[$kind]['value'] = $this->strip_phone_ddi($raw, $this->order_ddi($order, $type, $kind));
+        $fields[$kind]['value'] = self::strip_phone_ddi($raw, $this->order_ddi($order, $type, $kind));
 
         return $fields;
     }
@@ -1671,8 +1671,8 @@ class WcBetterShippingCalculatorForBrazil
             $data['shipping'] = array();
         }
 
-        $data['billing']['cellphone']  = $this->strip_phone_ddi( (string) $customer->get_meta('billing_cellphone') );
-        $data['shipping']['cellphone'] = $this->strip_phone_ddi( (string) $customer->get_meta('shipping_cellphone') );
+        $data['billing']['cellphone']  = self::strip_phone_ddi( (string) $customer->get_meta('billing_cellphone') );
+        $data['shipping']['cellphone'] = self::strip_phone_ddi( (string) $customer->get_meta('shipping_cellphone') );
 
         return $data;
     }
@@ -2022,8 +2022,8 @@ class WcBetterShippingCalculatorForBrazil
         // getter (já sem DDI fora do recibo, `+55…` dentro dele) e o celular da meta
         // (sem DDI nos pedidos novos e com `+55` nos antigos). Sem normalizar os dois
         // aqui, um pedido antigo deixaria de reconhecer que celular == telefone.
-        $phone_digits = $this->strip_phone_ddi($phone, $country_code);
-        $cell_digits  = $this->strip_phone_ddi($cellphone, $cell_country_code);
+        $phone_digits = self::strip_phone_ddi($phone, $country_code);
+        $cell_digits  = self::strip_phone_ddi($cellphone, $cell_country_code);
 
         if ('' === $phone_digits && '' === $cell_digits) {
             return $rows;
@@ -2701,11 +2701,14 @@ class WcBetterShippingCalculatorForBrazil
      * tamanho é o que impede comer o DDD 55 (RS): `55988888888` tem 11 dígitos, então
      * NÃO é "DDI 55 + número".
      *
+     * Público e estático de propósito: o checkout (`Public/`) precisa da MESMA
+     * regra para semear o campo com um valor antigo que ainda trazia o `+55`.
+     *
      * @param string $phone        Valor salvo (com ou sem DDI, com ou sem máscara).
      * @param string $country_code DDI a remover (ex.: '+55'). Vazio = Brasil.
      * @return string Somente dígitos, sem o DDI.
      */
-    private function strip_phone_ddi($phone, $country_code = '')
+    public static function strip_phone_ddi($phone, $country_code = '')
     {
         $clean = preg_replace('/[^0-9+]/', '', (string) $phone);
 
@@ -2744,6 +2747,42 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         return substr($digits, $ddi_len);
+    }
+
+    /**
+     * Valor de um telefone/celular SALVO (perfil ou sessão) pronto para EXIBIR.
+     *
+     * Fonte ÚNICA da regra usada ao SEMEAR o campo no checkout (blocos e clássico):
+     *
+     * - lixo (mais dígitos do que o E.164 permite) → '' — não é semeado no campo;
+     * - número de OUTRO país (com `+` e sem ser `+55`) → intacto, para a lib
+     *   continuar reconhecendo o país;
+     * - resto (Brasil, com ou sem `+55`/`55` e com ou sem máscara) → SÓ O NÚMERO,
+     *   que é como o pedido grava. Sem esse corte um cadastro antigo com o `+55`
+     *   reabria o campo com o DDI na frente, mesmo com o pedido novo já correto.
+     *
+     * @param string $value Valor cru.
+     * @return string
+     */
+    public static function stored_phone_display_value($value)
+    {
+        $value = trim((string) $value);
+
+        if ('' === $value) {
+            return '';
+        }
+
+        $digits = preg_replace('/[^0-9]/', '', $value);
+
+        if ('' === $digits || strlen($digits) > 15) {
+            return '';
+        }
+
+        if (0 === strpos($value, '+') && 0 !== strpos($value, '+55')) {
+            return $value;
+        }
+
+        return self::strip_phone_ddi($value);
     }
 
     /**
@@ -2819,7 +2858,7 @@ class WcBetterShippingCalculatorForBrazil
         if ($mask_active || $brazil_mask) {
             $phone = ($type === 'shipping') ? $order->get_shipping_phone() : $order->get_billing_phone();
             if (! empty($phone)) {
-                $normalized = $this->strip_phone_ddi($phone, $country_code);
+                $normalized = self::strip_phone_ddi($phone, $country_code);
 
                 if ($type === 'shipping') {
                     $order->set_shipping_phone($normalized);
@@ -2837,7 +2876,7 @@ class WcBetterShippingCalculatorForBrazil
         // vale igual (só no início e quando o que sobra é um número plausível).
         $cellphone = (string) $order->get_meta("_{$type}_cellphone");
         if ('' !== trim($cellphone)) {
-            $normalized_cellphone = $this->strip_phone_ddi($cellphone, $country_code);
+            $normalized_cellphone = self::strip_phone_ddi($cellphone, $country_code);
             if ('' !== $normalized_cellphone) {
                 $order->update_meta_data("_{$type}_cellphone", $normalized_cellphone);
             }
@@ -2868,7 +2907,7 @@ class WcBetterShippingCalculatorForBrazil
             // `get_*_phone('edit')` = valor cru (o filtro de exibição não roda).
             $phone = trim((string) $order->{"get_{$type}_phone"}('edit'));
             if ('' !== $phone) {
-                $national = $this->strip_phone_ddi($phone, $this->order_ddi($order, $type));
+                $national = self::strip_phone_ddi($phone, $this->order_ddi($order, $type));
                 if ($national !== $phone) {
                     $order->{"set_{$type}_phone"}($national);
                 }
@@ -2876,7 +2915,7 @@ class WcBetterShippingCalculatorForBrazil
 
             $cellphone = trim((string) $order->get_meta("_{$type}_cellphone"));
             if ('' !== $cellphone) {
-                $national = $this->strip_phone_ddi($cellphone, $this->order_ddi($order, $type, 'cellphone'));
+                $national = self::strip_phone_ddi($cellphone, $this->order_ddi($order, $type, 'cellphone'));
                 if ($national !== $cellphone) {
                     $order->update_meta_data("_{$type}_cellphone", $national);
                 }
@@ -2992,7 +3031,7 @@ class WcBetterShippingCalculatorForBrazil
             if ('' === $cc && $brazil_mask) {
                 $cc = '+55';
             }
-            $formatted = $this->strip_phone_ddi($phone, $cc);
+            $formatted = self::strip_phone_ddi($phone, $cc);
 
             // Valor que não pode ser um telefone é IGNORADO: o core salva o que já
             // estava no cadastro (não sobrescreve com vazio — o cliente pode ter
@@ -3086,7 +3125,7 @@ class WcBetterShippingCalculatorForBrazil
             return $this->format_complete_phone($phone, $country_code);
         }
 
-        return $this->strip_phone_ddi($phone, $country_code);
+        return self::strip_phone_ddi($phone, $country_code);
     }
     
     /**
@@ -4187,7 +4226,7 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         // A meta `*_cellphone` é GRAVADA sem DDI (mesma regra do telefone).
-        return $this->strip_phone_ddi($normalized, $country_code);
+        return self::strip_phone_ddi($normalized, $country_code);
     }
 
     /**
@@ -7911,10 +7950,10 @@ class WcBetterShippingCalculatorForBrazil
             }
 
             if (! empty($values['billing_cellphone'])) {
-                $order->update_meta_data('_billing_cellphone', $this->strip_phone_ddi($values['billing_cellphone']));
+                $order->update_meta_data('_billing_cellphone', self::strip_phone_ddi($values['billing_cellphone']));
             }
             if (! empty($values['shipping_cellphone'])) {
-                $order->update_meta_data('_shipping_cellphone', $this->strip_phone_ddi($values['shipping_cellphone']));
+                $order->update_meta_data('_shipping_cellphone', self::strip_phone_ddi($values['shipping_cellphone']));
             }
 
             return;
@@ -7956,10 +7995,10 @@ class WcBetterShippingCalculatorForBrazil
             $order->set_shipping_phone('');
 
             if (! empty($values['billing_cellphone'])) {
-                $order->update_meta_data('_billing_cellphone', $this->strip_phone_ddi($values['billing_cellphone']));
+                $order->update_meta_data('_billing_cellphone', self::strip_phone_ddi($values['billing_cellphone']));
             }
             if (! empty($values['shipping_cellphone'])) {
-                $order->update_meta_data('_shipping_cellphone', $this->strip_phone_ddi($values['shipping_cellphone']));
+                $order->update_meta_data('_shipping_cellphone', self::strip_phone_ddi($values['shipping_cellphone']));
             }
 
             return;
@@ -7967,10 +8006,10 @@ class WcBetterShippingCalculatorForBrazil
 
         // Telefone → billing_phone/shipping_phone.
         if (! empty($values['billing_phone'])) {
-            $order->set_billing_phone($this->strip_phone_ddi($values['billing_phone']));
+            $order->set_billing_phone(self::strip_phone_ddi($values['billing_phone']));
         }
         if (! empty($values['shipping_phone'])) {
-            $order->set_shipping_phone($this->strip_phone_ddi($values['shipping_phone']));
+            $order->set_shipping_phone(self::strip_phone_ddi($values['shipping_phone']));
         }
 
         // "Fixo": o celular fica vazio (nenhuma meta é gravada).
@@ -7980,10 +8019,10 @@ class WcBetterShippingCalculatorForBrazil
 
         // "Celular e Fixo": celular → metas _billing_cellphone/_shipping_cellphone.
         if (! empty($values['billing_cellphone'])) {
-            $order->update_meta_data('_billing_cellphone', $this->strip_phone_ddi($values['billing_cellphone']));
+            $order->update_meta_data('_billing_cellphone', self::strip_phone_ddi($values['billing_cellphone']));
         }
         if (! empty($values['shipping_cellphone'])) {
-            $order->update_meta_data('_shipping_cellphone', $this->strip_phone_ddi($values['shipping_cellphone']));
+            $order->update_meta_data('_shipping_cellphone', self::strip_phone_ddi($values['shipping_cellphone']));
         }
     }
 
@@ -8038,7 +8077,7 @@ class WcBetterShippingCalculatorForBrazil
             return true;
         }
 
-        $national = $this->strip_phone_ddi($value, $country_code);
+        $national = self::strip_phone_ddi($value, $country_code);
 
         // Número nacional (sem DDI): nenhum país passa de 12 dígitos.
         if (strlen($national) <= 12) {
@@ -8054,9 +8093,11 @@ class WcBetterShippingCalculatorForBrazil
      * Valor inicial dos campos de telefone no checkout CLÁSSICO.
      *
      * O core monta esse valor a partir do CADASTRO do cliente
-     * (`woocommerce_checkout_get_value`). Um resíduo inválido salvo no perfil
-     * (ex.: `83988888885555555…`) era semeado no campo; aqui ele vira vazio. Qualquer
-     * outro campo/valor segue intocado (devolve `null`, e o core resolve).
+     * (`woocommerce_checkout_get_value`): um resíduo inválido salvo no perfil
+     * (ex.: `83988888885555555…`) vira vazio e um valor ANTIGO com `+55`/máscara é
+     * semeado só com o número (`stored_phone_display_value`), que é como o pedido
+     * grava — senão o campo reabria com o DDI na frente. Qualquer outro campo segue
+     * intocado (devolve `null`, e o core resolve).
      *
      * @param mixed  $value Valor já resolvido por terceiros (null = seguir o core).
      * @param string $input Nome do campo (ex.: `billing_phone`).
@@ -8076,11 +8117,6 @@ class WcBetterShippingCalculatorForBrazil
             return $value;
         }
 
-        $method = 'get_' . $input;
-        if (! method_exists(WC()->customer, $method)) {
-            return $value;
-        }
-
         // O core lê do CADASTRO quando o cliente está logado e do customer/sessão
         // quando é visitante — checa as duas fontes, para o resíduo não escapar por
         // `WC()->customer` estar num estado (ex.: guest) diferente do cadastro.
@@ -8088,7 +8124,15 @@ class WcBetterShippingCalculatorForBrazil
         if (is_user_logged_in()) {
             $sources[] = get_user_meta(get_current_user_id(), $input, true);
         }
-        $sources[] = WC()->customer->{$method}();
+
+        // O CELULAR não é propriedade do `WC_Customer` (é meta do plugin), então o
+        // core o resolve por `meta_exists()`: aqui a leitura segue a mesma via.
+        $method = 'get_' . $input;
+        if (method_exists(WC()->customer, $method)) {
+            $sources[] = WC()->customer->{$method}();
+        } elseif (WC()->customer->meta_exists($input)) {
+            $sources[] = WC()->customer->get_meta($input, true);
+        }
 
         foreach ($sources as $stored) {
             if (! $this->is_plausible_phone_value($stored)) {
@@ -8096,7 +8140,14 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
-        return $value;
+        foreach ($sources as $stored) {
+            $stored = trim((string) $stored);
+            if ('' !== $stored) {
+                return self::stored_phone_display_value($stored);
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -8135,7 +8186,7 @@ class WcBetterShippingCalculatorForBrazil
                 // e sem máscara). O valor pode chegar formatado do input (ex.: resíduo
                 // antigo ou o intl-tel-input do campo principal) e com o DDI digitado
                 // junto, o que deixaria o perfil/sessão divergente do pedido.
-                $value = $this->strip_phone_ddi($raw);
+                $value = self::strip_phone_ddi($raw);
 
                 // No shim ("Celular Oculto") o `*_cellphone` é o ESPELHO do
                 // telefone: só faz sentido persistir quando o número é um CELULAR
@@ -8258,8 +8309,8 @@ class WcBetterShippingCalculatorForBrazil
                     // número, como em todos os pontos de escrita.
                     $this->mirror_same_address_phone(
                         $order,
-                        function ($v) use ($order) { $order->update_meta_data('_billing_cellphone', $this->strip_phone_ddi($v)); },
-                        function ($v) use ($order) { $order->update_meta_data('_shipping_cellphone', $this->strip_phone_ddi($v)); },
+                        function ($v) use ($order) { $order->update_meta_data('_billing_cellphone', self::strip_phone_ddi($v)); },
+                        function ($v) use ($order) { $order->update_meta_data('_shipping_cellphone', self::strip_phone_ddi($v)); },
                         function () use ($order) { return (string) $order->get_meta('_billing_cellphone'); },
                         function () use ($order) { return (string) $order->get_meta('_shipping_cellphone'); }
                     );
@@ -9337,7 +9388,7 @@ class WcBetterShippingCalculatorForBrazil
                     continue;
                 }
 
-                $normalized = $this->strip_phone_ddi($raw, '+55');
+                $normalized = self::strip_phone_ddi($raw, '+55');
                 update_user_meta($user_id, $key, '' !== $normalized ? $normalized : $raw);
             }
         }
@@ -9358,7 +9409,7 @@ class WcBetterShippingCalculatorForBrazil
                     continue;
                 }
 
-                $normalized = $this->strip_phone_ddi($raw, '+55');
+                $normalized = self::strip_phone_ddi($raw, '+55');
                 update_user_meta($user_id, $key, '' !== $normalized ? $normalized : $raw);
             }
         }
@@ -10065,13 +10116,13 @@ class WcBetterShippingCalculatorForBrazil
         if ($phone_required === 'yes' && $this->phone_mode_hides_native_option()) {
             if ($load_address === 'billing' && isset($_POST['billing_phone'])) {
                 $billing_cc = isset($_POST['billing_phone_country']) ? sanitize_text_field(wp_unslash($_POST['billing_phone_country'])) : '';
-                $phone = $this->strip_phone_ddi(sanitize_text_field(wp_unslash($_POST['billing_phone'])), $billing_cc);
+                $phone = self::strip_phone_ddi(sanitize_text_field(wp_unslash($_POST['billing_phone'])), $billing_cc);
                 update_user_meta($user_id, 'billing_phone', $phone);
             }
             
             if ($load_address === 'shipping' && isset($_POST['shipping_phone'])) {
                 $shipping_cc = isset($_POST['shipping_phone_country']) ? sanitize_text_field(wp_unslash($_POST['shipping_phone_country'])) : '';
-                $phone = $this->strip_phone_ddi(sanitize_text_field(wp_unslash($_POST['shipping_phone'])), $shipping_cc);
+                $phone = self::strip_phone_ddi(sanitize_text_field(wp_unslash($_POST['shipping_phone'])), $shipping_cc);
                 update_user_meta($user_id, 'shipping_phone', $phone);
             }
         }
