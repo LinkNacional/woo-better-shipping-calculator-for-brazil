@@ -253,24 +253,20 @@ jQuery(function ($) {
         const storedDial = savedDialFor(field);
         const initialCountry = DIAL_TO_ISO[storedDial] || 'br';
 
-        // Sem DDI exibido separadamente, garante o valor internacional no input
-        // (prefixa o DDI salvo quando o número ainda não começa com "+").
-        if (!dialCodeShown) {
-            const raw = String(field.value || '').trim();
-            if (raw && raw.charAt(0) !== '+') {
-                const digits = raw.replace(/[^\d]/g, '');
-                if (digits) {
-                    field.value = (storedDial || '+55') + digits;
-                }
-            }
-        }
-
+        // O input carrega SÓ O NÚMERO NACIONAL. O DDI nunca é escrito dentro dele: o
+        // seletor de país (bandeira) já o representa e o valor vai para o campo
+        // hidden (`billing_phone_country` / `shipping_phone_country`), que é de onde
+        // o backend o lê. Sem isso o campo reabria como "+55 89 99999-9835" mesmo
+        // sem a opção "Exibir Código do País (DDI)".
         const iti = intlTelInput(field, {
             initialCountry: initialCountry,
             preferredCountries: ['br'],
             // Exibe a bandeira + o código do país (DDI) quando habilitado.
             separateDialCode: dialCodeShown,
-            nationalMode: false,
+            // `nationalMode: true` = o input mostra o número NACIONAL (o DDI fica na
+            // bandeira). Com `false` a lib formata o valor em INTERNATIONAL e o
+            // "+55" reaparece grudado no número a cada valor semeado/autofill.
+            nationalMode: true,
             formatOnDisplay: true,
             // Na v25 "utilsScript" foi removida; sem loadUtils a formatação
             // enquanto digita não acontece.

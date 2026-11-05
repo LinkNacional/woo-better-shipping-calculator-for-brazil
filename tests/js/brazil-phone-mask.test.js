@@ -318,6 +318,49 @@ test('[brazil-mask] bundle com lib: validação sem exigir a máscara e só em c
     );
 });
 
+/**
+ * Regressão: o campo com a lib (checkout CLÁSSICO/shortcode e edição de endereço da
+ * conta) reabria com o DDI dentro do próprio input ("+55 89 99999-9835").
+ *
+ * Quem representa o DDI ali é o SELETOR DE PAÍS (bandeira) — o valor vai para o
+ * campo hidden (`billing_phone_country`) e o backend o lê de lá. O input carrega
+ * sempre o número NACIONAL, senão o lojista/cliente vê o "+55" duas vezes em nada
+ * (e o valor semeado pelo PHP já vem sem DDI).
+ */
+test('[brazil-mask] bundle com lib: o input guarda só o número nacional (DDI na bandeira)', () => {
+    assert.ok(fs.existsSync(SHORTCODE), `Arquivo não encontrado: ${SHORTCODE}`);
+    const src = fs.readFileSync(SHORTCODE, 'utf8');
+
+    // `nationalMode: true` = o input mostra o formato NACIONAL. Com `false` a lib
+    // formata em INTERNATIONAL e o "+55" volta a grudar no número semeado.
+    assert.ok(
+        /nationalMode: true,/.test(src),
+        'O bundle da lib deve exibir o número NACIONAL no input.'
+    );
+
+    // Nada de prefixar o DDI no valor do campo.
+    assert.ok(
+        !/field\.value = \(storedDial \|\| '\+55'\) \+ digits;/.test(src),
+        'O input não pode receber o DDI concatenado (o DDI fica no hidden).'
+    );
+
+    // O DDI continua sendo enviado pelo hidden, que é de onde o backend lê.
+    assert.ok(
+        /function setHiddenCountry\(field, dialCode\)/.test(src)
+        && /hidden\.value = dialCode;/.test(src),
+        'O DDI deve continuar indo para o campo hidden.'
+    );
+
+    // E o pacote compilado precisa carregar a mesma configuração.
+    assert.ok(fs.existsSync(COMPILED_SHORTCODE), `Arquivo não encontrado: ${COMPILED_SHORTCODE}`);
+    const compiled = fs.readFileSync(COMPILED_SHORTCODE, 'utf8');
+
+    assert.ok(
+        compiled.indexOf('nationalMode:!0') !== -1,
+        'O bundle compilado deve ter `nationalMode: true` (rode `npm run build:public`).'
+    );
+});
+
 test('[brazil-mask] sanitizador não trava espaço/parênteses/hífen no modo sem lib', () => {
     assert.ok(fs.existsSync(SANITIZER), `Arquivo não encontrado: ${SANITIZER}`);
     const src = fs.readFileSync(SANITIZER, 'utf8');
