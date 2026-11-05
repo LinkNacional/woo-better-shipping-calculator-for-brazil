@@ -1,0 +1,135 @@
+.linkn-link-settings-card {
+    color: white;
+    max-width: 400px;
+    width: 100%;
+    height: fit-content;
+    background-color: #121519;
+    border-radius: 10px;
+    background-position: right bottom, left top calc(15px);
+    background-repeat: no-repeat;
+    display: flex;
+    margin: 0px !important;
+    flex-direction: column;
+    padding: 15px 25px 15px 25px;
+    box-sizing: border-box;
+    gap: 25px;
+}
+
+.linkn-link-logo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-weight: 500;
+    margin-bottom: 18px !important;
+}
+
+.linkn-link-logo p {
+    margin: 0;
+    font-size: 12px;
+    font-family: 'Roboto', sans-serif;
+}
+
+.linkn-link-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.linkn-link-links {
+    display: flex;
+    justify-content: space-between;
+    padding-right: 30px;
+    gap: 6%;
+}
+
+.linkn-link-links div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
+}
+
+.linkn-link-settings-card a {
+    text-decoration: none;
+    color: inherit;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
+}
+
+.linkn-link-links div a {
+    white-space: nowrap;
+}
+
+.linkn-link-links a b {
+    color: #D1D838;
+    font-size: small;
+}
+
+.linkn-link-settings-card img {
+    height: 25px;
+}
+
+.linkn-stars-div {
+    width: fit-content;
+}
+
+.linkn-stars-div a {
+    flex-direction: column;
+}
+
+.linkn-stars-div p {
+    margin: 0;
+    font-size: 12px;
+    font-family: 'Roboto', sans-serif;
+    width: 100%;
+}
+
+.linkn-stars-div img {
+    height: 10px;
+}
+
+.linkn-support-links {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.linkn-stars {
+    display: flex;
+    width: 100%;
+}
+
+.linkn-contact-links {
+    display: flex;
+    gap: 4px;
+}
+
+.linkn-contact-icon {
+    width: 24px;
+    height: 24px;
+    filter: brightness(0) invert(1);
+}
+
+.linkn-stars-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: fit-content;
+    width: fit-content;
+    padding: 0px;
+    margin: 0px;
+    color: #DAE300 !important;
+    font-size: 12px;
+}

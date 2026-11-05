@@ -47,12 +47,10 @@ const COMPILED_BLOCKS = path.join(
     ROOT,
     'Public/jsCompiled/WcBetterShippingCalculatorForBrazilPublicGutenbergPhoneFieldBoth.COMPILED.js'
 );
-// Nesta base (5.2.x) a tela de configurações usa o layout ANTIGO
-// (`AdminLayout.js`); no dev os comportamentos vivem em `AdminLayoutBehaviors.js`.
-const ADMIN_BEHAVIORS = path.join(ROOT, 'Admin/js/WcBetterShippingCalculatorForBrazilAdminLayout.js');
+const ADMIN_BEHAVIORS = path.join(ROOT, 'Admin/js/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.js');
 const COMPILED_ADMIN = path.join(
     ROOT,
-    'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js'
+    'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.COMPILED.js'
 );
 
 /**
@@ -477,17 +475,12 @@ test('[brazil-mask] admin: "Validar Número de Telefone" funciona sem a lib (esc
     assert.ok(fs.existsSync(ADMIN_BEHAVIORS), `Arquivo não encontrado: ${ADMIN_BEHAVIORS}`);
     const src = fs.readFileSync(ADMIN_BEHAVIORS, 'utf8');
 
-    // O card é CAMADA sobre a obrigatoriedade do telefone: só destrava quando existe
-    // campo OBRIGATÓRIO (contato obrigatório ou "Celular" obrigatório) e o plugin
+    // O card é CAMADA sobre o "Telefone (Contato) Obrigatório": só destrava quando o
+    // contato é obrigatório (a validação só age em campo obrigatório) e o plugin
     // gerencia o telefone. Não depende da máscara/DDI.
     assert.ok(
-        /function updateValidateDddState\(\) \{[\s\S]*?const requiredOn = [\s\S]*?contactRequiredRadios[\s\S]*?const on = requiredOn && modeOk;/.test(src),
-        'A validação só deve destravar com um campo obrigatório (telefone ou celular).'
-    );
-    // Travada → marca "Desabilitar" e desmarca "Habilitar" (a tela reflete o checkout).
-    assert.ok(
-        /if \(!on\) \{[\s\S]*?radio\.value === 'no'[\s\S]*?radio\.checked = true[\s\S]*?radio\.value === 'yes'[\s\S]*?radio\.checked = false/.test(src),
-        'Travada, a opção precisa aparecer marcada em "Desabilitar".'
+        /function updateValidateDddState\(\) \{\s*var on = !isUnmanagedMode\(\) && isYes\(contactRequiredRadios\);/.test(src),
+        'A validação só deve destravar com o telefone obrigatório.'
     );
     assert.ok(
         /A validação é aplicada quando o telefone\/celular é obrigatório e preenchido\./.test(src),

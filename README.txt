@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.2.4
+Stable tag: 5.3.0
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -83,6 +83,17 @@ When you need help, please create a topic in the [Plugin Support Forum](https://
 * [AntiFraude](/plugins/fraud-and-scam-detection-for-woocommerce/) - Fraud and Scam Detection For WooCommerce
 * [Authentification and OTP for WooCommerce](/plugins/woo-force-authentification-before-checkout/) - OTP and Force customer to log in or register before checkout to increase your conversion rate.
 
+= PRO version =
+
+Upgrade to **Campos Checkout Brasileiro para WooCommerce PRO** for advanced checkout features:
+
+* Delivery scheduling: let customers choose a delivery date and time slot at checkout
+* Block dates and time slots that are already full, with a minimum preparation time before the first available slot
+* Delivery orders panel, listing orders by the delivery date and time slot chosen by the customer
+* Hide the address fields automatically when the customer selects local pickup
+
+Learn more about the PRO version [here](#).
+
 == Installation ==
 
 1.  Access your [WordPress](https://www.linknacional.com.br/wordpress/) admin and go to **Plugins > Add New**.
@@ -126,8 +137,19 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 == Changelog ==
 
+# 5.3.0 - 2026-10-21
+* New: the checkout settings screen is now split into four tabs (Address and Postcode, Documents and Person, Phone and Cellphone, Personal Data) with cards, instead of one long page.
+* New: a sidebar card gathers the support channels (WhatsApp and Telegram) and presents the PRO version highlights.
+* New: the PRO-only blocks (Local Pickup and Delivery Time) now show up on the settings screen together with the Brazilian fields, and become editable once the PRO plugin is active.
+* Tweak: options that depend on another option are now nested right below it.
+* Tweak: field titles, subtitles and descriptions were repositioned so each option is easier to scan.
+* Tweak: the PRO version links now point to each plugin's commercial page.
+* Note: no saved setting changed its name, so existing configurations keep working as before.
+
 # 5.2.4 - 2026-11-05
-* Fix: the order (and customer) phone and cellphone are now saved with the number only, without the country code (DDI) — if the customer types the +55 (or just 55), it is removed from the beginning of the number. The country code still shows up on the order receipt, on "My account > Orders" and in the admin "Customer details" block, and it now has its own field above the phone/cellphone when editing the order. The checkout field no longer opens with the country code either: an old value from the account is filled in with the number only. The country code now also has its own field above the phone and cellphone on the user profile (wp-admin) and on the account address edit screen (billing and shipping). When using "Load billing/shipping address" on the order edit screen, the phone, the cellphone and the country code fields from the customer account are now filled in together with the rest of the address data. On the account address edit screen and on the user profile, the phone country code field is hidden when the country-code mask is enabled (the library already shows the code inside the phone field itself) and stays visible on the secondary Cellphone, which does not use the library; with the hidden Cellphone the country code follows the phone one. The country code fields are now required, since they are filled in automatically, and they are not created when the phone field is disabled. On the user profile the hidden Cellphone no longer generates a field (the save copies the phone and the country code into it) and the country code fields now take the full width, like the others. The hidden Cellphone country code got its own field on the order edit screen (the only place where it shows up as editable) and, on every other save (checkout, API, import), follows the phone country code — including on the customer account. On the classic/shortcode checkout and on the account address edit screen the phone field shows the number only again, with the country code on the flag alone: the mask was writing the +55 inside the field itself. And what the customer types is no longer rewritten — if they type the +55, the field keeps the text and the country code is separated from the number on save.
+* Fix: the order and customer phone and cellphone are now saved with the number only, without the country code (DDI) — the format Bling accepts. If the customer types the +55 (or just 55), it is removed from the beginning of the number.
+* New: a dedicated country code field above the phone and cellphone on the order edit screen, on the user profile and on the account address edit screen. The country code still shows on the order receipt, on "My account > Orders" and on the admin customer details.
+* Tweak: on the checkout and on the account address edit screen the phone field opens with the number only and no longer rewrites what the customer types (the +55 is split off on save). With the country code mask enabled the code lives on the flag alone.
 
 # 5.2.3 - 2026-10-27
 * Tweak: the phone field placeholder now follows the "Phone Field Behavior" — the landline format for "Landline Only", the mobile format for "Cellphone Only" and for the Cellphone field, and an area-code hint ("DDD + number") in the mode that accepts both formats. The "+55" was removed from the text: it is added automatically when the order is saved, and the customer never types it.

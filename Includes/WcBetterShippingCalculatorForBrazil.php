@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilCheckoutSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilShippingCalculatorSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdmin;
+use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminDeliveryFields;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilShippingMigration;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilMigrationEmail;
@@ -140,11 +141,16 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '5.2.4';
+            $this->version = '5.3.0';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
         $this->load_dependencies();
+
+        // Fluxo de compra da licença PRO (pop-up + rotas REST de instalar e
+        // ativar). Autoload PSR-4: `Includes/Billing/`.
+        \Lkn\WcBetterShippingCalculatorForBrazil\Includes\Billing\Billing::boot();
+
         $this->define_admin_hooks();
         $this->define_public_hooks();
     }
@@ -226,6 +232,11 @@ class WcBetterShippingCalculatorForBrazil
         $migration_email = new WcBetterShippingCalculatorForBrazilMigrationEmail();
         $this->loader->add_action('init', $migration_email, 'maybe_schedule_email');
         $this->loader->add_action(WcBetterShippingCalculatorForBrazilMigrationEmail::CRON_HOOK, $migration_email, 'send_migration_email');
+
+        // Widgets com tipo customizado da aba "Campos Brasileiros" (blocos PRO
+        // "Prazo de Entrega" e "Pedidos com Prazo de Entrega", cuja interface é
+        // compartilhada com o plugin gratuito).
+        new WcBetterShippingCalculatorForBrazilAdminDeliveryFields();
 
         // detect state from postcode
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100, 1);
@@ -359,7 +370,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '5.2.3', '5.2.2', '5.2.1', '5.1.1', '5.1.0', '5.0.4', '5.0.3', '5.0.2', '5.0.1', '5.0.0', '4.17.4', '4.17.3', '4.17.2', '4.17.1' );
+            $old_versions   = array( '5.2.4', '5.2.3', '5.2.2', '5.2.1', '5.1.1', '5.1.0', '5.0.4', '5.0.3', '5.0.2', '5.0.1', '5.0.0', '4.17.4', '4.17.3', '4.17.2' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -520,7 +531,7 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_woo_better_footer_page()
     {
-        // Verifica se estamos na página da aba de checkout
+        // Assets da aba de checkout ("Campos Brasileiros").
         if (
             isset($_GET['page'], $_GET['tab']) &&
             sanitize_text_field(wp_unslash($_GET['page'])) === 'wc-settings' &&
@@ -551,21 +562,20 @@ class WcBetterShippingCalculatorForBrazil
             );
 
             wp_enqueue_script(
-                'wc-better-calc-settings-layout',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js',
-                array('wc-better-calc-settings-fake-disabled'),
-                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js'),
+                'wc-better-calc-settings-layout-tabs',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutTabs.COMPILED.js',
+                array('jquery'),
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutTabs.COMPILED.js'),
                 true
             );
 
-            $plugin_path = 'invoice-payment-for-woocommerce/wc-invoice-payment.php';
-            $invoice_plugin_installed = file_exists(WP_PLUGIN_DIR . '/' . $plugin_path);
-
-            wp_localize_script('wc-better-calc-settings-layout', 'wcBetterCalcAjax', array(
-                'install_nonce' => wp_create_nonce('install-plugin_invoice-payment-for-woocommerce'),
-                'plugin_slug' => 'invoice-payment-for-woocommerce',
-                'invoice_plugin_installed' => $invoice_plugin_installed,
-            ));
+            wp_enqueue_script(
+                'wc-better-calc-settings-layout-behaviors',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.COMPILED.js',
+                array('wc-better-calc-settings-fake-disabled'),
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.COMPILED.js'),
+                true
+            );
 
             wp_enqueue_script(
                 'wc-better-calc-footer-message',
@@ -575,45 +585,42 @@ class WcBetterShippingCalculatorForBrazil
                 true
             );
 
+            // Widgets "Prazo de Entrega" / "Pedidos Pendentes" (blocos PRO, cuja
+            // interface é compartilhada com a versão gratuita).
+            wp_enqueue_script(
+                'wc-better-calc-settings-delivery-fields',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminDeliveryFields.COMPILED.js',
+                array('wc-better-calc-settings-fake-disabled'),
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminDeliveryFields.COMPILED.js'),
+                true
+            );
+
+            wp_enqueue_style(
+                'wc-better-calc-style-settings-layout',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutSettings.COMPILED.css',
+                array(),
+                $asset_version('Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutSettings.COMPILED.css'),
+                'all'
+            );
+
+            wp_enqueue_style(
+                'wc-better-calc-style-settings-layout-link-card',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutLinkCard.COMPILED.css',
+                array(),
+                $asset_version('Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutLinkCard.COMPILED.css'),
+                'all'
+            );
+
             wp_enqueue_style(
                 'wc-better-calc-style-settings',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.css',
                 array(),
-                // mtime: a classe `.woo-better-fake-disabled` (ver AGENTS.md § 7) foi
-                // adicionada dentro da MESMA versão — com a constante o navegador
-                // seguiria com o CSS antigo e o "desabilitado" ficaria sem estilo.
                 $asset_version('Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.css'),
                 'all'
             );
 
-            wp_enqueue_style(
-                'wc-better-calc-style-admin-card-settings',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminCard.COMPILED.css',
-                array(),
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
-                'all'
-            );
-
-            $versions = 'Woo Better v' . $this->version . ' | WooCommerce v' . WC()->version;
-            ;
-
-            wc_get_template(
-                'WcBetterShippingCalculatorForBrazilAdminSettingsCard.php',
-                array(
-                        'backgrounds' => array(
-                            'right' => plugin_dir_url(__FILE__) . 'assets/icons/backgroundCardRight.svg',
-                            'left' => plugin_dir_url(__FILE__) . 'assets/icons/backgroundCardLeft.svg'
-                        ),
-                        'logo' => plugin_dir_url(__FILE__) . 'assets/icons/linkNacionalLogo.webp',
-                        'whatsapp' => plugin_dir_url(__FILE__) . 'assets/icons/whatsapp.svg',
-                        'telegram' => plugin_dir_url(__FILE__) . 'assets/icons/telegram.svg',
-                        'stars' => plugin_dir_url(__FILE__) . 'assets/icons/stars.svg',
-                        'versions' => $versions
-
-                    ),
-                'woocommerce/WcBetterShippingCalculatorForBrazilAdminSettingsCard/',
-                plugin_dir_path(__FILE__) . 'assets/templates/'
-            );
+            // Pop-up de compra da licença PRO (card "Adquirir a licença").
+            \Lkn\WcBetterShippingCalculatorForBrazil\Includes\Billing\Billing::enqueue();
         }
     }
 

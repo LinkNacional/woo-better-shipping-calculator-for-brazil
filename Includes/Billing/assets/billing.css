@@ -1,0 +1,956 @@
+/* Pop-up de compra da licença PRO e o botão que o abre.
+ *
+ * Só é carregado na tela de configurações do plugin. Nasce do mesmo desenho do
+ * card `block-pro-offer`: superfície branca, borda fina, uma ação por passo.
+ * Nada de degradê — aqui o usuário está pagando, não vendo anúncio.
+ */
+
+/* ── Trava de scroll do documento enquanto o pop-up está aberto ──────────── */
+
+html.lkn-billing-is-open,
+html.lkn-billing-is-open body {
+    overflow: hidden;
+}
+
+/* ── Camada ──────────────────────────────────────────────────────────────── */
+
+.lkn-billing {
+    position: fixed;
+    inset: 0;
+    /*
+     * Dá profundidade ao giro do card (o `transform` fica no diálogo). Mais
+     * perto que 1400px: com a distância grande o giro achatava e o card parecia
+     * só mudar de largura.
+     */
+    perspective: 1000px;
+    perspective-origin: 50% 50%;
+    z-index: 100050; /* acima do admin bar (99999) e dos notices */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.lkn-billing[hidden] {
+    display: none;
+}
+
+.lkn-billing__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 20, 30, 0.55);
+}
+
+.lkn-billing__dialog {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 420px;
+    max-height: 100%;
+    overflow: hidden;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+}
+
+.lkn-billing__close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    z-index: 2;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #646970;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.lkn-billing__close:hover,
+.lkn-billing__close:focus {
+    background: #f0f0f1;
+    color: #1d2327;
+}
+
+/* ── Cabeçalho ───────────────────────────────────────────────────────────── */
+
+.lkn-billing__header {
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid #f0f0f1;
+    border-top: 3px solid #667eea;
+}
+
+.lkn-billing__eyebrow {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #5b4bc4;
+}
+
+.lkn-billing__title {
+    margin: 0 0 10px;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #1d2327;
+}
+
+/* ── Recibo (só depois de pago) ──────────────────────────────────────────── */
+
+/*
+ * Tabela de duas colunas e três linhas: pedido, parcela e total.
+ *
+ * SÓ BORDA — sem preenchimento de fundo e sem nenhum efeito. Um bloco pintado
+ * aqui pesava o momento e competia com a confirmação logo acima: o recibo é
+ * informação, não um aviso.
+ *
+ * Cada linha tem a sua hairline (`tr + tr`): separar só o total deixava a linha
+ * do meio solta, sem borda nenhuma, e o recibo parecia uma lista de texto. E a
+ * divisória vertical entre as colunas vem da segunda coluna (`border-left`),
+ * completando a grade — sem ela as duas colunas flutuavam lado a lado.
+ *
+ * Tudo alinhado à ESQUERDA, como se lê um recibo. O `padding` das células é o
+ * respiro em cima/embaixo e nas laterais — o texto não encosta na borda.
+ */
+.lkn-billing__receipt {
+    width: 100%;
+    margin: 0 0 16px;
+    border: 1px solid #d7e3d9;
+    border-collapse: collapse;
+    background: none;
+    color: #3c434a;
+    text-align: left;
+}
+
+.lkn-billing__receipt[hidden] {
+    display: none;
+}
+
+.lkn-billing__receipt th,
+.lkn-billing__receipt td {
+    padding: 10px 14px;
+    border: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: left;
+    vertical-align: baseline;
+}
+
+/* A linha entre uma linha e a seguinte (a primeira não tem nada acima). */
+.lkn-billing__receipt tr + tr th,
+.lkn-billing__receipt tr + tr td {
+    border-top: 1px solid #d7e3d9;
+}
+
+/* Primeira coluna: o rótulo. */
+.lkn-billing__receipt-k {
+    font-weight: 400;
+    color: #646970;
+}
+
+/*
+ * Segunda coluna: o valor, numa linha só, separado da primeira pela divisória.
+ *
+ * O seletor é composto de propósito: `.lkn-billing__receipt td { border: 0 }`
+ * tem especificidade maior que uma classe sozinha e zerava a borda — a
+ * divisória simplesmente não aparecia.
+ */
+.lkn-billing__receipt td.lkn-billing__receipt-v {
+    border-left: 1px solid #d7e3d9;
+    color: #1d2327;
+    white-space: nowrap;
+}
+
+/* O pedido é o cabeçalho do recibo: nome do produto em destaque. */
+.lkn-billing__receipt tr:first-child .lkn-billing__receipt-k {
+    color: #1d2327;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/*
+ * "1×" é texto puro: nada de selo, fundo ou cantos arredondados.
+ *
+ * Era um `inline-block` com fundo verde e padding, que criava um bloco visual
+ * dentro da célula e desalinhava a linha do nome do produto.
+ */
+.lkn-billing__receipt-qty {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+}
+
+/* Total: a linha de fecho, em destaque (a borda dela vem do `tr + tr`). */
+.lkn-billing__receipt-row--total .lkn-billing__receipt-k {
+    color: #1d2327;
+    font-weight: 600;
+}
+
+.lkn-billing__receipt-row--total .lkn-billing__receipt-v {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+/* ── Corpo / passos ──────────────────────────────────────────────────────── */
+
+.lkn-billing__body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.lkn-billing__step[hidden] {
+    display: none;
+}
+
+/*
+ * ── Troca de passo: UMA volta no card (180°), em 3D ───────────────────────
+ *
+ * O card vira como uma folha: a face atual gira até ficar de perfil e a nova
+ * entra do outro lado, fechando meia-volta. De ponta a ponta, é uma volta.
+ *
+ * ── Por que 180° e não 360° ──────────────────────────────────────────────
+ *
+ * Um giro de 360° mostra a FRENTE duas vezes: no começo e aos 180°. É o que se
+ * vê como "girou duas vezes" — o conteúdo chega no meio do caminho, continua
+ * girando e volta a chegar no fim. Para o olho, 360° é literalmente duas
+ * voltas. Meia-volta (0° -> 90° -> 180°) tem uma chegada só.
+ *
+ * ── Por que DUAS faces ───────────────────────────────────────────────────
+ *
+ * Girar um elemento só mostraria o verso do conteúdo — texto espelhado — na
+ * segunda metade. Com duas faces 180° defasadas, enquanto uma dá as costas a
+ * outra está de frente: nunca aparece texto espelhado e nunca há um quadro sem
+ * card.
+ *
+ * As metades são SEQUENCIAIS (a segunda tem `animation-delay` igual à duração
+ * da primeira): se rodassem juntas, as duas ficariam visíveis ao mesmo tempo no
+ * meio do movimento, e o card apareceria duplicado.
+ *
+ * A primeira metade ACELERA (ease-in): é o card se afastando. A segunda
+ * DESACELERA (ease-out): é o passo novo assentando. Esse par é o que dá a
+ * leitura de "virei a página".
+ *
+ * Avançar gira num sentido, voltar no outro — senão "Voltar" parece avançar.
+ */
+.lkn-billing__face {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 24px 16px;
+    /* Decoração: nada aqui pode receber clique. */
+    pointer-events: none;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+/* O card copiado dentro da face não cria camada própria. */
+.lkn-billing__face .lkn-billing__dialog {
+    z-index: 0;
+}
+
+/* Primeira metade: a face atual vira até o perfil (90°) e fica ali, invisível,
+   enquanto a nova entra. */
+.lkn-billing__face--frente.lkn-billing__face--avancar {
+    animation: lkn-billing-card-turn-out 0.24s ease-in both;
+}
+
+.lkn-billing__face--frente.lkn-billing__face--voltar {
+    animation: lkn-billing-card-turn-out-back 0.24s ease-in both;
+}
+
+/* Segunda metade: só depois que a primeira saiu de cena. */
+.lkn-billing__face--verso.lkn-billing__face--avancar {
+    animation: lkn-billing-card-turn-in 0.26s 0.24s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.lkn-billing__face--verso.lkn-billing__face--voltar {
+    animation: lkn-billing-card-turn-in-back 0.26s 0.24s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+/* A face atual sai de frente e para de perfil. */
+@keyframes lkn-billing-card-turn-out {
+    from {
+        transform: rotateY(0);
+    }
+
+    to {
+        transform: rotateY(90deg);
+    }
+}
+
+/* A nova chega do outro lado, de perfil, até de frente. */
+@keyframes lkn-billing-card-turn-in {
+    from {
+        transform: rotateY(-90deg);
+    }
+
+    to {
+        transform: rotateY(0);
+    }
+}
+
+/* O mesmo pelo lado oposto (sentido de quem volta). */
+@keyframes lkn-billing-card-turn-out-back {
+    from {
+        transform: rotateY(0);
+    }
+
+    to {
+        transform: rotateY(-90deg);
+    }
+}
+
+@keyframes lkn-billing-card-turn-in-back {
+    from {
+        transform: rotateY(90deg);
+    }
+
+    to {
+        transform: rotateY(0);
+    }
+}
+
+/* O card de verdade sai de cena durante o giro, mas sem sair do layout —
+   senão o pop-up mudaria de lugar no meio da animação. */
+.lkn-billing__dialog--escondido {
+    visibility: hidden;
+}
+
+.lkn-billing__step--center {
+    text-align: center;
+}
+
+.lkn-billing__label {
+    display: block;
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+/*
+ * Espaço entre um campo e o rótulo do próximo.
+ *
+ * O `input` já respira 12px embaixo; somar 14px aqui dava 26px entre os campos
+ * (e `input` é inline-block, então as duas margens NÃO colapsam). O formulário
+ * ficava com os campos soltos entre si e o botão colado no último — invertido
+ * em relação à leitura natural.
+ */
+.lkn-billing__step > .lkn-billing__label:not(:first-child) {
+    margin-top: 0;
+}
+
+.lkn-billing__input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 40px;
+    margin: 0 0 12px;
+    padding: 0 12px;
+    border: 1px solid #8c8f94;
+    border-radius: 4px;
+    background: #fff;
+    color: #1d2327;
+    font-size: 14px;
+    line-height: 40px;
+}
+
+.lkn-billing__input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 1px #667eea;
+    outline: 2px solid transparent;
+}
+
+.lkn-billing__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.lkn-billing__hint {
+    margin: 0 0 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #646970;
+}
+
+.lkn-billing__hint--secure {
+    margin-top: 10px;
+}
+
+/* ── Botões ──────────────────────────────────────────────────────────────── */
+
+.lkn-billing__btn {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    padding: 11px 16px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: center;
+    /* O botão das etapas finais é um `<a>` (leva para as configurações): sem
+       isso ele herda o sublinhado de link e parece texto, não botão. */
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Vale também no hover/focus: o CSS do admin e dos temas reaplica o
+   sublinhado nesses estados. */
+.lkn-billing__btn,
+.lkn-billing__btn:hover,
+.lkn-billing__btn:focus,
+.lkn-billing__btn:active,
+.lkn-billing__btn:visited {
+    text-decoration: none;
+}
+
+.lkn-billing__btn--primary {
+    background: #667eea;
+    color: #fff;
+}
+
+.lkn-billing__btn--primary:hover,
+.lkn-billing__btn--primary:focus {
+    background: #5566d6;
+    color: #fff;
+}
+
+.lkn-billing__btn--secondary {
+    background: #f6f7f7;
+    border-color: #dcdcde;
+    color: #1d2327;
+}
+
+.lkn-billing__btn--secondary:hover,
+.lkn-billing__btn--secondary:focus {
+    background: #f0f0f1;
+}
+
+.lkn-billing__btn:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* Trabalhando: cursor de espera, mas ainda aceita o visual de "ocupado". */
+.lkn-billing__btn.is-busy {
+    opacity: 0.7;
+    cursor: progress;
+}
+
+/* Desabilitado por REQUISITO (o "Continuar" sem e-mail/meio) não está
+   processando nada: `progress` aqui prometia uma espera que não existe. */
+.lkn-billing__btn:disabled:not(.is-busy) {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* ── Etapas finais (instalar / ativar / seguir) ──────────────────────────── */
+
+.lkn-billing__tasks {
+    margin: 4px 0 0;
+}
+
+.lkn-billing__task + .lkn-billing__task {
+    margin-top: 10px;
+}
+
+.lkn-billing__btn--task {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/*
+ * Tique dentro do botão: só aparece na etapa concluída.
+ *
+ * O seletor é composto de propósito: a regra base do tique (30px) vem DEPOIS
+ * desta no arquivo e, com a mesma especificidade, vencia — o ícone entrava com
+ * 30px e o botão crescia de 42 para 54px ao concluir a etapa, empurrando a
+ * lista no meio do clique.
+ */
+.lkn-billing__btn--task .lkn-billing__check--inline {
+    display: none;
+    width: 16px;
+    height: 16px;
+}
+
+.lkn-billing__check--inline .lkn-billing__check-circle,
+.lkn-billing__check--inline .lkn-billing__check-mark {
+    stroke: currentColor;
+}
+
+/* Esperando a etapa anterior: cinza, sem clique. */
+.lkn-billing__btn.is-locked,
+.lkn-billing__btn.is-locked:disabled {
+    background: #f0f0f1;
+    border-color: #dcdcde;
+    color: #a7aaad;
+    opacity: 1;
+    cursor: not-allowed;
+}
+
+/* Concluída: verde claro + tique. */
+.lkn-billing__btn.is-done,
+.lkn-billing__btn.is-done:disabled {
+    background: #edfaef;
+    border-color: #b6e0bf;
+    color: #1a7f37;
+    opacity: 1;
+    cursor: default;
+}
+
+.lkn-billing__btn.is-done .lkn-billing__check--inline {
+    display: block;
+}
+
+/*
+ * Carregamento DENTRO do botão, não por fora.
+ *
+ * Uma barra embaixo do botão parecia pertencer a outro elemento e ainda
+ * empurrava a lista a cada clique (a altura do card mudava no meio da ação).
+ * Aqui o preenchimento corre no FUNDO do próprio botão, atrás do texto — o
+ * botão é o indicador.
+ */
+.lkn-billing__btn--task.is-busy {
+    position: relative;
+    overflow: hidden;
+    background: #5566d6;
+    cursor: progress;
+    opacity: 1;
+}
+
+.lkn-billing__btn--task.is-busy::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 45%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+    animation: lkn-billing-btn-sheen 1.1s ease-in-out infinite;
+}
+
+/* O texto e o tique ficam ACIMA do preenchimento. */
+.lkn-billing__btn--task.is-busy > * {
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes lkn-billing-btn-sheen {
+    from {
+        left: -45%;
+    }
+
+    to {
+        left: 100%;
+    }
+}
+
+.lkn-billing__manual button.lkn-billing__link {
+    padding: 0;
+    /* O `<p>` já abre o espaço do botão principal; margem aqui dobraria. */
+    margin-top: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.lkn-billing__link {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: #2271b1;
+    font-size: 13px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.lkn-billing__link:hover,
+.lkn-billing__link:focus {
+    color: #135e96;
+}
+
+/* ── Métodos de pagamento ────────────────────────────────────────────────── */
+
+/* Na primeira tela o rótulo vem logo depois do campo de e-mail: sem esta
+   margem ele encosta no texto de ajuda do e-mail. */
+.lkn-billing__step .lkn-billing__label + .lkn-billing__hint + .lkn-billing__label {
+    margin-top: 18px;
+}
+
+.lkn-billing__method {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin: 0 0 10px;
+    padding: 12px 14px;
+    border: 1px solid #dcdcde;
+    border-radius: 8px;
+    background: #fff;
+    text-align: left;
+    cursor: pointer;
+}
+
+/* `display: flex` na classe vence o `[hidden]` do UA: sem esta regra, esconder
+   um meio cujo PSP está desabilitado no servidor não escondia nada. */
+.lkn-billing__method[hidden] {
+    display: none;
+}
+
+.lkn-billing__method:hover,
+.lkn-billing__method:focus {
+    border-color: #667eea;
+    background: #f8f8ff;
+}
+
+/* Meio escolhido: borda e fundo do tema + selo, para a escolha ser visível
+   sem depender só da cor (quem não distingue matiz lê o "✓"). */
+.lkn-billing__method.is-selected {
+    border-color: #667eea;
+    background: #f4f5ff;
+    box-shadow: inset 0 0 0 1px #667eea;
+}
+
+.lkn-billing__method.is-selected .lkn-billing__method-text strong::after {
+    content: " \2713";
+    color: #667eea;
+}
+
+.lkn-billing__method-icon {
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #5b4bc4;
+}
+
+.lkn-billing__method-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.lkn-billing__method-text strong {
+    font-size: 14px;
+    color: #1d2327;
+}
+
+.lkn-billing__method-text small {
+    font-size: 12px;
+    color: #646970;
+}
+
+/* ── Pix ─────────────────────────────────────────────────────────────────── */
+
+.lkn-billing__qr {
+    margin: 0 0 12px;
+    padding: 12px;
+    border: 1px solid #dcdcde;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.lkn-billing__qr img {
+    display: block;
+    max-width: 200px;
+    height: auto;
+    margin: 0 auto;
+}
+
+.lkn-billing__copy {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0 0 10px;
+    padding: 8px 10px;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    background: #f6f7f7;
+    color: #50575e;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    resize: none;
+}
+
+/* ── Estados ─────────────────────────────────────────────────────────────── */
+
+.lkn-billing__ok {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 12px;
+    padding: 12px;
+    border-radius: 6px;
+    background: #edfaef;
+    color: #1a7f37;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/*
+ * Confirmação de tela cheia: sem o bloco verde, ícone grande em cima do texto.
+ *
+ * O bloco verde funciona como aviso NO MEIO de um conteúdo; aqui ele é o
+ * resultado da tela inteira, e uma caixa pintada em volta deixava o momento
+ * pesado. O verde fica só no tique.
+ */
+.lkn-billing__ok--plain {
+    flex-direction: column;
+    gap: 14px;
+    margin: 4px 0 20px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    font-size: 17px;
+}
+
+.lkn-billing__ok--plain .lkn-billing__check {
+    width: 56px;
+    height: 56px;
+}
+
+/* Tique desenhado: o traço "cresce" via `stroke-dashoffset`. */
+.lkn-billing__check {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+}
+
+.lkn-billing__check-circle {
+    stroke: #1a7f37;
+    stroke-width: 2.5;
+    stroke-dasharray: 145;
+    stroke-dashoffset: 145;
+    animation: lkn-billing-draw-circle 0.45s ease-out forwards;
+}
+
+.lkn-billing__check-mark {
+    stroke: #1a7f37;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 36;
+    stroke-dashoffset: 36;
+    /* Começa depois do círculo, para o desenho ter sequência. */
+    animation: lkn-billing-draw-check 0.3s 0.4s ease-out forwards;
+}
+
+@keyframes lkn-billing-draw-circle {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes lkn-billing-draw-check {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+/* ── Barra de progresso (licença sendo preparada) ────────────────────────── */
+
+.lkn-billing__progress {
+    position: relative;
+    overflow: hidden;
+    height: 6px;
+    margin: 0 auto 12px;
+    max-width: 260px;
+    border-radius: 999px;
+    background: #e6e9ef;
+}
+
+.lkn-billing__progress-bar {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 40%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #667eea, #8b5cf6);
+    animation: lkn-billing-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes lkn-billing-slide {
+    0% {
+        left: -40%;
+    }
+
+    100% {
+        left: 100%;
+    }
+}
+
+.lkn-billing__key {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1px dashed #dcdcde;
+    border-radius: 4px;
+    background: #f6f7f7;
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.lkn-billing__key code {
+    background: none;
+    padding: 0;
+    color: #1d2327;
+}
+
+.lkn-billing__waiting {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 0;
+    font-size: 12px;
+    color: #646970;
+}
+
+.lkn-billing__alert {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border-left: 4px solid #d63638;
+    border-radius: 4px;
+    background: #fcf0f1;
+    color: #8a1f11;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.lkn-billing__alert[hidden] {
+    display: none;
+}
+
+/*
+ * Caminho alternativo (baixar o .zip): fica ABAIXO do botão principal, com ar
+ * de quem só aparece para quem procura — texto pequeno, sem contorno, e o
+ * espaço em cima separa a ação principal da exceção.
+ */
+.lkn-billing__manual {
+    margin: 16px 0 0;
+    font-size: 12px;
+}
+
+.lkn-billing__manual[hidden] {
+    display: none;
+}
+
+.lkn-billing__spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #dcdcde;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: lkn-billing-spin 0.8s linear infinite;
+}
+
+.lkn-billing__spinner--big {
+    width: 26px;
+    height: 26px;
+    margin: 0 auto 14px;
+    border-width: 3px;
+}
+
+@keyframes lkn-billing-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Respeita quem pediu menos animação no sistema. */
+@media (prefers-reduced-motion: reduce) {
+    .lkn-billing__spinner {
+        animation-duration: 3s;
+    }
+
+    .lkn-billing__btn {
+        transition: none;
+    }
+
+    /* Sem animação o tique precisa aparecer desenhado, e a barra fica cheia
+       e parada — o estado tem de ser legível sem movimento. */
+    .lkn-billing__check-circle,
+    .lkn-billing__check-mark {
+        animation: none;
+        stroke-dashoffset: 0;
+    }
+
+    .lkn-billing__progress-bar {
+        animation: none;
+        left: 0;
+        width: 100%;
+    }
+
+    /* Sem movimento: o card troca de passo direto, sem girar (o JS nem monta
+       as faces nesse caso). */
+    .lkn-billing__face {
+        animation: none;
+    }
+}
+
+/* ── Rodapé ──────────────────────────────────────────────────────────────── */
+
+.lkn-billing__footer {
+    padding: 12px 24px 16px;
+    border-top: 1px solid #f0f0f1;
+    font-size: 11px;
+    color: #646970;
+    text-align: center;
+}
+
+/* ── Telas estreitas ─────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+    .lkn-billing {
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    .lkn-billing__dialog {
+        max-width: none;
+        max-height: 92vh;
+        border-radius: 12px 12px 0 0;
+    }
+
+    /* As faces do giro repetem o card colado embaixo. */
+    .lkn-billing__face {
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    .lkn-billing__header,
+    .lkn-billing__body,
+    .lkn-billing__footer {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+}
