@@ -96,6 +96,18 @@ class WcBetterShippingCalculatorForBrazil
     public const CELLPHONE_FIELD_ATTR = 'data-wc-better-cellphone-field';
 
     /**
+     * Classe do wrapper (`<p class="form-row">`) dos campos `type=hidden` do plugin.
+     *
+     * O WooCommerce embrulha TODO campo num `<p class="form-row">` — inclusive os
+     * ocultos —, e esse wrapper herda o `padding`/`margin` do formulário, deixando um
+     * vão vazio no meio dos campos. O CSS `...HiddenFields` zera o espaçamento desta
+     * classe (checkout clássico e edição de endereço da conta).
+     *
+     * @var string
+     */
+    public const HIDDEN_FIELD_CLASS = 'woo-better-hidden-field';
+
+    /**
      * Namespace das extensões do Store API usadas pelo campo "Celular" do checkout
      * em blocos no modo "Somente Celular". O campo é injetado via JS (como os demais
      * campos customizados do plugin) e o valor é enviado por `setExtensionData`.
@@ -1441,31 +1453,59 @@ class WcBetterShippingCalculatorForBrazil
     /**
      * Campo de DDI da EDIÇÃO DE ENDEREÇO da conta (`minha-conta/edit-address/`).
      *
-     * Fica LOGO ACIMA do telefone/celular (priority do alvo - 1) e é só um campo de
-     * texto opcional: o valor vem de `user_ddi()` pelo filtro
-     * `woocommerce_my_account_edit_address_field_value`. O NOME segue o do checkout
-     * clássico (`*_phone_country`) porque o JS da máscara o usa para restaurar o país.
+     * Fica LOGO ACIMA do telefone/celular (priority do alvo - 1) e o valor vem de
+     * `user_ddi()`. O NOME segue o do checkout clássico (`*_phone_country`) porque o
+     * JS da máscara grava/restaura o país por ele.
+     *
+     * VISÍVEL ou OCULTO conforme quem preenche o DDI:
+     *  - máscara "com DDI" (lib) — a bandeira e o código do país aparecem DENTRO do
+     *    campo de telefone e a própria lib grava o DDI no input de mesmo nome
+     *    (`setHiddenCountry`), então o campo próprio fica OCULTO (`type=hidden`) para
+     *    não pedir o mesmo dado duas vezes. Isso vale para o campo que a lib dirige,
+     *    que é o do bloco PRINCIPAL (`*_phone_country` — o telefone; no "Somente
+     *    Celular" o próprio celular). O Celular SECUNDÁRIO é um campo "limpo" (sem
+     *    lib), por isso o DDI dele continua VISÍVEL;
+     *  - máscara brasileira (sem lib) — o número é nacional e o DDI é digitável, então
+     *    o campo segue visível.
+     *
+     * O DDI é OBRIGATÓRIO: quem preenche é o plugin (a lib ou o `user_ddi`), e o campo
+     * marcado como required é a garantia de não salvar um DDI vazio. No campo OCULTO o
+     * `required` fica desligado (o WooCommerce exibiria "é um campo obrigatório" para
+     * um campo que o cliente não vê, e o valor nunca chega vazio).
      *
      * @param string $type           'billing' | 'shipping'
      * @param string $label
      * @param int    $target_priority Priority do campo que ele acompanha.
-     * @param string $kind           'phone' | 'cellphone' (define o nome do campo).
+     * @param string $kind           'phone' | 'cellphone' (define a META lida/gravada).
+     * @param string $field_name     Chave do campo, quando difere da derivada do
+     *                               `$kind` (no "Somente Celular" o DDI do celular
+     *                               principal usa a chave do bloco telefone).
      * @return array
      */
-    private function edit_address_ddi_field($type, $label, $target_priority, $kind = 'phone')
+    private function edit_address_ddi_field($type, $label, $target_priority, $kind = 'phone', $field_name = '')
     {
-        $name = "{$type}_phone_country";
-
-        if ('cellphone' === $kind) {
-            $name = "{$type}_cellphone_country";
+        if ('' === $field_name) {
+            $field_name = ('cellphone' === $kind)
+                ? "{$type}_cellphone_country"
+                : "{$type}_phone_country";
         }
 
+        // O DDI dentro do próprio campo de telefone (lib) só acontece no bloco
+        // principal: o JS da máscara escreve em `*_phone_country`.
+        $hidden = ("{$type}_phone_country" === $field_name) && $this->is_phone_mask_active();
+
         return array(
-            'label'    => $label,
-            'type'     => 'text',
-            'class'    => array('form-row-wide'),
+            // Oculto NÃO leva label: o `woocommerce_form_field` imprime o `<label>`
+            // até nos campos `type=hidden` (só omite o `for`), o que deixaria o texto
+            // "DDI (...)" na tela sem nenhum campo embaixo.
+            'label'    => $hidden ? '' : $label,
+            'type'     => $hidden ? 'hidden' : 'text',
+            // Oculto herda a classe que zera o `<p class="form-row">` vazio (o
+            // WooCommerce embrulha até os `type=hidden`) — mesmo tratamento do
+            // checkout clássico.
+            'class'    => $hidden ? array(self::HIDDEN_FIELD_CLASS) : array('form-row-wide'),
             'priority' => max(1, (int) $target_priority - 1),
-            'required' => false,
+            'required' => ! $hidden,
             'value'    => self::user_ddi(get_current_user_id(), $type, $kind),
         );
     }
@@ -6988,7 +7028,7 @@ class WcBetterShippingCalculatorForBrazil
             if (!isset($fields['billing']['billing_phone'])) {
                 $fields['billing']['billing_phone_country'] = array(
                     'type'        => 'hidden',
-                    'class'       => array('woo-better-hidden-field'),
+                    'class'       => array(self::HIDDEN_FIELD_CLASS),
                     'default'     => '+55',
                     'required'    => false,
                 );
@@ -7003,7 +7043,7 @@ class WcBetterShippingCalculatorForBrazil
             } else {
                 $fields['billing']['billing_phone_country'] = array(
                     'type'        => 'hidden',
-                    'class'       => array('woo-better-hidden-field'),
+                    'class'       => array(self::HIDDEN_FIELD_CLASS),
                     'default'     => '+55',
                     'required'    => false,
                 );
@@ -7015,7 +7055,7 @@ class WcBetterShippingCalculatorForBrazil
             if (!isset($fields['shipping']['shipping_phone'])) {
                 $fields['shipping']['shipping_phone_country'] = array(
                     'type'        => 'hidden',
-                    'class'       => array('woo-better-hidden-field'),
+                    'class'       => array(self::HIDDEN_FIELD_CLASS),
                     'default'     => '+55',
                     'required'    => false,
                 );
@@ -7030,7 +7070,7 @@ class WcBetterShippingCalculatorForBrazil
             } else {
                 $fields['shipping']['shipping_phone_country'] = array(
                     'type'        => 'hidden',
-                    'class'       => array('woo-better-hidden-field'),
+                    'class'       => array(self::HIDDEN_FIELD_CLASS),
                     'default'     => '+55',
                     'required'    => false,
                 );
@@ -9512,8 +9552,10 @@ class WcBetterShippingCalculatorForBrazil
         }
         if ($shows_cellphone) {
             // No "Somente Celular" o celular É o campo principal: o DDI dele é o do
-            // bloco principal (`*_phone_country_code`), como no checkout.
-            if ($shows_phone && $shows_ddi) {
+            // bloco principal (`*_phone_country_code`), como no checkout. No shim
+            // ("Celular Oculto") o celular só ESPELHA o telefone — não tem campo nem
+            // DDI próprio: ele herda o DDI do telefone (`user_ddi`).
+            if ($shows_phone && $shows_ddi && $this->phone_mode_adds_cellphone_field()) {
                 $billing['billing_cellphone_country_code'] = $this->profile_ddi_field(
                     sprintf(
                         /* translators: %s: nome do campo de celular que este DDI acompanha. */
@@ -9575,7 +9617,7 @@ class WcBetterShippingCalculatorForBrazil
             $shipping['shipping_phone'] = $incoming_shipping['shipping_phone'];
         }
         if ($shows_cellphone) {
-            if ($shows_phone && $shows_ddi) {
+            if ($shows_phone && $shows_ddi && $this->phone_mode_adds_cellphone_field()) {
                 $shipping['shipping_cellphone_country_code'] = $this->profile_ddi_field(
                     sprintf(
                         /* translators: %s: nome do campo de celular que este DDI acompanha. */
@@ -9801,6 +9843,11 @@ class WcBetterShippingCalculatorForBrazil
                     '+55'
                 );
                 update_user_meta($user_id, $type . '_cellphone', $mirrored);
+
+                // O DDI do celular espelhado acompanha o do telefone (gravado no item
+                // 1b), senão a meta dele ficaria com um DDI antigo e a exibição usaria
+                // um código de país que não corresponde ao número espelhado.
+                $this->save_user_ddi($user_id, $type, 'cellphone', self::user_ddi($user_id, $type, 'phone'));
             }
         }
 
@@ -9912,7 +9959,8 @@ class WcBetterShippingCalculatorForBrazil
                         __('Celular', 'woo-better-shipping-calculator-for-brazil')
                     ),
                     $phone_priority,
-                    'cellphone'
+                    'cellphone',
+                    'billing_phone_country'
                 );
             } else {
                 $fields['billing_cellphone_country'] = $this->edit_address_ddi_field(
@@ -10332,7 +10380,8 @@ class WcBetterShippingCalculatorForBrazil
                         __('Celular', 'woo-better-shipping-calculator-for-brazil')
                     ),
                     $phone_priority,
-                    'cellphone'
+                    'cellphone',
+                    'shipping_phone_country'
                 );
             } else {
                 $fields['shipping_cellphone_country'] = $this->edit_address_ddi_field(
@@ -10587,18 +10636,24 @@ class WcBetterShippingCalculatorForBrazil
         // meta `*_cellphone` do usuário ESPELHANDO o telefone, para ela não divergir
         // (compatibilidade PagBank/Asaas/NFe). O campo hidden na tela já é espelhado
         // por JS; este espelho no servidor garante a consistência mesmo sem JS.
+        //
+        // O DDI do celular oculto acompanha o do telefone pelo mesmo motivo: sem isso
+        // a meta dele guardaria um DDI antigo (e `user_ddi` a usaria na exibição, indo
+        // contra o número espelhado).
         if ($this->phone_mode_adds_cellphone_shim()) {
             if ($load_address === 'billing' && isset($_POST['billing_phone'])) {
                 $billing_cc = isset($_POST['billing_phone_country']) ? sanitize_text_field(wp_unslash($_POST['billing_phone_country'])) : '+55';
                 // Só espelha se o telefone for de fato CELULAR; um fixo limpa o campo.
                 $cellphone = $this->mirror_phone_to_cellphone(sanitize_text_field(wp_unslash($_POST['billing_phone'])), $billing_cc);
                 update_user_meta($user_id, 'billing_cellphone', $cellphone);
+                $this->save_user_ddi($user_id, 'billing', 'cellphone', $billing_cc);
             }
 
             if ($load_address === 'shipping' && isset($_POST['shipping_phone'])) {
                 $shipping_cc = isset($_POST['shipping_phone_country']) ? sanitize_text_field(wp_unslash($_POST['shipping_phone_country'])) : '+55';
                 $cellphone = $this->mirror_phone_to_cellphone(sanitize_text_field(wp_unslash($_POST['shipping_phone'])), $shipping_cc);
                 update_user_meta($user_id, 'shipping_cellphone', $cellphone);
+                $this->save_user_ddi($user_id, 'shipping', 'cellphone', $shipping_cc);
             }
         }
         
