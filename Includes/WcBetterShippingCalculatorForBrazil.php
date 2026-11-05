@@ -801,11 +801,11 @@ class WcBetterShippingCalculatorForBrazil
         // recurso ligado no woo-better vence a disputa pelo mesmo campo.
         $this->loader->add_filter('woocommerce_admin_billing_fields', $this, 'ensure_admin_rg_field_billing', 99, 1);
 
-        // Preenche o "Celular" ao usar "Carregar endereço de cobrança/entrega" no
-        // admin do pedido (o WooCommerce só traz os campos nativos; o celular é o
-        // nosso campo extra). O JS do WC faz `#_<tipo>_<chave>` para cada chave
-        // devolvida, então basta acrescentar `cellphone` às duas.
-        $this->loader->add_filter('woocommerce_ajax_get_customer_details', $this, 'add_cellphone_to_customer_details', 10, 3);
+        // Preenche o Telefone/Celular e os campos de DDI ao usar "Carregar endereço
+        // de cobrança/entrega" no admin do pedido (o WooCommerce só traz os campos
+        // nativos; celular e DDI são campos do plugin). O JS do WC faz
+        // `#_<tipo>_<chave>` para cada chave devolvida, então basta acrescentá-las.
+        $this->loader->add_filter('woocommerce_ajax_get_customer_details', $this, 'add_phone_fields_to_customer_details', 10, 3);
         
         // Hook para salvar campos brasileiros
         $this->loader->add_action('woocommerce_process_shop_order_meta', $this, 'save_brazilian_fields');
@@ -1672,37 +1672,59 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
-     * Acrescenta o "Celular" ao retorno do AJAX "Carregar endereço" do admin do
-     * pedido, para os campos de cobrança e entrega.
+     * Completa o retorno do AJAX "Carregar endereço" do admin do pedido
+     * (`woocommerce_get_customer_details`) com os campos de telefone do plugin.
      *
      * O JS do WooCommerce (`meta-boxes-order.js`) preenche `#_<tipo>_<chave>` para
-     * cada chave devolvida em `billing`/`shipping`. Como o celular é um campo extra
-     * do plugin (não nativo), precisamos devolvê-lo aqui.
+     * CADA chave devolvida em `billing`/`shipping`, e é assim que "Carregar endereço
+     * de cobrança/entrega" funciona. O core manda só os campos NATIVOS, então aqui
+     * acrescentamos o que é do plugin:
      *
-     * @param array       $data     Dados do cliente (billing/shipping + extras).
+     *  - `phone`/`cellphone` → SÓ O NÚMERO (`stored_phone_display_value`), que é o
+     *    padrão gravado e o que o campo do admin exibe (o core manda o user meta
+     *    cru, que pode ter `+55` e máscara de um cadastro antigo);
+     *  - `phone_country_code`/`cellphone_country_code` → os campos de DDI, que sem
+     *    isso ficavam vazios/desatualizados ao carregar o endereço.
+     *
+     * @param array        $data     Dados do cliente (billing/shipping + extras).
      * @param \WC_Customer $customer Cliente.
-     * @param int         $user_id
+     * @param int          $user_id
      * @return array
      */
-    public function add_cellphone_to_customer_details($data, $customer, $user_id = 0)
+    public function add_phone_fields_to_customer_details($data, $customer, $user_id = 0)
     {
         if (! is_array($data) || ! $customer instanceof \WC_Customer) {
             return $data;
         }
 
-        if (! $this->phone_mode_stores_cellphone()) {
+        // No modo "Desabilitar" o telefone é do WooCommerce: o plugin não tem DDI
+        // nem celular para completar.
+        if (! $this->phone_mode_hides_native_option()) {
             return $data;
         }
 
-        if (! isset($data['billing']) || ! is_array($data['billing'])) {
-            $data['billing'] = array();
-        }
-        if (! isset($data['shipping']) || ! is_array($data['shipping'])) {
-            $data['shipping'] = array();
-        }
+        $stores_cellphone = $this->phone_mode_stores_cellphone();
 
-        $data['billing']['cellphone']  = self::strip_phone_ddi( (string) $customer->get_meta('billing_cellphone') );
-        $data['shipping']['cellphone'] = self::strip_phone_ddi( (string) $customer->get_meta('shipping_cellphone') );
+        foreach (array('billing', 'shipping') as $type) {
+            if (! isset($data[$type]) || ! is_array($data[$type])) {
+                $data[$type] = array();
+            }
+
+            if (isset($data[$type]['phone'])) {
+                $data[$type]['phone'] = self::stored_phone_display_value($data[$type]['phone']);
+            }
+
+            $data[$type]['phone_country_code'] = $this->customer_ddi($customer, $user_id, $type, 'phone');
+
+            if (! $stores_cellphone) {
+                continue;
+            }
+
+            $data[$type]['cellphone'] = self::stored_phone_display_value(
+                (string) $customer->get_meta("{$type}_cellphone")
+            );
+            $data[$type]['cellphone_country_code'] = $this->customer_ddi($customer, $user_id, $type, 'cellphone');
+        }
 
         return $data;
     }
@@ -2852,15 +2874,7 @@ class WcBetterShippingCalculatorForBrazil
             return '+55';
         }
 
-        $keys = array("{$type}_{$kind}_country_code");
-
-        if ('cellphone' === $kind) {
-            $keys[] = "{$type}_phone_country_code";
-            // Chave antiga (o checkout em blocos gravava com esse nome).
-            $keys[] = "{$type}_phone_country";
-        }
-
-        foreach ($keys as $key) {
+        foreach (self::ddi_meta_keys($type, $kind) as $key) {
             $value = self::normalize_ddi_value(get_user_meta($user_id, $key, true));
             if ('' !== $value) {
                 return $value;
@@ -2868,6 +2882,65 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         return '+55';
+    }
+
+    /**
+     * Chaves de meta do DDI de um telefone/celular, em ordem de PRIORIDADE.
+     *
+     * O celular tem a chave dele e cai, na falta, no DDI do TELEFONE (o bloco
+     * principal). `{tipo}_phone_country` é a chave antiga usada pelo checkout em
+     * blocos — continua sendo lida para não perder o valor de quem já preencheu.
+     *
+     * @param string $type 'billing' | 'shipping'
+     * @param string $kind 'phone' | 'cellphone'
+     * @return array<int,string>
+     */
+    public static function ddi_meta_keys($type, $kind = 'phone')
+    {
+        $keys = array("{$type}_{$kind}_country_code");
+
+        if ('cellphone' === $kind) {
+            $keys[] = "{$type}_phone_country_code";
+            $keys[] = "{$type}_phone_country";
+        }
+
+        return $keys;
+    }
+
+    /**
+     * DDI de um telefone/celular lido do OBJETO do cliente (com fallback no user meta).
+     *
+     * O `WC_Customer` carrega as metas do cadastro; ler dele evita divergir quando a
+     * tela tem um objeto que ainda não foi salvo (ex.: o AJAX do admin do pedido, que
+     * monta o customer na hora).
+     *
+     * @param \WC_Customer $customer
+     * @param int          $user_id
+     * @param string       $type 'billing' | 'shipping'
+     * @param string       $kind 'phone' | 'cellphone'
+     * @return string Ex.: '+55'.
+     */
+    private function customer_ddi($customer, $user_id, $type, $kind = 'phone')
+    {
+        if (! in_array($type, array('billing', 'shipping'), true)) {
+            return '+55';
+        }
+
+        if ($customer instanceof \WC_Customer) {
+            foreach (self::ddi_meta_keys($type, $kind) as $key) {
+                $value = self::normalize_ddi_value($customer->get_meta($key));
+
+                if ('' !== $value) {
+                    return $value;
+                }
+            }
+        }
+
+        if (! $user_id && $customer instanceof \WC_Customer) {
+            $user_id = (int) $customer->get_id();
+        }
+
+        return self::user_ddi($user_id, $type, $kind);
     }
 
     /**

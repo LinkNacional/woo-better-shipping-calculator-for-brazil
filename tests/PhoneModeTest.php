@@ -1299,7 +1299,7 @@ class PhoneModeTest extends WP_UnitTestCase {
             'shipping' => array( 'phone' => '83988888882' ),
         );
 
-        $out = $this->plugin()->add_cellphone_to_customer_details( $data, $customer, 0 );
+        $out = $this->plugin()->add_phone_fields_to_customer_details( $data, $customer, 0 );
 
         $this->assertSame( '83988888885', $out['billing']['cellphone'] );
         $this->assertSame( '83988888880', $out['shipping']['cellphone'] );
@@ -1321,7 +1321,7 @@ class PhoneModeTest extends WP_UnitTestCase {
             'shipping' => array( 'phone' => '83988888882' ),
         );
 
-        $out = $this->plugin()->add_cellphone_to_customer_details( $data, $customer, 0 );
+        $out = $this->plugin()->add_phone_fields_to_customer_details( $data, $customer, 0 );
 
         $this->assertSame( '83988888885', $out['billing']['cellphone'] );
         $this->assertSame( '83988888880', $out['shipping']['cellphone'] );
@@ -1333,7 +1333,7 @@ class PhoneModeTest extends WP_UnitTestCase {
         $customer = new \WC_Customer();
         $customer->update_meta_data( 'billing_cellphone', '83988888885' );
 
-        $out = $this->plugin()->add_cellphone_to_customer_details( array( 'billing' => array() ), $customer, 0 );
+        $out = $this->plugin()->add_phone_fields_to_customer_details( array( 'billing' => array() ), $customer, 0 );
 
         $this->assertArrayNotHasKey( 'cellphone', $out['billing'] );
     }
@@ -1347,7 +1347,7 @@ class PhoneModeTest extends WP_UnitTestCase {
         $customer->update_meta_data( 'billing_cellphone', '+55 83 98888-8885' );
         $customer->update_meta_data( 'shipping_cellphone', '+55 83 98888-8883' );
 
-        $out = $this->plugin()->add_cellphone_to_customer_details( array( 'billing' => array(), 'shipping' => array() ), $customer, 0 );
+        $out = $this->plugin()->add_phone_fields_to_customer_details( array( 'billing' => array(), 'shipping' => array() ), $customer, 0 );
 
         $this->assertSame( '83988888885', $out['billing']['cellphone'] );
         $this->assertSame( '83988888883', $out['shipping']['cellphone'] );

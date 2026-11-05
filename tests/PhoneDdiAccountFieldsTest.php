@@ -209,6 +209,102 @@ class PhoneDdiAccountFieldsTest extends WP_UnitTestCase {
         $this->assertStringContainsString( '+55', $profile );
     }
 
+    // --- "Carregar endereço" no admin do pedido (AJAX) ---------------------
+
+    /**
+     * O `meta-boxes-order.js` preenche `#_<tipo>_<chave>` para CADA chave devolvida
+     * em `billing`/`shipping`. Sem `phone_country_code`/`cellphone_country_code` o
+     * botão "Carregar endereço" trazia o endereço todo e deixava o DDI de fora.
+     */
+    public function test_ajax_customer_details_includes_the_ddi_fields(): void {
+        $user_id = self::factory()->user->create();
+        update_user_meta( $user_id, 'billing_phone_country_code', '+55' );
+        update_user_meta( $user_id, 'billing_cellphone_country_code', '+351' );
+
+        $customer = new \WC_Customer( $user_id );
+        $customer->set_billing_phone( '83988888881' );
+        $customer->update_meta_data( 'billing_cellphone', '83988888882' );
+
+        $data = array(
+            'billing'  => array( 'phone' => '83988888881' ),
+            'shipping' => array( 'phone' => '83988888881' ),
+        );
+
+        $out = $this->plugin()->add_phone_fields_to_customer_details( $data, $customer, $user_id );
+
+        $this->assertSame( '+55', $out['billing']['phone_country_code'] );
+        $this->assertSame( '+351', $out['billing']['cellphone_country_code'] );
+        $this->assertSame( '83988888882', $out['billing']['cellphone'] );
+        // O entrega acompanha (o JS usa `data.shipping`).
+        $this->assertArrayHasKey( 'phone_country_code', $out['shipping'] );
+        $this->assertArrayHasKey( 'cellphone_country_code', $out['shipping'] );
+    }
+
+    public function test_ajax_customer_details_defaults_the_ddi_to_brazil(): void {
+        $user_id = self::factory()->user->create();
+        $customer = new \WC_Customer( $user_id );
+
+        $out = $this->plugin()->add_phone_fields_to_customer_details( array(), $customer, $user_id );
+
+        $this->assertSame( '+55', $out['billing']['phone_country_code'], 'Sem DDI salvo, o campo do admin abre com +55.' );
+        $this->assertSame( '+55', $out['billing']['cellphone_country_code'] );
+        $this->assertSame( '+55', $out['shipping']['phone_country_code'] );
+    }
+
+    public function test_ajax_customer_details_sends_national_numbers_only(): void {
+        $user_id = self::factory()->user->create();
+        $customer = new \WC_Customer( $user_id );
+        $customer->update_meta_data( 'billing_cellphone', '+55 (83) 98888-8882' );
+
+        $data = array(
+            'billing'  => array( 'phone' => '+55 (83) 98888-8881' ),
+            'shipping' => array( 'phone' => '5583988888883' ),
+        );
+
+        $out = $this->plugin()->add_phone_fields_to_customer_details( $data, $customer, $user_id );
+
+        // O campo do admin exibe só o número (o DDI tem campo próprio).
+        $this->assertSame( '83988888881', $out['billing']['phone'] );
+        $this->assertSame( '83988888883', $out['shipping']['phone'] );
+        $this->assertSame( '83988888882', $out['billing']['cellphone'] );
+    }
+
+    public function test_ajax_customer_details_without_cellphone_field(): void {
+        // "Somente Fixo" sem o "Campo de Celular": não há celular para preencher,
+        // mas o DDI do telefone continua indo.
+        update_option( 'woo_better_calc_phone_mode', 'landline_only' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+
+        $user_id = self::factory()->user->create();
+        $customer = new \WC_Customer( $user_id );
+
+        $out = $this->plugin()->add_phone_fields_to_customer_details(
+            array( 'billing' => array( 'phone' => '8332323232' ) ),
+            $customer,
+            $user_id
+        );
+
+        $this->assertSame( '+55', $out['billing']['phone_country_code'], 'O DDI do telefone continua indo.' );
+        $this->assertArrayNotHasKey( 'cellphone', $out['billing'] );
+        $this->assertArrayNotHasKey( 'cellphone_country_code', $out['billing'] );
+    }
+
+    public function test_ajax_customer_details_does_nothing_in_unmanaged_mode(): void {
+        update_option( 'woo_better_calc_phone_mode', 'disabled' );
+
+        $user_id = self::factory()->user->create();
+        $customer = new \WC_Customer( $user_id );
+
+        $out = $this->plugin()->add_phone_fields_to_customer_details(
+            array( 'billing' => array( 'phone' => '+55 83 98888-8881' ) ),
+            $customer,
+            $user_id
+        );
+
+        $this->assertSame( '+55 83 98888-8881', $out['billing']['phone'], 'No modo Desabilitar o valor do WooCommerce fica intacto.' );
+        $this->assertArrayNotHasKey( 'phone_country_code', $out['billing'] );
+    }
+
     // --- Edição de endereço da conta (minha-conta) --------------------------
 
     public function test_edit_address_ddi_value_comes_from_the_account(): void {
