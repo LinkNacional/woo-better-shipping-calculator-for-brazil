@@ -6,7 +6,7 @@
 * Ajuste: títulos, subtítulos e descrições dos campos foram reposicionados para que cada opção seja mais fácil de ler.
 * Ajuste: os links da versão PRO agora apontam para a página comercial de cada plugin.
 * Observação: nenhuma configuração salva mudou de nome, então as configurações existentes continuam funcionando como antes.
-* Correção: o telefone e o celular do pedido (e do cadastro) agora são gravados só com o número, sem o DDI — se o cliente digitar o +55 (ou o 55), ele é retirado do início do número. O DDI continua aparecendo no recibo do pedido, em "Meus pedidos" e no bloco "Dados do Cliente" do admin, e ganhou um campo próprio acima do telefone/celular na edição do pedido. O campo no checkout também não reabre mais com o DDI na frente: um valor antigo do cadastro é preenchido só com o número.
+* Correção: o telefone e o celular do pedido (e do cadastro) agora são gravados só com o número, sem o DDI — se o cliente digitar o +55 (ou o 55), ele é retirado do início do número. O DDI continua aparecendo no recibo do pedido, em "Meus pedidos" e no bloco "Dados do Cliente" do admin, e ganhou um campo próprio acima do telefone/celular na edição do pedido. O campo no checkout também não reabre mais com o DDI na frente: um valor antigo do cadastro é preenchido só com o número. O DDI agora também tem campo próprio acima do telefone e do celular no perfil do usuário (wp-admin) e na edição de endereço da conta (cobrança e entrega).
 
 # 5.2.2 - 26/10/26
 * Novo: opção "Ocultar Checkbox S/N", filha do campo de Número do endereço. Quando habilitada, o atalho "S/N" (sem número) não é criado dentro do campo de Número no checkout em blocos, no checkout clássico/shortcode e na edição de endereço da conta. O cliente continua podendo digitar "S/N" à mão.

@@ -979,6 +979,13 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_action('personal_options_update', $this, 'save_customer_meta_fields_extra', 20, 1);
         $this->loader->add_action('edit_user_profile_update', $this, 'save_customer_meta_fields_extra', 20, 1);
 
+        // Default visual do campo de DDI na tela de perfil (wp-admin).
+        $this->loader->add_action('admin_print_footer_scripts', $this, 'profile_ddi_default_script');
+
+        // Valor exibido na edição de endereço da conta: telefone/celular só com o
+        // número e o DDI do próprio cadastro no campo dele.
+        $this->loader->add_filter('woocommerce_my_account_edit_address_field_value', $this, 'edit_address_field_value', 10, 3);
+
         
         // Hooks para adicionar campos personalizados na página de edição de endereço da conta.
         // REASON: o plugin "Brazilian Market on WooCommerce" registra os campos dele em
@@ -1432,6 +1439,38 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Campo de DDI da EDIÇÃO DE ENDEREÇO da conta (`minha-conta/edit-address/`).
+     *
+     * Fica LOGO ACIMA do telefone/celular (priority do alvo - 1) e é só um campo de
+     * texto opcional: o valor vem de `user_ddi()` pelo filtro
+     * `woocommerce_my_account_edit_address_field_value`. O NOME segue o do checkout
+     * clássico (`*_phone_country`) porque o JS da máscara o usa para restaurar o país.
+     *
+     * @param string $type           'billing' | 'shipping'
+     * @param string $label
+     * @param int    $target_priority Priority do campo que ele acompanha.
+     * @param string $kind           'phone' | 'cellphone' (define o nome do campo).
+     * @return array
+     */
+    private function edit_address_ddi_field($type, $label, $target_priority, $kind = 'phone')
+    {
+        $name = "{$type}_phone_country";
+
+        if ('cellphone' === $kind) {
+            $name = "{$type}_cellphone_country";
+        }
+
+        return array(
+            'label'    => $label,
+            'type'     => 'text',
+            'class'    => array('form-row-wide'),
+            'priority' => max(1, (int) $target_priority - 1),
+            'required' => false,
+            'value'    => self::user_ddi(get_current_user_id(), $type, $kind),
+        );
+    }
+
+    /**
      * Adiciona "Telefone"/"Celular" (e os campos de DDI) aos campos do pedido (admin).
      *
      * Roda em prioridade alta (99) e é puramente ADITIVO — nunca reconstrói o array
@@ -1636,9 +1675,7 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        $digits = preg_replace('/[^0-9]/', '', (string) $value);
-
-        $order->update_meta_data($field_id, '' === $digits ? '' : '+' . $digits);
+        $order->update_meta_data($field_id, self::normalize_ddi_value($value));
     }
 
     /**
@@ -2783,6 +2820,91 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         return self::strip_phone_ddi($value);
+    }
+
+    /**
+     * Normaliza um DDI digitado para o formato E.164 (`+55`).
+     *
+     * Aceita `55`, `+55`, `+ 55`… e devolve '' quando não há dígito (o campo pode ser
+     * limpo; quem lê aplica o default do Brasil).
+     *
+     * @param string $raw
+     * @return string Ex.: '+55' ou ''.
+     */
+    public static function normalize_ddi_value($raw)
+    {
+        $digits = preg_replace('/[^0-9]/', '', (string) $raw);
+
+        return '' === $digits ? '' : '+' . $digits;
+    }
+
+    /**
+     * DDI (em E.164) do telefone/celular de um CADASTRO (user meta).
+     *
+     * Fonte única do valor exibido nos campos de DDI do perfil e da edição de
+     * endereço da conta. Segue a mesma herança do pedido: o celular usa a meta dele
+     * e cai no DDI do telefone; sem nenhum DDI salvo, vale o Brasil (`+55`), que é o
+     * padrão do plugin (a máscara BR não tem seletor de país).
+     *
+     * @param int    $user_id
+     * @param string $type 'billing' | 'shipping'
+     * @param string $kind 'phone' | 'cellphone'
+     * @return string
+     */
+    public static function user_ddi($user_id, $type, $kind = 'phone')
+    {
+        $user_id = absint($user_id);
+
+        if (! $user_id || ! in_array($type, array('billing', 'shipping'), true)) {
+            return '+55';
+        }
+
+        $keys = array("{$type}_{$kind}_country_code");
+
+        if ('cellphone' === $kind) {
+            $keys[] = "{$type}_phone_country_code";
+            // Chave antiga (o checkout em blocos gravava com esse nome).
+            $keys[] = "{$type}_phone_country";
+        }
+
+        foreach ($keys as $key) {
+            $value = self::normalize_ddi_value(get_user_meta($user_id, $key, true));
+            if ('' !== $value) {
+                return $value;
+            }
+        }
+
+        return '+55';
+    }
+
+    /**
+     * Grava (normalizado) o DDI de um telefone/celular no cadastro do usuário.
+     *
+     * Quando o valor chega vazio, o TELEFONE (campo principal) recebe o default do
+     * plugin (`+55`) e o CELULAR fica vazio de propósito: assim a leitura cai no DDI
+     * do telefone (`user_ddi`), sem duplicar a informação.
+     *
+     * @param int    $user_id
+     * @param string $type  'billing' | 'shipping'
+     * @param string $kind  'phone' | 'cellphone'
+     * @param string $raw   Valor postado.
+     * @return void
+     */
+    private function save_user_ddi($user_id, $type, $kind, $raw)
+    {
+        $user_id = absint($user_id);
+
+        if (! $user_id || ! in_array($type, array('billing', 'shipping'), true)) {
+            return;
+        }
+
+        $value = self::normalize_ddi_value($raw);
+
+        if ('' === $value && 'phone' === $kind) {
+            $value = '+55';
+        }
+
+        update_user_meta($user_id, "{$type}_{$kind}_country_code", $value);
     }
 
     /**
@@ -9140,6 +9262,26 @@ class WcBetterShippingCalculatorForBrazil
      * @param array $fields Array de campos do WooCommerce.
      * @return array
      */
+    /**
+     * Campo de DDI da tela de PERFIL (wp-admin).
+     *
+     * A tela não tem como injetar valor no input (o `WC_Admin_Profile` lê o meta
+     * direto), então o campo é declarado aqui e o valor sai do user meta; o default
+     * `+55` aparece quando a meta ainda não existe (`profile_ddi_default_script`).
+     * Sempre opcional: quem manda no telefone é o campo dele.
+     *
+     * @param string $label
+     * @return array
+     */
+    private function profile_ddi_field($label)
+    {
+        return array(
+            'label'       => $label,
+            'description' => '',
+            'class'       => 'short',
+        );
+    }
+
     public function add_customer_meta_fields($fields)
     {
         if (!class_exists('\WC_Customer') || !is_array($fields)
@@ -9185,6 +9327,9 @@ class WcBetterShippingCalculatorForBrazil
         $phone_mode = $this->get_phone_mode();
         $shows_phone = ! in_array($phone_mode, array('cellphone_only', 'disabled'), true);
         $shows_cellphone = $this->phone_mode_stores_cellphone();
+        // O campo de DDI só existe quando o plugin GERENCIA o telefone: nos modos
+        // "Desabilitar" o valor é do WooCommerce e o plugin não guarda o DDI.
+        $shows_ddi = $this->phone_mode_hides_native_option();
         $cellphone_label = ('cellphone_only' === $phone_mode)
             ? __('Celular', 'woo-better-shipping-calculator-for-brazil')
             : __('Celular (secundário)', 'woo-better-shipping-calculator-for-brazil');
@@ -9274,12 +9419,45 @@ class WcBetterShippingCalculatorForBrazil
         $billing['billing_state']    = $take($incoming_billing, 'billing_state', __('Estado', 'woo-better-shipping-calculator-for-brazil'));
         $billing['billing_email']    = $take($incoming_billing, 'billing_email', __('Endereço de e-mail', 'woo-better-shipping-calculator-for-brazil'));
         if ($shows_phone) {
+            // O CADASTRO guarda só o número (o DDI vive na meta `*_country_code` e só
+            // é recomposto na exibição), então o DDI ganha um campo próprio LOGO ACIMA
+            // do telefone — mesma convenção do admin do pedido. O valor sai de
+            // `user_ddi()`; sem DDI salvo vale o `+55`.
+            if ($shows_ddi) {
+                $billing['billing_phone_country_code'] = $this->profile_ddi_field(
+                    sprintf(
+                        /* translators: %s: nome do campo de telefone que este DDI acompanha. */
+                        __('DDI (%s)', 'woo-better-shipping-calculator-for-brazil'),
+                        $this->get_phone_field_label()
+                    )
+                );
+            }
             $billing['billing_phone'] = array('label' => $this->get_phone_field_label(), 'description' => '');
         } elseif ('disabled' === $phone_mode && isset($incoming_billing['billing_phone'])) {
             // Modo "Desabilitar": preserva o campo nativo do telefone intacto.
             $billing['billing_phone'] = $incoming_billing['billing_phone'];
         }
         if ($shows_cellphone) {
+            // No "Somente Celular" o celular É o campo principal: o DDI dele é o do
+            // bloco principal (`*_phone_country_code`), como no checkout.
+            if ($shows_phone && $shows_ddi) {
+                $billing['billing_cellphone_country_code'] = $this->profile_ddi_field(
+                    sprintf(
+                        /* translators: %s: nome do campo de celular que este DDI acompanha. */
+                        __('DDI (%s)', 'woo-better-shipping-calculator-for-brazil'),
+                        $cellphone_label
+                    )
+                );
+            } elseif ($shows_ddi) {
+                $billing['billing_phone_country_code'] = $this->profile_ddi_field(
+                    sprintf(
+                        /* translators: %s: nome do campo de celular que este DDI acompanha. */
+                        __('DDI (%s)', 'woo-better-shipping-calculator-for-brazil'),
+                        $cellphone_label
+                    )
+                );
+            }
+
             $billing['billing_cellphone'] = array('label' => $cellphone_label, 'description' => '');
         }
 
@@ -9309,18 +9487,126 @@ class WcBetterShippingCalculatorForBrazil
         $shipping['shipping_country']  = $take($incoming_shipping, 'shipping_country', __('País', 'woo-better-shipping-calculator-for-brazil'));
         $shipping['shipping_state']    = $take($incoming_shipping, 'shipping_state', __('Estado', 'woo-better-shipping-calculator-for-brazil'));
         if ($shows_phone) {
+            if ($shows_ddi) {
+                $shipping['shipping_phone_country_code'] = $this->profile_ddi_field(
+                    sprintf(
+                        /* translators: %s: nome do campo de telefone que este DDI acompanha. */
+                        __('DDI (%s)', 'woo-better-shipping-calculator-for-brazil'),
+                        $this->get_phone_field_label()
+                    )
+                );
+            }
             $shipping['shipping_phone'] = array('label' => $this->get_phone_field_label(), 'description' => '');
         } elseif ('disabled' === $phone_mode && isset($incoming_shipping['shipping_phone'])) {
             // Modo "Desabilitar": preserva o campo nativo do telefone intacto.
             $shipping['shipping_phone'] = $incoming_shipping['shipping_phone'];
         }
         if ($shows_cellphone) {
+            if ($shows_phone && $shows_ddi) {
+                $shipping['shipping_cellphone_country_code'] = $this->profile_ddi_field(
+                    sprintf(
+                        /* translators: %s: nome do campo de celular que este DDI acompanha. */
+                        __('DDI (%s)', 'woo-better-shipping-calculator-for-brazil'),
+                        $cellphone_label
+                    )
+                );
+            } elseif ($shows_ddi) {
+                $shipping['shipping_phone_country_code'] = $this->profile_ddi_field(
+                    sprintf(
+                        /* translators: %s: nome do campo de celular que este DDI acompanha. */
+                        __('DDI (%s)', 'woo-better-shipping-calculator-for-brazil'),
+                        $cellphone_label
+                    )
+                );
+            }
+
             $shipping['shipping_cellphone'] = array('label' => $cellphone_label, 'description' => '');
         }
 
         $fields['shipping']['fields'] = $shipping;
 
         return $fields;
+    }
+
+    /**
+     * Semeia o `+55` nos campos de DDI vazios da tela de perfil (wp-admin).
+     *
+     * O `WC_Admin_Profile` imprime o valor do user meta direto no `<input>` e NÃO
+     * passa por filtro; numa conta que nunca salvou o DDI o campo sairia vazio,
+     * embora o telefone esteja preenchido. Aqui ele abre com o default do plugin —
+     * NADA é gravado (o save é quem persiste, ver `save_customer_meta_fields_extra`).
+     *
+     * @return void
+     */
+    public function profile_ddi_default_script()
+    {
+        if (! function_exists('get_current_screen')) {
+            return;
+        }
+
+        $screen = get_current_screen();
+
+        if (! $screen || ! in_array($screen->id, array('profile', 'user-edit'), true)) {
+            return;
+        }
+
+        $ids = array(
+            'billing_phone_country_code',
+            'shipping_phone_country_code',
+            'billing_cellphone_country_code',
+            'shipping_cellphone_country_code',
+        );
+
+        $js = '(function(){'
+            . 'var ids=' . wp_json_encode($ids) . ';'
+            . 'ids.forEach(function(id){var el=document.getElementById(id);'
+            . 'if(el&&el.value===""){el.value="+55";}});'
+            . '})();';
+
+        if (function_exists('wp_print_inline_script_tag')) {
+            wp_print_inline_script_tag($js);
+            return;
+        }
+
+        echo '<script>' . $js . '</script>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- script estático; os ids vêm de um array fixo.
+    }
+
+    /**
+     * Valor exibido nos campos da EDIÇÃO DE ENDEREÇO da conta (minha-conta).
+     *
+     * Duas coisas, na mesma linha de raciocínio do checkout:
+     *   - o DDI do campo novo (`*_phone_country` / `*_cellphone_country`) vem do
+     *     cadastro (`user_ddi()`), com `+55` de default;
+     *   - telefone/celular saem SÓ COM O NÚMERO (`stored_phone_display_value`), que
+     *     é como o cadastro e o pedido guardam — sem isso um valor antigo com `+55`
+     *     e máscara reabriria o campo com o DDI na frente.
+     *
+     * @param mixed  $value        Valor vindo do user meta.
+     * @param string $key          Nome do campo (ex.: `billing_phone`).
+     * @param string $load_address 'billing' | 'shipping'.
+     * @return mixed
+     */
+    public function edit_address_field_value($value, $key, $load_address)
+    {
+        if (! in_array($load_address, array('billing', 'shipping'), true) || ! is_string($key)) {
+            return $value;
+        }
+
+        if ("{$load_address}_phone_country" === $key) {
+            $kind = ('cellphone_only' === $this->get_phone_mode()) ? 'cellphone' : 'phone';
+
+            return self::user_ddi(get_current_user_id(), $load_address, $kind);
+        }
+
+        if ("{$load_address}_cellphone_country" === $key) {
+            return self::user_ddi(get_current_user_id(), $load_address, 'cellphone');
+        }
+
+        if (in_array($key, array("{$load_address}_phone", "{$load_address}_cellphone"), true)) {
+            return self::stored_phone_display_value($value);
+        }
+
+        return $value;
     }
 
     /**
@@ -9371,6 +9657,19 @@ class WcBetterShippingCalculatorForBrazil
             // com um valor digitado pela metade).
 
             update_user_meta($user_id, 'billing_document', $document);
+        }
+
+        // 1b. DDI do telefone/celular -> user meta do cadastro (`*_country_code`).
+        // O core grava o que foi postado; aqui só NORMALIZAMOS para o E.164 (e
+        // aplicamos o default do Brasil no telefone, que é o bloco principal).
+        foreach (array('billing', 'shipping') as $type) {
+            if (isset($_POST["{$type}_phone_country_code"])) {
+                $this->save_user_ddi($user_id, $type, 'phone', sanitize_text_field(wp_unslash($_POST["{$type}_phone_country_code"])));
+            }
+
+            if (isset($_POST["{$type}_cellphone_country_code"])) {
+                $this->save_user_ddi($user_id, $type, 'cellphone', sanitize_text_field(wp_unslash($_POST["{$type}_cellphone_country_code"])));
+            }
         }
 
         // 2. Telefone NATIVO -> SÓ O NÚMERO (sem DDI e sem máscara/espaços).
@@ -9504,6 +9803,10 @@ class WcBetterShippingCalculatorForBrazil
         // Contato (telefone/celular) — espelha o checkout clássico.
         $phone_priority = ($phone_highlight === 'yes') ? 2 : 90;
 
+        // Os campos de DDI são SEMPRE recriados abaixo, conforme o modo: nunca
+        // reaproveita um `*_phone_country` escondido de outro plugin/versão.
+        unset($fields['billing_phone_country'], $fields['billing_cellphone_country']);
+
         if ( 'cellphone_only' === $this->get_phone_mode() ) {
             // "Somente Celular": o "Celular" é o campo principal (substitui o telefone).
             unset( $fields['billing_phone'] );
@@ -9523,6 +9826,33 @@ class WcBetterShippingCalculatorForBrazil
                 'type'              => 'tel',
                 'custom_attributes' => array( self::CELLPHONE_FIELD_ATTR => '1' ),
             );
+
+            // O DDI acompanha o campo de celular. No "Somente Celular" ele É o campo
+            // principal, então usa a chave do bloco principal (`*_phone_country`) —
+            // a mesma que o JS da máscara lê e o mesmo fallback do pedido.
+            if ($is_main_cellphone) {
+                $fields['billing_phone_country'] = $this->edit_address_ddi_field(
+                    'billing',
+                    sprintf(
+                        /* translators: %s: nome do campo de celular que este DDI acompanha. */
+                        __('DDI (%s)', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Celular', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    $phone_priority,
+                    'cellphone'
+                );
+            } else {
+                $fields['billing_cellphone_country'] = $this->edit_address_ddi_field(
+                    'billing',
+                    sprintf(
+                        /* translators: %s: nome do campo de celular que este DDI acompanha. */
+                        __('DDI (%s)', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Celular', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    200,
+                    'cellphone'
+                );
+            }
         }
 
         // Telefone nativo (principal) — quando o plugin GERENCIA o telefone e ele NÃO
@@ -9530,15 +9860,6 @@ class WcBetterShippingCalculatorForBrazil
         // aparece mesmo quando NÃO é obrigatório (a obrigatoriedade segue "Telefone
         // (Contato) Obrigatório").
         if ( $this->phone_mode_hides_native_option() && 'cellphone_only' !== $this->get_phone_mode() ) {
-            if (! isset($fields['billing_phone_country'])) {
-                $fields['billing_phone_country'] = array(
-                    'type'     => 'hidden',
-                    'class'    => array('woo-better-hidden-field'),
-                    'default'  => '+55',
-                    'required' => false,
-                );
-            }
-
             if (isset($fields['billing_phone'])) {
                 $fields['billing_phone']['label']    = $this->get_phone_field_label();
                 $fields['billing_phone']['required'] = ($phone_required === 'yes');
@@ -9556,6 +9877,19 @@ class WcBetterShippingCalculatorForBrazil
                     'validate'    => array('phone')
                 );
             }
+
+            // DDI do telefone: campo PRÓPRIO, logo acima dele (o cadastro guarda só o
+            // número). O nome `*_phone_country` é o mesmo que o JS da máscara lê para
+            // restaurar o país.
+            $fields['billing_phone_country'] = $this->edit_address_ddi_field(
+                'billing',
+                sprintf(
+                    /* translators: %s: nome do campo de telefone que este DDI acompanha. */
+                    __('DDI (%s)', 'woo-better-shipping-calculator-for-brazil'),
+                    $this->get_phone_field_label()
+                ),
+                isset($fields['billing_phone']['priority']) ? (int) $fields['billing_phone']['priority'] : $phone_priority
+            );
         }
         
         // Adicionar campos de tipo de pessoa
@@ -9897,6 +10231,9 @@ class WcBetterShippingCalculatorForBrazil
         // Contato (telefone/celular) — espelha o checkout clássico.
         $phone_priority = ($phone_highlight === 'yes') ? 2 : 90;
 
+        // Os DDIs são sempre recriados abaixo (ver o mesmo comentário na cobrança).
+        unset($fields['shipping_phone_country'], $fields['shipping_cellphone_country']);
+
         if ( 'cellphone_only' === $this->get_phone_mode() ) {
             unset( $fields['shipping_phone'] );
         }
@@ -9912,20 +10249,35 @@ class WcBetterShippingCalculatorForBrazil
                 'type'              => 'tel',
                 'custom_attributes' => array( self::CELLPHONE_FIELD_ATTR => '1' ),
             );
+
+            if ($is_main_cellphone) {
+                $fields['shipping_phone_country'] = $this->edit_address_ddi_field(
+                    'shipping',
+                    sprintf(
+                        /* translators: %s: nome do campo de celular que este DDI acompanha. */
+                        __('DDI (%s)', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Celular', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    $phone_priority,
+                    'cellphone'
+                );
+            } else {
+                $fields['shipping_cellphone_country'] = $this->edit_address_ddi_field(
+                    'shipping',
+                    sprintf(
+                        /* translators: %s: nome do campo de celular que este DDI acompanha. */
+                        __('DDI (%s)', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Celular', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    200,
+                    'cellphone'
+                );
+            }
         }
 
         // Telefone nativo (principal) — quando o plugin gerencia e não foi substituído
         // pelo "Celular" (modo "Somente Celular"). Aparece mesmo quando opcional.
         if ($this->phone_mode_hides_native_option() && 'cellphone_only' !== $this->get_phone_mode()) {
-            if (! isset($fields['shipping_phone_country'])) {
-                $fields['shipping_phone_country'] = array(
-                    'type'     => 'hidden',
-                    'class'    => array('woo-better-hidden-field'),
-                    'default'  => '+55',
-                    'required' => false,
-                );
-            }
-
             if (isset($fields['shipping_phone'])) {
                 $fields['shipping_phone']['label']    = $this->get_phone_field_label();
                 $fields['shipping_phone']['required'] = ($phone_required === 'yes');
@@ -9943,6 +10295,16 @@ class WcBetterShippingCalculatorForBrazil
                     'validate'    => array('phone')
                 );
             }
+
+            $fields['shipping_phone_country'] = $this->edit_address_ddi_field(
+                'shipping',
+                sprintf(
+                    /* translators: %s: nome do campo de telefone que este DDI acompanha. */
+                    __('DDI (%s)', 'woo-better-shipping-calculator-for-brazil'),
+                    $this->get_phone_field_label()
+                ),
+                isset($fields['shipping_phone']['priority']) ? (int) $fields['shipping_phone']['priority'] : $phone_priority
+            );
         }
         
         // Campo de bairro
@@ -10110,6 +10472,27 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
         
+        // Salvar o DDI do telefone/celular (o campo próprio desta tela). O telefone
+        // grava só o número; o DDI vive aqui, na meta `*_country_code` do cadastro.
+        if ($this->phone_mode_hides_native_option()) {
+            foreach (array('billing', 'shipping') as $type) {
+                if ($load_address !== $type) {
+                    continue;
+                }
+
+                // "Somente Celular": o celular é o principal e usa a chave do bloco
+                // principal (o mesmo nome de campo do checkout).
+                if (isset($_POST["{$type}_phone_country"])) {
+                    $kind = ('cellphone_only' === $this->get_phone_mode()) ? 'cellphone' : 'phone';
+                    $this->save_user_ddi($user_id, $type, $kind, sanitize_text_field(wp_unslash($_POST["{$type}_phone_country"])));
+                }
+
+                if (isset($_POST["{$type}_cellphone_country"])) {
+                    $this->save_user_ddi($user_id, $type, 'cellphone', sanitize_text_field(wp_unslash($_POST["{$type}_cellphone_country"])));
+                }
+            }
+        }
+
         // Salvar campo de telefone (só quando o woo-better gerencia o telefone; no
         // modo "Desabilitar" o WooCommerce salva o valor nativo por conta própria).
         // Gravado SÓ COM O NÚMERO, como no pedido: o DDI digitado sai do início.
