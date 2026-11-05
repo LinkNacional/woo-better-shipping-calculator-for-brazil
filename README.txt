@@ -127,7 +127,7 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 == Changelog ==
 
 # 5.2.4 - 2026-11-05
-* Fix: the order (and customer) phone and cellphone are now saved with the number only, without the country code (DDI) — if the customer types the +55 (or just 55), it is removed from the beginning of the number. The country code still shows up on the order receipt, on "My account > Orders" and in the admin "Customer details" block, and it now has its own field above the phone/cellphone when editing the order.
+* Fix: the order (and customer) phone and cellphone are now saved with the number only, without the country code (DDI) — if the customer types the +55 (or just 55), it is removed from the beginning of the number. The country code still shows up on the order receipt, on "My account > Orders" and in the admin "Customer details" block, and it now has its own field above the phone/cellphone when editing the order. The checkout field no longer opens with the country code either: an old value from the account is filled in with the number only.
 
 # 5.2.3 - 2026-10-27
 * Tweak: the phone field placeholder now follows the "Phone Field Behavior" — the landline format for "Landline Only", the mobile format for "Cellphone Only" and for the Cellphone field, and an area-code hint ("DDD + number") in the mode that accepts both formats. The "+55" was removed from the text: it is added automatically when the order is saved, and the customer never types it.

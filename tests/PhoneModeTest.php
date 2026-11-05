@@ -80,18 +80,25 @@ class PhoneModeTest extends WP_UnitTestCase {
     // --- Resíduo inválido no perfil/sessão (DDI repetido) --------------------
 
     /**
-     * Um valor com o DDI colado várias vezes (`83988888885555555…`, resíduo de um
-     * build antigo) NÃO pode voltar para o campo: o E.164 limita o número a 15
-     * dígitos. Era isso que fazia o telefone "aparecer do nada" no checkout.
+     * Dois cortes ao SEMEAR o campo: o lixo (DDI colado várias vezes) vira vazio e
+     * um valor antigo com `+55`/máscara é semeado só com o número — o mesmo formato
+     * que o pedido grava (o Bling reprova o `+55`).
      */
-    public function test_sanitize_stored_phone_discards_repeated_ddi(): void {
+    public function test_sanitize_stored_phone_discards_lixo_and_strips_the_ddi(): void {
         $public_class = \Lkn\WcBetterShippingCalculatorForBrazil\PublicView\WcBetterShippingCalculatorForBrazilPublic::class;
 
         $this->assertSame( '', $public_class::sanitize_stored_phone( '839888888855555555555555555555555555555555555' ) );
         $this->assertSame( '', $public_class::sanitize_stored_phone( str_repeat( '9', 16 ) ) );
-        // Telefone de verdade (com e sem formatação) passa intacto.
+        // Telefone de verdade (com e sem formatação) sai SÓ com o número.
         $this->assertSame( '83988888885', $public_class::sanitize_stored_phone( '83988888885' ) );
-        $this->assertSame( '+55 (83) 98888-8885', $public_class::sanitize_stored_phone( '+55 (83) 98888-8885' ) );
+        $this->assertSame( '83988888885', $public_class::sanitize_stored_phone( '+55 (83) 98888-8885' ) );
+        $this->assertSame( '83988888885', $public_class::sanitize_stored_phone( '55 83 98888-8885' ) );
+        // DDD 55 (RS) não é DDI: o 55 do início fica.
+        $this->assertSame( '55988888888', $public_class::sanitize_stored_phone( '55988888888' ) );
+        // Número de OUTRO país fica intacto (a lib precisa do `+` para o país).
+        $this->assertSame( '+351912345678', $public_class::sanitize_stored_phone( '+351912345678' ) );
+        // Celular (o campo que reabria com o DDI no checkout).
+        $this->assertSame( '83988888881', $public_class::sanitize_stored_phone( '+55 (83) 98888-8881' ) );
         $this->assertSame( '', $public_class::sanitize_stored_phone( '' ) );
         $this->assertSame( '', $public_class::sanitize_stored_phone( 'sem numero' ) );
     }
@@ -109,7 +116,7 @@ class PhoneModeTest extends WP_UnitTestCase {
         $values  = $public->saved_phone_values();
 
         $this->assertSame( '', $values['billing_phone'], 'Valor inválido do perfil não é semeado no campo.' );
-        $this->assertSame( '+5583988888885', $values['shipping_phone'] );
+        $this->assertSame( '83988888885', $values['shipping_phone'], 'Valor antigo com DDI é semeado só com o número.' );
     }
 
     /**
@@ -197,7 +204,8 @@ class PhoneModeTest extends WP_UnitTestCase {
         $customer->set_shipping_phone( '' );
         update_user_meta( $user_id, 'shipping_phone', '839888888855555555555555555555555555555555555' );
         $this->assertSame( '', $this->plugin()->sanitize_checkout_phone_default_value( null, 'shipping_phone' ) );
-        $this->assertNull( $this->plugin()->sanitize_checkout_phone_default_value( null, 'billing_phone' ) );
+        // O telefone válido do cadastro volta SEM o DDI (é como o pedido grava).
+        $this->assertSame( '83988888885', $this->plugin()->sanitize_checkout_phone_default_value( null, 'billing_phone' ) );
         // Outros campos e valores já resolvidos por terceiros seguem intactos.
         $this->assertNull( $this->plugin()->sanitize_checkout_phone_default_value( null, 'billing_postcode' ) );
         $this->assertSame( 'via-third-party', $this->plugin()->sanitize_checkout_phone_default_value( 'via-third-party', 'shipping_phone' ) );
