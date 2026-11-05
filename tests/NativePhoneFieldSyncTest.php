@@ -192,8 +192,8 @@ class NativePhoneFieldSyncTest extends WP_UnitTestCase {
         $ref->setAccessible( true );
         $ref->invoke( $this->plugin(), $order );
 
-        $this->assertSame( '+5583988888884', get_user_meta( $user_id, 'billing_phone', true ) );
-        $this->assertSame( '+5583988888884', get_user_meta( $user_id, 'shipping_phone', true ) );
+        $this->assertSame( '83988888884', get_user_meta( $user_id, 'billing_phone', true ) );
+        $this->assertSame( '83988888884', get_user_meta( $user_id, 'shipping_phone', true ) );
     }
 
     /**
@@ -219,7 +219,7 @@ class NativePhoneFieldSyncTest extends WP_UnitTestCase {
         $ref->invoke( $this->plugin(), $order );
 
         $this->assertSame( '83 98888-8885', get_user_meta( $user_id, 'billing_phone', true ), 'Lixo não pode sobrescrever o telefone do perfil.' );
-        $this->assertSame( '+5583988888885', get_user_meta( $user_id, 'shipping_phone', true ) );
+        $this->assertSame( '83988888885', get_user_meta( $user_id, 'shipping_phone', true ) );
     }
 
     public function test_sync_customer_phone_does_nothing_in_disabled_mode(): void {
@@ -257,7 +257,7 @@ class NativePhoneFieldSyncTest extends WP_UnitTestCase {
         $ref->setAccessible( true );
         $ref->invoke( $this->plugin(), $order );
 
-        $this->assertSame( '+5583988888884', WC()->customer->get_billing_phone() );
+        $this->assertSame( '83988888884', WC()->customer->get_billing_phone() );
     }
 
     public function test_classic_checkout_customer_phone_is_normalized(): void {
@@ -276,8 +276,8 @@ class NativePhoneFieldSyncTest extends WP_UnitTestCase {
             'shipping_phone_country' => '+55',
         ) );
 
-        $this->assertSame( '+5583988888884', $customer->get_billing_phone() );
-        $this->assertSame( '+5583988888884', $customer->get_shipping_phone() );
+        $this->assertSame( '83988888884', $customer->get_billing_phone() );
+        $this->assertSame( '83988888884', $customer->get_shipping_phone() );
     }
 
     public function test_classic_checkout_customer_phone_untouched_in_disabled(): void {

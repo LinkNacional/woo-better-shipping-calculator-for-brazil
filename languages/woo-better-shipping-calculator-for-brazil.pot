@@ -1440,3 +1440,9 @@ msgstr ""
 #: Public/jsCompiled/WcBetterShippingCalculatorForBrazilPublicShortcodeIEField.COMPILED.js:1
 msgid "Isento"
 msgstr ""
+
+#. translators: %s: nome do campo de telefone que este DDI acompanha (ex.: "Celular/Telefone").
+#: Includes/WcBetterShippingCalculatorForBrazil.php:1594
+#, php-format
+msgid "DDI (%s)"
+msgstr ""

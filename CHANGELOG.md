@@ -1,3 +1,6 @@
+# 5.2.4 - 05/11/26
+* Correção: o telefone e o celular do pedido (e do cadastro) agora são gravados só com o número, sem o DDI — se o cliente digitar o +55 (ou o 55), ele é retirado do início do número. O DDI continua aparecendo no recibo do pedido, em "Meus pedidos" e no bloco "Dados do Cliente" do admin, e ganhou um campo próprio acima do telefone/celular na edição do pedido.
+
 # 5.2.3 - 27/10/26
 * Ajuste: o placeholder do telefone agora segue o "Comportamento do Campo de Telefone" — o formato do fixo no "Somente Fixo", o formato do celular no "Somente Celular" e no campo de Celular, e uma dica de DDD ("(DDD) número") no modo que aceita os dois formatos. O "+55" saiu do texto: ele é incluído automaticamente ao salvar o pedido e o cliente nunca o digita.
 * Ajuste: o teclado do campo de telefone no celular volta a ser o de telefone (com a tecla "+"), em vez do numérico puro — assim o cliente consegue digitar o código do país. A máscara continua aceitando apenas os dígitos.

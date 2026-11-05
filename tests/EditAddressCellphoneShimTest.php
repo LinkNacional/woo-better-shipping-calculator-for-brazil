@@ -118,7 +118,7 @@ class EditAddressCellphoneShimTest extends WP_UnitTestCase {
 
         $this->plugin()->save_edit_address_custom_fields( $user_id, 'billing' );
 
-        $this->assertSame( '+5511912345678', get_user_meta( $user_id, 'billing_cellphone', true ) );
+        $this->assertSame( '11912345678', get_user_meta( $user_id, 'billing_cellphone', true ) );
     }
 
     public function test_save_mirrors_shipping_phone_into_cellphone(): void {
@@ -134,7 +134,7 @@ class EditAddressCellphoneShimTest extends WP_UnitTestCase {
 
         $this->plugin()->save_edit_address_custom_fields( $user_id, 'shipping' );
 
-        $this->assertSame( '+5521988887777', get_user_meta( $user_id, 'shipping_cellphone', true ) );
+        $this->assertSame( '21988887777', get_user_meta( $user_id, 'shipping_cellphone', true ) );
     }
 
     public function test_save_does_not_mirror_when_not_shim(): void {

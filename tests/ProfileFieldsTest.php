@@ -16,7 +16,8 @@
  *     conjunto do woo-better (documento unificado, IE/IM, número, bairro, nascimento,
  *     gênero, Telefone/Celular em cobrança E entrega);
  *   - save_customer_meta_fields_extra (personal_options_update / edit_user_profile_update,
- *     prioridade 20) divide o documento em CPF/CNPJ/persontype e grava os telefones em E.164.
+ *     prioridade 20) divide o documento em CPF/CNPJ/persontype e grava os telefones
+ *     SÓ COM O NÚMERO (sem o DDI, que o Bling reprova).
  *
  * E, com "Comportamento do Campo Empresa" = Desabilitado, o campo Empresa (cobrança e
  * entrega) sai da tela: a lista do perfil é hardcoded em
@@ -189,7 +190,7 @@ class ProfileFieldsTest extends WP_UnitTestCase {
         return WC()->session;
     }
 
-    public function test_save_normalizes_phone_to_e164_and_splits_document(): void {
+    public function test_save_normalizes_phone_to_digits_and_splits_document(): void {
         $this->ensure_wc_ready();
         update_option( 'woo_better_calc_person_type_select', 'both' );
         // O campo "Celular" precisa estar ATIVO (é o que faz a tela do perfil exibir
@@ -211,9 +212,9 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 
         $_POST = $backup;
 
-        $this->assertSame( '+5583988888882', get_user_meta( $user_id, 'billing_phone', true ), 'Telefone deve ser E.164 (+55 + dígitos), sem máscara.' );
+        $this->assertSame( '83988888882', get_user_meta( $user_id, 'billing_phone', true ), 'Telefone deve ficar só com o número (sem DDI), sem máscara.' );
         $this->assertSame( '83988888885', get_user_meta( $user_id, 'billing_cellphone', true ), 'O "Campo de Celular" VISÍVEL é simples → sem DDI (só dígitos).' );
-        $this->assertSame( '+5583988888882', get_user_meta( $user_id, 'shipping_phone', true ) );
+        $this->assertSame( '83988888882', get_user_meta( $user_id, 'shipping_phone', true ) );
         $this->assertSame( '1', get_user_meta( $user_id, 'billing_persontype', true ), 'CPF deve definir persontype=1.' );
         $this->assertSame( '493.147.600-73', get_user_meta( $user_id, 'billing_cpf', true ) );
         $this->assertSame( '', get_user_meta( $user_id, 'billing_cnpj', true ) );
