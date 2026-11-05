@@ -243,16 +243,25 @@ class PhoneDdiStorageTest extends WP_UnitTestCase {
         $this->assertArrayNotHasKey( 'cellphone', $fields );
     }
 
-    public function test_admin_hidden_shim_cellphone_has_no_ddi_field(): void {
-        // No shim o Celular é o ESPELHO do telefone: o DDI é o do telefone (o save do
-        // pedido sincroniza a meta), então ele não ganha um campo de DDI próprio.
+    public function test_admin_hidden_shim_cellphone_has_its_own_ddi_field(): void {
+        // No shim o Celular é o ESPELHO do telefone, mas o ADMIN do pedido é o único
+        // lugar onde ele aparece editável — então ele leva o DDI junto, como os
+        // outros campos de celular. Se a meta dele está vazia, o campo abre com o DDI
+        // do telefone (fallback do `order_ddi`).
         $this->use_brazil_mask();
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
         update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
-        $fields = $this->plugin()->ensure_admin_phone_fields_billing( array(), new \WC_Order() );
+        $order = new \WC_Order();
+        $order->update_meta_data( '_billing_phone_country_code', '+351' );
 
-        $this->assertSame( array( 'phone_country_code', 'phone', 'cellphone' ), array_keys( $fields ) );
+        $fields = $this->plugin()->ensure_admin_phone_fields_billing( array(), $order );
+
+        $this->assertSame(
+            array( 'phone_country_code', 'phone', 'cellphone_country_code', 'cellphone' ),
+            array_keys( $fields )
+        );
+        $this->assertSame( '+351', $fields['cellphone_country_code']['value'], 'Sem DDI próprio, herda o do telefone.' );
     }
 
     /**
@@ -275,6 +284,31 @@ class PhoneDdiStorageTest extends WP_UnitTestCase {
         $this->plugin()->normalize_order_phone_on_save( $order );
 
         $this->assertSame( '+351', $order->get_meta( '_billing_cellphone_country_code' ), 'O DDI do espelho segue o do telefone.' );
+    }
+
+    /**
+     * O outro lado do espelho: no ADMIN do pedido o campo de DDI do celular é postado,
+     * então o valor digitado MANDA — o espelho não passa por cima.
+     */
+    public function test_order_save_keeps_the_admin_cellphone_ddi(): void {
+        $this->use_brazil_mask();
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $order = new \WC_Order();
+        $order->set_billing_phone( '83988888881' );
+        $order->update_meta_data( '_billing_phone_country_code', '+55' );
+        $order->update_meta_data( '_billing_cellphone', '83988888881' );
+        $order->update_meta_data( '_billing_cellphone_country_code', '+351' );
+
+        $backup = $_POST;
+        $_POST  = array( '_billing_cellphone_country_code' => '+351' );
+
+        $this->plugin()->normalize_order_phone_on_save( $order );
+
+        $_POST = $backup;
+
+        $this->assertSame( '+351', $order->get_meta( '_billing_cellphone_country_code' ), 'O DDI digitado no admin não é espelhado por cima.' );
     }
 
     public function test_order_save_keeps_the_visible_cellphone_ddi(): void {
