@@ -122,35 +122,23 @@ class WcBetterShippingCalculatorForBrazilPublic
     }
 
     /**
-     * Telefone salvo, DESCARTANDO lixo na hora de SEMEAR o campo.
+     * Telefone salvo, PRONTO para SEMEAR o campo: só o número, sem o DDI.
      *
-     * O perfil/sessão podem guardar um resíduo antigo com o DDI repetido
-     * (`83988888885555555…` — um build antigo colava o `+55` a cada sync). O E.164
-     * limita o número a 15 dígitos, então algo acima disso não é telefone e não é
-     * exibido no campo (era o que fazia o valor "aparecer do nada").
+     * O core/chave é `stored_phone_display_value()` — a MESMA regra do seed do
+     * checkout clássico e da gravação: lixo (mais dígitos do que o E.164 permite)
+     * vira vazio, número de outro país fica intacto e o Brasil sai SÓ COM O NÚMERO
+     * (sem `+55`/`55` e sem máscara), que é como o pedido grava. Sem esse corte um
+     * cadastro antigo reabria o campo com o DDI na frente.
      *
-     * Só filtra a EXIBIÇÃO: valores que batem um formato possível passam intactos
-     * (a máscara formata o que der) e NADA é apagado do perfil/sessão — quem recusa
-     * o número inválido é a validação no envio do formulário.
+     * Só filtra a EXIBIÇÃO: NADA é apagado do perfil/sessão — quem recusa o número
+     * inválido é a validação no envio do formulário.
      *
      * @param string $value Valor cru (com ou sem formatação).
-     * @return string O valor original quando pode ser um telefone; '' caso contrário.
+     * @return string Valor nacional quando pode ser um telefone; '' caso contrário.
      */
     public static function sanitize_stored_phone($value)
     {
-        $value = trim((string) $value);
-
-        if ('' === $value) {
-            return '';
-        }
-
-        $digits = preg_replace('/[^0-9]/', '', $value);
-
-        if ('' === $digits || strlen($digits) > 15) {
-            return '';
-        }
-
-        return $value;
+        return \Lkn\WcBetterShippingCalculatorForBrazil\Includes\WcBetterShippingCalculatorForBrazil::stored_phone_display_value($value);
     }
 
     /**
@@ -162,7 +150,8 @@ class WcBetterShippingCalculatorForBrazilPublic
      * o sync do campo já grava no perfil (`persist_phone_values`), nada se perde.
      *
      * Os dois passam pelo `sanitize_stored_phone`, para um resíduo inválido não ser
-     * semeado no campo.
+     * semeado no campo e para um valor antigo com `+55`/máscara abrir só com o
+     * número (o mesmo formato que o pedido grava).
      *
      * @return array
      */

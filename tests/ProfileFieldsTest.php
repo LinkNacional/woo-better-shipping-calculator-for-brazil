@@ -16,7 +16,8 @@
  *     conjunto do woo-better (documento unificado, IE/IM, número, bairro, nascimento,
  *     gênero, Telefone/Celular em cobrança E entrega);
  *   - save_customer_meta_fields_extra (personal_options_update / edit_user_profile_update,
- *     prioridade 20) divide o documento em CPF/CNPJ/persontype e grava os telefones em E.164.
+ *     prioridade 20) divide o documento em CPF/CNPJ/persontype e grava os telefones
+ *     SÓ COM O NÚMERO (sem o DDI, que o Bling reprova).
  *
  * E, com "Comportamento do Campo Empresa" = Desabilitado, o campo Empresa (cobrança e
  * entrega) sai da tela: a lista do perfil é hardcoded em
@@ -121,9 +122,9 @@ class ProfileFieldsTest extends WP_UnitTestCase {
     }
 
     public function test_cellphone_present_in_shim_mode(): void {
-        // "Celular e Fixo" + "Campo de Celular" DESLIGADO (shim): o plugin ARMAZENA a
-        // meta `*_cellphone`, então o campo secundário deve aparecer no perfil (igual
-        // ao admin do pedido) — antes sumia.
+        // "Celular e Fixo" + "Campo de Celular" DESLIGADO (shim): o `*_cellphone` é só
+        // um ESPELHO do telefone, então ele não ganha campo no perfil — o save copia
+        // o telefone (e o DDI) para a meta dele (`save_customer_meta_fields_extra`).
         update_option( 'woo_better_calc_person_type_select', 'both' );
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
@@ -132,8 +133,7 @@ class ProfileFieldsTest extends WP_UnitTestCase {
         foreach ( array( 'billing', 'shipping' ) as $type ) {
             $fields = $this->apply()[ $type ]['fields'];
             $this->assertArrayHasKey( "{$type}_phone", $fields );
-            $this->assertArrayHasKey( "{$type}_cellphone", $fields, "No shim o celular ($type) deve aparecer no perfil." );
-            $this->assertSame( 'Celular (secundário)', $fields["{$type}_cellphone"]['label'] );
+            $this->assertArrayNotHasKey( "{$type}_cellphone", $fields, "No shim o celular ($type) é espelho: não ganha campo." );
         }
     }
 
@@ -189,7 +189,7 @@ class ProfileFieldsTest extends WP_UnitTestCase {
         return WC()->session;
     }
 
-    public function test_save_normalizes_phone_to_e164_and_splits_document(): void {
+    public function test_save_normalizes_phone_to_digits_and_splits_document(): void {
         $this->ensure_wc_ready();
         update_option( 'woo_better_calc_person_type_select', 'both' );
         // O campo "Celular" precisa estar ATIVO (é o que faz a tela do perfil exibir
@@ -211,9 +211,9 @@ class ProfileFieldsTest extends WP_UnitTestCase {
 
         $_POST = $backup;
 
-        $this->assertSame( '+5583988888882', get_user_meta( $user_id, 'billing_phone', true ), 'Telefone deve ser E.164 (+55 + dígitos), sem máscara.' );
+        $this->assertSame( '83988888882', get_user_meta( $user_id, 'billing_phone', true ), 'Telefone deve ficar só com o número (sem DDI), sem máscara.' );
         $this->assertSame( '83988888885', get_user_meta( $user_id, 'billing_cellphone', true ), 'O "Campo de Celular" VISÍVEL é simples → sem DDI (só dígitos).' );
-        $this->assertSame( '+5583988888882', get_user_meta( $user_id, 'shipping_phone', true ) );
+        $this->assertSame( '83988888882', get_user_meta( $user_id, 'shipping_phone', true ) );
         $this->assertSame( '1', get_user_meta( $user_id, 'billing_persontype', true ), 'CPF deve definir persontype=1.' );
         $this->assertSame( '493.147.600-73', get_user_meta( $user_id, 'billing_cpf', true ) );
         $this->assertSame( '', get_user_meta( $user_id, 'billing_cnpj', true ) );

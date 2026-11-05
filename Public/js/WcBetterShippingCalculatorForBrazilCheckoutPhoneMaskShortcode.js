@@ -106,19 +106,23 @@ jQuery(function ($) {
     }
 
     /**
-     * Normaliza o valor que o autofill/autocomplete injeta no campo.
+     * Ajusta o valor que JÁ está no campo quando o script inicia.
      *
-     * O navegador pode preencher o telefone em vários formatos. A regra é:
-     *  - "+55..."            → remove o DDI (a bandeira já o representa) e remonta.
+     * Roda SÓ UMA VEZ, na inicialização: o navegador pode ter preenchido o telefone
+     * (autofill) antes do JS rodar. Nada aqui reescreve o que o cliente digita —
+     * o "+55" que ele digitar fica no campo e é separado do número no SALVAMENTO
+     * (o backend lê o país do hidden e corta o DDI do início).
+     *
+     *  - "+55..."            → remonta sem o DDI (a bandeira já o representa).
      *  - "55..." (>=12 díg.) → DDI embutido sem "+": remove para não duplicar.
-     *  - sem "+" e sem "55"  → insere direto, sem tratativa (não prefixa DDI).
+     *  - sem "+" e sem "55"  → deixa como está.
      *  - "+<outro DDI>"      → estrangeiro: não mexemos (a lib troca a bandeira).
      *
      * @param {HTMLInputElement} field
      * @param {object}           iti
      * @param {string}           storedDial Ex.: '+55'
      */
-    function normalizeAutofill(field, iti, storedDial, force) {
+    function normalizeSeededValue(field, iti, storedDial) {
         const raw = String(field.value || '').trim();
         if (!raw) {
             return;
@@ -158,12 +162,6 @@ jQuery(function ($) {
 
         const international = '+55' + national;
         const apply = function () {
-            // "force" (evento input/autocomplete) aplica mesmo com o campo em
-            // foco, para a correção ser imediata; nos demais casos preserva o
-            // foco para não pular o cursor durante a digitação.
-            if (!force && document.activeElement === field) {
-                return;
-            }
             field.dataset.wcBetterNormalizing = 'true';
             try {
                 iti.setNumber(international);
@@ -253,24 +251,20 @@ jQuery(function ($) {
         const storedDial = savedDialFor(field);
         const initialCountry = DIAL_TO_ISO[storedDial] || 'br';
 
-        // Sem DDI exibido separadamente, garante o valor internacional no input
-        // (prefixa o DDI salvo quando o número ainda não começa com "+").
-        if (!dialCodeShown) {
-            const raw = String(field.value || '').trim();
-            if (raw && raw.charAt(0) !== '+') {
-                const digits = raw.replace(/[^\d]/g, '');
-                if (digits) {
-                    field.value = (storedDial || '+55') + digits;
-                }
-            }
-        }
-
+        // O input carrega SÓ O NÚMERO NACIONAL. O DDI nunca é escrito dentro dele: o
+        // seletor de país (bandeira) já o representa e o valor vai para o campo
+        // hidden (`billing_phone_country` / `shipping_phone_country`), que é de onde
+        // o backend o lê. Sem isso o campo reabria como "+55 89 99999-9835" mesmo
+        // sem a opção "Exibir Código do País (DDI)".
         const iti = intlTelInput(field, {
             initialCountry: initialCountry,
             preferredCountries: ['br'],
             // Exibe a bandeira + o código do país (DDI) quando habilitado.
             separateDialCode: dialCodeShown,
-            nationalMode: false,
+            // `nationalMode: true` = o input mostra o número NACIONAL (o DDI fica na
+            // bandeira). Com `false` a lib formata o valor em INTERNATIONAL e o
+            // "+55" reaparece grudado no número a cada valor semeado/autofill.
+            nationalMode: true,
             formatOnDisplay: true,
             // Na v25 "utilsScript" foi removida; sem loadUtils a formatação
             // enquanto digita não acontece.
@@ -296,8 +290,8 @@ jQuery(function ($) {
         // Sincroniza o DDI inicial sem depender de interação.
         setHiddenCountry(field, '+' + iti.getSelectedCountryData().dialCode);
 
-        // Normaliza o valor já presente (autofill que veio antes do JS rodar).
-        normalizeAutofill(field, iti, storedDial);
+        // Ajusta o valor já presente (autofill que veio antes do JS rodar).
+        normalizeSeededValue(field, iti, storedDial);
 
         field.addEventListener('countrychange', function () {
             applyInputPadding(field);
@@ -316,17 +310,12 @@ jQuery(function ($) {
             if (field.dataset.wcBetterNormalizing === 'true') {
                 return;
             }
+            // NÃO reescreve o valor: se o cliente digitar "+55 …" o texto fica como
+            // ele digitou. O DDI é separado do número no SALVAMENTO (o backend lê o
+            // país do hidden e corta o `+55` do início), então reescrever/interceptar
+            // aqui só atrapalhava: o "+55" que a pessoa acabou de digitar desaparecia
+            // e o seletor de país pulava sozinho para o Brasil.
             applyInputPadding(field);
-            // Autofill/autocomplete dispara "input": normaliza já, sem esperar blur.
-            normalizeAutofill(field, iti, storedDial, true);
-        });
-
-        // Autofill/autocomplete dispara "change": normaliza o formato injetado.
-        field.addEventListener('change', function () {
-            if (field.dataset.wcBetterNormalizing === 'true') {
-                return;
-            }
-            normalizeAutofill(field, iti, storedDial);
         });
 
         applyInputPadding(field);
@@ -411,13 +400,14 @@ jQuery(function ($) {
         subtree: true
     });
 
-    // Autofill nem sempre dispara "change": reaplica a normalização
-    // periodicamente (idempotente e ignora o campo em foco).
+    // Reaplica só o PADDING periodicamente (autofill/recálculo do checkout pode
+    // redesenhar o campo). O VALOR não é tocado: o que o cliente digita — inclusive
+    // um "+55" na frente — fica como está e é separado no salvamento.
     setInterval(function () {
         PHONE_FIELDS.forEach(function (selector) {
             const field = document.querySelector(selector);
             if (field && field.wcBetterIti) {
-                normalizeAutofill(field, field.wcBetterIti, savedDialFor(field));
+                applyInputPadding(field);
             }
         });
     }, 1000);

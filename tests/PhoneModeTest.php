@@ -80,18 +80,25 @@ class PhoneModeTest extends WP_UnitTestCase {
     // --- Resíduo inválido no perfil/sessão (DDI repetido) --------------------
 
     /**
-     * Um valor com o DDI colado várias vezes (`83988888885555555…`, resíduo de um
-     * build antigo) NÃO pode voltar para o campo: o E.164 limita o número a 15
-     * dígitos. Era isso que fazia o telefone "aparecer do nada" no checkout.
+     * Dois cortes ao SEMEAR o campo: o lixo (DDI colado várias vezes) vira vazio e
+     * um valor antigo com `+55`/máscara é semeado só com o número — o mesmo formato
+     * que o pedido grava (o Bling reprova o `+55`).
      */
-    public function test_sanitize_stored_phone_discards_repeated_ddi(): void {
+    public function test_sanitize_stored_phone_discards_lixo_and_strips_the_ddi(): void {
         $public_class = \Lkn\WcBetterShippingCalculatorForBrazil\PublicView\WcBetterShippingCalculatorForBrazilPublic::class;
 
         $this->assertSame( '', $public_class::sanitize_stored_phone( '839888888855555555555555555555555555555555555' ) );
         $this->assertSame( '', $public_class::sanitize_stored_phone( str_repeat( '9', 16 ) ) );
-        // Telefone de verdade (com e sem formatação) passa intacto.
+        // Telefone de verdade (com e sem formatação) sai SÓ com o número.
         $this->assertSame( '83988888885', $public_class::sanitize_stored_phone( '83988888885' ) );
-        $this->assertSame( '+55 (83) 98888-8885', $public_class::sanitize_stored_phone( '+55 (83) 98888-8885' ) );
+        $this->assertSame( '83988888885', $public_class::sanitize_stored_phone( '+55 (83) 98888-8885' ) );
+        $this->assertSame( '83988888885', $public_class::sanitize_stored_phone( '55 83 98888-8885' ) );
+        // DDD 55 (RS) não é DDI: o 55 do início fica.
+        $this->assertSame( '55988888888', $public_class::sanitize_stored_phone( '55988888888' ) );
+        // Número de OUTRO país fica intacto (a lib precisa do `+` para o país).
+        $this->assertSame( '+351912345678', $public_class::sanitize_stored_phone( '+351912345678' ) );
+        // Celular (o campo que reabria com o DDI no checkout).
+        $this->assertSame( '83988888881', $public_class::sanitize_stored_phone( '+55 (83) 98888-8881' ) );
         $this->assertSame( '', $public_class::sanitize_stored_phone( '' ) );
         $this->assertSame( '', $public_class::sanitize_stored_phone( 'sem numero' ) );
     }
@@ -109,7 +116,7 @@ class PhoneModeTest extends WP_UnitTestCase {
         $values  = $public->saved_phone_values();
 
         $this->assertSame( '', $values['billing_phone'], 'Valor inválido do perfil não é semeado no campo.' );
-        $this->assertSame( '+5583988888885', $values['shipping_phone'] );
+        $this->assertSame( '83988888885', $values['shipping_phone'], 'Valor antigo com DDI é semeado só com o número.' );
     }
 
     /**
@@ -197,7 +204,8 @@ class PhoneModeTest extends WP_UnitTestCase {
         $customer->set_shipping_phone( '' );
         update_user_meta( $user_id, 'shipping_phone', '839888888855555555555555555555555555555555555' );
         $this->assertSame( '', $this->plugin()->sanitize_checkout_phone_default_value( null, 'shipping_phone' ) );
-        $this->assertNull( $this->plugin()->sanitize_checkout_phone_default_value( null, 'billing_phone' ) );
+        // O telefone válido do cadastro volta SEM o DDI (é como o pedido grava).
+        $this->assertSame( '83988888885', $this->plugin()->sanitize_checkout_phone_default_value( null, 'billing_phone' ) );
         // Outros campos e valores já resolvidos por terceiros seguem intactos.
         $this->assertNull( $this->plugin()->sanitize_checkout_phone_default_value( null, 'billing_postcode' ) );
         $this->assertSame( 'via-third-party', $this->plugin()->sanitize_checkout_phone_default_value( 'via-third-party', 'shipping_phone' ) );
@@ -445,7 +453,7 @@ class PhoneModeTest extends WP_UnitTestCase {
 
         $result = $this->plugin()->handle_cellphone_posted_data( $data );
 
-        $this->assertSame( '+5511999998888', $result['billing_cellphone'] );
+        $this->assertSame( '11999998888', $result['billing_cellphone'] );
     }
 
     public function test_shim_respects_existing_cellphone_value(): void {
@@ -479,7 +487,7 @@ class PhoneModeTest extends WP_UnitTestCase {
 
         $result = $this->plugin()->handle_cellphone_posted_data( $data );
 
-        $this->assertSame( '+5511999998888', $result['billing_cellphone'] );
+        $this->assertSame( '11999998888', $result['billing_cellphone'] );
     }
 
     public function test_no_mirror_when_cellphone_field_enabled(): void {
@@ -941,7 +949,7 @@ class PhoneModeTest extends WP_UnitTestCase {
 
         $result = $this->plugin()->handle_cellphone_posted_data( $data );
 
-        $this->assertSame( '+5521988887777', $result['shipping_cellphone'] );
+        $this->assertSame( '21988887777', $result['shipping_cellphone'] );
     }
 
     // --- Shim: só espelha o telefone no celular quando for CELULAR -----------
@@ -978,7 +986,7 @@ class PhoneModeTest extends WP_UnitTestCase {
 
         $result = $this->plugin()->handle_cellphone_posted_data( $data );
 
-        $this->assertSame( '+5583988888882', $result['billing_cellphone'] );
+        $this->assertSame( '83988888882', $result['billing_cellphone'] );
     }
 
     public function test_shim_blocks_clears_cellphone_for_landline(): void {
@@ -1291,7 +1299,7 @@ class PhoneModeTest extends WP_UnitTestCase {
             'shipping' => array( 'phone' => '83988888882' ),
         );
 
-        $out = $this->plugin()->add_cellphone_to_customer_details( $data, $customer, 0 );
+        $out = $this->plugin()->add_phone_fields_to_customer_details( $data, $customer, 0 );
 
         $this->assertSame( '83988888885', $out['billing']['cellphone'] );
         $this->assertSame( '83988888880', $out['shipping']['cellphone'] );
@@ -1313,7 +1321,7 @@ class PhoneModeTest extends WP_UnitTestCase {
             'shipping' => array( 'phone' => '83988888882' ),
         );
 
-        $out = $this->plugin()->add_cellphone_to_customer_details( $data, $customer, 0 );
+        $out = $this->plugin()->add_phone_fields_to_customer_details( $data, $customer, 0 );
 
         $this->assertSame( '83988888885', $out['billing']['cellphone'] );
         $this->assertSame( '83988888880', $out['shipping']['cellphone'] );
@@ -1325,7 +1333,7 @@ class PhoneModeTest extends WP_UnitTestCase {
         $customer = new \WC_Customer();
         $customer->update_meta_data( 'billing_cellphone', '83988888885' );
 
-        $out = $this->plugin()->add_cellphone_to_customer_details( array( 'billing' => array() ), $customer, 0 );
+        $out = $this->plugin()->add_phone_fields_to_customer_details( array( 'billing' => array() ), $customer, 0 );
 
         $this->assertArrayNotHasKey( 'cellphone', $out['billing'] );
     }
@@ -1339,10 +1347,10 @@ class PhoneModeTest extends WP_UnitTestCase {
         $customer->update_meta_data( 'billing_cellphone', '+55 83 98888-8885' );
         $customer->update_meta_data( 'shipping_cellphone', '+55 83 98888-8883' );
 
-        $out = $this->plugin()->add_cellphone_to_customer_details( array( 'billing' => array(), 'shipping' => array() ), $customer, 0 );
+        $out = $this->plugin()->add_phone_fields_to_customer_details( array( 'billing' => array(), 'shipping' => array() ), $customer, 0 );
 
-        $this->assertSame( '+5583988888885', $out['billing']['cellphone'] );
-        $this->assertSame( '+5583988888883', $out['shipping']['cellphone'] );
+        $this->assertSame( '83988888885', $out['billing']['cellphone'] );
+        $this->assertSame( '83988888883', $out['shipping']['cellphone'] );
     }
 
     public function test_persist_phone_values_normalizes(): void {
@@ -1364,8 +1372,7 @@ class PhoneModeTest extends WP_UnitTestCase {
             'shipping_cellphone' => '83 98888-8883',
         ) );
 
-        $this->assertSame( '+5583988888885', WC()->session->get( 'billing_cellphone' ) );
-        // Sem "+" no valor de entrada, o format mantém só os dígitos.
+        $this->assertSame( '83988888885', WC()->session->get( 'billing_cellphone' ) );
         $this->assertSame( '83988888883', WC()->session->get( 'shipping_cellphone' ) );
     }
 
@@ -1551,27 +1558,31 @@ class PhoneModeTest extends WP_UnitTestCase {
         return $rows;
     }
 
-    public function test_display_cellphone_ddi_only_when_principal_or_shim(): void {
-        // O "Campo de Celular" VISÍVEL (separado) NÃO tem DDI → a exibição (admin/
-        // recibo) mostra só os dígitos. Já o espelho OCULTO (shim) e o modo "Somente
-        // Celular" exibem o celular em E.164 (+55).
+    public function test_display_cellphone_always_shows_the_ddi(): void {
+        // O pedido GRAVA só o número, então TODA exibição (admin/recibo) recompõe o
+        // E.164 (~+55+): vale para o "Campo de Celular" VISÍVEL, para o espelho OCULTO
+        // (shim) e para o modo "Somente Celular".
         update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
 
-        // Visível: sem DDI.
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
         update_option( 'woo_better_calc_enable_cellphone_shim', 'no' );
 
         $order = new \WC_Order();
-        $order->set_billing_phone( '+5583988888884' );
+        $order->set_billing_phone( '83988888884' );
         $order->update_meta_data( '_billing_cellphone', '83988888881' );
         $order->update_meta_data( '_billing_phone_country_code', '+55' );
 
-        $this->assertSame( '83988888881', $this->billingPhoneLabels( $order )['Celular'] );
+        $this->assertSame( '+5583988888881', $this->billingPhoneLabels( $order )['Celular'] );
 
-        // Shim: com DDI.
+        // Shim: mesma coisa (o valor gravado também é só o número).
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
         update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+        $order->update_meta_data( '_billing_cellphone', '83988888881' );
+
+        $this->assertSame( '+5583988888881', $this->billingPhoneLabels( $order )['Celular'] );
+
+        // Pedido ANTIGO (celular gravado com o DDI): não duplica o `+55`.
         $order->update_meta_data( '_billing_cellphone', '+5583988888881' );
 
         $this->assertSame( '+5583988888881', $this->billingPhoneLabels( $order )['Celular'] );
@@ -1660,10 +1671,9 @@ class PhoneModeTest extends WP_UnitTestCase {
 
     // --- DDI (E.164) no pedido do checkout em blocos -------------------------
 
-    public function test_normalize_order_phone_prepends_ddi_to_phone_but_not_visible_cellphone(): void {
-        // O TELEFONE do pedido fica em E.164 (+DDInúmero). O "Campo de Celular"
-        // VISÍVEL (separado) é um campo simples, SEM DDI → o `_*_cellphone` fica só
-        // com os dígitos.
+    public function test_normalize_order_phone_stores_only_the_number(): void {
+        // Nem o TELEFONE nem o CELULAR guardam o DDI: o Bling reprova o `+55` grudado.
+        // O DDI fica na meta `_*_phone_country_code` e só volta na exibição.
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
         update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
@@ -1676,31 +1686,33 @@ class PhoneModeTest extends WP_UnitTestCase {
         $ref->setAccessible( true );
         $ref->invoke( $this->plugin(), $order, 'billing', '+55' );
 
-        $this->assertSame( '+5583988888882', $order->get_billing_phone() );
-        $this->assertSame( '83988888882', $order->get_meta( '_billing_cellphone' ), 'O celular VISÍVEL não recebe o DDI.' );
+        $this->assertSame( '83988888882', $order->get_billing_phone(), 'O telefone do pedido fica SÓ com o número.' );
+        $this->assertSame( '83988888882', $order->get_meta( '_billing_cellphone' ) );
     }
 
-    public function test_normalize_order_phone_prepends_ddi_to_shim_cellphone(): void {
-        // No SHIM (espelho oculto) o celular herda o DDI do bloco principal.
+    public function test_normalize_order_phone_strips_a_typed_ddi_even_on_the_shim(): void {
+        // Cliente digitou o DDI: o corte vale para o telefone e para o celular
+        // (inclusive no SHIM/espelho oculto).
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
         update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
         update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
 
         $order = new \WC_Order();
-        $order->set_billing_phone( '83988888882' );
-        $order->update_meta_data( '_billing_cellphone', '83988888882' );
+        $order->set_billing_phone( '+5583988888882' );
+        $order->update_meta_data( '_billing_cellphone', '5583988888882' );
 
         $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'normalize_order_phone' );
         $ref->setAccessible( true );
         $ref->invoke( $this->plugin(), $order, 'billing', '+55' );
 
-        $this->assertSame( '+5583988888882', $order->get_meta( '_billing_cellphone' ) );
+        $this->assertSame( '83988888882', $order->get_billing_phone() );
+        $this->assertSame( '83988888882', $order->get_meta( '_billing_cellphone' ) );
     }
 
-    public function test_blocks_phone_country_extension_prepends_ddi(): void {
-        // O JS (blocos) envia o DDI no namespace `woo_better_phone_country`; o
-        // pedido deve sair com o telefone em E.164 (com o +55), como no clássico.
+    public function test_blocks_phone_country_extension_keeps_the_ddi_out_of_the_number(): void {
+        // O JS (blocos) envia o DDI no namespace `woo_better_phone_country`; o pedido
+        // guarda só o número e o DDI na meta própria.
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
@@ -1723,8 +1735,9 @@ class PhoneModeTest extends WP_UnitTestCase {
         $ref->setAccessible( true );
         $ref->invoke( $this->plugin(), $order, $request );
 
-        $this->assertSame( '+5583988888882', $order->get_billing_phone() );
-        $this->assertSame( '+5583988888882', $order->get_shipping_phone() );
+        $this->assertSame( '83988888882', $order->get_billing_phone() );
+        $this->assertSame( '83988888882', $order->get_shipping_phone() );
+        $this->assertSame( '+55', $order->get_meta( '_billing_phone_country_code' ) );
     }
 
     // --- Shim: editar endereço (minha conta) e perfil -------------------------
@@ -1768,7 +1781,7 @@ class PhoneModeTest extends WP_UnitTestCase {
 
         $_POST = $backup;
 
-        $this->assertSame( '+5583988888882', get_user_meta( $user_id, 'billing_cellphone', true ) );
+        $this->assertSame( '83988888882', get_user_meta( $user_id, 'billing_cellphone', true ) );
     }
 
     public function test_shim_profile_clears_cellphone_for_landline(): void {
@@ -1811,7 +1824,7 @@ class PhoneModeTest extends WP_UnitTestCase {
         $_POST = $backup;
 
         // O celular do perfil passa a espelhar o telefone (celular) no shim.
-        $this->assertSame( '+5583988888882', get_user_meta( $user_id, 'billing_cellphone', true ) );
+        $this->assertSame( '83988888882', get_user_meta( $user_id, 'billing_cellphone', true ) );
     }
 }
 

@@ -318,6 +318,77 @@ test('[brazil-mask] bundle com lib: validação sem exigir a máscara e só em c
     );
 });
 
+/**
+ * Regressão do campo com a lib (checkout CLÁSSICO/shortcode e edição de endereço).
+ *
+ * Duas coisas, e elas são independentes:
+ *
+ *  1. o valor SEMEADO pelo PHP (só o número, ex.: `89999999835`) é exibido no formato
+ *     NACIONAL ("(89) 99999-9835") — antes a lib formatava em INTERNATIONAL e o
+ *     campo reabria como "+55 89 99999-9835", com o DDI escrito por cima do número;
+ *  2. o que o CLIENTE digita não é reescrito: se ele digitar "+55 …", o texto fica
+ *     como digitou. O DDI é separado do número no SALVAMENTO
+ *     (`strip_phone_ddi`, a partir do hidden `*_phone_country`).
+ */
+test('[brazil-mask] bundle com lib: semeia sem DDI e não reescreve o que o cliente digita', () => {
+    assert.ok(fs.existsSync(SHORTCODE), `Arquivo não encontrado: ${SHORTCODE}`);
+    const src = fs.readFileSync(SHORTCODE, 'utf8');
+
+    // (1) `nationalMode: true` = input no formato NACIONAL. Com `false` a lib formata
+    // em INTERNATIONAL e o "+55" volta a grudar no número semeado.
+    assert.ok(
+        /nationalMode: true,/.test(src),
+        'O bundle da lib deve exibir o número NACIONAL no input.'
+    );
+
+    // Nada de prefixar o DDI no valor do campo.
+    assert.ok(
+        !/field\.value = \(storedDial \|\| '\+55'\) \+ digits;/.test(src),
+        'O input não pode receber o DDI concatenado (o DDI fica no hidden).'
+    );
+
+    // (2) Nenhum handler de digitação reescreve o valor: era isso que apagava o "+55"
+    // que o cliente acabou de digitar (e fazia o seletor pular para o Brasil).
+    assert.ok(
+        !/normalizeAutofill/.test(src),
+        'Não deve existir normalização do valor a cada tecla/change.'
+    );
+    assert.ok(
+        /field\.addEventListener\('input', function \(event\) \{[\s\S]*?applyInputPadding\(field\);\s*\}\);/.test(src),
+        'O handler de `input` só ajusta o padding.'
+    );
+    assert.ok(
+        /normalizeSeededValue\(field, iti, storedDial\);/.test(src),
+        'O valor já presente (autofill antes do JS) é ajustado UMA vez, no init.'
+    );
+
+    // O intervalo reaplica só o padding, nunca o valor.
+    assert.ok(
+        !/setInterval\(function \(\) \{[\s\S]*?setNumber/.test(src),
+        'O intervalo periódico não pode reescrever o valor do campo.'
+    );
+
+    // O DDI continua sendo enviado pelo hidden, que é de onde o backend lê.
+    assert.ok(
+        /function setHiddenCountry\(field, dialCode\)/.test(src)
+        && /hidden\.value = dialCode;/.test(src),
+        'O DDI deve continuar indo para o campo hidden.'
+    );
+
+    // E o pacote compilado precisa carregar a mesma configuração.
+    assert.ok(fs.existsSync(COMPILED_SHORTCODE), `Arquivo não encontrado: ${COMPILED_SHORTCODE}`);
+    const compiled = fs.readFileSync(COMPILED_SHORTCODE, 'utf8');
+
+    assert.ok(
+        compiled.indexOf('nationalMode:!0') !== -1,
+        'O bundle compilado deve ter `nationalMode: true` (rode `npm run build:public`).'
+    );
+    assert.ok(
+        compiled.indexOf('normalizeAutofill') === -1,
+        'O bundle compilado não deve ter a normalização a cada tecla (rode `npm run build:public`).'
+    );
+});
+
 test('[brazil-mask] sanitizador não trava espaço/parênteses/hífen no modo sem lib', () => {
     assert.ok(fs.existsSync(SANITIZER), `Arquivo não encontrado: ${SANITIZER}`);
     const src = fs.readFileSync(SANITIZER, 'utf8');

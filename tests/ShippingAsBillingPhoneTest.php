@@ -41,8 +41,8 @@ class ShippingAsBillingPhoneTest extends WP_UnitTestCase {
 
         $this->apply_shipping_as_billing( $order );
 
-        $this->assertSame( '+5583988888885', $order->get_billing_phone() );
-        $this->assertSame( '+5583988888885', $order->get_shipping_phone() );
+        $this->assertSame( '83988888885', $order->get_billing_phone() );
+        $this->assertSame( '83988888885', $order->get_shipping_phone() );
     }
 
     public function test_falls_back_to_billing_when_shipping_empty(): void {
@@ -53,8 +53,8 @@ class ShippingAsBillingPhoneTest extends WP_UnitTestCase {
 
         $this->apply_shipping_as_billing( $order );
 
-        $this->assertSame( '+5583988888886', $order->get_shipping_phone() );
-        $this->assertSame( '+5583988888886', $order->get_billing_phone() );
+        $this->assertSame( '83988888886', $order->get_shipping_phone() );
+        $this->assertSame( '83988888886', $order->get_billing_phone() );
     }
 
     public function test_mirrors_cellphone_metas(): void {
@@ -64,7 +64,8 @@ class ShippingAsBillingPhoneTest extends WP_UnitTestCase {
 
         $this->apply_shipping_as_billing( $order );
 
-        $this->assertSame( '+5583988888885', $order->get_meta( '_billing_cellphone' ) );
+        $this->assertSame( '83988888885', $order->get_meta( '_billing_cellphone' ) );
+        // A ORIGEM não é reescrita pelo espelho (o `+55` sai em normalize_order_phone).
         $this->assertSame( '+5583988888885', $order->get_meta( '_shipping_cellphone' ) );
     }
 
@@ -95,7 +96,7 @@ class ShippingAsBillingPhoneTest extends WP_UnitTestCase {
         $ref->setAccessible( true );
         $ref->invoke( $this->plugin(), $order, $request );
 
-        $this->assertSame( '+5583988888886', $order->get_billing_phone() );
-        $this->assertSame( '+5583988888885', $order->get_shipping_phone() );
+        $this->assertSame( '83988888886', $order->get_billing_phone() );
+        $this->assertSame( '83988888885', $order->get_shipping_phone() );
     }
 }
