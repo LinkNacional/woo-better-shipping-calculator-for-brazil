@@ -73,8 +73,9 @@ class AdminNoticeAndAssetsTest extends WP_UnitTestCase {
     }
 
     public function test_card_de_novidades_esta_desativado() {
-        // 5.2.2 e 5.3.0 não disparam o card de novidades. Os recursos dessas versões
-        // (máscara brasileira sem a lib de DDI, opção de ocultar o checkbox S/N e o
+        // 5.2.2, 5.2.3, 5.2.4 e 5.3.0 não disparam o card de novidades. Os recursos
+        // dessas versões (máscara brasileira sem a lib de DDI, opção de ocultar o
+        // checkbox S/N, placeholder/teclado do telefone, formato do telefone gravado e o
         // novo layout de abas) são ajustes específicos demais para anunciar, então a
         // constante precisa ficar em `false`.
         $main = file_get_contents( $this->main_file() );
