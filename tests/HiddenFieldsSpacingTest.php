@@ -88,15 +88,18 @@ class HiddenFieldsSpacingTest extends WP_UnitTestCase {
     // --- Edição de endereço: o DDI é um campo VISÍVEL ----------------------
 
     /**
-     * Na edição de endereço da conta o DDI deixou de ser `hidden`: virou campo
-     * próprio, exibido acima do telefone/celular (a mesma convenção do perfil e do
-     * admin do pedido). O hidden com a classe de espaçamento continua sendo o do
-     * CHECKOUT clássico (testado acima).
+     * Na edição de endereço da conta, SEM a lib (máscara brasileira), o DDI é um
+     * campo próprio VISÍVEL acima do telefone/celular — a mesma convenção do perfil
+     * e do admin do pedido. Com a lib ele fica oculto (testado em
+     * `PhoneDdiAccountFieldsTest`), porque o DDI passa a viver dentro do próprio
+     * campo de telefone.
      */
-    public function test_edit_address_ddi_is_a_visible_field(): void {
+    public function test_edit_address_ddi_is_a_visible_field_without_the_lib(): void {
         $this->ensure_wc_ready();
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+        // Máscara "com DDI" (lib) DESLIGADA: o DDI é digitável num campo próprio.
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
 
         $billing = $this->plugin()->add_edit_address_billing_fields(
             array( 'billing_country' => array( 'value' => 'BR' ) )
@@ -104,7 +107,7 @@ class HiddenFieldsSpacingTest extends WP_UnitTestCase {
 
         $this->assertArrayHasKey( 'billing_phone_country', $billing );
         $this->assertSame( 'text', $billing['billing_phone_country']['type'] );
-        $this->assertFalse( (bool) $billing['billing_phone_country']['required'], 'O DDI é opcional.' );
+        $this->assertTrue( (bool) $billing['billing_phone_country']['required'], 'O DDI é obrigatório (preenchido sozinho).' );
         $this->assertArrayHasKey( 'billing_cellphone_country', $billing, 'O DDI do celular acompanha o campo dele.' );
         $this->assertLessThan(
             $billing['billing_phone']['priority'],

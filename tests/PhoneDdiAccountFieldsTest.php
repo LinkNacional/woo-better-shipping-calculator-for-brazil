@@ -174,6 +174,42 @@ class PhoneDdiAccountFieldsTest extends WP_UnitTestCase {
         $this->assertArrayNotHasKey( 'billing_cellphone_country_code', $fields['billing']['fields'] );
     }
 
+    /**
+     * Shim ("Celular Oculto"): o celular só espelha o telefone, então ele não ganha
+     * DDI próprio no perfil — ele herda o do telefone (`user_ddi`).
+     */
+    public function test_profile_hidden_cellphone_has_no_ddi_field(): void {
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $fields = $this->profile_fields();
+
+        $this->assertArrayHasKey( 'billing_cellphone', $fields['billing']['fields'], 'O campo espelhado continua na tela.' );
+        $this->assertArrayNotHasKey( 'billing_cellphone_country_code', $fields['billing']['fields'] );
+        $this->assertArrayNotHasKey( 'shipping_cellphone_country_code', $fields['shipping']['fields'] );
+        $this->assertArrayHasKey( 'billing_phone_country_code', $fields['billing']['fields'] );
+    }
+
+    public function test_profile_hidden_cellphone_ddi_follows_the_phone(): void {
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $user_id = self::factory()->user->create();
+        update_user_meta( $user_id, 'billing_cellphone_country_code', '+351' );
+
+        $backup = $_POST;
+        $_POST  = array(
+            'billing_phone'              => '(83) 98888-8881',
+            'billing_phone_country_code' => '+55',
+        );
+
+        $this->plugin()->save_customer_meta_fields_extra( $user_id );
+
+        $_POST = $backup;
+
+        $this->assertSame( '+55', get_user_meta( $user_id, 'billing_cellphone_country_code', true ) );
+    }
+
     public function test_profile_save_stores_the_ddi(): void {
         $user_id = self::factory()->user->create();
 
@@ -344,6 +380,133 @@ class PhoneDdiAccountFieldsTest extends WP_UnitTestCase {
             $this->plugin()->edit_address_field_value( 'Rua H', 'billing_address_1', 'billing' )
         );
         $this->assertNull( $this->plugin()->edit_address_field_value( null, 'billing_postcode', 'billing' ) );
+    }
+
+    private function edit_address_billing_fields(): array {
+        return $this->plugin()->add_edit_address_billing_fields(
+            array( 'billing_country' => array( 'value' => 'BR' ) )
+        );
+    }
+
+    /**
+     * Com a lib (máscara + DDI) a bandeira e o código do país ficam DENTRO do campo de
+     * telefone: o campo de DDI próprio fica `hidden` (a lib grava o valor no input de
+     * mesmo nome), para não pedir o mesmo dado duas vezes.
+     */
+    public function test_edit_address_phone_ddi_is_hidden_with_the_lib(): void {
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+
+        $fields = $this->edit_address_billing_fields();
+
+        $this->assertSame( 'hidden', $fields['billing_phone_country']['type'] );
+        $this->assertContains(
+            WcBetterShippingCalculatorForBrazil::HIDDEN_FIELD_CLASS,
+            (array) $fields['billing_phone_country']['class'],
+            'O wrapper do campo oculto precisa perder o espaçamento.'
+        );
+        $this->assertFalse(
+            (bool) $fields['billing_phone_country']['required'],
+            'Campo oculto não pode ser obrigatório: o cliente não teria como corrigi-lo.'
+        );
+        $this->assertSame(
+            '',
+            $fields['billing_phone_country']['label'],
+            'O `woocommerce_form_field` imprime o <label> até em type=hidden: sem label, nada aparece.'
+        );
+        // O valor continua sendo o do cadastro (o JS da lib sobrescreve ao trocar o país).
+        $this->assertSame( '+55', $fields['billing_phone_country']['value'] );
+    }
+
+    /**
+     * O celular SECUNDÁRIO é um campo "limpo" (sem lib), então o DDI dele continua
+     * visível e obrigatório mesmo com a lib ativa no telefone.
+     */
+    public function test_edit_address_cellphone_ddi_stays_visible_with_the_lib(): void {
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+
+        $fields = $this->edit_address_billing_fields();
+
+        $this->assertSame( 'text', $fields['billing_cellphone_country']['type'] );
+        $this->assertTrue( (bool) $fields['billing_cellphone_country']['required'] );
+        $this->assertArrayNotHasKey( 'input_class', $fields['billing_cellphone_country'] );
+    }
+
+    public function test_edit_address_phone_ddi_is_visible_without_the_lib(): void {
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+
+        $fields = $this->edit_address_billing_fields();
+
+        $this->assertSame( 'text', $fields['billing_phone_country']['type'] );
+        $this->assertTrue( (bool) $fields['billing_phone_country']['required'] );
+    }
+
+    /**
+     * "Somente Celular": o celular É o campo principal e é ele que recebe a lib, então
+     * o DDI dele usa (e oculta) a chave do bloco principal (`*_phone_country`).
+     */
+    public function test_edit_address_cellphone_only_hides_the_main_ddi_with_the_lib(): void {
+        update_option( 'woo_better_calc_phone_mode', 'cellphone_only' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'yes' );
+
+        $fields = $this->edit_address_billing_fields();
+
+        $this->assertArrayNotHasKey( 'billing_phone', $fields );
+        $this->assertArrayHasKey( 'billing_cellphone', $fields );
+        $this->assertSame( 'hidden', $fields['billing_phone_country']['type'], 'O DDI do bloco principal segue a lib.' );
+        $this->assertArrayNotHasKey( 'billing_cellphone_country', $fields, 'Não existe um segundo DDI no "Somente Celular".' );
+    }
+
+    /**
+     * Shim ("Celular e Fixo" + "Campo de Celular" desligado): o celular é OCULTO e
+     * espelha o telefone, então ele não ganha campo (nem DDI) próprio — o DDI dele
+     * acompanha o do telefone no save.
+     */
+    public function test_edit_address_hidden_cellphone_has_no_ddi_field(): void {
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $fields = $this->edit_address_billing_fields();
+
+        $this->assertArrayNotHasKey( 'billing_cellphone', $fields );
+        $this->assertArrayNotHasKey( 'billing_cellphone_country', $fields );
+        $this->assertArrayHasKey( 'billing_phone_country', $fields, 'O DDI do telefone continua.' );
+    }
+
+    public function test_edit_address_hidden_cellphone_ddi_follows_the_phone(): void {
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $user_id = self::factory()->user->create();
+        update_user_meta( $user_id, 'billing_country', 'BR' );
+        // DDI antigo gravado no celular (de uma configuração anterior): precisa ser
+        // sobrescrito pelo do telefone, para não divergir do número espelhado.
+        update_user_meta( $user_id, 'billing_cellphone_country_code', '+351' );
+
+        $backup = $_POST;
+        $_POST  = array(
+            'billing_phone'         => '(83) 98888-8881',
+            'billing_phone_country' => '+55',
+        );
+
+        $this->plugin()->save_edit_address_custom_fields( $user_id, 'billing' );
+
+        $_POST = $backup;
+
+        $this->assertSame( '83988888881', get_user_meta( $user_id, 'billing_cellphone', true ), 'O celular espelha o telefone.' );
+        $this->assertSame( '+55', get_user_meta( $user_id, 'billing_cellphone_country_code', true ), 'E o DDI dele acompanha o do telefone.' );
+    }
+
+    public function test_edit_address_has_no_ddi_fields_when_phone_is_disabled(): void {
+        update_option( 'woo_better_calc_phone_mode', 'disabled_native' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+
+        $fields = $this->edit_address_billing_fields();
+
+        $this->assertArrayNotHasKey( 'billing_phone_country', $fields );
+        $this->assertArrayNotHasKey( 'billing_cellphone_country', $fields );
     }
 
     public function test_edit_address_save_stores_the_ddi(): void {
