@@ -9,8 +9,8 @@
  *
  * No backend isso significa:
  *   - `is_phone_brazil_mask_active()` ligado (e `is_phone_mask_active()` desligado);
- *   - o telefone do pedido continua sendo normalizado em E.164 com o DDI do Brasil
- *     (+55), como no modo com lib;
+ *   - o telefone do pedido é normalizado SÓ COM O NÚMERO (sem DDI), como no modo
+ *     com lib — a meta `_*_phone_country_code` guarda o `+55` e a exibição recompõe;
  *   - a opção "Validar Número de Telefone" passa a valer SEM a lib, validando
  *     apenas números do Brasil;
  *   - no modo "Desabilitar" nada muda (o telefone não é do plugin).
@@ -395,27 +395,39 @@ class PhoneBrazilMaskTest extends WP_UnitTestCase {
 
     // --- Normalização do telefone do pedido ---------------------------------
 
-    public function test_order_phone_gets_brazilian_ddi_without_mask_lib(): void {
+    public function test_order_phone_is_stored_without_the_ddi_without_mask_lib(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_apply_phone_mask', 'no' );
 
-        // Máscara BR aplicada no front: o POST chega formatado.
+        // Máscara BR aplicada no front: o POST chega formatado, sem DDI.
         $this->assertSame(
-            '+5585988888888',
+            '85988888888',
             $this->normalize_phone( '(85) 98888-8888' ),
-            'Sem a lib, o telefone ainda é normalizado em E.164 com o DDI do Brasil.'
+            'O pedido grava SÓ O NÚMERO (o Bling reprova o +55 grudado).'
         );
 
         // Fixo (10 dígitos) também.
-        $this->assertSame( '+558532323232', $this->normalize_phone( '(85) 3232-3232' ) );
+        $this->assertSame( '8532323232', $this->normalize_phone( '(85) 3232-3232' ) );
     }
 
-    public function test_order_phone_keeps_existing_ddi(): void {
+    public function test_order_phone_strips_a_typed_ddi(): void {
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_apply_phone_mask', 'no' );
 
-        $this->assertSame( '+5585988888888', $this->normalize_phone( '+5585988888888' ) );
-        $this->assertSame( '+5585988888888', $this->normalize_phone( '5585988888888' ) );
+        // DDI digitado (com ou sem o "+") sai do INÍCIO do número.
+        $this->assertSame( '85988888888', $this->normalize_phone( '+5585988888888' ) );
+        $this->assertSame( '85988888888', $this->normalize_phone( '5585988888888' ) );
+    }
+
+    /**
+     * DDD 55 (RS) NÃO é DDI: o número nacional tem 11 dígitos, então o "55" do
+     * início é o código de área e fica.
+     */
+    public function test_order_phone_keeps_a_national_number_that_starts_with_55(): void {
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_apply_phone_mask', 'no' );
+
+        $this->assertSame( '55988888888', $this->normalize_phone( '(55) 98888-8888' ) );
     }
 
     public function test_unmanaged_mode_does_not_touch_native_phone(): void {
