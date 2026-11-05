@@ -135,6 +135,19 @@ class PhoneDdiAccountFieldsTest extends WP_UnitTestCase {
         $this->assertArrayHasKey( 'shipping_cellphone_country_code', $fields['shipping']['fields'] );
     }
 
+    /**
+     * O `WC_Admin_Profile` usa `regular-text` (largura cheia da coluna) quando o campo
+     * não declara classe. Com qualquer classe (ex.: `short`, que não existe no CSS do
+     * wp-admin) o input cai no tamanho padrão do navegador e fica com metade da
+     * largura dos demais campos da tela.
+     */
+    public function test_profile_ddi_uses_the_full_width_like_the_other_fields(): void {
+        $fields = $this->profile_fields();
+
+        $this->assertArrayNotHasKey( 'class', $fields['billing']['fields']['billing_phone_country_code'] );
+        $this->assertArrayNotHasKey( 'class', $fields['billing']['fields']['billing_cellphone_country_code'] );
+    }
+
     public function test_profile_ddi_label_follows_the_phone_mode(): void {
         update_option( 'woo_better_calc_phone_mode', 'landline_only' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
@@ -175,19 +188,21 @@ class PhoneDdiAccountFieldsTest extends WP_UnitTestCase {
     }
 
     /**
-     * Shim ("Celular Oculto"): o celular só espelha o telefone, então ele não ganha
-     * DDI próprio no perfil — ele herda o do telefone (`user_ddi`).
+     * Shim ("Celular Oculto"): o celular é só um ESPELHO do telefone (número e DDI
+     * são copiados no save), então ele não ganha campo nenhum no perfil — nem o
+     * número, nem o DDI.
      */
-    public function test_profile_hidden_cellphone_has_no_ddi_field(): void {
+    public function test_profile_hidden_cellphone_has_no_field_at_all(): void {
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
         update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
 
         $fields = $this->profile_fields();
 
-        $this->assertArrayHasKey( 'billing_cellphone', $fields['billing']['fields'], 'O campo espelhado continua na tela.' );
-        $this->assertArrayNotHasKey( 'billing_cellphone_country_code', $fields['billing']['fields'] );
-        $this->assertArrayNotHasKey( 'shipping_cellphone_country_code', $fields['shipping']['fields'] );
-        $this->assertArrayHasKey( 'billing_phone_country_code', $fields['billing']['fields'] );
+        foreach ( array( 'billing', 'shipping' ) as $type ) {
+            $this->assertArrayNotHasKey( "{$type}_cellphone", $fields[ $type ]['fields'] );
+            $this->assertArrayNotHasKey( "{$type}_cellphone_country_code", $fields[ $type ]['fields'] );
+            $this->assertArrayHasKey( "{$type}_phone_country_code", $fields[ $type ]['fields'], 'O DDI do telefone continua.' );
+        }
     }
 
     public function test_profile_hidden_cellphone_ddi_follows_the_phone(): void {
@@ -507,6 +522,33 @@ class PhoneDdiAccountFieldsTest extends WP_UnitTestCase {
 
         $this->assertArrayNotHasKey( 'billing_phone_country', $fields );
         $this->assertArrayNotHasKey( 'billing_cellphone_country', $fields );
+    }
+
+    /**
+     * Checkout: depois de fechar o pedido, o cadastro do cliente é reafirmado com o
+     * telefone do PEDIDO. No shim o `*_cellphone` é o espelho dele — então ele também
+     * é atualizado (número + DDI), senão ficaria com o valor da compra anterior.
+     */
+    public function test_checkout_syncs_the_hidden_cellphone_of_the_customer(): void {
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_shim', 'yes' );
+
+        $user_id = self::factory()->user->create();
+        wp_set_current_user( $user_id );
+        update_user_meta( $user_id, 'billing_phone_country_code', '+55' );
+        update_user_meta( $user_id, 'billing_cellphone', '11999998888' );
+        update_user_meta( $user_id, 'billing_cellphone_country_code', '+351' );
+
+        $order = new \WC_Order();
+        $order->set_customer_id( $user_id );
+        $order->set_billing_phone( '83988888881' );
+
+        $ref = new \ReflectionMethod( WcBetterShippingCalculatorForBrazil::class, 'sync_customer_phone_from_order' );
+        $ref->setAccessible( true );
+        $ref->invoke( $this->plugin(), $order );
+
+        $this->assertSame( '83988888881', get_user_meta( $user_id, 'billing_cellphone', true ) );
+        $this->assertSame( '+55', get_user_meta( $user_id, 'billing_cellphone_country_code', true ) );
     }
 
     public function test_edit_address_save_stores_the_ddi(): void {

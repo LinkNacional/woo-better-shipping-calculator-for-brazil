@@ -122,9 +122,9 @@ class ProfileFieldsTest extends WP_UnitTestCase {
     }
 
     public function test_cellphone_present_in_shim_mode(): void {
-        // "Celular e Fixo" + "Campo de Celular" DESLIGADO (shim): o plugin ARMAZENA a
-        // meta `*_cellphone`, então o campo secundário deve aparecer no perfil (igual
-        // ao admin do pedido) — antes sumia.
+        // "Celular e Fixo" + "Campo de Celular" DESLIGADO (shim): o `*_cellphone` é só
+        // um ESPELHO do telefone, então ele não ganha campo no perfil — o save copia
+        // o telefone (e o DDI) para a meta dele (`save_customer_meta_fields_extra`).
         update_option( 'woo_better_calc_person_type_select', 'both' );
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
         update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
@@ -133,8 +133,7 @@ class ProfileFieldsTest extends WP_UnitTestCase {
         foreach ( array( 'billing', 'shipping' ) as $type ) {
             $fields = $this->apply()[ $type ]['fields'];
             $this->assertArrayHasKey( "{$type}_phone", $fields );
-            $this->assertArrayHasKey( "{$type}_cellphone", $fields, "No shim o celular ($type) deve aparecer no perfil." );
-            $this->assertSame( 'Celular (secundário)', $fields["{$type}_cellphone"]['label'] );
+            $this->assertArrayNotHasKey( "{$type}_cellphone", $fields, "No shim o celular ($type) é espelho: não ganha campo." );
         }
     }
 

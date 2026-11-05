@@ -1566,7 +1566,14 @@ class WcBetterShippingCalculatorForBrazil
             }
 
             $fields = $this->add_admin_number_value($fields, 'cellphone', $type, $order);
-            $fields = $this->add_admin_ddi_field($fields, 'cellphone', $type, $order);
+
+            // DDI do celular só quando ele é um CAMPO de verdade. No shim ("Celular
+            // Oculto") o celular é o ESPELHO do telefone: o DDI é o do telefone
+            // (sincronizado no save do pedido), então um campo próprio aqui seria o
+            // mesmo dado duas vezes — e o que o lojista digitasse seria sobrescrito.
+            if ($this->phone_mode_adds_cellphone_field()) {
+                $fields = $this->add_admin_ddi_field($fields, 'cellphone', $type, $order);
+            }
 
             return $fields;
         }
@@ -1604,7 +1611,14 @@ class WcBetterShippingCalculatorForBrazil
             }
 
             $fields = $this->add_admin_number_value($fields, 'cellphone', $type, $order);
-            $fields = $this->add_admin_ddi_field($fields, 'cellphone', $type, $order);
+
+            // DDI do celular só quando ele é um CAMPO de verdade. No shim ("Celular
+            // Oculto") o celular é o ESPELHO do telefone: o DDI é o do telefone
+            // (sincronizado no save do pedido), então um campo próprio aqui seria o
+            // mesmo dado duas vezes — e o que o lojista digitasse seria sobrescrito.
+            if ($this->phone_mode_adds_cellphone_field()) {
+                $fields = $this->add_admin_ddi_field($fields, 'cellphone', $type, $order);
+            }
         } else {
             // O woo-better gerencia o telefone mas NÃO cria campo de celular:
             // remove qualquer `cellphone` que tenha vindo de outro plugin. O
@@ -3155,6 +3169,18 @@ class WcBetterShippingCalculatorForBrazil
                     $order->update_meta_data("_{$type}_cellphone", $national);
                 }
             }
+
+            // Shim ("Celular Oculto"): o celular é o ESPELHO do telefone, então o DDI
+            // dele acompanha o do telefone no MESMO save — este é o ponto comum de
+            // todos os saves (checkout clássico/blocos, admin, API, HPOS). Sem isso a
+            // meta dele guardaria um DDI antigo: `order_ddi` só cai no telefone quando
+            // ela está VAZIA.
+            if ($this->phone_mode_adds_cellphone_shim()) {
+                $phone_ddi = $this->order_ddi($order, $type);
+                if ('' !== $phone_ddi) {
+                    $order->update_meta_data("_{$type}_cellphone_country_code", $phone_ddi);
+                }
+            }
         }
     }
 
@@ -3215,6 +3241,28 @@ class WcBetterShippingCalculatorForBrazil
         if ('' !== $shipping) {
             $customer->set_shipping_phone($shipping);
         }
+
+        // Shim ("Celular Oculto"): o `*_cellphone` do cadastro é o ESPELHO do
+        // telefone — atualiza junto, senão a meta dele ficaria com o número (e o DDI)
+        // da compra anterior. `*_country_code` do telefone já foi gravado pelo
+        // checkout (`persist_phone_values`).
+        if ($this->phone_mode_adds_cellphone_shim()) {
+            foreach (array('billing' => $billing, 'shipping' => $shipping) as $type => $phone) {
+                if ('' === $phone) {
+                    continue;
+                }
+
+                $customer->update_meta_data(
+                    "{$type}_cellphone",
+                    $this->mirror_phone_to_cellphone($phone, self::user_ddi($user_id, $type, 'phone'))
+                );
+                $customer->update_meta_data(
+                    "{$type}_cellphone_country_code",
+                    self::user_ddi($user_id, $type, 'phone')
+                );
+            }
+        }
+
         $customer->save();
 
         // Reflete no objeto/sessão atuais (se for o mesmo usuário) — evita a tela
@@ -9381,7 +9429,11 @@ class WcBetterShippingCalculatorForBrazil
      * A tela não tem como injetar valor no input (o `WC_Admin_Profile` lê o meta
      * direto), então o campo é declarado aqui e o valor sai do user meta; o default
      * `+55` aparece quando a meta ainda não existe (`profile_ddi_default_script`).
-     * Sempre opcional: quem manda no telefone é o campo dele.
+     * Obrigatório: quem preenche é o plugin, e o campo nunca fica vazio.
+     *
+     * SEM `class`: o `WC_Admin_Profile` usa `regular-text` (a largura cheia da coluna)
+     * quando o campo não traz classe. Com qualquer classe (ex.: `short`) o input cai
+     * no tamanho padrão do navegador e fica com metade da largura dos demais.
      *
      * @param string $label
      * @return array
@@ -9391,7 +9443,6 @@ class WcBetterShippingCalculatorForBrazil
         return array(
             'label'       => $label,
             'description' => '',
-            'class'       => 'short',
         );
     }
 
@@ -9430,16 +9481,19 @@ class WcBetterShippingCalculatorForBrazil
             return $fields;
         }
 
-        // Telefone/Celular seguem o "Comportamento do Campo de Telefone", espelhando o
-        // admin do pedido (`ensure_admin_phone_fields`):
+        // Telefone/Celular seguem o "Comportamento do Campo de Telefone":
         //  - "Somente Celular": só o campo Celular (label "Celular");
-        //  - "Celular e Fixo": telefone (principal) + Celular (secundário) — aparece
-        //    SEMPRE que o plugin ARMAZENA a meta (inclui o modo shim, `enable_cellphone
-        //    _field=no`), não só quando o campo é visível no checkout;
+        //  - "Celular e Fixo" com o "Campo de Celular" ligado: telefone (principal) +
+        //    Celular (secundário);
+        //  - "Celular e Fixo" com o "Campo de Celular" desligado (shim "Celular
+        //    Oculto"): o Celular NÃO ganha campo aqui. Ele é só um espelho do telefone,
+        //    e `save_customer_meta_fields_extra()` já copia o telefone (e o DDI) para
+        //    a meta dele no save — um campo na tela só duplicaria a informação e
+        //    deixaria as duas pontas divergirem;
         //  - "Somente Fixo": só telefone;  "Desabilitar": nenhum.
         $phone_mode = $this->get_phone_mode();
         $shows_phone = ! in_array($phone_mode, array('cellphone_only', 'disabled'), true);
-        $shows_cellphone = $this->phone_mode_stores_cellphone();
+        $shows_cellphone = $this->phone_mode_adds_cellphone_field();
         // O campo de DDI só existe quando o plugin GERENCIA o telefone: nos modos
         // "Desabilitar" o valor é do WooCommerce e o plugin não guarda o DDI.
         $shows_ddi = $this->phone_mode_hides_native_option();
@@ -9552,10 +9606,8 @@ class WcBetterShippingCalculatorForBrazil
         }
         if ($shows_cellphone) {
             // No "Somente Celular" o celular É o campo principal: o DDI dele é o do
-            // bloco principal (`*_phone_country_code`), como no checkout. No shim
-            // ("Celular Oculto") o celular só ESPELHA o telefone — não tem campo nem
-            // DDI próprio: ele herda o DDI do telefone (`user_ddi`).
-            if ($shows_phone && $shows_ddi && $this->phone_mode_adds_cellphone_field()) {
+            // bloco principal (`*_phone_country_code`), como no checkout.
+            if ($shows_phone && $shows_ddi) {
                 $billing['billing_cellphone_country_code'] = $this->profile_ddi_field(
                     sprintf(
                         /* translators: %s: nome do campo de celular que este DDI acompanha. */
@@ -9617,7 +9669,7 @@ class WcBetterShippingCalculatorForBrazil
             $shipping['shipping_phone'] = $incoming_shipping['shipping_phone'];
         }
         if ($shows_cellphone) {
-            if ($shows_phone && $shows_ddi && $this->phone_mode_adds_cellphone_field()) {
+            if ($shows_phone && $shows_ddi) {
                 $shipping['shipping_cellphone_country_code'] = $this->profile_ddi_field(
                     sprintf(
                         /* translators: %s: nome do campo de celular que este DDI acompanha. */
