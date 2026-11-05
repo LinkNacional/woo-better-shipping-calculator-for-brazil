@@ -85,25 +85,45 @@ class HiddenFieldsSpacingTest extends WP_UnitTestCase {
         $this->assertArrayNotHasKey( 'input_class', $fields['billing']['billing_phone_country'] );
     }
 
-    // --- O wrapper recebe a classe (edição de endereço) ---------------------
+    // --- Edição de endereço: o DDI é um campo VISÍVEL ----------------------
 
-    public function test_edit_address_hidden_ddi_wrapper_carries_the_class(): void {
+    /**
+     * Na edição de endereço da conta o DDI deixou de ser `hidden`: virou campo
+     * próprio, exibido acima do telefone/celular (a mesma convenção do perfil e do
+     * admin do pedido). O hidden com a classe de espaçamento continua sendo o do
+     * CHECKOUT clássico (testado acima).
+     */
+    public function test_edit_address_ddi_is_a_visible_field(): void {
         $this->ensure_wc_ready();
         update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
 
         $billing = $this->plugin()->add_edit_address_billing_fields(
             array( 'billing_country' => array( 'value' => 'BR' ) )
         );
 
         $this->assertArrayHasKey( 'billing_phone_country', $billing );
-        $this->assertContains( self::HIDDEN_CLASS, $billing['billing_phone_country']['class'] );
+        $this->assertSame( 'text', $billing['billing_phone_country']['type'] );
+        $this->assertFalse( (bool) $billing['billing_phone_country']['required'], 'O DDI é opcional.' );
+        $this->assertArrayHasKey( 'billing_cellphone_country', $billing, 'O DDI do celular acompanha o campo dele.' );
+        $this->assertLessThan(
+            $billing['billing_phone']['priority'],
+            $billing['billing_phone_country']['priority'],
+            'O DDI fica ACIMA do telefone.'
+        );
+        $this->assertLessThan(
+            $billing['billing_cellphone']['priority'],
+            $billing['billing_cellphone_country']['priority'],
+            'E o do celular acima do celular.'
+        );
 
         $shipping = $this->plugin()->add_edit_address_shipping_fields(
             array( 'shipping_country' => array( 'value' => 'BR' ) )
         );
 
-        $this->assertArrayHasKey( 'shipping_phone_country', $shipping );
-        $this->assertContains( self::HIDDEN_CLASS, $shipping['shipping_phone_country']['class'] );
+        $this->assertSame( 'text', $shipping['shipping_phone_country']['type'] );
+        $this->assertArrayHasKey( 'shipping_cellphone_country', $shipping );
+        $this->assertArrayNotHasKey( self::HIDDEN_CLASS, (array) $shipping['shipping_phone_country']['class'] );
     }
 
     // --- Contrato do WooCommerce: `class` vira a classe do <p> --------------
