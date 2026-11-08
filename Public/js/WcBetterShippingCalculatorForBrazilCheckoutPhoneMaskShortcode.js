@@ -242,6 +242,16 @@ jQuery(function ($) {
             return;
         }
 
+        // Outro plugin já inicializou o intl-tel-input neste input — no FunnelKit
+        // Aero Checkout ele faz isso no `#billing_phone`/`#shipping_phone` do próprio
+        // layout. Um segundo init empilha dois wrappers `.iti` no mesmo campo e as
+        // duas instâncias brigam pelo valor (uma reformata o que a outra escreveu e
+        // o número chega errado/vazio no pedido). O `.iti` em volta é a marca de que
+        // o campo já tem dono: nesse caso não mexemos.
+        if (field.closest('.iti')) {
+            return;
+        }
+
         // Teclado de TELEFONE (não o numérico puro): o `type="tel"` já traz o `+`,
         // `*` e `#`, e por isso `inputmode="tel"` só reafirma o default — sem ele,
         // um `inputmode="numeric"` restringiria a digitação aos dígitos.
