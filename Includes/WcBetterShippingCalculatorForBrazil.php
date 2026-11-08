@@ -4262,7 +4262,14 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        $billing_ie = isset($_POST['billing_ie']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['billing_ie']))) : '';
+        // Sem o campo no formulário não há como preencher: exigir barraria o pedido
+        // para sempre (é o caso do checkout do FunnelKit, que monta a lista de campos
+        // a partir do layout do funil).
+        if (! isset($_POST['billing_ie'])) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            return;
+        }
+
+        $billing_ie = strtoupper(sanitize_text_field(wp_unslash($_POST['billing_ie']))); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 
         if ('' === trim($billing_ie)) {
             wc_add_notice(__('Por favor, preencha a Inscrição Estadual (IE) ou marque como ISENTO.', 'woo-better-shipping-calculator-for-brazil'), 'error');
@@ -4310,7 +4317,12 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        $billing_im = isset($_POST['billing_im']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['billing_im']))) : '';
+        // Mesmo critério da IE: campo ausente do formulário = não renderizado.
+        if (! isset($_POST['billing_im'])) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            return;
+        }
+
+        $billing_im = strtoupper(sanitize_text_field(wp_unslash($_POST['billing_im']))); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 
         if ('' === trim($billing_im)) {
             wc_add_notice(__('Por favor, preencha a Inscrição Municipal (IM).', 'woo-better-shipping-calculator-for-brazil'), 'error');
@@ -9092,6 +9104,35 @@ class WcBetterShippingCalculatorForBrazil
      * @param \WP_Error $errors Objeto de erros acumulados pelo WooCommerce.
      * @return void
      */
+    /**
+     * Campos do checkout cuja obrigatoriedade é gerenciada por este plugin.
+     *
+     * Usado pela rede de segurança de `lkn_disabled_require_field()`: só mexemos
+     * nesses (nunca em campos do tema/WooCommerce), e só para desfazer a exigência
+     * quando o campo nem foi enviado pelo formulário.
+     *
+     * @return string[]
+     */
+    private function checkout_fields_we_may_require() {
+        return array(
+            'billing_document',
+            'billing_persontype',
+            'billing_cpf',
+            'billing_cnpj',
+            'billing_number',
+            'billing_neighborhood',
+            'billing_ie',
+            'billing_im',
+            'billing_rg',
+            'billing_birthdate',
+            'billing_gender',
+            'billing_cellphone',
+            'shipping_number',
+            'shipping_neighborhood',
+            'shipping_cellphone',
+        );
+    }
+
     public function lkn_disabled_require_field( $data, $errors ) {
         $billing_country = isset( $data['billing_country'] ) ? sanitize_text_field( (string) $data['billing_country'] ) : '';
         $billing_document = isset( $data['billing_document'] ) ? sanitize_text_field( (string) $data['billing_document'] ) : '';
@@ -9136,6 +9177,23 @@ class WcBetterShippingCalculatorForBrazil
                 $errors->remove( 'billing_company_required' );
             }
             return;
+        }
+
+        // Campo que o FORMULÁRIO NÃO ENVIOU não pode ser exigido: o `$data` do
+        // WooCommerce traz uma chave para todo campo registrado (mesmo com valor
+        // vazio), então o `required` do array de campos barra o pedido mesmo quando
+        // o campo não foi renderizado nesta tela. É o caso do checkout do FunnelKit
+        // (Aero), que monta a lista de campos do layout do funil e não renderiza o que
+        // não está nele — ex.: Inscrição Estadual/Municipal e Data de Nascimento, que
+        // a compat do FunnelKit remove da lista de campos de terceiros.
+        //
+        // Uma chave AUSENTE do `$_POST` significa "campo não renderizado"; um campo
+        // renderizado e deixado em branco chega como string vazia (presente, então
+        // continua sendo exigido normalmente).
+        foreach ( $this->checkout_fields_we_may_require() as $field_key ) {
+            if ( ! isset( $_POST[ $field_key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- o WC já verificou o nonce em process_checkout().
+                $errors->remove( $field_key . '_required' );
+            }
         }
 
         // Se for CPF, IE e empresa não são obrigatórios.
@@ -11582,6 +11640,111 @@ class WcBetterShippingCalculatorForBrazil
             );
 
             $registered[] = 'billing_rg';
+        }
+
+        // Inscrição Estadual (IE). O compat do FunnelKit com o Brazilian REMOVE
+        // `billing_ie` da lista de campos de terceiros (`disabled_third_party_billing_fields`)
+        // e não a registra como campo do Aero — sem isto ela não é renderizada em
+        // lugar nenhum no funil, e o cliente PJ esbarra em "Por favor, preencha a
+        // Inscrição Estadual (IE) ou marque como ISENTO" sem ter onde preencher.
+        // Precedência: só registramos com o recurso LIGADO aqui (com ele desligado
+        // quem manda é o Brazilian/tema, como no checkout clássico).
+        $person_type_config = get_option('woo_better_calc_person_type_select', 'none');
+        $pj_enabled         = in_array($person_type_config, array('legal', 'both'), true);
+
+        if ('yes' === get_option('woo_better_calc_enable_ie_field', 'no') && $pj_enabled) {
+            new \WFACP_Add_Address_Field(
+                'ie',
+                array(
+                    'label'       => __('Inscrição Estadual (IE)', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => __('Digite a IE ou marque Isento', 'woo-better-shipping-calculator-for-brazil'),
+                    'class'       => array('form-row-wide', 'woo-better-ie-field'),
+                    'cssready'    => array('wfacp-col-full'),
+                    'required'    => true,
+                    'type'        => 'text',
+                    'priority'    => 32,
+                    'custom_attributes' => array(
+                        'maxlength'     => '14',
+                        'data-ie-field' => '1',
+                    ),
+                ),
+                'billing',
+                false
+            );
+
+            $registered[] = 'billing_ie';
+        }
+
+        // Inscrição Municipal (IM): mesmo gate/obrigatoriedade da IE.
+        if ('yes' === get_option('woo_better_calc_enable_im_field', 'no') && $pj_enabled) {
+            new \WFACP_Add_Address_Field(
+                'im',
+                array(
+                    'label'       => __('Inscrição Municipal (IM)', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => __('Digite a Inscrição Municipal (IM)', 'woo-better-shipping-calculator-for-brazil'),
+                    'class'       => array('form-row-wide', 'woo-better-im-field'),
+                    'cssready'    => array('wfacp-col-full'),
+                    'required'    => true,
+                    'type'        => 'text',
+                    'priority'    => 33,
+                    'custom_attributes' => array(
+                        'maxlength'     => '15',
+                        'data-im-field' => '1',
+                    ),
+                ),
+                'billing',
+                false
+            );
+
+            $registered[] = 'billing_im';
+        }
+
+        // Data de nascimento e gênero: também removidos pela compat e invisíveis no
+        // funil. Sem o `required` do array de campos eles não bloqueiam nada, mas o
+        // cliente não teria como informar o dado.
+        if ('yes' === get_option('woo_better_calc_enable_birthdate_field', 'no')) {
+            new \WFACP_Add_Address_Field(
+                'birthdate',
+                array(
+                    'label'       => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => __('DD/MM/AAAA', 'woo-better-shipping-calculator-for-brazil'),
+                    'class'       => array('form-row-wide'),
+                    'cssready'    => array('wfacp-col-full'),
+                    'required'    => ('yes' === get_option('woo_better_calc_birthdate_required', 'yes')),
+                    'type'        => 'date',
+                    'priority'    => 25,
+                ),
+                'billing',
+                false
+            );
+
+            $registered[] = 'billing_birthdate';
+        }
+
+        if ('yes' === get_option('woo_better_calc_enable_gender_field', 'no')) {
+            new \WFACP_Add_Address_Field(
+                'gender',
+                array(
+                    'label'       => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
+                    'class'       => array('form-row-wide'),
+                    'cssready'    => array('wfacp-col-full'),
+                    'required'    => false,
+                    'type'        => 'select',
+                    'priority'    => 26,
+                    'options'     => array(
+                        ''                                                    => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Masculino', 'woo-better-shipping-calculator-for-brazil')      => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Feminino', 'woo-better-shipping-calculator-for-brazil')       => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Não-binário', 'woo-better-shipping-calculator-for-brazil')    => __('Não-binário', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Outro', 'woo-better-shipping-calculator-for-brazil')          => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
+                    ),
+                ),
+                'billing',
+                false
+            );
+
+            $registered[] = 'billing_gender';
         }
 
         if (empty($registered)) {

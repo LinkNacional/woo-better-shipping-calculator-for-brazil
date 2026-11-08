@@ -223,6 +223,9 @@ class InscricaoMunicipalFieldTest extends WP_UnitTestCase {
         update_option( 'woo_better_calc_person_type_select', 'legal' );
         update_option( 'woo_better_calc_enable_im_field', 'yes' );
 
+        // Campo RENDERIZADO e enviado em branco: a IM continua obrigatória.
+        $_POST['billing_im'] = '';
+
         $errors = $this->errors_with_im();
         $this->plugin()->lkn_disabled_require_field(
             array( 'billing_country' => 'BR', 'billing_document' => '11222333000181' ),
@@ -232,6 +235,31 @@ class InscricaoMunicipalFieldTest extends WP_UnitTestCase {
         $this->assertNotEmpty(
             $errors->get_error_message( 'billing_im_required' ),
             'CNPJ no Brasil deve manter a IM obrigatória.'
+        );
+
+        unset( $_POST['billing_im'] );
+    }
+
+    /**
+     * Campo que o formulário NÃO renderizou (chave ausente do `$_POST`) não pode ser
+     * exigido — é o caso do checkout do FunnelKit, que monta o formulário pelo layout
+     * do funil e não exibe a IM: exigir barraria o pedido para sempre.
+     */
+    public function test_required_removed_when_the_field_is_not_rendered(): void {
+        update_option( 'woo_better_calc_person_type_select', 'legal' );
+        update_option( 'woo_better_calc_enable_im_field', 'yes' );
+
+        unset( $_POST['billing_im'] );
+
+        $errors = $this->errors_with_im();
+        $this->plugin()->lkn_disabled_require_field(
+            array( 'billing_country' => 'BR', 'billing_document' => '11222333000181' ),
+            $errors
+        );
+
+        $this->assertEmpty(
+            $errors->get_error_message( 'billing_im_required' ),
+            'Sem o campo no formulário não há como preencher a IM.'
         );
     }
 
