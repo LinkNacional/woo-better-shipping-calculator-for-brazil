@@ -306,6 +306,24 @@ class WcBetterShippingCalculatorForBrazil
          * declarada antes — evitando "Cannot redeclare class".
          */
         $this->loader->add_action('wp_loaded', $this, 'register_funnelkit_stub_class', PHP_INT_MAX);
+
+        /**
+         * Integração com FunnelKit Aero Checkout: registra os campos do plugin na
+         * paleta do editor do checkout do funil.
+         *
+         * O Aero Checkout NÃO desenha os campos a partir de
+         * `woocommerce_checkout_fields`: ele usa o layout salvo do funil, que é
+         * montado a partir da lista de campos do próprio FunnelKit. A
+         * compatibilidade oficial dele (class-brazil-field-2.0.php) registra só
+         * CPF/CNPJ, Número e Bairro — o "Celular" e o RG ficam de fora, e o funil
+         * ainda os remove do slot de campos de terceiros. Sem este registro, os
+         * modos "Somente Celular"/"Celular e Fixo" (e o RG) não têm campo nenhum
+         * no checkout do funil.
+         *
+         * O FunnelKit NÃO é dependência: a classe WFACP_Add_Address_Field só existe
+         * quando ele está ativo (plugins_loaded: -1) — sem ela, nada é registrado.
+         */
+        $this->loader->add_action('plugins_loaded', $this, 'register_funnelkit_checkout_fields', 20);
     }
 
     /**
@@ -8976,15 +8994,12 @@ class WcBetterShippingCalculatorForBrazil
             return $data;
         }
 
-        // "Somente Celular" (ou "Desabilitar" com o Campo de Celular ligado): o
-        // telefone nativo não existe e o celular é o campo principal. O TELEFONE
-        // fica VAZIO — o número é guardado na meta `*_cellphone` e o recibo exibe o
-        // celular no lugar do telefone (format_order_*_phone). Não promovemos o
-        // celular para `*_phone`.
+        // "Somente Celular": o telefone nativo não existe e o celular é o campo
+        // principal. O TELEFONE fica VAZIO — o número é guardado na meta
+        // `*_cellphone` e o recibo exibe o celular no lugar do telefone
+        // (format_order_*_phone). Não promovemos o celular para `*_phone`.
         if ( $this->phone_mode_hides_native_field() && $this->phone_mode_adds_cellphone_field() ) {
-            unset( $data['billing_phone'], $data['shipping_phone'] );
-
-            return $data;
+            return $this->fallback_phone_when_cellphone_missing( $data );
         }
 
         // "Celular e Fixo" com o campo de celular DESLIGADO (shim escondido): espelha o
@@ -8992,6 +9007,70 @@ class WcBetterShippingCalculatorForBrazil
         if ( $this->phone_mode_adds_cellphone_shim() ) {
             $data = $this->mirror_one_cellphone( $data, 'billing' );
             $data = $this->mirror_one_cellphone( $data, 'shipping' );
+        }
+
+        return $data;
+    }
+
+    /**
+     * "Somente Celular" em um checkout que NÃO renderiza o campo "Celular".
+     *
+     * O plugin remove o telefone nativo de `woocommerce_checkout_fields` e cria o
+     * `*_cellphone` — mas quem decide o que aparece no formulário é o CHECKOUT, não
+     * o filtro. Checkouts de terceiros renderizam uma lista própria de campos (o
+     * FunnelKit Aero Checkout, por exemplo, monta o formulário a partir do layout do
+     * funil) e simplesmente não mostram o `*_cellphone`. Nesse cenário o cliente
+     * digita o número no telefone que o checkout renderiza e o valor era descartado
+     * dos dois lados: saía do `$data` (unset do telefone) e nunca entrava como
+     * celular — o pedido era criado SEM telefone ("não está pegando o número").
+     *
+     * Aqui o telefone POSTADO volta para o `$data` e é espelhado no `*_cellphone`
+     * quando o formulário não mandou celular — a regra do modo continua valendo (o
+     * número vive na meta `*_cellphone`). No checkout do próprio plugin o
+     * `*_cellphone` chega preenchido e nada muda.
+     *
+     * @param  array $data Dados postados do checkout.
+     * @return array       Dados postados.
+     */
+    private function fallback_phone_when_cellphone_missing( $data ) {
+        foreach ( array( 'billing', 'shipping' ) as $type ) {
+            $phone_key = $type . '_phone';
+            $cell_key  = $type . '_cellphone';
+
+            // O checkout mandou o campo "Celular" (é o nosso formulário): vale o
+            // comportamento original — o telefone fica vazio.
+            if ( isset( $data[ $cell_key ] ) && '' !== trim( (string) $data[ $cell_key ] ) ) {
+                unset( $data[ $phone_key ] );
+
+                continue;
+            }
+
+            // Sem celular no `$data`, o número só pode estar no POST cru: o campo
+            // nativo está fora de `woocommerce_checkout_fields`, então o
+            // `WC_Checkout::get_posted_data()` nunca o inclui.
+            $posted = isset( $_POST[ $phone_key ] ) // phpcs:ignore WordPress.Security.NonceVerification.Missing -- valor do próprio checkout, nonce verificado pelo WC em process_checkout().
+                ? sanitize_text_field( wp_unslash( $_POST[ $phone_key ] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                : '';
+
+            if ( '' === trim( $posted ) ) {
+                unset( $data[ $phone_key ] );
+
+                continue;
+            }
+
+            // DDI do seletor de país, quando o checkout manda um — o hidden
+            // `*_phone_country` é do plugin e pode não existir num checkout de
+            // terceiros (aí o `strip_phone_ddi` usa o padrão do Brasil).
+            $country_key  = $type . '_phone_country';
+            $country_code = '';
+            if ( isset( $data[ $country_key ] ) && '' !== (string) $data[ $country_key ] ) {
+                $country_code = sanitize_text_field( (string) $data[ $country_key ] );
+            } elseif ( isset( $_POST[ $country_key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- idem: campo do próprio checkout.
+                $country_code = sanitize_text_field( wp_unslash( $_POST[ $country_key ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            }
+
+            $data[ $phone_key ] = $posted;
+            $data[ $cell_key ]  = self::strip_phone_ddi( $posted, $country_code );
         }
 
         return $data;
@@ -10940,5 +11019,76 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         require_once plugin_dir_path( __FILE__ ) . 'class-extra-checkout-fields-for-brazil-front-end-stub.php';
+    }
+
+    /**
+     * Integração com FunnelKit Aero Checkout: campos do plugin na paleta do funil.
+     *
+     * O Aero Checkout desenha o formulário a partir do layout salvo do funil (meta
+     * `_wfacp_checkout_fields`), não de `woocommerce_checkout_fields`. A
+     * compatibilidade oficial do FunnelKit com o nosso plugin
+     * (`class-brazil-field-2.0.php` → `setup_new_plugin_billing_fields()`) registra
+     * apenas CPF/CNPJ, Número e Bairro: o "Celular" e o RG ficam de fora e ainda são
+     * removidos do slot de campos de terceiros (`$billing_new_fields`). Resultado no
+     * funil, nos modos "Somente Celular"/"Celular e Fixo": nenhum campo para o
+     * cliente digitar o celular — e o telefone nativo, que o Aero injeta de qualquer
+     * forma, era descartado no envio (ver fallback_phone_when_cellphone_missing()).
+     *
+     * Registrando os campos com `WFACP_Add_Address_Field` eles entram na lista de
+     * campos de endereço do Aero e passam a existir no editor do funil.
+     *
+     * O FunnelKit NÃO é dependência deste plugin: a classe só existe quando ele está
+     * ativo (`plugins_loaded` -1). Sem ela este método não faz nada.
+     *
+     * @return void
+     */
+    public function register_funnelkit_checkout_fields()
+    {
+        if (! class_exists('WFACP_Add_Address_Field')) {
+            return;
+        }
+
+        // "Celular" (`billing_cellphone`/`shipping_cellphone`): mesmas condições e
+        // rótulo do campo que o plugin cria no checkout clássico/blocos.
+        if ($this->phone_mode_adds_cellphone_field()) {
+            $required = ('cellphone_only' === $this->get_phone_mode())
+                ? $this->is_phone_required()
+                : $this->is_cellphone_required();
+
+            foreach (array('billing', 'shipping') as $type) {
+                new \WFACP_Add_Address_Field(
+                    'cellphone',
+                    array(
+                        'label'       => __('Celular', 'woo-better-shipping-calculator-for-brazil'),
+                        'placeholder' => $this->phone_field_placeholder(null, 'cellphone'),
+                        'class'       => array('form-row-wide'),
+                        'cssready'    => array('wfacp-col-full'),
+                        'required'    => $required,
+                        'type'        => 'tel',
+                        'priority'    => 93,
+                    ),
+                    $type,
+                    false
+                );
+            }
+        }
+
+        // RG (`billing_rg`): visível só com CPF completo, como no checkout clássico.
+        if ($this->rg_field_enabled()) {
+            new \WFACP_Add_Address_Field(
+                'rg',
+                array(
+                    'label'       => __('RG', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => __('Digite o RG', 'woo-better-shipping-calculator-for-brazil'),
+                    'class'       => array('form-row-wide', 'woo-better-rg-field'),
+                    'cssready'    => array('wfacp-col-full'),
+                    'required'    => $this->rg_field_required(),
+                    'type'        => 'text',
+                    'priority'    => 24,
+                ),
+                'billing',
+                false
+            );
+        }
     }
 }
