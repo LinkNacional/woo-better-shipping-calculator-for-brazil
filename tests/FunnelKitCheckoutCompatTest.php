@@ -177,4 +177,41 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
 
         unset( $_POST['shipping_phone_country'] );
     }
+
+    /**
+     * Os campos que registramos no Aero também entram na lista de campos REGISTRADOS
+     * dele — é o que impede o `find_extra_fields()` do FunnelKit de tratá-los como
+     * "campos de terceiros" e renderizá-los uma segunda vez no funil.
+     *
+     * O filtro é ADITIVO: nada do que já estava na lista (inclusive o que a compat
+     * oficial do Brazilian adiciona, em prioridade 99) pode sair.
+     */
+    public function test_aero_registered_fields_include_the_fields_we_register(): void {
+        if ( ! class_exists( 'WFACP_Add_Address_Field' ) ) {
+            if ( ! class_exists( __NAMESPACE__ . '\\WFACP_Add_Address_Field_Stub' ) ) {
+                require_once __DIR__ . '/fixtures/wfacp-add-address-field-stub.php';
+            }
+
+            if ( ! class_exists( 'WFACP_Add_Address_Field' ) ) {
+                class_alias( __NAMESPACE__ . '\\WFACP_Add_Address_Field_Stub', 'WFACP_Add_Address_Field' );
+            }
+        }
+
+        $this->cellphone_only();
+        update_option( 'woo_better_calc_person_type_select', 'physical' );
+        update_option( 'woo_better_calc_enable_rg_field', 'yes' );
+
+        $this->plugin()->register_funnelkit_checkout_fields();
+
+        $existing = array( 'billing_phone', 'shipping_phone', 'billing_document' );
+        $registered = apply_filters( 'wfacp_aero_registered_checkout_fields', $existing );
+
+        foreach ( $existing as $key ) {
+            $this->assertContains( $key, $registered, 'A lista de campos do Aero é aditiva: nada pode sair.' );
+        }
+
+        $this->assertContains( 'billing_cellphone', $registered );
+        $this->assertContains( 'shipping_cellphone', $registered, 'O compat oficial do Brazilian não cobre o shipping_cellphone.' );
+        $this->assertContains( 'billing_rg', $registered );
+    }
 }

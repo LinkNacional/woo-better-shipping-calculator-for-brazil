@@ -959,6 +959,16 @@ class WcBetterShippingCalculatorForBrazil
             // fato de o campo só existir para CPF. Com o nosso recurso ligado, a
             // configuração do woo-better vence (mesma lógica do campo Empresa).
             $this->loader->add_action('woocommerce_checkout_process', $this, 'guard_brazilian_rg_required', 11, 1);
+
+            // Tipo de pessoa, CPF/CNPJ e IE: o Brazilian valida os campos DELE
+            // (`billing_persontype`, `billing_cpf`, `billing_cnpj`, `billing_ie`) lendo o
+            // POST cru. No woo-better esses campos são ESPELHOS escondidos do campo
+            // unificado `billing_document` (preenchidos pelo nosso JS) — se o JS não
+            // rodar (autofill, checkout de terceiros, erro de script) o Brazilian
+            // bloqueia o envio com "CPF/Person type/State Registration is a required
+            // field" mesmo com o documento preenchido. Com o nosso recurso ligado a
+            // validação do woo-better é quem manda.
+            $this->loader->add_action('woocommerce_checkout_process', $this, 'guard_brazilian_person_fields_required', 11, 1);
         }
 
         // Campos de telefone conforme o "Comportamento do Campo de Telefone" (woo_better_calc_phone_mode).
@@ -8837,6 +8847,58 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Remove as exigências de tipo de pessoa, CPF/CNPJ e IE feitas pelo plugin
+     * "Brazilian Market on WooCommerce" quando o woo-better gerencia esses campos.
+     *
+     * O `valid_checkout_fields()` do Brazilian (hook `woocommerce_checkout_process`,
+     * prioridade 10) valida o POST CRU dos campos DELE:
+     *
+     * - `billing_persontype`  → "Person type is a required field"
+     * - `billing_cpf`         → "CPF is a required field" (persontype = CPF)
+     * - `billing_cnpj`        → "CNPJ is a required field" (persontype = CNPJ)
+     * - `billing_ie`          → "State Registration is a required field" (settings['ie'])
+     *
+     * No woo-better esses quatro são ESPELHOS escondidos do campo unificado
+     * `billing_document` (quem os preenche é o nosso JS). Quando o JS não roda — e
+     * há vários caminhos para isso: autofill do navegador, checkout de terceiros
+     * (FunnelKit Aero, que monta o formulário por conta própria) ou erro de script —
+     * eles chegam VAZIOS e o Brazilian bloqueia o envio mesmo com o documento certo,
+     * sem o cliente ter como resolver. Com o recurso de tipo de pessoa ligado aqui, a
+     * validação do woo-better (documento + tipo) é a que vale.
+     *
+     * Só age quando o woo-better gerencia os campos de pessoa (`person_type !== none`);
+     * com o recurso desligado, os campos do Brazilian é que estão na tela e ele segue
+     * no comando. A IE só é dispensada quando o NOSSO campo de IE existe (mesmo
+     * critério do campo Empresa/RG); fora disso o aviso original passa.
+     *
+     * O que NÃO é removido: os avisos "is not valid" (`validate_cpf`/`validate_cnpj`
+     * das configurações do Brazilian) continuam valendo — só as exigências de campo
+     * vazio dos espelhos saem, porque o documento é validado pelo woo-better. Fora do
+     * Brasil o documento também não é exigido por nenhum dos dois (o Brazilian só
+     * barra se estiver em "somente Brasil", e o nosso `lkn_disabled_require_field()`
+     * dispensa os campos brasileiros com `billing_country` != BR).
+     *
+     * @return void
+     */
+    public function guard_brazilian_person_fields_required() {
+        $person_type = get_option( 'woo_better_calc_person_type_select', 'none' );
+
+        if ( 'none' === $person_type ) {
+            return;
+        }
+
+        // Rótulos exatamente como o Brazilian os usa (mesmo text domain), para o
+        // match funcionar também com o pt_BR traduzido.
+        $this->remove_brazilian_required_notice( __( 'Person type', 'woocommerce-extra-checkout-fields-for-brazil' ) );
+        $this->remove_brazilian_required_notice( __( 'CPF', 'woocommerce-extra-checkout-fields-for-brazil' ) );
+        $this->remove_brazilian_required_notice( __( 'CNPJ', 'woocommerce-extra-checkout-fields-for-brazil' ) );
+
+        if ( 'yes' === get_option( 'woo_better_calc_enable_ie_field', 'no' ) ) {
+            $this->remove_brazilian_required_notice( __( 'State Registration', 'woocommerce-extra-checkout-fields-for-brazil' ) );
+        }
+    }
+
+    /**
      * Desenfileira o script de front-end do plugin "Brazilian Market on WooCommerce"
      * no checkout clássico/shortcode.
      *
@@ -11048,6 +11110,8 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
+        $registered = array();
+
         // "Celular" (`billing_cellphone`/`shipping_cellphone`): mesmas condições e
         // rótulo do campo que o plugin cria no checkout clássico/blocos.
         if ($this->phone_mode_adds_cellphone_field()) {
@@ -11070,6 +11134,8 @@ class WcBetterShippingCalculatorForBrazil
                     $type,
                     false
                 );
+
+                $registered[] = $type . '_cellphone';
             }
         }
 
@@ -11089,6 +11155,27 @@ class WcBetterShippingCalculatorForBrazil
                 'billing',
                 false
             );
+
+            $registered[] = 'billing_rg';
         }
+
+        if (empty($registered)) {
+            return;
+        }
+
+        // Os campos acima já são campos de ENDEREÇO do Aero. Sem entrar nesta lista
+        // eles continuariam sendo vistos como "campos de terceiros" (o
+        // `find_extra_fields()` do FunnelKit só os descarta se estiverem nos campos
+        // registrados) e apareceriam DUAS vezes no checkout do funil quando o layout
+        // tiver o bloco de campos customizados. A compat oficial do Brazilian faz o
+        // mesmo para os campos dela (`exclude_bzazil_fields`), mas só cobre
+        // `billing_cellphone` — o `shipping_cellphone` escapa, daí este filtro.
+        add_filter(
+            'wfacp_aero_registered_checkout_fields',
+            function ($fields) use ($registered) {
+                return array_merge((array) $fields, $registered);
+            },
+            99
+        );
     }
 }
