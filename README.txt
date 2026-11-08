@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.2.4
+Stable tag: 5.2.5
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -125,6 +125,11 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.2.5 - 2026-11-08
+* Fix: the phone is saved again on the FunnelKit (Aero Checkout) checkout. In the "Cellphone only" mode that checkout does not display the plugin cellphone field, and the number typed in the phone field was dropped — the order was created without a phone. Now, when the form does not submit a cellphone field, the typed phone is saved and mirrored into the cellphone.
+* New: the "Cellphone" and "RG" fields now show up on the FunnelKit funnel checkout editor, next to CPF/CNPJ, Number and Neighborhood. They were not part of the field list, so there was no way to configure them in the funnel.
+* Tweak: when the checkout already applies the phone mask with the country code (as FunnelKit does), the plugin no longer starts a second mask on the same field — the two used to fight over the typed number.
 
 # 5.2.4 - 2026-11-05
 * Fix: the order and customer phone and cellphone are now saved with the number only, without the country code (DDI) — the format Bling accepts. If the customer types the +55 (or just 55), it is removed from the beginning of the number.

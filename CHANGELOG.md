@@ -1,3 +1,8 @@
+# 5.2.5 - 08/11/26
+* Correção: o telefone volta a ser gravado no checkout do FunnelKit (Aero Checkout). No modo "Somente Celular" esse checkout não exibe o campo de celular do plugin, e o número digitado no telefone era descartado — o pedido era criado sem telefone. Agora, quando nenhum campo de celular é enviado pelo formulário, o telefone digitado é salvo e espelhado no celular.
+* Novo: os campos "Celular" e "RG" passam a aparecer no editor do checkout do funil do FunnelKit, junto de CPF/CNPJ, Número e Bairro. Antes eles não existiam na lista de campos e não havia como configurá-los no funil.
+* Ajuste: quando o checkout já aplica a máscara de telefone com DDI (é o caso do FunnelKit), o plugin não inicializa uma segunda máscara no mesmo campo — as duas brigavam pelo número digitado.
+
 # 5.2.4 - 05/11/26
 * Correção: o telefone e o celular do pedido e do cadastro agora são gravados só com o número, sem o DDI — formato que o Bling aceita. Se o cliente digitar o +55 (ou o 55), ele sai do início do número.
 * Novo: campo de DDI próprio acima do telefone e do celular na edição do pedido, no perfil do usuário e na edição de endereço da conta. O DDI continua aparecendo no recibo do pedido, em "Meus pedidos" e nos dados do cliente no admin.
