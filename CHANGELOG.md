@@ -1,6 +1,7 @@
 # 5.2.5 - 08/11/26
 * Correção: o telefone volta a ser gravado no checkout do FunnelKit (Aero Checkout). No modo "Somente Celular" esse checkout não exibe o campo de celular do plugin, e o número digitado no telefone era descartado — o pedido era criado sem telefone. Agora, quando nenhum campo de celular é enviado pelo formulário, o telefone digitado é salvo e espelhado no celular.
 * Novo: os campos "Celular" e "RG" passam a aparecer no editor do checkout do funil do FunnelKit, junto de CPF/CNPJ, Número e Bairro. Antes eles não existiam na lista de campos e não havia como configurá-los no funil.
+* Correção: com o plugin "Brazilian Market on WooCommerce" ativo, o envio do pedido não é mais bloqueado por "Tipo de Pessoa/CPF/CNPJ/Inscrição Estadual é um campo obrigatório" quando o cliente preencheu o nosso campo único de CPF/CNPJ. Esses campos são espelhos escondidos do documento e, se o JS não os preenchia (preenchimento automático do navegador ou checkout de outro plugin), o pedido travava mesmo com o documento certo.
 * Ajuste: quando o checkout já aplica a máscara de telefone com DDI (é o caso do FunnelKit), o plugin não inicializa uma segunda máscara no mesmo campo — as duas brigavam pelo número digitado.
 
 # 5.2.4 - 05/11/26

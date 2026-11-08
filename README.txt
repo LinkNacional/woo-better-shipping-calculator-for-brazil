@@ -129,6 +129,7 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 # 5.2.5 - 2026-11-08
 * Fix: the phone is saved again on the FunnelKit (Aero Checkout) checkout. In the "Cellphone only" mode that checkout does not display the plugin cellphone field, and the number typed in the phone field was dropped — the order was created without a phone. Now, when the form does not submit a cellphone field, the typed phone is saved and mirrored into the cellphone.
 * New: the "Cellphone" and "RG" fields now show up on the FunnelKit funnel checkout editor, next to CPF/CNPJ, Number and Neighborhood. They were not part of the field list, so there was no way to configure them in the funnel.
+* Fix: with the "Brazilian Market on WooCommerce" plugin active, the order is no longer blocked by "Person type/CPF/CNPJ/State Registration is a required field" when the customer filled in our single CPF/CNPJ field. Those are hidden mirrors of the document and, if the JS did not fill them (browser autofill or a third-party checkout), the order got stuck even with the right document.
 * Tweak: when the checkout already applies the phone mask with the country code (as FunnelKit does), the plugin no longer starts a second mask on the same field — the two used to fight over the typed number.
 
 # 5.2.4 - 2026-11-05
