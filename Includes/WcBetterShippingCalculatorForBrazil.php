@@ -140,7 +140,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '5.2.4';
+            $this->version = '5.2.5';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
