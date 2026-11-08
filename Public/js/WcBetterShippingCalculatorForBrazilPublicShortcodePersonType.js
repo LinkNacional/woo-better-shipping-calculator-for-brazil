@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
         
         if (documentInput) {
             setupFieldEvents();
+            seedHiddenFields(documentInput);
         }
         
         // Configurar campo de empresa
@@ -604,6 +605,35 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Configurar eventos dos campos
+    /**
+     * Semeia os espelhos hidden (`billing_persontype`/`billing_cpf`/`billing_cnpj`)
+     * a partir do valor JÁ presente no campo do documento.
+     *
+     * O documento costuma vir preenchido do cadastro (cliente que já comprou antes):
+     * como o cliente não digita nada, o `input` nunca dispara e os hidden iam VAZIOS
+     * no POST — quem lê o POST cru (o plugin "Brazilian Market on WooCommerce", por
+     * exemplo) barrava o pedido com "Tipo de pessoa é obrigatório" mesmo com o CPF
+     * na tela. O paliativo era apagar e digitar o último dígito, o que disparava este
+     * mesmo `updateHiddenFields`.
+     *
+     * @param {HTMLInputElement} documentInput
+     */
+    function seedHiddenFields(documentInput) {
+        const raw = (documentInput.value || '').trim();
+        if (!raw) {
+            return;
+        }
+
+        const personTypeConfig = typeof WooBetterPersonTypeConfig !== 'undefined'
+            ? WooBetterPersonTypeConfig.person_type : 'both';
+        const cleanValue = raw.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+        const detectedType = detectDocumentType(cleanValue, personTypeConfig);
+
+        if (detectedType === 'cpf' || detectedType === 'cnpj') {
+            updateHiddenFields(raw, detectedType);
+        }
+    }
+
     function setupFieldEvents() {
         const documentInput = document.getElementById('billing_document');
         

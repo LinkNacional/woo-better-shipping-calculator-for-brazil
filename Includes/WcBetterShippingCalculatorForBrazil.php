@@ -997,6 +997,22 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_shipping_fields', $this, 'add_cellphone_shipping_fields', 99, 1);
         $this->loader->add_filter('woocommerce_checkout_posted_data', $this, 'handle_cellphone_posted_data', 10, 1);
 
+        // Espelhos do tipo de pessoa (hidden `billing_persontype`/`billing_cpf`/
+        // `billing_cnpj`) preenchidos a partir do documento unificado. Eles SÓ eram
+        // sincronizados quando o cliente digitava no campo — com o CPF vindo pronto
+        // do cadastro (cliente antigo), os hidden iam VAZIOS no POST e qualquer
+        // consumidor que os leia (o Brazilian, por exemplo) barrava o pedido com
+        // "Tipo de pessoa é obrigatório", mesmo com o CPF na tela.
+        //
+        // IMPORTANTE (ordem): `woocommerce_checkout_process` roda ANTES do
+        // `get_posted_data()` no `WC_Checkout::process_checkout()` — por isso a
+        // sincronização acontece aqui, na prioridade 1, antes das validações de
+        // terceiros (o Brazilian valida em 10). Fazer isso só no filtro
+        // `woocommerce_checkout_posted_data` seria tarde demais para eles.
+        $this->loader->add_action('woocommerce_checkout_process', $this, 'sync_person_type_mirrors_before_validation', 1, 0);
+        // Rede de segurança para o `$data` (o POST já está coerente pelo hook acima).
+        $this->loader->add_filter('woocommerce_checkout_posted_data', $this, 'sync_person_type_mirrors_from_document', 5, 1);
+
         // REASON: o JS de front-end do plugin "Brazilian Market on WooCommerce"
         // (assets/js/frontend/frontend.js) esconde TODOS os elementos .person-type-field
         // quando o tipo de pessoa é CPF e, para CNPJ, re-adiciona 'validate-required' ao
@@ -4980,6 +4996,139 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Espelhos (`billing_persontype`, `billing_cpf`, `billing_cnpj`) derivados do
+     * documento unificado.
+     *
+     * O checkout mostra UM campo (`billing_document`) e mantém três hidden para
+     * compatibilidade. Eles eram preenchidos APENAS pelo JS, no evento de digitação:
+     * quando o documento já vem preenchido do cadastro — cliente que fez o pedido na
+     * época em que esses campos eram visíveis (ou que usava o "Brazilian Market on
+     * WooCommerce") — o cliente não digita nada, o JS nunca roda e os hidden chegam
+     * VAZIOS no POST. Quem lê o POST cru (o Brazilian valida em
+     * `woocommerce_checkout_process`) então barra o pedido com "Tipo de pessoa é
+     * obrigatório", com o CPF visível na tela. O paliativo era apagar e digitar o
+     * último dígito, o que disparava o JS.
+     *
+     * @param  string     $document Valor do campo unificado.
+     * @return array|null            Espelhos a aplicar, ou null quando não há o que
+     *                               espelhar (vazio, incompleto ou fora da config).
+     */
+    private function person_type_mirrors_for($document)
+    {
+        if ('none' === get_option('woo_better_calc_person_type_select', 'none')) {
+            return null;
+        }
+
+        $document = trim((string) $document);
+        if ('' === $document) {
+            return null;
+        }
+
+        $clean = preg_replace('/[^0-9A-Z]/', '', strtoupper($document));
+
+        // Mesma regra do JS (`detectDocumentType`) e do `validate_document()`: CPF é
+        // sempre numérico, então qualquer letra indica CNPJ alfanumérico
+        // (IN RFB 2.229/2024). O tamanho sozinho classificaria um CNPJ alfanumérico
+        // de 11 caracteres como CPF, divergindo dos dois validadores.
+        $has_letter = (bool) preg_match('/[A-Z]/', $clean);
+
+        if (!$has_letter && 11 === strlen($clean)) {
+            $type = 'cpf';
+        } elseif (14 === strlen($clean)) {
+            $type = 'cnpj';
+        } else {
+            // Documento incompleto: não adivinha tipo nenhum (quem barra é a validação).
+            return null;
+        }
+
+        // Configuração aceita só um tipo: não criamos espelho do tipo proibido (a
+        // validação dá a mensagem certa — "CNPJ não é permitido"/"CPF não é permitido").
+        $config = get_option('woo_better_calc_person_type_select', 'none');
+        if ('physical' === $config && 'cnpj' === $type) {
+            return null;
+        }
+        if ('legal' === $config && 'cpf' === $type) {
+            return null;
+        }
+
+        if ('cpf' === $type) {
+            return array(
+                'billing_persontype' => '1',
+                'billing_cpf'        => $document,
+                'billing_cnpj'       => '',
+            );
+        }
+
+        return array(
+            'billing_persontype' => '2',
+            'billing_cpf'        => '',
+            'billing_cnpj'       => $document,
+        );
+    }
+
+    /**
+     * Sincroniza os espelhos no POST cru ANTES de qualquer validação.
+     *
+     * `woocommerce_checkout_process` roda antes do `get_posted_data()` no
+     * `WC_Checkout::process_checkout()`, então escrever em `$_POST` aqui faz o
+     * `$data`, o pedido e o cadastro do cliente já verem os espelhos — e os
+     * validadores de terceiros (o Brazilian lê `$_POST` em
+     * `valid_checkout_fields()`) param de barrar o pedido.
+     *
+     * @return void
+     */
+    public function sync_person_type_mirrors_before_validation()
+    {
+        if (! isset($_POST['billing_document'])) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- leitura do próprio checkout; o WC verifica o nonce em process_checkout().
+            return;
+        }
+
+        $mirrors = $this->person_type_mirrors_for(
+            sanitize_text_field(wp_unslash($_POST['billing_document'])) // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        );
+
+        if (empty($mirrors)) {
+            return;
+        }
+
+        foreach ($mirrors as $key => $value) {
+            $_POST[$key] = $value; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- espelho derivado do próprio POST.
+        }
+    }
+
+    /**
+     * Rede de segurança: garante os espelhos também no array `$data` do checkout.
+     *
+     * @param  array $data Dados postados.
+     * @return array       Dados postados com os espelhos coerentes.
+     */
+    public function sync_person_type_mirrors_from_document($data)
+    {
+        if (! is_array($data) || empty($data['billing_document'])) {
+            return $data;
+        }
+
+        $mirrors = $this->person_type_mirrors_for(
+            sanitize_text_field((string) $data['billing_document'])
+        );
+
+        if (empty($mirrors)) {
+            return $data;
+        }
+
+        foreach ($mirrors as $key => $value) {
+            $current = isset($data[$key]) ? (string) $data[$key] : null;
+            if ($current === (string) $value) {
+                continue;
+            }
+
+            $data[$key] = $value;
+        }
+
+        return $data;
+    }
+
+    /**
      * Documento do cliente quando o checkout não enviou nenhum.
      *
      * Usado quando o formulário carrega o CPF/CNPJ do cadastro mas não o envia no
@@ -5935,10 +6084,20 @@ class WcBetterShippingCalculatorForBrazil
                 }
             }
 
-            // Nada preenchido no formulário: usa o documento do CADASTRO (inclusive
-            // o herdado do "Brazilian Market on WooCommerce"), para o pedido não sair
-            // sem CPF/CNPJ só porque o cliente não redigitou o número.
-            if (empty($billing_document) && empty($billing_cpf) && empty($billing_cnpj)) {
+            // O campo nem chegou no POST (checkout que não renderiza o documento,
+            // ex.: layout do funil sem ele): usa o documento do CADASTRO — inclusive
+            // o herdado do "Brazilian Market on WooCommerce" — para o pedido não sair
+            // sem CPF/CNPJ. Se o campo VEIO (mesmo vazio), o cliente apagou de
+            // propósito: não ressuscitamos o valor.
+            //
+            // O discriminador é o POST, não o `$data`: o `$data` traz uma chave para
+            // TODO campo registrado, então `billing_document` existe nele mesmo quando
+            // o formulário não o renderizou.
+            if (
+                ! isset($_POST['billing_document']) // phpcs:ignore WordPress.Security.NonceVerification.Missing -- presença do campo no próprio checkout.
+                && ! isset($_POST['billing_cpf']) // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                && ! isset($_POST['billing_cnpj']) // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            ) {
                 $fallback = $this->fallback_document_from_customer($order);
 
                 if ('' !== $fallback['cpf'] || '' !== $fallback['cnpj']) {
@@ -6069,7 +6228,10 @@ class WcBetterShippingCalculatorForBrazil
             // finaliza não envia nada. Usa o documento do cadastro para o pedido não
             // sair sem CPF/CNPJ — inclusive o herdado do "Brazilian Market on
             // WooCommerce", que é o que o cliente vê no campo.
-            if (empty($billing_document) && empty($billing_cpf) && empty($billing_cnpj)) {
+            //
+            // Se a extensão VEIO mas com os valores vazios, o cliente apagou o
+            // documento no formulário: aí não ressuscitamos o do cadastro.
+            if (! isset($extensions['woo_better_person_type'])) {
                 $fallback = $this->fallback_document_from_customer($order);
 
                 if ('' !== $fallback['cpf'] || '' !== $fallback['cnpj']) {
