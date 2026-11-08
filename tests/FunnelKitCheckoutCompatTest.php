@@ -144,6 +144,97 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
     }
 
     /**
+     * Garante a classe `WFACP_Add_Address_Field` disponível (o plugin a procura no
+     * escopo global; o stub dos testes vive no namespace do teste).
+     */
+    private function ensure_aero_field_class(): void {
+        if ( class_exists( 'WFACP_Add_Address_Field' ) ) {
+            return;
+        }
+
+        if ( ! class_exists( __NAMESPACE__ . '\\WFACP_Add_Address_Field_Stub' ) ) {
+            require_once __DIR__ . '/fixtures/wfacp-add-address-field-stub.php';
+        }
+
+        if ( ! class_exists( 'WFACP_Add_Address_Field' ) ) {
+            class_alias( __NAMESPACE__ . '\\WFACP_Add_Address_Field_Stub', 'WFACP_Add_Address_Field' );
+        }
+    }
+
+    /**
+     * IE, IM, data de nascimento e gênero também precisam entrar na paleta do funil.
+     *
+     * A compatibilidade do FunnelKit REMOVE esses campos da lista de "campos de
+     * terceiros" e não os registra como campo do Aero — sem registro eles não são
+     * renderizados em lugar nenhum do funil, e o cliente PJ é barrado com "Por favor,
+     * preencha a Inscrição Estadual (IE) ou marque como ISENTO" sem ter onde digitar.
+     */
+    public function test_aero_registration_adds_state_and_city_registration_fields(): void {
+        $this->ensure_aero_field_class();
+
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_enable_ie_field', 'yes' );
+        update_option( 'woo_better_calc_enable_im_field', 'yes' );
+        update_option( 'woo_better_calc_enable_birthdate_field', 'yes' );
+        update_option( 'woo_better_calc_enable_gender_field', 'yes' );
+
+        $this->plugin()->register_funnelkit_checkout_fields();
+
+        $billing = apply_filters( 'wfacp_default_billing_address_fields', array(), 'BR' );
+
+        $this->assertArrayHasKey( 'ie', $billing, 'A IE precisa existir na paleta do Aero.' );
+        $this->assertArrayHasKey( 'im', $billing, 'A IM precisa existir na paleta do Aero.' );
+        $this->assertArrayHasKey( 'birthdate', $billing, 'A data de nascimento precisa existir na paleta do Aero.' );
+        $this->assertArrayHasKey( 'gender', $billing, 'O gênero precisa existir na paleta do Aero.' );
+        $this->assertSame( 'select', $billing['gender']['type'] );
+        $this->assertArrayHasKey( 'options', $billing['gender'] );
+    }
+
+    /**
+     * Precedência: com o recurso DESLIGADO no woo-better quem manda é o Brazilian (ou
+     * o tema) — nada é registrado, como no checkout clássico.
+     */
+    public function test_aero_registration_respects_the_feature_switches(): void {
+        $this->ensure_aero_field_class();
+
+        update_option( 'woo_better_calc_person_type_select', 'physical' );
+        update_option( 'woo_better_calc_enable_ie_field', 'no' );
+        update_option( 'woo_better_calc_enable_im_field', 'no' );
+        update_option( 'woo_better_calc_enable_birthdate_field', 'no' );
+        update_option( 'woo_better_calc_enable_gender_field', 'no' );
+        update_option( 'woo_better_calc_enable_rg_field', 'no' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+
+        $this->plugin()->register_funnelkit_checkout_fields();
+
+        $billing = apply_filters( 'wfacp_default_billing_address_fields', array(), 'BR' );
+
+        $this->assertArrayNotHasKey( 'ie', $billing );
+        $this->assertArrayNotHasKey( 'im', $billing );
+        $this->assertArrayNotHasKey( 'birthdate', $billing );
+        $this->assertArrayNotHasKey( 'gender', $billing );
+        $this->assertArrayNotHasKey( 'rg', $billing );
+    }
+
+    /**
+     * IE/IM só existem para pessoa jurídica: com "apenas pessoa física" não entram.
+     */
+    public function test_aero_registration_skips_pj_fields_on_physical_only(): void {
+        $this->ensure_aero_field_class();
+
+        update_option( 'woo_better_calc_person_type_select', 'physical' );
+        update_option( 'woo_better_calc_enable_ie_field', 'yes' );
+        update_option( 'woo_better_calc_enable_im_field', 'yes' );
+
+        $this->plugin()->register_funnelkit_checkout_fields();
+
+        $billing = apply_filters( 'wfacp_default_billing_address_fields', array(), 'BR' );
+
+        $this->assertArrayNotHasKey( 'ie', $billing );
+        $this->assertArrayNotHasKey( 'im', $billing );
+    }
+
+    /**
      * O DDI do seletor de país é respeitado ao espelhar (não assume sempre +55).
      */
     public function test_cellphone_fallback_respects_the_posted_country_code(): void {
