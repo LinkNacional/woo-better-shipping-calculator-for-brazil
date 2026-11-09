@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.2.4
+Stable tag: 5.2.5
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -125,6 +125,10 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.2.5 - 2026-11-08
+* Fix: the CPF/CNPJ of customers from the "Brazilian Market on WooCommerce" plugin (or from older versions of this plugin) counts again on the order. The document saved only in the old fields is migrated to the new field on the first visit, the order (including on the block checkout) carries the account CPF/CNPJ when the form sends none, and the hidden person type/CPF/CNPJ mirrors are filled on the server before any validation — with the person type enabled here, the order is no longer blocked by "Person type/CPF/CNPJ/State Registration is a required field".
+* Fix: the Brazilian fields now work on the FunnelKit (Aero Checkout) funnel checkout. Cellphone, RG, State Registration (IE), City Registration (IM), Birthdate and Gender now show up on the funnel editor and are registered as funnel fields (before, a legal-entity customer was blocked with no place to type the IE, and the phone typed in the "Cellphone only" mode was dropped — it is now saved and mirrored into the cellphone). A field the form does not display (such as Number) is no longer required on submit, and the plugin no longer starts a second phone mask when the checkout already applies the FunnelKit one.
 
 # 5.2.4 - 2026-11-05
 * Fix: the order and customer phone and cellphone are now saved with the number only, without the country code (DDI) — the format Bling accepts. If the customer types the +55 (or just 55), it is removed from the beginning of the number.

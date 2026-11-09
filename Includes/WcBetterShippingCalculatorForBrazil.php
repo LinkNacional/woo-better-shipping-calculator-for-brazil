@@ -140,7 +140,7 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '5.2.4';
+            $this->version = '5.2.5';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
@@ -252,10 +252,24 @@ class WcBetterShippingCalculatorForBrazil
         // Remover erros de validação de CPF/CNPJ quando país não é BR
         $this->loader->add_action('woocommerce_after_checkout_validation', $this, 'lkn_disabled_require_field', 10, 2);
 
-        // Hook para atualizar billing_document quando dados do usuário são salvos
-        
         // Hook para atualizar billing_document quando perfil do usuário é atualizado
         $this->loader->add_action('profile_update', $this, 'update_billing_document_on_profile_update', 10, 1);
+
+        /**
+         * Compatibilidade com o cadastro ANTIGO (`billing_persontype`/`billing_cpf`/
+         * `billing_cnpj`, do plugin "Brazilian Market on WooCommerce" ou de versões
+         * anteriores a este plugin): o documento unificado `billing_document` é
+         * migrado na primeira leitura, sem o cliente precisar digitar o CPF de novo.
+         *
+         * Sem isso, quem se cadastrou pelo Brazilian via o CPF no campo (o JS semeia
+         * a partir das metas antigas) mas o checkout clássico, a edição de endereço e
+         * o perfil liam `billing_document` VAZIO — e o pedido era barrado.
+         */
+        $this->loader->add_action('template_redirect', $this, 'migrate_legacy_document_on_front', 5);
+        $this->loader->add_action('admin_init', $this, 'migrate_legacy_document_on_admin_profile', 5);
+        // Rede de segurança: semeia o campo do checkout clássico mesmo quando a
+        // migração não chegou a rodar nesta requisição.
+        $this->loader->add_filter('woocommerce_checkout_get_value', $this, 'seed_billing_document_from_legacy', 99, 2);
         
         // REASON: o campo Empresa nativo do WooCommerce é uma OPTION
         // (woocommerce_checkout_company_field), não post meta. O hook correto para
@@ -306,6 +320,24 @@ class WcBetterShippingCalculatorForBrazil
          * declarada antes — evitando "Cannot redeclare class".
          */
         $this->loader->add_action('wp_loaded', $this, 'register_funnelkit_stub_class', PHP_INT_MAX);
+
+        /**
+         * Integração com FunnelKit Aero Checkout: registra os campos do plugin na
+         * paleta do editor do checkout do funil.
+         *
+         * O Aero Checkout NÃO desenha os campos a partir de
+         * `woocommerce_checkout_fields`: ele usa o layout salvo do funil, que é
+         * montado a partir da lista de campos do próprio FunnelKit. A
+         * compatibilidade oficial dele (class-brazil-field-2.0.php) registra só
+         * CPF/CNPJ, Número e Bairro — o "Celular" e o RG ficam de fora, e o funil
+         * ainda os remove do slot de campos de terceiros. Sem este registro, os
+         * modos "Somente Celular"/"Celular e Fixo" (e o RG) não têm campo nenhum
+         * no checkout do funil.
+         *
+         * O FunnelKit NÃO é dependência: a classe WFACP_Add_Address_Field só existe
+         * quando ele está ativo (plugins_loaded: -1) — sem ela, nada é registrado.
+         */
+        $this->loader->add_action('plugins_loaded', $this, 'register_funnelkit_checkout_fields', 20);
     }
 
     /**
@@ -941,6 +973,16 @@ class WcBetterShippingCalculatorForBrazil
             // fato de o campo só existir para CPF. Com o nosso recurso ligado, a
             // configuração do woo-better vence (mesma lógica do campo Empresa).
             $this->loader->add_action('woocommerce_checkout_process', $this, 'guard_brazilian_rg_required', 11, 1);
+
+            // Tipo de pessoa, CPF/CNPJ e IE: o Brazilian valida os campos DELE
+            // (`billing_persontype`, `billing_cpf`, `billing_cnpj`, `billing_ie`) lendo o
+            // POST cru. No woo-better esses campos são ESPELHOS escondidos do campo
+            // unificado `billing_document` (preenchidos pelo nosso JS) — se o JS não
+            // rodar (autofill, checkout de terceiros, erro de script) o Brazilian
+            // bloqueia o envio com "CPF/Person type/State Registration is a required
+            // field" mesmo com o documento preenchido. Com o nosso recurso ligado a
+            // validação do woo-better é quem manda.
+            $this->loader->add_action('woocommerce_checkout_process', $this, 'guard_brazilian_person_fields_required', 11, 1);
         }
 
         // Campos de telefone conforme o "Comportamento do Campo de Telefone" (woo_better_calc_phone_mode).
@@ -954,6 +996,22 @@ class WcBetterShippingCalculatorForBrazil
         $this->loader->add_filter('woocommerce_billing_fields', $this, 'add_cellphone_billing_fields', 99, 1);
         $this->loader->add_filter('woocommerce_shipping_fields', $this, 'add_cellphone_shipping_fields', 99, 1);
         $this->loader->add_filter('woocommerce_checkout_posted_data', $this, 'handle_cellphone_posted_data', 10, 1);
+
+        // Espelhos do tipo de pessoa (hidden `billing_persontype`/`billing_cpf`/
+        // `billing_cnpj`) preenchidos a partir do documento unificado. Eles SÓ eram
+        // sincronizados quando o cliente digitava no campo — com o CPF vindo pronto
+        // do cadastro (cliente antigo), os hidden iam VAZIOS no POST e qualquer
+        // consumidor que os leia (o Brazilian, por exemplo) barrava o pedido com
+        // "Tipo de pessoa é obrigatório", mesmo com o CPF na tela.
+        //
+        // IMPORTANTE (ordem): `woocommerce_checkout_process` roda ANTES do
+        // `get_posted_data()` no `WC_Checkout::process_checkout()` — por isso a
+        // sincronização acontece aqui, na prioridade 1, antes das validações de
+        // terceiros (o Brazilian valida em 10). Fazer isso só no filtro
+        // `woocommerce_checkout_posted_data` seria tarde demais para eles.
+        $this->loader->add_action('woocommerce_checkout_process', $this, 'sync_person_type_mirrors_before_validation', 1, 0);
+        // Rede de segurança para o `$data` (o POST já está coerente pelo hook acima).
+        $this->loader->add_filter('woocommerce_checkout_posted_data', $this, 'sync_person_type_mirrors_from_document', 5, 1);
 
         // REASON: o JS de front-end do plugin "Brazilian Market on WooCommerce"
         // (assets/js/frontend/frontend.js) esconde TODOS os elementos .person-type-field
@@ -1704,7 +1762,7 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function save_admin_ddi_field($field_id, $value, $order)
     {
-        if (! $order instanceof \WC_Order) {
+        if (! ($order instanceof \WC_Order)) {
             return;
         }
 
@@ -4204,7 +4262,14 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        $billing_ie = isset($_POST['billing_ie']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['billing_ie']))) : '';
+        // Sem o campo no formulário não há como preencher: exigir barraria o pedido
+        // para sempre (é o caso do checkout do FunnelKit, que monta a lista de campos
+        // a partir do layout do funil).
+        if (! isset($_POST['billing_ie'])) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            return;
+        }
+
+        $billing_ie = strtoupper(sanitize_text_field(wp_unslash($_POST['billing_ie']))); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 
         if ('' === trim($billing_ie)) {
             wc_add_notice(__('Por favor, preencha a Inscrição Estadual (IE) ou marque como ISENTO.', 'woo-better-shipping-calculator-for-brazil'), 'error');
@@ -4252,7 +4317,12 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        $billing_im = isset($_POST['billing_im']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['billing_im']))) : '';
+        // Mesmo critério da IE: campo ausente do formulário = não renderizado.
+        if (! isset($_POST['billing_im'])) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            return;
+        }
+
+        $billing_im = strtoupper(sanitize_text_field(wp_unslash($_POST['billing_im']))); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 
         if ('' === trim($billing_im)) {
             wc_add_notice(__('Por favor, preencha a Inscrição Municipal (IM).', 'woo-better-shipping-calculator-for-brazil'), 'error');
@@ -4872,32 +4942,378 @@ class WcBetterShippingCalculatorForBrazil
      */
     public function update_billing_document_on_profile_update($user_id)
     {
-        // Obter dados salvos no user meta
-        $billing_persontype = get_user_meta($user_id, 'billing_persontype', true);
-        $billing_cpf = get_user_meta($user_id, 'billing_cpf', true);
-        $billing_cnpj = get_user_meta($user_id, 'billing_cnpj', true);
-        
-        // Construir billing_document baseado no billing_persontype
-        $billing_document = '';
-        if ($billing_persontype === '1' && !empty($billing_cpf)) {
-            // Pessoa física - usar CPF
-            $billing_document = $billing_cpf;
-        } elseif ($billing_persontype === '2' && !empty($billing_cnpj)) {
-            // Pessoa jurídica - usar CNPJ
-            $billing_document = $billing_cnpj;
-        } elseif (empty($billing_persontype)) {
-            // Fallback quando não há tipo definido - usar qualquer documento disponível
-            if (!empty($billing_cpf)) {
-                $billing_document = $billing_cpf;
-            } elseif (!empty($billing_cnpj)) {
-                $billing_document = $billing_cnpj;
+        if (empty($user_id)) {
+            return;
+        }
+
+        // Reconstrói o documento unificado a partir de `billing_persontype` +
+        // `billing_cpf`/`billing_cnpj` (os campos que o Brazilian gravava e que o
+        // próprio woo-better mantém em sincronia ao salvar o documento).
+        //
+        // Só preenche quando ainda não existe: o `wp_update_user()` de um
+        // `WC_Customer::save()` também dispara este hook, e sobrescrever sempre
+        // reescreveria um documento novo com espelhos desatualizados.
+        $this->migrate_legacy_document_meta($user_id);
+    }
+
+    /**
+     * Documento do cliente a partir das metas ANTIGAS (`billing_persontype`,
+     * `billing_cpf`, `billing_cnpj`).
+     *
+     * Clientes cadastrados no plugin "Brazilian Market on WooCommerce" (ou em
+     * versões do woo-better anteriores ao campo unificado) têm o CPF/CNPJ gravado
+     * só nessas metas. O woo-better lê `billing_document`; sem esta ponte o CPF
+     * aparece no campo (o JS semeia a partir das metas antigas) mas o checkout, a
+     * edição de endereço e o perfil ficam com o documento VAZIO — e o pedido é
+     * barrado com "informe o CPF" mesmo com o número na tela. O cliente só
+     * conseguia finalizar apagando e digitando o último dígito, porque isso
+     * dispara o JS que preenche os campos de verdade.
+     *
+     * @param  int    $user_id
+     * @return array  `document` (string vazia = nada encontrado) e `persontype` ('1'|'2'|'').
+     */
+    private function legacy_document_from_user($user_id)
+    {
+        $persontype = trim((string) get_user_meta($user_id, 'billing_persontype', true));
+        $cpf        = trim((string) get_user_meta($user_id, 'billing_cpf', true));
+        $cnpj       = trim((string) get_user_meta($user_id, 'billing_cnpj', true));
+
+        // Versões antigas gravavam o tipo como texto.
+        if ('physical' === $persontype) {
+            $persontype = '1';
+        } elseif ('legal' === $persontype) {
+            $persontype = '2';
+        }
+
+        if ('1' === $persontype && '' !== $cpf) {
+            return array('document' => $cpf, 'persontype' => '1');
+        }
+
+        if ('2' === $persontype && '' !== $cnpj) {
+            return array('document' => $cnpj, 'persontype' => '2');
+        }
+
+        // Sem tipo definido: o próprio documento diz qual é (11 = CPF, 14 = CNPJ).
+        if ('' === $persontype) {
+            if ('' !== $cpf && 11 === strlen(preg_replace('/[^0-9A-Z]/', '', strtoupper($cpf)))) {
+                return array('document' => $cpf, 'persontype' => '1');
+            }
+
+            if ('' !== $cnpj && 14 === strlen(preg_replace('/[^0-9A-Z]/', '', strtoupper($cnpj)))) {
+                return array('document' => $cnpj, 'persontype' => '2');
             }
         }
-        
-        // Atualizar billing_document no user meta se há documento para salvar
-        if (!empty($billing_document)) {
-            update_user_meta($user_id, 'billing_document', $billing_document);
+
+        return array('document' => '', 'persontype' => $persontype);
+    }
+
+    /**
+     * Espelhos (`billing_persontype`, `billing_cpf`, `billing_cnpj`) derivados do
+     * documento unificado.
+     *
+     * O checkout mostra UM campo (`billing_document`) e mantém três hidden para
+     * compatibilidade. Eles eram preenchidos APENAS pelo JS, no evento de digitação:
+     * quando o documento já vem preenchido do cadastro — cliente que fez o pedido na
+     * época em que esses campos eram visíveis (ou que usava o "Brazilian Market on
+     * WooCommerce") — o cliente não digita nada, o JS nunca roda e os hidden chegam
+     * VAZIOS no POST. Quem lê o POST cru (o Brazilian valida em
+     * `woocommerce_checkout_process`) então barra o pedido com "Tipo de pessoa é
+     * obrigatório", com o CPF visível na tela. O paliativo era apagar e digitar o
+     * último dígito, o que disparava o JS.
+     *
+     * @param  string     $document Valor do campo unificado.
+     * @return array|null            Espelhos a aplicar, ou null quando não há o que
+     *                               espelhar (vazio, incompleto ou fora da config).
+     */
+    private function person_type_mirrors_for($document)
+    {
+        if ('none' === get_option('woo_better_calc_person_type_select', 'none')) {
+            return null;
         }
+
+        $document = trim((string) $document);
+        if ('' === $document) {
+            return null;
+        }
+
+        $clean = preg_replace('/[^0-9A-Z]/', '', strtoupper($document));
+
+        // Mesma regra do JS (`detectDocumentType`) e do `validate_document()`: CPF é
+        // sempre numérico, então qualquer letra indica CNPJ alfanumérico
+        // (IN RFB 2.229/2024). O tamanho sozinho classificaria um CNPJ alfanumérico
+        // de 11 caracteres como CPF, divergindo dos dois validadores.
+        $has_letter = (bool) preg_match('/[A-Z]/', $clean);
+
+        if (!$has_letter && 11 === strlen($clean)) {
+            $type = 'cpf';
+        } elseif (14 === strlen($clean)) {
+            $type = 'cnpj';
+        } else {
+            // Documento incompleto: não adivinha tipo nenhum (quem barra é a validação).
+            return null;
+        }
+
+        // Configuração aceita só um tipo: não criamos espelho do tipo proibido (a
+        // validação dá a mensagem certa — "CNPJ não é permitido"/"CPF não é permitido").
+        $config = get_option('woo_better_calc_person_type_select', 'none');
+        if ('physical' === $config && 'cnpj' === $type) {
+            return null;
+        }
+        if ('legal' === $config && 'cpf' === $type) {
+            return null;
+        }
+
+        if ('cpf' === $type) {
+            return array(
+                'billing_persontype' => '1',
+                'billing_cpf'        => $document,
+                'billing_cnpj'       => '',
+            );
+        }
+
+        return array(
+            'billing_persontype' => '2',
+            'billing_cpf'        => '',
+            'billing_cnpj'       => $document,
+        );
+    }
+
+    /**
+     * Sincroniza os espelhos no POST cru ANTES de qualquer validação.
+     *
+     * `woocommerce_checkout_process` roda antes do `get_posted_data()` no
+     * `WC_Checkout::process_checkout()`, então escrever em `$_POST` aqui faz o
+     * `$data`, o pedido e o cadastro do cliente já verem os espelhos — e os
+     * validadores de terceiros (o Brazilian lê `$_POST` em
+     * `valid_checkout_fields()`) param de barrar o pedido.
+     *
+     * @return void
+     */
+    public function sync_person_type_mirrors_before_validation()
+    {
+        if (! isset($_POST['billing_document'])) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- leitura do próprio checkout; o WC verifica o nonce em process_checkout().
+            return;
+        }
+
+        $mirrors = $this->person_type_mirrors_for(
+            sanitize_text_field(wp_unslash($_POST['billing_document'])) // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        );
+
+        if (empty($mirrors)) {
+            return;
+        }
+
+        foreach ($mirrors as $key => $value) {
+            $_POST[$key] = $value; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- espelho derivado do próprio POST.
+        }
+    }
+
+    /**
+     * Rede de segurança: garante os espelhos também no array `$data` do checkout.
+     *
+     * @param  array $data Dados postados.
+     * @return array       Dados postados com os espelhos coerentes.
+     */
+    public function sync_person_type_mirrors_from_document($data)
+    {
+        if (! is_array($data) || empty($data['billing_document'])) {
+            return $data;
+        }
+
+        $mirrors = $this->person_type_mirrors_for(
+            sanitize_text_field((string) $data['billing_document'])
+        );
+
+        if (empty($mirrors)) {
+            return $data;
+        }
+
+        foreach ($mirrors as $key => $value) {
+            $current = isset($data[$key]) ? (string) $data[$key] : null;
+            if ($current === (string) $value) {
+                continue;
+            }
+
+            $data[$key] = $value;
+        }
+
+        return $data;
+    }
+
+    /**
+     * Documento do cliente quando o checkout não enviou nenhum.
+     *
+     * Usado quando o formulário carrega o CPF/CNPJ do cadastro mas não o envia no
+     * request — caso clássico do checkout em BLOCOS, onde o campo do documento é
+     * injetado no DOM pelo JS e não é campo registrado do Store API: quem apenas
+     * confere o formulário e finaliza manda o pedido sem documento. Vale também
+     * como rede de segurança no checkout clássico.
+     *
+     * Só age no Brasil: fora dele o campo é escondido e limpo de propósito.
+     *
+     * @param  WC_Order $order Pedido em construção.
+     * @return array    `cpf`, `cnpj` e `persontype` ('' = nada encontrado).
+     */
+    private function fallback_document_from_customer($order)
+    {
+        $empty = array('cpf' => '', 'cnpj' => '', 'persontype' => '');
+
+        if (! $order instanceof \WC_Order) {
+            return $empty;
+        }
+
+        $country = $order->get_billing_country();
+        if ('' !== (string) $country && 'BR' !== $country) {
+            return $empty;
+        }
+
+        $customer_id = (int) $order->get_customer_id();
+
+        if (! $customer_id && function_exists('WC') && WC()->customer) {
+            $customer_id = (int) WC()->customer->get_id();
+        }
+
+        if (! $customer_id) {
+            return $empty;
+        }
+
+        $this->migrate_legacy_document_meta($customer_id);
+
+        $document = trim((string) get_user_meta($customer_id, 'billing_document', true));
+        if ('' === $document) {
+            return $empty;
+        }
+
+        $clean = preg_replace('/[^0-9A-Z]/', '', strtoupper($document));
+
+        if (11 === strlen($clean)) {
+            return array('cpf' => $document, 'cnpj' => '', 'persontype' => '1');
+        }
+
+        if (14 === strlen($clean)) {
+            return array('cpf' => '', 'cnpj' => $document, 'persontype' => '2');
+        }
+
+        return $empty;
+    }
+
+    /**
+     * Migra o documento do cliente para a meta unificada `billing_document`.
+     *
+     * Roda uma única vez por cliente (depois disso `billing_document` já está
+     * preenchido): sem isso, o CPF/CNPJ herdado do Brazilian fica invisível para
+     * tudo que lê a meta unificada — checkout clássico (`woocommerce_checkout_get_value`),
+     * edição de endereço da conta e perfil (ambos imprimem a meta direto) e o
+     * `WooBetterPersonTypeData` do checkout em blocos.
+     *
+     * @param  int  $user_id
+     * @return void
+     */
+    private function migrate_legacy_document_meta($user_id)
+    {
+        $user_id = absint($user_id);
+        if (! $user_id) {
+            return;
+        }
+
+        // Já tem documento unificado: nada a migrar.
+        if ('' !== trim((string) get_user_meta($user_id, 'billing_document', true))) {
+            return;
+        }
+
+        $legacy = $this->legacy_document_from_user($user_id);
+        if ('' === $legacy['document']) {
+            return;
+        }
+
+        update_user_meta($user_id, 'billing_document', $legacy['document']);
+
+        if ('' === trim((string) get_user_meta($user_id, 'billing_persontype', true))) {
+            update_user_meta($user_id, 'billing_persontype', $legacy['persontype']);
+        }
+    }
+
+    /**
+     * Migra o documento legado antes de o checkout / a edição de endereço da conta
+     * imprimirem os campos (frontend).
+     *
+     * @return void
+     */
+    public function migrate_legacy_document_on_front()
+    {
+        if (! is_user_logged_in() || ! function_exists('is_checkout')) {
+            return;
+        }
+
+        $is_account_address = function_exists('is_wc_endpoint_url') && is_wc_endpoint_url('edit-address');
+
+        if (! is_checkout() && ! $is_account_address && ! is_account_page()) {
+            return;
+        }
+
+        $this->migrate_legacy_document_meta(get_current_user_id());
+    }
+
+    /**
+     * Mesma migração nas telas de perfil/usuário do wp-admin (o formulário imprime
+     * `billing_document` direto do user meta, então precisa acontecer antes de a
+     * tela renderizar).
+     *
+     * @return void
+     */
+    public function migrate_legacy_document_on_admin_profile()
+    {
+        global $pagenow;
+
+        if (! in_array($pagenow, array('profile.php', 'user-edit.php'), true)) {
+            return;
+        }
+
+        $user_id = get_current_user_id();
+
+        if ('user-edit.php' === $pagenow) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- só o ID do usuário sendo editado; a permissão é checada logo abaixo.
+            $user_id = isset($_GET['user_id']) ? absint($_GET['user_id']) : 0;
+        }
+
+        // `admin_init` roda ANTES da checagem de permissão do user-edit.php: sem este
+        // guard qualquer usuário logado no wp-admin escreveria meta de outro usuário.
+        if (! $user_id || ! current_user_can('edit_user', $user_id)) {
+            return;
+        }
+
+        $this->migrate_legacy_document_meta($user_id);
+    }
+
+    /**
+     * Semeia o campo unificado do checkout CLÁSSICO com o documento herdado do
+     * Brazilian quando a meta `billing_document` ainda não existe.
+     *
+     * O core resolve o valor de `billing_document` no cadastro/cliente; um cliente
+     * antigo só tem `billing_cpf`/`billing_cnpj`, então o campo (obrigatório) abria
+     * VAZIO e o pedido era barrado. Devolver o valor aqui também cobre o caso de a
+     * migração não ter rodado (ex.: checkout em blocos salvando o cliente).
+     *
+     * @param  mixed  $value Valor já resolvido por terceiros (null = seguir o core).
+     * @param  string $input Nome do campo.
+     * @return mixed
+     */
+    public function seed_billing_document_from_legacy($value, $input)
+    {
+        if (null !== $value || 'billing_document' !== $input) {
+            return $value;
+        }
+
+        if (! is_user_logged_in()) {
+            return $value;
+        }
+
+        $user_id = get_current_user_id();
+        $this->migrate_legacy_document_meta($user_id);
+
+        $document = trim((string) get_user_meta($user_id, 'billing_document', true));
+
+        return ('' !== $document) ? $document : $value;
     }
 
     /**
@@ -5680,6 +6096,29 @@ class WcBetterShippingCalculatorForBrazil
                 }
             }
 
+            // O campo nem chegou no POST (checkout que não renderiza o documento,
+            // ex.: layout do funil sem ele): usa o documento do CADASTRO — inclusive
+            // o herdado do "Brazilian Market on WooCommerce" — para o pedido não sair
+            // sem CPF/CNPJ. Se o campo VEIO (mesmo vazio), o cliente apagou de
+            // propósito: não ressuscitamos o valor.
+            //
+            // O discriminador é o POST, não o `$data`: o `$data` traz uma chave para
+            // TODO campo registrado, então `billing_document` existe nele mesmo quando
+            // o formulário não o renderizou.
+            if (
+                ! isset($_POST['billing_document']) // phpcs:ignore WordPress.Security.NonceVerification.Missing -- presença do campo no próprio checkout.
+                && ! isset($_POST['billing_cpf']) // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                && ! isset($_POST['billing_cnpj']) // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            ) {
+                $fallback = $this->fallback_document_from_customer($order);
+
+                if ('' !== $fallback['cpf'] || '' !== $fallback['cnpj']) {
+                    $billing_cpf        = $fallback['cpf'];
+                    $billing_cnpj       = $fallback['cnpj'];
+                    $billing_persontype = $fallback['persontype'];
+                }
+            }
+
             // Salva os tipos de pessoa
             if (!empty($billing_persontype)) {
                 // Se vier como string antiga, converte para número
@@ -5794,6 +6233,24 @@ class WcBetterShippingCalculatorForBrazil
             $billing_document = '';
             if (isset($_POST['billing_document'])) {
                 $billing_document = sanitize_text_field(wp_unslash($_POST['billing_document']));
+            }
+
+            // No checkout em BLOCOS o campo do documento é injetado no DOM pelo JS
+            // (não é campo registrado do Store API): quem só confere o formulário e
+            // finaliza não envia nada. Usa o documento do cadastro para o pedido não
+            // sair sem CPF/CNPJ — inclusive o herdado do "Brazilian Market on
+            // WooCommerce", que é o que o cliente vê no campo.
+            //
+            // Se a extensão VEIO mas com os valores vazios, o cliente apagou o
+            // documento no formulário: aí não ressuscitamos o do cadastro.
+            if (! isset($extensions['woo_better_person_type'])) {
+                $fallback = $this->fallback_document_from_customer($order);
+
+                if ('' !== $fallback['cpf'] || '' !== $fallback['cnpj']) {
+                    $billing_cpf        = $fallback['cpf'];
+                    $billing_cnpj       = $fallback['cnpj'];
+                    $billing_persontype = $fallback['persontype'];
+                }
             }
             
             // Se há documento unificado mas não há dados específicos, processar
@@ -8647,6 +9104,35 @@ class WcBetterShippingCalculatorForBrazil
      * @param \WP_Error $errors Objeto de erros acumulados pelo WooCommerce.
      * @return void
      */
+    /**
+     * Campos do checkout cuja obrigatoriedade é gerenciada por este plugin.
+     *
+     * Usado pela rede de segurança de `lkn_disabled_require_field()`: só mexemos
+     * nesses (nunca em campos do tema/WooCommerce), e só para desfazer a exigência
+     * quando o campo nem foi enviado pelo formulário.
+     *
+     * @return string[]
+     */
+    private function checkout_fields_we_may_require() {
+        return array(
+            'billing_document',
+            'billing_persontype',
+            'billing_cpf',
+            'billing_cnpj',
+            'billing_number',
+            'billing_neighborhood',
+            'billing_ie',
+            'billing_im',
+            'billing_rg',
+            'billing_birthdate',
+            'billing_gender',
+            'billing_cellphone',
+            'shipping_number',
+            'shipping_neighborhood',
+            'shipping_cellphone',
+        );
+    }
+
     public function lkn_disabled_require_field( $data, $errors ) {
         $billing_country = isset( $data['billing_country'] ) ? sanitize_text_field( (string) $data['billing_country'] ) : '';
         $billing_document = isset( $data['billing_document'] ) ? sanitize_text_field( (string) $data['billing_document'] ) : '';
@@ -8691,6 +9177,23 @@ class WcBetterShippingCalculatorForBrazil
                 $errors->remove( 'billing_company_required' );
             }
             return;
+        }
+
+        // Campo que o FORMULÁRIO NÃO ENVIOU não pode ser exigido: o `$data` do
+        // WooCommerce traz uma chave para todo campo registrado (mesmo com valor
+        // vazio), então o `required` do array de campos barra o pedido mesmo quando
+        // o campo não foi renderizado nesta tela. É o caso do checkout do FunnelKit
+        // (Aero), que monta a lista de campos do layout do funil e não renderiza o que
+        // não está nele — ex.: Inscrição Estadual/Municipal e Data de Nascimento, que
+        // a compat do FunnelKit remove da lista de campos de terceiros.
+        //
+        // Uma chave AUSENTE do `$_POST` significa "campo não renderizado"; um campo
+        // renderizado e deixado em branco chega como string vazia (presente, então
+        // continua sendo exigido normalmente).
+        foreach ( $this->checkout_fields_we_may_require() as $field_key ) {
+            if ( ! isset( $_POST[ $field_key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- o WC já verificou o nonce em process_checkout().
+                $errors->remove( $field_key . '_required' );
+            }
         }
 
         // Se for CPF, IE e empresa não são obrigatórios.
@@ -8816,6 +9319,58 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         $this->remove_brazilian_required_notice( __( 'RG', 'woocommerce-extra-checkout-fields-for-brazil' ) );
+    }
+
+    /**
+     * Remove as exigências de tipo de pessoa, CPF/CNPJ e IE feitas pelo plugin
+     * "Brazilian Market on WooCommerce" quando o woo-better gerencia esses campos.
+     *
+     * O `valid_checkout_fields()` do Brazilian (hook `woocommerce_checkout_process`,
+     * prioridade 10) valida o POST CRU dos campos DELE:
+     *
+     * - `billing_persontype`  → "Person type is a required field"
+     * - `billing_cpf`         → "CPF is a required field" (persontype = CPF)
+     * - `billing_cnpj`        → "CNPJ is a required field" (persontype = CNPJ)
+     * - `billing_ie`          → "State Registration is a required field" (settings['ie'])
+     *
+     * No woo-better esses quatro são ESPELHOS escondidos do campo unificado
+     * `billing_document` (quem os preenche é o nosso JS). Quando o JS não roda — e
+     * há vários caminhos para isso: autofill do navegador, checkout de terceiros
+     * (FunnelKit Aero, que monta o formulário por conta própria) ou erro de script —
+     * eles chegam VAZIOS e o Brazilian bloqueia o envio mesmo com o documento certo,
+     * sem o cliente ter como resolver. Com o recurso de tipo de pessoa ligado aqui, a
+     * validação do woo-better (documento + tipo) é a que vale.
+     *
+     * Só age quando o woo-better gerencia os campos de pessoa (`person_type !== none`);
+     * com o recurso desligado, os campos do Brazilian é que estão na tela e ele segue
+     * no comando. A IE só é dispensada quando o NOSSO campo de IE existe (mesmo
+     * critério do campo Empresa/RG); fora disso o aviso original passa.
+     *
+     * O que NÃO é removido: os avisos "is not valid" (`validate_cpf`/`validate_cnpj`
+     * das configurações do Brazilian) continuam valendo — só as exigências de campo
+     * vazio dos espelhos saem, porque o documento é validado pelo woo-better. Fora do
+     * Brasil o documento também não é exigido por nenhum dos dois (o Brazilian só
+     * barra se estiver em "somente Brasil", e o nosso `lkn_disabled_require_field()`
+     * dispensa os campos brasileiros com `billing_country` != BR).
+     *
+     * @return void
+     */
+    public function guard_brazilian_person_fields_required() {
+        $person_type = get_option( 'woo_better_calc_person_type_select', 'none' );
+
+        if ( 'none' === $person_type ) {
+            return;
+        }
+
+        // Rótulos exatamente como o Brazilian os usa (mesmo text domain), para o
+        // match funcionar também com o pt_BR traduzido.
+        $this->remove_brazilian_required_notice( __( 'Person type', 'woocommerce-extra-checkout-fields-for-brazil' ) );
+        $this->remove_brazilian_required_notice( __( 'CPF', 'woocommerce-extra-checkout-fields-for-brazil' ) );
+        $this->remove_brazilian_required_notice( __( 'CNPJ', 'woocommerce-extra-checkout-fields-for-brazil' ) );
+
+        if ( 'yes' === get_option( 'woo_better_calc_enable_ie_field', 'no' ) ) {
+            $this->remove_brazilian_required_notice( __( 'State Registration', 'woocommerce-extra-checkout-fields-for-brazil' ) );
+        }
     }
 
     /**
@@ -8976,15 +9531,12 @@ class WcBetterShippingCalculatorForBrazil
             return $data;
         }
 
-        // "Somente Celular" (ou "Desabilitar" com o Campo de Celular ligado): o
-        // telefone nativo não existe e o celular é o campo principal. O TELEFONE
-        // fica VAZIO — o número é guardado na meta `*_cellphone` e o recibo exibe o
-        // celular no lugar do telefone (format_order_*_phone). Não promovemos o
-        // celular para `*_phone`.
+        // "Somente Celular": o telefone nativo não existe e o celular é o campo
+        // principal. O TELEFONE fica VAZIO — o número é guardado na meta
+        // `*_cellphone` e o recibo exibe o celular no lugar do telefone
+        // (format_order_*_phone). Não promovemos o celular para `*_phone`.
         if ( $this->phone_mode_hides_native_field() && $this->phone_mode_adds_cellphone_field() ) {
-            unset( $data['billing_phone'], $data['shipping_phone'] );
-
-            return $data;
+            return $this->fallback_phone_when_cellphone_missing( $data );
         }
 
         // "Celular e Fixo" com o campo de celular DESLIGADO (shim escondido): espelha o
@@ -8992,6 +9544,70 @@ class WcBetterShippingCalculatorForBrazil
         if ( $this->phone_mode_adds_cellphone_shim() ) {
             $data = $this->mirror_one_cellphone( $data, 'billing' );
             $data = $this->mirror_one_cellphone( $data, 'shipping' );
+        }
+
+        return $data;
+    }
+
+    /**
+     * "Somente Celular" em um checkout que NÃO renderiza o campo "Celular".
+     *
+     * O plugin remove o telefone nativo de `woocommerce_checkout_fields` e cria o
+     * `*_cellphone` — mas quem decide o que aparece no formulário é o CHECKOUT, não
+     * o filtro. Checkouts de terceiros renderizam uma lista própria de campos (o
+     * FunnelKit Aero Checkout, por exemplo, monta o formulário a partir do layout do
+     * funil) e simplesmente não mostram o `*_cellphone`. Nesse cenário o cliente
+     * digita o número no telefone que o checkout renderiza e o valor era descartado
+     * dos dois lados: saía do `$data` (unset do telefone) e nunca entrava como
+     * celular — o pedido era criado SEM telefone ("não está pegando o número").
+     *
+     * Aqui o telefone POSTADO volta para o `$data` e é espelhado no `*_cellphone`
+     * quando o formulário não mandou celular — a regra do modo continua valendo (o
+     * número vive na meta `*_cellphone`). No checkout do próprio plugin o
+     * `*_cellphone` chega preenchido e nada muda.
+     *
+     * @param  array $data Dados postados do checkout.
+     * @return array       Dados postados.
+     */
+    private function fallback_phone_when_cellphone_missing( $data ) {
+        foreach ( array( 'billing', 'shipping' ) as $type ) {
+            $phone_key = $type . '_phone';
+            $cell_key  = $type . '_cellphone';
+
+            // O checkout mandou o campo "Celular" (é o nosso formulário): vale o
+            // comportamento original — o telefone fica vazio.
+            if ( isset( $data[ $cell_key ] ) && '' !== trim( (string) $data[ $cell_key ] ) ) {
+                unset( $data[ $phone_key ] );
+
+                continue;
+            }
+
+            // Sem celular no `$data`, o número só pode estar no POST cru: o campo
+            // nativo está fora de `woocommerce_checkout_fields`, então o
+            // `WC_Checkout::get_posted_data()` nunca o inclui.
+            $posted = isset( $_POST[ $phone_key ] ) // phpcs:ignore WordPress.Security.NonceVerification.Missing -- valor do próprio checkout, nonce verificado pelo WC em process_checkout().
+                ? sanitize_text_field( wp_unslash( $_POST[ $phone_key ] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                : '';
+
+            if ( '' === trim( $posted ) ) {
+                unset( $data[ $phone_key ] );
+
+                continue;
+            }
+
+            // DDI do seletor de país, quando o checkout manda um — o hidden
+            // `*_phone_country` é do plugin e pode não existir num checkout de
+            // terceiros (aí o `strip_phone_ddi` usa o padrão do Brasil).
+            $country_key  = $type . '_phone_country';
+            $country_code = '';
+            if ( isset( $data[ $country_key ] ) && '' !== (string) $data[ $country_key ] ) {
+                $country_code = sanitize_text_field( (string) $data[ $country_key ] );
+            } elseif ( isset( $_POST[ $country_key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- idem: campo do próprio checkout.
+                $country_code = sanitize_text_field( wp_unslash( $_POST[ $country_key ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            }
+
+            $data[ $phone_key ] = $posted;
+            $data[ $cell_key ]  = self::strip_phone_ddi( $posted, $country_code );
         }
 
         return $data;
@@ -10579,6 +11195,14 @@ class WcBetterShippingCalculatorForBrazil
                     update_user_meta($user_id, 'billing_persontype', '2');
                     update_user_meta($user_id, 'billing_cnpj', $billing_document);
                     update_user_meta($user_id, 'billing_cpf', '');
+                } elseif ('' === $clean_value) {
+                    // Campo esvaziado: limpa os espelhos junto (mesmo critério do
+                    // perfil). Sem isso o CPF "voltava" — a migração do documento
+                    // legado lê justamente `billing_persontype`/`billing_cpf`/
+                    // `billing_cnpj` e reescreveria o valor que o cliente apagou.
+                    update_user_meta($user_id, 'billing_persontype', '');
+                    update_user_meta($user_id, 'billing_cpf', '');
+                    update_user_meta($user_id, 'billing_cnpj', '');
                 }
             }
         }
@@ -10940,5 +11564,206 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         require_once plugin_dir_path( __FILE__ ) . 'class-extra-checkout-fields-for-brazil-front-end-stub.php';
+    }
+
+    /**
+     * Integração com FunnelKit Aero Checkout: campos do plugin na paleta do funil.
+     *
+     * O Aero Checkout desenha o formulário a partir do layout salvo do funil (meta
+     * `_wfacp_checkout_fields`), não de `woocommerce_checkout_fields`. A
+     * compatibilidade oficial do FunnelKit com o nosso plugin
+     * (`class-brazil-field-2.0.php` → `setup_new_plugin_billing_fields()`) registra
+     * apenas CPF/CNPJ, Número e Bairro: o "Celular" e o RG ficam de fora e ainda são
+     * removidos do slot de campos de terceiros (`$billing_new_fields`). Resultado no
+     * funil, nos modos "Somente Celular"/"Celular e Fixo": nenhum campo para o
+     * cliente digitar o celular — e o telefone nativo, que o Aero injeta de qualquer
+     * forma, era descartado no envio (ver fallback_phone_when_cellphone_missing()).
+     *
+     * Registrando os campos com `WFACP_Add_Address_Field` eles entram na lista de
+     * campos de endereço do Aero e passam a existir no editor do funil.
+     *
+     * O FunnelKit NÃO é dependência deste plugin: a classe só existe quando ele está
+     * ativo (`plugins_loaded` -1). Sem ela este método não faz nada.
+     *
+     * @return void
+     */
+    public function register_funnelkit_checkout_fields()
+    {
+        if (! class_exists('WFACP_Add_Address_Field')) {
+            return;
+        }
+
+        $registered = array();
+
+        // "Celular" (`billing_cellphone`/`shipping_cellphone`): mesmas condições e
+        // rótulo do campo que o plugin cria no checkout clássico/blocos.
+        if ($this->phone_mode_adds_cellphone_field()) {
+            $required = ('cellphone_only' === $this->get_phone_mode())
+                ? $this->is_phone_required()
+                : $this->is_cellphone_required();
+
+            foreach (array('billing', 'shipping') as $type) {
+                new \WFACP_Add_Address_Field(
+                    'cellphone',
+                    array(
+                        'label'       => __('Celular', 'woo-better-shipping-calculator-for-brazil'),
+                        'placeholder' => $this->phone_field_placeholder(null, 'cellphone'),
+                        'class'       => array('form-row-wide'),
+                        'cssready'    => array('wfacp-col-full'),
+                        'required'    => $required,
+                        'type'        => 'tel',
+                        'priority'    => 93,
+                    ),
+                    $type,
+                    false
+                );
+
+                $registered[] = $type . '_cellphone';
+            }
+        }
+
+        // RG (`billing_rg`): visível só com CPF completo, como no checkout clássico.
+        if ($this->rg_field_enabled()) {
+            new \WFACP_Add_Address_Field(
+                'rg',
+                array(
+                    'label'       => __('RG', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => __('Digite o RG', 'woo-better-shipping-calculator-for-brazil'),
+                    'class'       => array('form-row-wide', 'woo-better-rg-field'),
+                    'cssready'    => array('wfacp-col-full'),
+                    'required'    => $this->rg_field_required(),
+                    'type'        => 'text',
+                    'priority'    => 24,
+                ),
+                'billing',
+                false
+            );
+
+            $registered[] = 'billing_rg';
+        }
+
+        // Inscrição Estadual (IE). O compat do FunnelKit com o Brazilian REMOVE
+        // `billing_ie` da lista de campos de terceiros (`disabled_third_party_billing_fields`)
+        // e não a registra como campo do Aero — sem isto ela não é renderizada em
+        // lugar nenhum no funil, e o cliente PJ esbarra em "Por favor, preencha a
+        // Inscrição Estadual (IE) ou marque como ISENTO" sem ter onde preencher.
+        // Precedência: só registramos com o recurso LIGADO aqui (com ele desligado
+        // quem manda é o Brazilian/tema, como no checkout clássico).
+        $person_type_config = get_option('woo_better_calc_person_type_select', 'none');
+        $pj_enabled         = in_array($person_type_config, array('legal', 'both'), true);
+
+        if ('yes' === get_option('woo_better_calc_enable_ie_field', 'no') && $pj_enabled) {
+            new \WFACP_Add_Address_Field(
+                'ie',
+                array(
+                    'label'       => __('Inscrição Estadual (IE)', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => __('Digite a IE ou marque Isento', 'woo-better-shipping-calculator-for-brazil'),
+                    'class'       => array('form-row-wide', 'woo-better-ie-field'),
+                    'cssready'    => array('wfacp-col-full'),
+                    'required'    => true,
+                    'type'        => 'text',
+                    'priority'    => 32,
+                    'custom_attributes' => array(
+                        'maxlength'     => '14',
+                        'data-ie-field' => '1',
+                    ),
+                ),
+                'billing',
+                false
+            );
+
+            $registered[] = 'billing_ie';
+        }
+
+        // Inscrição Municipal (IM): mesmo gate/obrigatoriedade da IE.
+        if ('yes' === get_option('woo_better_calc_enable_im_field', 'no') && $pj_enabled) {
+            new \WFACP_Add_Address_Field(
+                'im',
+                array(
+                    'label'       => __('Inscrição Municipal (IM)', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => __('Digite a Inscrição Municipal (IM)', 'woo-better-shipping-calculator-for-brazil'),
+                    'class'       => array('form-row-wide', 'woo-better-im-field'),
+                    'cssready'    => array('wfacp-col-full'),
+                    'required'    => true,
+                    'type'        => 'text',
+                    'priority'    => 33,
+                    'custom_attributes' => array(
+                        'maxlength'     => '15',
+                        'data-im-field' => '1',
+                    ),
+                ),
+                'billing',
+                false
+            );
+
+            $registered[] = 'billing_im';
+        }
+
+        // Data de nascimento e gênero: também removidos pela compat e invisíveis no
+        // funil. Sem o `required` do array de campos eles não bloqueiam nada, mas o
+        // cliente não teria como informar o dado.
+        if ('yes' === get_option('woo_better_calc_enable_birthdate_field', 'no')) {
+            new \WFACP_Add_Address_Field(
+                'birthdate',
+                array(
+                    'label'       => __('Data de Nascimento', 'woo-better-shipping-calculator-for-brazil'),
+                    'placeholder' => __('DD/MM/AAAA', 'woo-better-shipping-calculator-for-brazil'),
+                    'class'       => array('form-row-wide'),
+                    'cssready'    => array('wfacp-col-full'),
+                    'required'    => ('yes' === get_option('woo_better_calc_birthdate_required', 'yes')),
+                    'type'        => 'date',
+                    'priority'    => 25,
+                ),
+                'billing',
+                false
+            );
+
+            $registered[] = 'billing_birthdate';
+        }
+
+        if ('yes' === get_option('woo_better_calc_enable_gender_field', 'no')) {
+            new \WFACP_Add_Address_Field(
+                'gender',
+                array(
+                    'label'       => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
+                    'class'       => array('form-row-wide'),
+                    'cssready'    => array('wfacp-col-full'),
+                    'required'    => false,
+                    'type'        => 'select',
+                    'priority'    => 26,
+                    'options'     => array(
+                        ''                                                    => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Masculino', 'woo-better-shipping-calculator-for-brazil')      => __('Masculino', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Feminino', 'woo-better-shipping-calculator-for-brazil')       => __('Feminino', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Não-binário', 'woo-better-shipping-calculator-for-brazil')    => __('Não-binário', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Outro', 'woo-better-shipping-calculator-for-brazil')          => __('Outro', 'woo-better-shipping-calculator-for-brazil'),
+                        __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil') => __('Prefiro não dizer', 'woo-better-shipping-calculator-for-brazil'),
+                    ),
+                ),
+                'billing',
+                false
+            );
+
+            $registered[] = 'billing_gender';
+        }
+
+        if (empty($registered)) {
+            return;
+        }
+
+        // Os campos acima já são campos de ENDEREÇO do Aero. Sem entrar nesta lista
+        // eles continuariam sendo vistos como "campos de terceiros" (o
+        // `find_extra_fields()` do FunnelKit só os descarta se estiverem nos campos
+        // registrados) e apareceriam DUAS vezes no checkout do funil quando o layout
+        // tiver o bloco de campos customizados. A compat oficial do Brazilian faz o
+        // mesmo para os campos dela (`exclude_bzazil_fields`), mas só cobre
+        // `billing_cellphone` — o `shipping_cellphone` escapa, daí este filtro.
+        add_filter(
+            'wfacp_aero_registered_checkout_fields',
+            function ($fields) use ($registered) {
+                return array_merge((array) $fields, $registered);
+            },
+            99
+        );
     }
 }

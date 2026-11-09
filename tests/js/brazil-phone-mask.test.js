@@ -507,3 +507,21 @@ test('[brazil-mask] admin: "Validar Número de Telefone" funciona sem a lib (esc
         'Compilado do admin desatualizado: rode npm run build:admin.'
     );
 });
+test('[brazil-mask] não inicializa o intl-tel-input num campo que outro plugin já tomou (FunnelKit Aero)', () => {
+    // O FunnelKit Aero Checkout inicializa o intl-tel-input no `#billing_phone` do
+    // PRÓPRIO layout. Dois inits no mesmo input empilham wrappers `.iti` e as duas
+    // instâncias brigam pelo valor — o número chega errado/vazio no pedido.
+    assert.ok(fs.existsSync(SHORTCODE), `Arquivo não encontrado: ${SHORTCODE}`);
+    const src = fs.readFileSync(SHORTCODE, 'utf8');
+
+    assert.ok(
+        /if \(field\.closest\('\.iti'\)\) \{\s*return;/.test(src),
+        'O init do telefone deve pular o campo quando ele já está dentro de um `.iti`.'
+    );
+
+    assert.ok(fs.existsSync(COMPILED_SHORTCODE), `Arquivo não encontrado: ${COMPILED_SHORTCODE}`);
+    assert.ok(
+        fs.readFileSync(COMPILED_SHORTCODE, 'utf8').indexOf('closest(".iti")') !== -1,
+        'Compilado do bundle com lib desatualizado: rode npm run build:public.'
+    );
+});
