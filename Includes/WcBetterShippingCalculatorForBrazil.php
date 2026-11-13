@@ -11599,8 +11599,12 @@ class WcBetterShippingCalculatorForBrazil
         // WooCommerce). Por isso um campo registrado depois que o layout existia entra
         // no FIM do bloco de endereço: o Número caía abaixo do Celular, o Bairro abaixo
         // do Estado. Este filtro reordena o bloco de endereço pela `priority` na hora de
-        // imprimir, sem tocar no layout salvo nem no banco.
-        add_filter('wfacp_get_fieldsets', array($this, 'sort_funnelkit_address_fields'), 20);
+        // imprimir, sem tocar no layout salvo nem no banco. O mesmo filtro acerta o
+        // `required` dos campos de pessoa: a compatibilidade do FunnelKit registra o
+        // CPF/CNPJ com `required => false` fixo, e o funil obedece o layout — então o
+        // campo aparecia como "(opcional)" enquanto no checkout clássico/blocos ele é
+        // obrigatório (e a validação barrassava o pedido sem avisar na tela).
+        add_filter('wfacp_get_fieldsets', array($this, 'prepare_funnelkit_checkout_fields'), 20);
 
         $registered = array();
 
@@ -11807,11 +11811,13 @@ class WcBetterShippingCalculatorForBrazil
      * @param  array $fieldsets Layout do funil (`WFACP_Common::get_fieldset_data()`).
      * @return array            Layout com os blocos de endereço em ordem de `priority`.
      */
-    public function sort_funnelkit_address_fields($fieldsets)
+    public function prepare_funnelkit_checkout_fields($fieldsets)
     {
         if (! is_array($fieldsets)) {
             return $fieldsets;
         }
+
+        $fieldsets = $this->apply_funnelkit_person_field_rules($fieldsets);
 
         foreach ($fieldsets as $step => $sections) {
             if (! is_array($sections)) {
@@ -11828,6 +11834,130 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         return $fieldsets;
+    }
+
+    /**
+     * Campos de pessoa que ESTE plugin controla no checkout do funil.
+     *
+     * @return string[]
+     */
+    private function funnelkit_person_field_ids()
+    {
+        return array(
+            'billing_document',
+            'billing_rg',
+            'billing_ie',
+            'billing_im',
+            'billing_birthdate',
+            'billing_gender',
+        );
+    }
+
+    /**
+     * Acerta o `required` dos campos de pessoa no funil — e remove os que o plugin
+     * não geraria.
+     *
+     * A compatibilidade do FunnelKit com este plugin registra o `document` com
+     * `required => false` fixo (class-brazil-field-2.0.php), e o Aero imprime o layout
+     * como está salvo. Resultado: no funil o CPF/CNPJ saía como "(opcional)" enquanto
+     * no checkout clássico e no de blocos é obrigatório — e, como
+     * validate_person_type_documents() exige o documento em
+     * `woocommerce_checkout_process`, o cliente via "(opcional)" e o pedido era
+     * barrado com "Por favor, insira seu CPF".
+     *
+     * A regra aqui é a MESMA do checkout clássico:
+     *  - documento: sempre obrigatório com o tipo de cliente ligado;
+     *  - RG: só para pessoa física, obrigatório conforme a opção do plugin;
+     *  - IE/IM: só para pessoa jurídica, obrigatórias;
+     *  - nascimento/gênero: seguem as opções deles.
+     *
+     * E, com "Tipo de Cliente" em "Nenhum", o plugin não gera campo de pessoa em
+     * lugar nenhum: os campos saem do layout do funil, para não pedir um dado que o
+     * plugin não trata (e que não seria validado nem salvo).
+     *
+     * @param  array $fieldsets Layout do funil.
+     * @return array            Layout com os campos de pessoa coerentes com o plugin.
+     */
+    private function apply_funnelkit_person_field_rules(array $fieldsets)
+    {
+        $rules = $this->funnelkit_person_field_required_rules();
+
+        foreach ($fieldsets as $step => $sections) {
+            if (! is_array($sections)) {
+                continue;
+            }
+
+            foreach ($sections as $section_index => $section) {
+                if (! isset($section['fields']) || ! is_array($section['fields'])) {
+                    continue;
+                }
+
+                $fields = array();
+
+                foreach ($section['fields'] as $field) {
+                    $field_id = isset($field['id']) ? (string) $field['id'] : '';
+
+                    if (! in_array($field_id, $this->funnelkit_person_field_ids(), true)) {
+                        $fields[] = $field;
+                        continue;
+                    }
+
+                    // Campo que o plugin não geraria (recurso desligado): sai do funil.
+                    if (! array_key_exists($field_id, $rules)) {
+                        continue;
+                    }
+
+                    $field['required'] = (bool) $rules[$field_id];
+
+                    $fields[] = $field;
+                }
+
+                $fieldsets[$step][$section_index]['fields'] = $fields;
+            }
+        }
+
+        return $fieldsets;
+    }
+
+    /**
+     * Obrigatoriedade de cada campo de pessoa, igual à do checkout clássico.
+     *
+     * Campo AUSENTE do retorno = o plugin não gera esse campo agora (recurso
+     * desligado, ou tipo de cliente que não o usa) e ele sai do layout do funil.
+     *
+     * @return array<string,bool> id do campo => obrigatório?
+     */
+    private function funnelkit_person_field_required_rules()
+    {
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+
+        if ('none' === $person_type) {
+            return array(); // Nenhum campo de pessoa neste caso.
+        }
+
+        $rules = array( 'billing_document' => true );
+
+        if ($this->rg_field_enabled()) {
+            $rules['billing_rg'] = $this->rg_field_required();
+        }
+
+        if ('yes' === get_option('woo_better_calc_enable_ie_field', 'no')) {
+            $rules['billing_ie'] = true;
+        }
+
+        if ('yes' === get_option('woo_better_calc_enable_im_field', 'no')) {
+            $rules['billing_im'] = true;
+        }
+
+        if ('yes' === get_option('woo_better_calc_enable_birthdate_field', 'no')) {
+            $rules['billing_birthdate'] = ('yes' === get_option('woo_better_calc_birthdate_required', 'yes'));
+        }
+
+        if ('yes' === get_option('woo_better_calc_enable_gender_field', 'no')) {
+            $rules['billing_gender'] = false; // Gênero é opcional, como no clássico.
+        }
+
+        return $rules;
     }
 
     /**

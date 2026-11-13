@@ -127,7 +127,7 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 == Changelog ==
 
 # 5.2.6 - 2026-11-13
-* Fix: the FunnelKit (Aero Checkout) funnel checkout address fields are back in the right order — Number right below Street address, Neighborhood below Address 2 and Cellphone last. The funnel prints the fields in the order saved in its layout and does not use the priority the WooCommerce checkout uses, so every field the plugin registered ended up at the end of the address block.
+* Fix: on the FunnelKit (Aero Checkout) funnel checkout the address fields are back in the right order — Number right below Street address, Neighborhood below Address 2 and Cellphone last — and CPF/CNPJ is now required, as in the other checkouts. The funnel prints the fields in the order saved in its layout and follows the required flag stored there (which the FunnelKit compatibility hardcodes as optional), instead of the priority and required flag the WooCommerce checkout uses.
 
 # 5.2.5 - 2026-11-08
 * Fix: the CPF/CNPJ of customers from the "Brazilian Market on WooCommerce" plugin (or from older versions of this plugin) counts again on the order. The document saved only in the old fields is migrated to the new field on the first visit, the order (including on the block checkout) carries the account CPF/CNPJ when the form sends none, and the hidden person type/CPF/CNPJ mirrors are filled on the server before any validation — with the person type enabled here, the order is no longer blocked by "Person type/CPF/CNPJ/State Registration is a required field".
