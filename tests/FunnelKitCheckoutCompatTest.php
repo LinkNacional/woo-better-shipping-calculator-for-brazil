@@ -397,7 +397,9 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
      * WooCommerce, que ordena por `priority`.
      */
     public function test_aero_address_block_is_sorted_by_priority(): void {
-        $fieldsets = $this->plugin()->sort_funnelkit_address_fields( $this->funnel_fieldsets() );
+        $this->enable_person_fields();
+
+        $fieldsets = $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() );
         $ids       = $this->section_ids( $fieldsets );
 
         $this->assertSame(
@@ -422,7 +424,9 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
      * O "Número" tem de ficar logo abaixo do "Endereço" — é o caso relatado.
      */
     public function test_aero_number_field_sits_right_after_the_address(): void {
-        $ids = $this->section_ids( $this->plugin()->sort_funnelkit_address_fields( $this->funnel_fieldsets() ) );
+        $this->enable_person_fields();
+
+        $ids = $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ) );
 
         $this->assertSame(
             'shipping_number',
@@ -436,7 +440,9 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
      * País → CPF/CNPJ → RG → CEP → Endereço → Número → ...
      */
     public function test_aero_billing_block_is_sorted_and_keeps_the_same_address_checkbox_first(): void {
-        $fieldsets = $this->plugin()->sort_funnelkit_address_fields( $this->funnel_fieldsets() );
+        $this->enable_person_fields();
+
+        $fieldsets = $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() );
         $ids       = $this->section_ids( $fieldsets );
         $block     = $this->block_ids( $ids, 'billing' );
 
@@ -465,7 +471,9 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
      * é escolha do lojista no editor do funil e não pode ser tocada.
      */
     public function test_aero_contact_fields_outside_the_divider_are_untouched(): void {
-        $ids = $this->section_ids( $this->plugin()->sort_funnelkit_address_fields( $this->funnel_fieldsets() ) );
+        $this->enable_person_fields();
+
+        $ids = $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ) );
 
         $this->assertSame(
             array( 'billing_email', 'billing_first_name', 'billing_last_name', 'wfacp_divider_shipping' ),
@@ -481,8 +489,10 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
      * endereço.
      */
     public function test_aero_third_party_field_slot_keeps_its_position(): void {
+        $this->enable_person_fields();
+
         $original = $this->funnel_fieldsets();
-        $fields   = $this->plugin()->sort_funnelkit_address_fields( $original );
+        $fields   = $this->plugin()->prepare_funnelkit_checkout_fields( $original );
 
         foreach ( array( 'shipping_wc_custom_field', 'billing_wc_custom_field' ) as $slot ) {
             $before = array_search( $slot, $this->section_ids( $original ), true );
@@ -497,8 +507,10 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
      * layout original (salvo no banco) segue intacto depois do filtro.
      */
     public function test_aero_sorting_only_changes_the_order(): void {
+        $this->enable_person_fields();
+
         $original  = $this->funnel_fieldsets();
-        $fieldsets = $this->plugin()->sort_funnelkit_address_fields( $original );
+        $fieldsets = $this->plugin()->prepare_funnelkit_checkout_fields( $original );
 
         $before = $this->section_ids( $original );
         $after  = $this->section_ids( $fieldsets );
@@ -508,11 +520,10 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
 
         $this->assertSame( $before, $after, 'Nenhum campo pode ser criado ou perdido.' );
 
-        $ids = $this->section_ids( $original );
         $this->assertSame(
-            array( 'shipping_address_2', 'shipping_city', 'shipping_postcode' ),
-            array_slice( $ids, 5, 3 ),
-            'O array recebido não pode ser modificado por referência.'
+            $this->funnel_fieldsets(),
+            $original,
+            'O array recebido não pode ser modificado (nada de alterar por referência).'
         );
     }
 
@@ -520,8 +531,10 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
      * Duas passadas dão o mesmo resultado (o filtro roda a cada render).
      */
     public function test_aero_sorting_is_idempotent(): void {
-        $once  = $this->plugin()->sort_funnelkit_address_fields( $this->funnel_fieldsets() );
-        $twice = $this->plugin()->sort_funnelkit_address_fields( $once );
+        $this->enable_person_fields();
+
+        $once  = $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() );
+        $twice = $this->plugin()->prepare_funnelkit_checkout_fields( $once );
 
         $this->assertSame( $this->section_ids( $once ), $this->section_ids( $twice ) );
     }
@@ -530,6 +543,8 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
      * Layout sem divisores de endereço (funil de uma coluna só): nada a ordenar.
      */
     public function test_aero_layout_without_address_dividers_is_untouched(): void {
+        $this->enable_person_fields();
+
         $fieldsets = array(
             'single_step' => array(
                 0 => array(
@@ -543,7 +558,11 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
             ),
         );
 
-        $this->assertSame( $fieldsets, $this->plugin()->sort_funnelkit_address_fields( $fieldsets ) );
+        $this->assertSame(
+            $this->section_ids( $fieldsets ),
+            $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $fieldsets ) ),
+            'Sem divisor de endereço a ordem não muda.'
+        );
     }
 
     /**
@@ -560,7 +579,7 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
             array( array( 'id' => 'shipping_meu_campo_custom', 'class' => array() ) )
         );
 
-        $ids = $this->section_ids( $this->plugin()->sort_funnelkit_address_fields( $fieldsets ) );
+        $ids = $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $fieldsets ) );
 
         $this->assertSame(
             'shipping_meu_campo_custom',
@@ -577,12 +596,93 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
     public function test_aero_sorting_does_not_depend_on_the_document_feature(): void {
         update_option( 'woo_better_calc_person_type_select', 'none' );
 
-        $ids = $this->section_ids( $this->plugin()->sort_funnelkit_address_fields( $this->funnel_fieldsets() ) );
+        $ids = $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ) );
 
         $this->assertSame(
             'shipping_number',
             $ids[ array_search( 'shipping_address_1', $ids, true ) + 1 ],
             'A ordem do endereço não pode depender do tipo de cliente estar ligado.'
         );
+    }
+
+    /**
+     * O `required` do CPF/CNPJ vem do layout, e a compatibilidade do FunnelKit o
+     * registra com `required => false` FIXO. Resultado: no funil o campo aparecia como
+     * "(opcional)" — enquanto o checkout clássico e o de blocos o marcam como
+     * obrigatório e a validação do plugin barra o pedido sem documento, com o cliente
+     * lendo "opcional" na tela.
+     */
+    public function test_aero_document_is_required_when_the_person_type_is_enabled(): void {
+        update_option( 'woo_better_calc_person_type_select', 'physical' );
+
+        $fieldsets = $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() );
+
+        $this->assertTrue(
+            $this->field_by_id( $fieldsets, 'billing_document' )['required'],
+            'Com o tipo de cliente ligado o CPF/CNPJ precisa ser obrigatório no funil.'
+        );
+    }
+
+    /**
+     * RG é opcional por padrão (a opção "RG obrigatório" começa desligada) e passa a
+     * obrigatório quando o lojista marca — o funil tem de seguir a opção do plugin, não
+     * o layout.
+     */
+    public function test_aero_rg_required_follows_the_plugin_option(): void {
+        update_option( 'woo_better_calc_person_type_select', 'physical' );
+        update_option( 'woo_better_calc_enable_rg_field', 'yes' );
+
+        update_option( 'woo_better_calc_rg_required', 'no' );
+        $this->assertFalse(
+            $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ), 'billing_rg' )['required'],
+            'RG começa opcional.'
+        );
+
+        update_option( 'woo_better_calc_rg_required', 'yes' );
+        $this->assertTrue(
+            $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ), 'billing_rg' )['required'],
+            'Com "RG obrigatório" o funil precisa exigir o RG.'
+        );
+    }
+
+    /**
+     * "Tipo de Cliente" em "Nenhum": o plugin não gera campo de pessoa em checkout
+     * nenhum, então eles saem do funil (senão a loja pediria um dado que o plugin não
+     * valida nem salva).
+     */
+    public function test_aero_person_fields_are_removed_when_the_feature_is_off(): void {
+        update_option( 'woo_better_calc_person_type_select', 'none' );
+
+        $ids = $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ) );
+
+        foreach ( array( 'billing_document', 'billing_rg' ) as $field_id ) {
+            $this->assertNotContains( $field_id, $ids, $field_id . ' não pode existir no funil com o tipo de cliente desligado.' );
+        }
+    }
+
+    /**
+     * Liga o tipo de cliente e o RG (os campos de pessoa que o layout de teste tem).
+     */
+    private function enable_person_fields(): void {
+        update_option( 'woo_better_calc_person_type_select', 'both' );
+        update_option( 'woo_better_calc_enable_rg_field', 'yes' );
+        update_option( 'woo_better_calc_rg_required', 'no' );
+    }
+
+    /**
+     * Dado um layout, devolve a definição do campo pelo id.
+     *
+     * @param  array  $fieldsets Layout.
+     * @param  string $field_id  Id do campo.
+     * @return array
+     */
+    private function field_by_id( array $fieldsets, $field_id ) {
+        foreach ( $fieldsets['single_step'][0]['fields'] as $field ) {
+            if ( isset( $field['id'] ) && $field_id === $field['id'] ) {
+                return $field;
+            }
+        }
+
+        $this->fail( 'Campo não encontrado no layout: ' . $field_id );
     }
 }
