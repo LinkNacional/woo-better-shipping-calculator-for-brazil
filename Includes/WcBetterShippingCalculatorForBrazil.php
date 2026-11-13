@@ -11593,12 +11593,14 @@ class WcBetterShippingCalculatorForBrazil
             return;
         }
 
-        // O formulário do funil é impresso a partir do LAYOUT salvo do funil, não de
-        // `woocommerce_checkout_fields`: o CPF/CNPJ (e os outros dados de pessoa) ficam
-        // no grupo de COBRANÇA, que o funil começa escondido atrás do "usar um endereço
-        // de cobrança diferente" — o cliente só preenche o endereço de ENTREGA e nunca
-        // vê o campo. Este filtro devolve o campo ao grupo que a página exibe de fato.
-        add_filter('wfacp_get_fieldsets', array($this, 'place_person_fields_in_visible_address_group'), 20);
+        // O Aero imprime os campos na ordem em que estão SALVOS no layout
+        // (`_wfacp_fieldsets_data`), ignorando o `priority` — enquanto o checkout
+        // clássico e o de blocos ordenam por `priority` (é o `uasort` do próprio
+        // WooCommerce). Por isso um campo registrado depois que o layout existia entra
+        // no FIM do bloco de endereço: o Número caía abaixo do Celular, o Bairro abaixo
+        // do Estado. Este filtro reordena o bloco de endereço pela `priority` na hora de
+        // imprimir, sem tocar no layout salvo nem no banco.
+        add_filter('wfacp_get_fieldsets', array($this, 'sort_funnelkit_address_fields'), 20);
 
         $registered = array();
 
@@ -11775,80 +11777,41 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
-     * Dados de pessoa do plugin (documento, RG, inscrições, nascimento e gênero).
-     *
-     * São campos de COBRANÇA por natureza (é onde o WooCommerce e a compatibilidade
-     * com o "Brazilian Market on WooCommerce" os esperam), e é por isso que o FunnelKit
-     * os coloca no grupo de cobrança do layout. Ver
-     * place_person_fields_in_visible_address_group().
-     *
-     * @return string[]
-     */
-    private function funnelkit_person_field_ids()
-    {
-        return array(
-            'billing_document',
-            'billing_rg',
-            'billing_ie',
-            'billing_im',
-            'billing_birthdate',
-            'billing_gender',
-        );
-    }
-
-    /**
-     * Devolve os dados de pessoa do plugin ao grupo de endereço que o funil EXIBE.
+     * Reordena os campos de cada bloco de endereço do funil pela `priority`.
      *
      * O Aero Checkout imprime o formulário a partir do layout salvo do funil
-     * (`_wfacp_fieldsets_data`), não de `woocommerce_checkout_fields` — então mexer
-     * nos campos registrados não muda nada na tela: campo fora do layout não é
-     * impresso, e campo salvo num grupo que a página começa escondida também não.
+     * (`_wfacp_fieldsets_data`), na ORDEM DO ARRAY — o `priority` de cada campo sai
+     * apenas como `data-priority` no HTML, decorativo. Já o checkout clássico e o de
+     * blocos ordenam por `priority` (o `WC_Checkout::initialize_checkout_fields()` faz
+     * `uasort` com `wc_checkout_fields_uasort_comparison`). Daí a diferença de ordem
+     * entre o funil e o checkout do WooCommerce para os MESMOS campos.
      *
-     * O funil esconde UM dos dois grupos de endereço e deixa o outro à vista (é o
-     * checkbox "usar um endereço de cobrança/entrega diferente"). O esconde-esconde é
-     * feito pelas classes `wfacp_billing_fields`/`wfacp_shipping_fields` +
-     * `*_field_hide` (`display: none !important`, em form_internal_css.php), gravadas
-     * no layout. Neste plugin o CPF/CNPJ é um campo de cobrança: quando o funil
-     * começa pelo endereço de ENTREGA — o caso comum, e o do funil de teste — o
-     * documento ficava no grupo escondido e simplesmente não aparecia, com Número e
-     * Bairro ao lado (esses existem nos dois grupos).
+     * O caso concreto: os campos que este plugin registra no Aero (`number`,
+     * `neighborhood`, `cellphone`, `document`, `rg`, `ie`, `im`, `birthdate`,
+     * `gender`) entraram no fim do layout porque foram registrados DEPOIS que ele
+     * já existia — o Aero não intercala campo novo pela priority. Resultado: o
+     * "Número" aparecia abaixo do "Celular" e o "Bairro" abaixo do "Estado".
      *
-     * O que este filtro faz, e só no layout (nada muda em `$_POST`, no nome do campo
-     * ou na validação):
-     *
-     * 1. Campo do plugin salvo no grupo escondido é MOVIDO para o grupo visível,
-     *    logo abaixo dos campos de endereço desse grupo (antes do slot de campos de
-     *    terceiros, para não cair no meio deles). A ordem entre os campos do plugin é
-     *    preservada.
-     * 2. Campo que existe no grupo visível fica onde está — só reafirmamos o
-     *    `required` do documento, que o layout grava como OPCIONAL (a compatibilidade
-     *    do FunnelKit o registra com `required => false`) enquanto no checkout
-     *    clássico ele é obrigatório. Fica igual ao clássico, que é a referência.
-     * 3. O funil que NUNCA teve o documento no layout (salvo antes de a compatibilidade
-     *    passar a oferecer o campo) recebe o `billing_document` no grupo visível — sem
-     *    isso não há onde digitar o CPF/CNPJ e o cliente PJ não fecha o pedido.
-     *
-     * O `id`/`name` continua `billing_document`: o POST, o pedido, o cadastro, os
-     * espelhos (`billing_persontype`/`billing_cpf`/`billing_cnpj`, preenchidos no
-     * servidor por sync_person_type_mirrors_before_validation()) e o JS do plugin
-     * (máscara pelo `#billing_document`) seguem valendo sem nenhuma alteração.
-     *
-     * Sem o FunnelKit este filtro não existe; com "Tipo de Cliente" em "Nenhum" nada
-     * é tocado (não há documento para exibir).
+     * O que este filtro faz: dentro de cada divisor de endereço
+     * (`wfacp_divider_shipping`…`_end` e `wfacp_divider_billing`…`_end`), pega os
+     * campos que têm `priority` numérica, ordena e devolve cada um ao MESMO índice
+     * que ocupava. Assim:
+     *  - campos de contato (E-mail, Nome, Sobrenome), que ficam FORA do divisor,
+     *    não são tocados;
+     *  - campos especiais (`*_same_as_shipping`/`*_same_as_billing`, o checkbox de
+     *    mesmos dados, e o slot de campos de terceiros `*_wc_custom_field`) também
+     *    não: eles ficam onde o layout os colocou;
+     *  - nada muda no `id`/`name`, no POST, na validação ou no layout salvo — só a
+     *    ordem de impressão.
      *
      * @param  array $fieldsets Layout do funil (`WFACP_Common::get_fieldset_data()`).
-     * @return array            Layout com os campos do plugin no grupo visível.
+     * @return array            Layout com os blocos de endereço em ordem de `priority`.
      */
-    public function place_person_fields_in_visible_address_group($fieldsets)
+    public function sort_funnelkit_address_fields($fieldsets)
     {
-        if (! is_array($fieldsets) || 'none' === get_option('woo_better_calc_person_type_select', 'none')) {
+        if (! is_array($fieldsets)) {
             return $fieldsets;
         }
-
-        $owned = $this->funnelkit_person_field_ids();
-
-        // Onde cada campo do plugin está hoje e para qual grupo ele precisa ir.
-        $placements = array();
 
         foreach ($fieldsets as $step => $sections) {
             if (! is_array($sections)) {
@@ -11860,337 +11823,134 @@ class WcBetterShippingCalculatorForBrazil
                     continue;
                 }
 
-                foreach ($section['fields'] as $field) {
-                    $field_id = isset($field['id']) ? (string) $field['id'] : '';
-
-                    if (! in_array($field_id, $owned, true)) {
-                        continue;
-                    }
-
-                    $placements[$field_id] = array(
-                        'step'    => $step,
-                        'section' => $section_index,
-                        'target'  => $this->funnelkit_visible_address_group($field),
-                    );
-                }
+                $fieldsets[$step][$section_index]['fields'] = $this->sort_funnelkit_address_block($section['fields']);
             }
-        }
-
-        if (! isset($placements['billing_document'])) {
-            // Layout sem o CPF/CNPJ: devolve o campo ao grupo visível (só o
-            // documento — os opcionais o lojista adiciona no editor do funil).
-            $fieldsets = $this->funnelkit_append_document_field($fieldsets);
-        }
-
-        foreach ($owned as $field_id) {
-            if (! isset($placements[$field_id])) {
-                continue;
-            }
-
-            $placement = $placements[$field_id];
-            $target    = $placement['target'];
-
-            // Obrigatoriedade do documento igual à do checkout clássico. Os demais
-            // campos seguem o que o lojista salvou no funil (o `required` do layout).
-            if ('billing_document' === $field_id) {
-                $fieldsets[$placement['step']][$placement['section']]['fields'] = $this->funnelkit_set_field_required(
-                    $fieldsets[$placement['step']][$placement['section']]['fields'],
-                    $field_id,
-                    true
-                );
-            }
-
-            if ('' === $target) {
-                continue; // Já está num grupo visível: nada a mover.
-            }
-
-            // Grupo de destino inexistente neste funil (ex.: layout só com o endereço
-            // de cobrança): não há para onde mover — o campo fica onde está.
-            if (empty($this->funnelkit_address_group_point($fieldsets, $target))) {
-                continue;
-            }
-
-            $field = $this->funnelkit_take_field($fieldsets, $field_id);
-
-            if (empty($field)) {
-                continue;
-            }
-
-            // Sai do grupo escondido: as classes que o escondem
-            // (`wfacp_*_fields`/`wfacp_*_field_hide`) e o `person-type-field` — este
-            // último é a lista de "esconda tudo" do JS do plugin "Brazilian Market on
-            // WooCommerce" (o `handleFields()` dele dá `.hide()` em TODO
-            // `.person-type-field` e só reexibe os campos DELE, que não são os
-            // nossos). O woo-better não usa essa classe em nada.
-            $field['class'] = array_values(array_diff(
-                (array) (isset($field['class']) ? $field['class'] : array()),
-                array(
-                    'wfacp_billing_fields',
-                    'wfacp_shipping_fields',
-                    'wfacp_billing_field_hide',
-                    'wfacp_shipping_field_hide',
-                    'wfacp_billing_field_show',
-                    'wfacp_shipping_field_show',
-                    'person-type-field',
-                )
-            ));
-
-            $point = $this->funnelkit_address_group_point($fieldsets, $target);
-
-            if (empty($point)) {
-                continue;
-            }
-
-            array_splice($fieldsets[$point[0]][$point[1]]['fields'], $point[2], 0, array($field));
         }
 
         return $fieldsets;
     }
 
     /**
-     * Grupo de endereço em que o campo está VISÍVEL hoje: '' quando ele já aparece
-     * numa tela normal, ou o grupo para onde ele precisa ir ('shipping'/'billing')
-     * quando está salvo no grupo que o funil começa escondendo.
+     * Ordena os campos de UM bloco de endereço (entre um divisor de endereço e o seu
+     * fechamento), devolvendo cada campo ao índice que já ocupava.
      *
-     * @param  array $field Definição do campo no layout.
-     * @return string       '', 'shipping' ou 'billing'.
-     */
-    private function funnelkit_visible_address_group($field)
-    {
-        $classes = array_map('strval', (array) (isset($field['class']) ? $field['class'] : array()));
-
-        if (in_array('wfacp_billing_field_hide', $classes, true)) {
-            return 'shipping';
-        }
-
-        if (in_array('wfacp_shipping_field_hide', $classes, true)) {
-            return 'billing';
-        }
-
-        return '';
-    }
-
-    /**
-     * Onde inserir um campo no grupo de endereço indicado: logo ANTES do slot de
-     * campos de terceiros (`{grupo}_wc_custom_field`) — para o campo não cair no meio
-     * deles — ou, sem esse slot, DEPOIS do último campo do grupo. O divisor de
-     * fechamento (`wfacp_divider_{grupo}_end`) não conta como campo do grupo.
+     * Devolver ao MESMO índice é o pulo do gato: preserva a posição dos campos que
+     * não entram na ordenação (os especiais e os de contato), que continuam onde o
+     * lojista os deixou no editor do funil.
      *
-     * @param  array  $fieldsets Layout do funil.
-     * @param  string $group     'billing' ou 'shipping'.
-     * @return array             array(step, seção, posição) — vazio se o grupo não existe.
+     * @param  array $fields Campos da seção, na ordem salva.
+     * @return array         Campos com o bloco de endereço reordenado.
      */
-    private function funnelkit_address_group_point(array $fieldsets, $group)
+    private function sort_funnelkit_address_block(array $fields)
     {
-        $prefix = $group . '_';
+        $starters = array('wfacp_divider_shipping', 'wfacp_divider_billing');
+        $enders   = array('wfacp_divider_shipping_end', 'wfacp_divider_billing_end');
 
-        foreach ($fieldsets as $step => $sections) {
-            if (! is_array($sections)) {
-                continue;
-            }
+        $inside  = false;
+        $indexes = array();
 
-            foreach ($sections as $section_index => $section) {
-                if (! isset($section['fields']) || ! is_array($section['fields'])) {
-                    continue;
-                }
-
-                $last     = null;
-                $position = null;
-                $offset   = 0;
-
-                foreach ($section['fields'] as $field) {
-                    $field_id = isset($field['id']) ? (string) $field['id'] : '';
-                    $current  = $offset;
-                    ++$offset;
-
-                    if (0 !== strpos($field_id, $prefix)) {
-                        continue;
-                    }
-
-                    $last     = $current + 1;
-                    $position = null;
-
-                    if ($prefix . 'wc_custom_field' === $field_id) {
-                        $position = $current;
-                        break;
-                    }
-                }
-
-                if (null === $last) {
-                    continue;
-                }
-
-                return array($step, $section_index, null === $position ? $last : $position);
-            }
-        }
-
-        return array();
-    }
-
-    /**
-     * Retira um campo do layout, de onde ele estiver.
-     *
-     * @param  array  $fieldsets Layout do funil (por referência).
-     * @param  string $field_id  Id do campo.
-     * @return array             O campo retirado (vazio se não existir).
-     */
-    private function funnelkit_take_field(array &$fieldsets, $field_id)
-    {
-        foreach (array_keys($fieldsets) as $step) {
-            if (! is_array($fieldsets[$step])) {
-                continue;
-            }
-
-            foreach (array_keys($fieldsets[$step]) as $section_index) {
-                if (! isset($fieldsets[$step][$section_index]['fields']) || ! is_array($fieldsets[$step][$section_index]['fields'])) {
-                    continue;
-                }
-
-                $offset = 0;
-
-                foreach ($fieldsets[$step][$section_index]['fields'] as $field) {
-                    if (isset($field['id']) && $field_id === $field['id']) {
-                        // Posição ORDINAL, não a chave: o layout mistura chaves numéricas
-                        // e textuais (os divisores usam `wfacp_start_divider_*`), então a
-                        // chave não serve como índice do `array_splice`.
-                        array_splice($fieldsets[$step][$section_index]['fields'], $offset, 1);
-
-                        return $field;
-                    }
-
-                    ++$offset;
-                }
-            }
-        }
-
-        return array();
-    }
-
-    /**
-     * Define o `required` de um campo do layout.
-     *
-     * @param  array  $fields   Campos da seção.
-     * @param  string $field_id Id do campo.
-     * @param  bool   $required Obrigatório?
-     * @return array            Campos da seção.
-     */
-    private function funnelkit_set_field_required(array $fields, $field_id, $required)
-    {
         foreach ($fields as $index => $field) {
-            if (! isset($field['id']) || $field_id !== $field['id']) {
+            $field_id = isset($field['id']) ? (string) $field['id'] : '';
+
+            if (in_array($field_id, $starters, true)) {
+                $inside  = true;
+                $indexes = array();
                 continue;
             }
 
-            $fields[$index]['required'] = (bool) $required;
+            if (in_array($field_id, $enders, true)) {
+                $fields = $this->sort_funnelkit_fields_at($fields, $indexes);
+                $inside  = false;
+                $indexes = array();
+                continue;
+            }
+
+            if (! $inside || ! $this->is_sortable_checkout_field($field)) {
+                continue;
+            }
+
+            $indexes[] = $index;
+        }
+
+        // Bloco que não fecha (layout salvo pela metade): ainda assim ordena.
+        if (! empty($indexes)) {
+            $fields = $this->sort_funnelkit_fields_at($fields, $indexes);
         }
 
         return $fields;
     }
 
     /**
-     * Layout do funil sem o CPF/CNPJ: cria o campo no grupo de endereço visível.
+     * Um campo do layout entra na ordenação por `priority`?
      *
-     * Um funil salvo antes de a compatibilidade do FunnelKit passar a oferecer o
-     * `document` não tem o campo no layout — e campo fora do layout não é impresso.
-     * Só o documento é criado (é o campo que o plugin sempre exibe com "Tipo de
-     * Cliente" ligado); os opcionais continuam sendo adicionados pelo lojista no
-     * editor do funil.
+     * Fora ficam os que não são campo de endereço de verdade: os divisores, os de
+     * "mesmo endereço" (o checkbox que liga/desliga o bloco — ele é o primeiro da
+     * lista de propósito) e o slot de campos de terceiros do Aero, que precisa
+     * continuar no lugar onde o Aero o imprime.
      *
-     * @param  array $fieldsets Layout do funil.
-     * @return array            Layout com o CPF/CNPJ.
+     * @param  array $field Definição do campo no layout.
+     * @return bool
      */
-    private function funnelkit_append_document_field(array $fieldsets)
+    private function is_sortable_checkout_field($field)
     {
-        // O grupo que a página exibe é o que não está marcado como escondido; sem
-        // nenhum dos dois marcados, os dois aparecem — fica na cobrança, como manda o
-        // layout (e como o campo é salvo no pedido).
-        $target = 'billing';
+        $field_id = isset($field['id']) ? (string) $field['id'] : '';
 
-        foreach ($fieldsets as $sections) {
-            if (! is_array($sections)) {
-                continue;
-            }
+        if ('' === $field_id || ! isset($field['priority']) || ! is_numeric($field['priority'])) {
+            return false;
+        }
 
-            foreach ($sections as $section) {
-                if (! isset($section['fields']) || ! is_array($section['fields'])) {
-                    continue;
-                }
-
-                foreach ($section['fields'] as $layout_field) {
-                    $classes = array_map('strval', (array) (isset($layout_field['class']) ? $layout_field['class'] : array()));
-
-                    if (in_array('wfacp_billing_field_hide', $classes, true)) {
-                        $target = 'shipping';
-                    }
-                }
+        foreach (array('_same_as_shipping', '_same_as_billing', '_wc_custom_field', 'wfacp_divider') as $skip) {
+            if (false !== strpos($field_id, $skip)) {
+                return false;
             }
         }
 
-        $point = $this->funnelkit_address_group_point($fieldsets, $target);
-
-        if (empty($point)) {
-            return $fieldsets;
-        }
-
-        $field = $this->funnelkit_document_field_definition();
-
-        $field['cssready'] = isset($field['cssready']) && is_array($field['cssready'])
-            ? $field['cssready']
-            : array('wfacp-col-full');
-
-        array_splice($fieldsets[$point[0]][$point[1]]['fields'], $point[2], 0, array($field));
-
-        return $fieldsets;
+        return true;
     }
 
     /**
-     * Definição do campo unificado de CPF/CNPJ, como o checkout a registra.
+     * Ordena, pela `priority`, apenas os campos que estão nos índices indicados.
      *
-     * Usa o campo do próprio checkout (o mesmo que o `WC_Checkout` valida e salva) e,
-     * se por algum motivo ele não estiver lá, monta a definição equivalente — o campo
-     * do funil precisa ser IGUAL ao do checkout, senão o valor digitado não é
-     * processado.
+     * Os campos voltam para os MESMOS índices — quem não está na lista (e quem não
+     * tem `priority`) não sai do lugar. Empate de priority mantém a ordem salva.
      *
-     * @return array Campo pronto para o layout, ou vazio (vazio = sem documento).
+     * @param  array $fields  Campos da seção.
+     * @param  array $indexes Índices dos campos que podem ser reordenados.
+     * @return array          Campos da seção.
      */
-    private function funnelkit_document_field_definition()
+    private function sort_funnelkit_fields_at(array $fields, array $indexes)
     {
-        $field = array();
-
-        if (function_exists('WC') && WC()->checkout() && WC()->countries) {
-            $fields = WC()->checkout()->get_checkout_fields('billing');
-
-            if (isset($fields['billing_document']) && is_array($fields['billing_document'])) {
-                $field = $fields['billing_document'];
-            }
+        if (count($indexes) < 2) {
+            return $fields;
         }
 
-        if (empty($field)) {
-            $field = array(
-                'label'       => __('CPF/CNPJ', 'woo-better-shipping-calculator-for-brazil'),
-                'placeholder' => __('Digite seu CPF ou CNPJ', 'woo-better-shipping-calculator-for-brazil'),
-                'type'        => 'text',
-                'autocomplete' => 'off',
+        // Empate preserva a ordem atual (o desempate é a posição salva).
+        $packed = array();
+
+        foreach ($indexes as $position => $index) {
+            $packed[] = array(
+                'index'    => $index,
+                'priority' => (float) $fields[$index]['priority'],
+                'position' => $position,
+                'field'    => $fields[$index],
             );
         }
 
-        $field['id']         = 'billing_document';
-        $field['field_type'] = 'billing';
-        $field['required']   = true;
-        $field['class']      = array_values(array_diff(
-            array_merge(
-                array('form-row-wide'),
-                (array) (isset($field['class']) ? $field['class'] : array())
-            ),
-            array(
-                'wfacp_billing_fields',
-                'wfacp_shipping_fields',
-                'wfacp_billing_field_hide',
-                'wfacp_shipping_field_hide',
-                'person-type-field',
-            )
-        ));
+        usort(
+            $packed,
+            function ($a, $b) {
+                if ($a['priority'] === $b['priority']) {
+                    return $a['position'] <=> $b['position'];
+                }
 
-        return $field;
+                return $a['priority'] < $b['priority'] ? -1 : 1;
+            }
+        );
+
+        foreach ($packed as $position => $item) {
+            $fields[$indexes[$position]] = $item['field'];
+        }
+
+        return $fields;
     }
 }
