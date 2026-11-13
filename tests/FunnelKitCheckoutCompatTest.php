@@ -305,4 +305,237 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
         $this->assertContains( 'shipping_cellphone', $registered, 'O compat oficial do Brazilian não cobre o shipping_cellphone.' );
         $this->assertContains( 'billing_rg', $registered );
     }
+
+    /**
+     * Layout de um funil como o Aero salva: um grupo de endereço escondido (o de
+     * cobrança, atrás do "usar um endereço de cobrança diferente") e o outro à vista.
+     *
+     * @param  bool $billing_hidden O grupo de cobrança começa escondido?
+     * @return array
+     */
+    private function funnel_fieldsets( $billing_hidden = true ) {
+        $hidden = $billing_hidden ? array( 'wfacp_billing_fields', 'wfacp_billing_field_hide' ) : array();
+
+        return array(
+            'single_step' => array(
+                0 => array(
+                    'name'   => 'Shipping Information',
+                    'class'  => '',
+                    'fields' => array(
+                        array( 'id' => 'billing_email', 'field_type' => 'billing', 'class' => array() ),
+                        array( 'id' => 'wfacp_divider_shipping', 'class' => array() ),
+                        array( 'id' => 'shipping_country', 'field_type' => 'shipping', 'class' => array( 'form-row-wide', 'address-field' ) ),
+                        array( 'id' => 'shipping_number', 'field_type' => 'shipping', 'class' => array( 'form-row-first', 'address-field' ) ),
+                        array( 'id' => 'shipping_neighborhood', 'field_type' => 'shipping', 'class' => array( 'form-row-first', 'address-field' ) ),
+                        array( 'id' => 'shipping_wc_custom_field', 'field_type' => 'shipping', 'class' => array() ),
+                        array( 'id' => 'wfacp_divider_shipping_end', 'class' => array() ),
+                        array( 'id' => 'wfacp_divider_billing', 'class' => array() ),
+                        array( 'id' => 'billing_same_as_shipping', 'class' => array() ),
+                        array( 'id' => 'billing_address_1', 'field_type' => 'billing', 'class' => array_merge( array( 'form-row-wide' ), $hidden ) ),
+                        array(
+                            'id'         => 'billing_rg',
+                            'field_type' => 'billing',
+                            'required'   => false,
+                            'class'      => array_merge( array( 'form-row-wide', 'woo-better-rg-field' ), $hidden ),
+                        ),
+                        array(
+                            'id'         => 'billing_document',
+                            'field_type' => 'billing',
+                            'required'   => false,
+                            'class'      => array_merge( array( 'form-row-wide', 'person-type-field' ), $hidden ),
+                        ),
+                        array( 'id' => 'billing_wc_custom_field', 'field_type' => 'billing', 'class' => array() ),
+                    ),
+                ),
+            ),
+        );
+    }
+
+    /**
+     * Ids dos campos da seção, na ordem em que o funil imprime.
+     *
+     * @param  array $fieldsets Layout.
+     * @return string[]
+     */
+    private function section_ids( array $fieldsets ) {
+        return array_map(
+            function ( $field ) {
+                return isset( $field['id'] ) ? $field['id'] : '';
+            },
+            $fieldsets['single_step'][0]['fields']
+        );
+    }
+
+    /**
+     * O CPF/CNPJ é um campo de COBRANÇA, mas o funil do teste (e o caso comum) exibe o
+     * endereço de ENTREGA — o de cobrança fica escondido atrás do checkbox. Sem mover o
+     * campo, o cliente nunca vê onde digitar o documento (Número e Bairro aparecem
+     * porque existem nos dois grupos).
+     */
+    public function test_aero_document_is_moved_to_the_address_group_the_funnel_shows(): void {
+        update_option( 'woo_better_calc_person_type_select', 'physical' );
+
+        $fieldsets = $this->plugin()->place_person_fields_in_visible_address_group( $this->funnel_fieldsets() );
+        $ids       = $this->section_ids( $fieldsets );
+
+        $this->assertContains( 'billing_document', $ids, 'O documento não pode desaparecer do layout.' );
+        $this->assertLessThan(
+            array_search( 'wfacp_divider_billing', $ids, true ),
+            array_search( 'billing_document', $ids, true ),
+            'O documento precisa ficar NO GRUPO DE ENTREGA (antes do divisor da cobrança).'
+        );
+        $this->assertLessThan(
+            array_search( 'shipping_wc_custom_field', $ids, true ),
+            array_search( 'billing_document', $ids, true ),
+            'O documento entra antes do slot de campos de terceiros, não no meio deles.'
+        );
+
+        $document = $fieldsets['single_step'][0]['fields'][ array_search( 'billing_document', $ids, true ) ];
+
+        $this->assertSame( 'billing_document', $document['id'], 'O id/name do campo é o mesmo: POST, pedido e cadastro não mudam.' );
+        $this->assertNotContains( 'wfacp_billing_field_hide', $document['class'], 'Sem a classe que esconde o grupo o campo aparece.' );
+        $this->assertNotContains( 'person-type-field', $document['class'], 'O JS do Brazilian esconde todo .person-type-field e não reexibe os nossos.' );
+        $this->assertTrue( $document['required'], 'No funil o documento é obrigatório, como no checkout clássico.' );
+    }
+
+    /**
+     * O layout real do funil NÃO tem chaves numéricas sequenciais: os divisores de
+     * endereço entram com chave textual (`wfacp_start_divider_shipping`), então a
+     * CHAVE de um campo não é a posição dele na lista. Usar a chave como offset do
+     * `array_splice` jogava o documento para o meio do endereço (antes do Bairro).
+     */
+    public function test_aero_document_position_ignores_the_layout_keys(): void {
+        update_option( 'woo_better_calc_person_type_select', 'physical' );
+
+        $fieldsets = $this->funnel_fieldsets();
+
+        $with_string_keys = array();
+
+        foreach ( $fieldsets['single_step'][0]['fields'] as $field ) {
+            $key = 'wfacp_divider_shipping' === $field['id'] ? 'wfacp_start_divider_shipping' : $field['id'];
+
+            $with_string_keys[ $key ] = $field;
+        }
+
+        $fieldsets['single_step'][0]['fields'] = $with_string_keys;
+
+        $ids = array_values( $this->section_ids( $this->plugin()->place_person_fields_in_visible_address_group( $fieldsets ) ) );
+
+        $this->assertSame(
+            array( 'shipping_neighborhood', 'billing_document', 'billing_rg', 'shipping_wc_custom_field' ),
+            array_slice( $ids, array_search( 'shipping_neighborhood', $ids, true ), 4 ),
+            'O documento vem DEPOIS do último campo de endereço e antes do slot de terceiros.'
+        );
+    }
+
+    /**
+     * O RG é do mesmo grupo e segue o documento (é o campo "de pessoa" que fica logo
+     * abaixo do CPF/CNPJ no checkout clássico).
+     */
+    public function test_aero_person_fields_keep_their_order_when_moved(): void {
+        update_option( 'woo_better_calc_person_type_select', 'physical' );
+
+        $ids = $this->section_ids( $this->plugin()->place_person_fields_in_visible_address_group( $this->funnel_fieldsets() ) );
+
+        $this->assertSame(
+            array( 'billing_document', 'billing_rg', 'shipping_wc_custom_field' ),
+            array_slice( $ids, array_search( 'billing_document', $ids, true ), 3 ),
+            'O RG vem logo depois do documento e o slot de terceiros fica por último.'
+        );
+        $this->assertNotContains( 'billing_rg', array_slice( $ids, array_search( 'wfacp_divider_billing', $ids, true ) ), 'O RG saiu do grupo escondido.' );
+    }
+
+    /**
+     * Quando o funil exibe o endereço de COBRANÇA, o documento já está no lugar certo:
+     * nada é movido (só a obrigatoriedade é reafirmada).
+     */
+    public function test_aero_document_keeps_its_place_when_billing_is_the_visible_group(): void {
+        update_option( 'woo_better_calc_person_type_select', 'physical' );
+
+        $fieldsets = $this->plugin()->place_person_fields_in_visible_address_group( $this->funnel_fieldsets( false ) );
+        $ids       = $this->section_ids( $fieldsets );
+
+        $this->assertSame(
+            array( 'billing_rg', 'billing_document', 'billing_wc_custom_field' ),
+            array_slice( $ids, array_search( 'billing_rg', $ids, true ), 3 ),
+            'A ordem do layout não pode mudar quando o grupo visível é o de cobrança.'
+        );
+
+        $document = $fieldsets['single_step'][0]['fields'][ array_search( 'billing_document', $ids, true ) ];
+
+        $this->assertTrue( $document['required'] );
+    }
+
+    /**
+     * "Tipo de Cliente" em "Nenhum" = o plugin não gera documento: o layout do funil
+     * não é tocado.
+     */
+    public function test_aero_layout_is_untouched_without_the_document_feature(): void {
+        update_option( 'woo_better_calc_person_type_select', 'none' );
+
+        $original  = $this->funnel_fieldsets();
+        $fieldsets = $this->plugin()->place_person_fields_in_visible_address_group( $original );
+
+        $this->assertSame( $original, $fieldsets );
+    }
+
+    /**
+     * Funil cujo layout NUNCA teve o campo (salvo antes de a compatibilidade do
+     * FunnelKit passar a oferecer o `document`): o campo é criado no grupo visível.
+     * Campo fora do layout não é impresso — é o mesmo sintoma de não ter o campo.
+     */
+    public function test_aero_document_is_created_when_the_layout_never_had_it(): void {
+        update_option( 'woo_better_calc_person_type_select', 'physical' );
+
+        $fieldsets = $this->funnel_fieldsets();
+        $fieldsets['single_step'][0]['fields'] = array_values( array_filter(
+            $fieldsets['single_step'][0]['fields'],
+            function ( $field ) {
+                return 'billing_document' !== $field['id'];
+            }
+        ) );
+
+        $this->assertNotContains( 'billing_document', $this->section_ids( $fieldsets ) );
+
+        $placed = $this->plugin()->place_person_fields_in_visible_address_group( $fieldsets );
+        $ids    = $this->section_ids( $placed );
+
+        $this->assertContains( 'billing_document', $ids, 'O documento precisa existir no funil mesmo quando o layout é antigo.' );
+        $this->assertLessThan(
+            array_search( 'shipping_wc_custom_field', $ids, true ),
+            array_search( 'billing_document', $ids, true ),
+            'O campo criado entra no grupo visível, antes do slot de terceiros.'
+        );
+
+        $document = $placed['single_step'][0]['fields'][ array_search( 'billing_document', $ids, true ) ];
+
+        $this->assertSame( 'text', $document['type'] );
+        $this->assertNotEmpty( $document['label'] );
+        $this->assertTrue( $document['required'] );
+    }
+
+    /**
+     * Layout sem o grupo de entrega (funil só com cobrança): não há para onde mover —
+     * o campo tem de ficar onde está, nunca sumir.
+     */
+    public function test_aero_document_is_kept_when_there_is_no_shipping_group(): void {
+        update_option( 'woo_better_calc_person_type_select', 'physical' );
+
+        $fieldsets = $this->funnel_fieldsets();
+        $fieldsets['single_step'][0]['fields'] = array_values( array_filter(
+            $fieldsets['single_step'][0]['fields'],
+            function ( $field ) {
+                return 0 !== strpos( (string) $field['id'], 'shipping_' );
+            }
+        ) );
+
+        $ids = $this->section_ids( $this->plugin()->place_person_fields_in_visible_address_group( $fieldsets ) );
+
+        $this->assertContains( 'billing_document', $ids, 'Sem grupo de entrega o campo não pode ser perdido.' );
+        $this->assertGreaterThan(
+            array_search( 'wfacp_divider_billing', $ids, true ),
+            array_search( 'billing_document', $ids, true ),
+            'Ele continua no grupo de cobrança.'
+        );
+    }
 }
