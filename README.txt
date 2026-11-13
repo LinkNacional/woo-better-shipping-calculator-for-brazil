@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.2.5
+Stable tag: 5.2.6
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -125,6 +125,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.2.6 - 2026-11-13
+* Fix: the CPF/CNPJ field shows up again on the FunnelKit (Aero Checkout) funnel checkout. It was saved in the billing address group, which the funnel starts hidden — the customer fills the shipping address and had no place to type the document.
 
 # 5.2.5 - 2026-11-08
 * Fix: the CPF/CNPJ of customers from the "Brazilian Market on WooCommerce" plugin (or from older versions of this plugin) counts again on the order. The document saved only in the old fields is migrated to the new field on the first visit, the order (including on the block checkout) carries the account CPF/CNPJ when the form sends none, and the hidden person type/CPF/CNPJ mirrors are filled on the server before any validation — with the person type enabled here, the order is no longer blocked by "Person type/CPF/CNPJ/State Registration is a required field".
