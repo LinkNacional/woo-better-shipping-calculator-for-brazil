@@ -7,9 +7,10 @@
 * Ajuste: os links da versão PRO agora apontam para a página comercial de cada plugin.
 * Observação: nenhuma configuração salva mudou de nome, então as configurações existentes continuam funcionando como antes.
 * Correção: no checkout do funil (FunnelKit Aero Checkout) os campos de endereço voltam à ordem correta — Número logo abaixo de Endereço, Bairro abaixo de Complemento e Celular no fim — e o CPF/CNPJ passa a ser obrigatório, como nos outros checkouts. O funil imprime os campos na ordem em que estão salvos no layout e respeita a obrigatoriedade gravada nele (que a compatibilidade do FunnelKit fixa como opcional), em vez da prioridade e da obrigatoriedade usadas pelo checkout do WooCommerce.
-
 * Correção: no checkout do funil os campos de pessoa opcionais (Gênero, Data de Nascimento e RG sem obrigatoriedade) não aparecem mais como obrigatórios nem deixam o formulário inválido — a marcação de obrigatório só vai para o campo quando ele é de fato obrigatório.
 * Correção: o select de Gênero no checkout do funil recebe o mesmo select2 dos campos de País e Estado, em vez de aparecer como uma caixa crua.
+* Correção: no checkout do funil as opções da tela de configuração passam a valer para os campos de endereço e telefone — o Número e o Bairro só aparecem com a opção ligada (e o Bairro é obrigatório quando o Número é), o Telefone segue o "Telefone (Contato) Obrigatório", e o Celular segue o modo de telefone e a opção "Celular Obrigatório".
+* Correção: no checkout do funil o campo Empresa segue o "Comportamento do Campo Empresa" — desabilitado não gera o campo, opcional e obrigatório são respeitados, e no modo dinâmico ele nunca é exigido de pessoa física.
 
 # 5.2.5 - 08/11/26
 * Correção: o CPF/CNPJ de clientes do plugin "Brazilian Market on WooCommerce" (ou de versões antigas deste plugin) volta a valer no pedido. O documento gravado só nos campos antigos é migrado para o campo novo na primeira visita, o pedido (inclusive no checkout em blocos) leva o CPF/CNPJ do cadastro quando o formulário não envia nenhum, e os espelhos escondidos de tipo de pessoa/CPF/CNPJ são preenchidos no servidor antes da validação — com o tipo de pessoa ligado aqui, o pedido não é mais barrado por "Tipo de Pessoa/CPF/CNPJ/Inscrição Estadual é um campo obrigatório".

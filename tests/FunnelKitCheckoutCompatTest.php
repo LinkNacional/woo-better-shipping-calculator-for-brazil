@@ -569,6 +569,8 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
      * Campo sem `priority` (campo customizado do funil) não sai do lugar.
      */
     public function test_aero_field_without_priority_keeps_its_position(): void {
+        $this->enable_person_fields();
+
         $fieldsets = $this->funnel_fieldsets();
 
         // Um campo customizado do lojista, sem priority, no meio do bloco.
@@ -594,6 +596,7 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
      * CPF/CNPJ desligado.
      */
     public function test_aero_sorting_does_not_depend_on_the_document_feature(): void {
+        $this->enable_person_fields();
         update_option( 'woo_better_calc_person_type_select', 'none' );
 
         $ids = $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ) );
@@ -662,7 +665,10 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
     }
 
     /**
-     * Liga o tipo de cliente e o RG (os campos de pessoa que o layout de teste tem).
+     * Liga TODOS os campos que o layout de teste tem — é o estado em que o plugin
+     * gera cada um deles. Com uma opção desligada o campo sai do funil (ver
+     * `funnelkit_field_actions()`), então os testes de ordem precisam de tudo ligado
+     * para comparar maçã com maçã.
      */
     private function enable_person_fields(): void {
         update_option( 'woo_better_calc_person_type_select', 'both' );
@@ -671,6 +677,12 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
         update_option( 'woo_better_calc_enable_birthdate_field', 'yes' );
         update_option( 'woo_better_calc_birthdate_required', 'no' );
         update_option( 'woo_better_calc_enable_gender_field', 'yes' );
+        update_option( 'woo_better_calc_number_required', 'yes' );
+        update_option( 'woo_better_calc_enable_neighborhood_field', 'yes' );
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+        update_option( 'woo_better_calc_cellphone_required', 'no' );
+        update_option( 'woo_better_calc_contact_required', 'no' );
     }
 
     /**
@@ -747,6 +759,169 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
         $document = $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ), 'billing_document' );
 
         $this->assertArrayNotHasKey( 'input_class', $document );
+    }
+
+    /**
+     * "Campo de Número do Endereço" DESLIGADO: o clássico nem cria o campo, então ele
+     * sai do funil. Antes ficava sempre impresso e sempre obrigatório, porque a
+     * compatibilidade do FunnelKit registra o Número com `required => true` fixo.
+     */
+    public function test_aero_number_is_removed_when_the_option_is_off(): void {
+        $this->enable_person_fields();
+        update_option( 'woo_better_calc_number_required', 'no' );
+
+        $ids = $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ) );
+
+        $this->assertNotContains( 'billing_number', $ids, 'Sem "Campo de Número" o funil não pode pedir o número.' );
+        $this->assertNotContains( 'shipping_number', $ids, 'Sem "Campo de Número" o funil não pode pedir o número.' );
+    }
+
+    /**
+     * Bairro segue a MESMA expressão do checkout clássico:
+     * `required = ( number_required === 'yes' )`.
+     */
+    public function test_aero_neighborhood_required_follows_the_number_option(): void {
+        $this->enable_person_fields();
+
+        update_option( 'woo_better_calc_enable_neighborhood_field', 'yes' );
+        update_option( 'woo_better_calc_number_required', 'yes' );
+        $this->assertTrue(
+            $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ), 'billing_neighborhood' )['required'],
+            'Com Número obrigatório o Bairro é obrigatório.'
+        );
+
+        update_option( 'woo_better_calc_number_required', 'no' );
+        $this->assertArrayNotHasKey(
+            'required',
+            $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ), 'billing_neighborhood' ),
+            'Sem Número obrigatório o Bairro fica opcional — e a chave `required` precisa SAIR.'
+        );
+    }
+
+    /**
+     * "Campo de Bairro" DESLIGADO: não é gerado em checkout nenhum.
+     */
+    public function test_aero_neighborhood_is_removed_when_the_feature_is_off(): void {
+        $this->enable_person_fields();
+        update_option( 'woo_better_calc_enable_neighborhood_field', 'no' );
+
+        $ids = $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ) );
+
+        $this->assertNotContains( 'billing_neighborhood', $ids );
+        $this->assertNotContains( 'shipping_neighborhood', $ids );
+    }
+
+    /**
+     * "Telefone (Contato) Obrigatório" vale também no funil — antes o telefone nativo
+     * do Aero saía sempre como "(opcional)", mesmo com a opção ligada.
+     */
+    public function test_aero_phone_required_follows_the_contact_option(): void {
+        $this->enable_person_fields();
+
+        update_option( 'woo_better_calc_contact_required', 'yes' );
+        $this->assertTrue(
+            $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ), 'billing_phone' )['required'],
+            'Com "Telefone (Contato) Obrigatório" o telefone precisa ser obrigatório no funil.'
+        );
+
+        update_option( 'woo_better_calc_contact_required', 'no' );
+        $this->assertArrayNotHasKey(
+            'required',
+            $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ), 'billing_phone' ),
+            'Sem a opção o telefone é opcional — sem a chave `required`.'
+        );
+    }
+
+    /**
+     * "Desabilitar o campo de telefone": nada de telefone nem de celular no checkout.
+     * "Deixar a configuração nativa do WooCommerce": o plugin não mexe no telefone —
+     * o campo fica como o WooCommerce o definiu.
+     */
+    public function test_aero_phone_respects_the_phone_mode(): void {
+        $this->enable_person_fields();
+
+        update_option( 'woo_better_calc_phone_mode', 'disabled' );
+        $ids = $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ) );
+        $this->assertNotContains( 'billing_phone', $ids, 'Telefone desabilitado: o campo não existe.' );
+        $this->assertNotContains( 'billing_cellphone', $ids, 'Telefone desabilitado: o celular também não existe.' );
+
+        update_option( 'woo_better_calc_phone_mode', 'disabled_native' );
+        update_option( 'woo_better_calc_contact_required', 'yes' );
+        $phone = $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ), 'billing_phone' );
+        $this->assertArrayNotHasKey( 'required', $phone, 'No modo nativo o plugin não define a obrigatoriedade do telefone.' );
+    }
+
+    /**
+     * "Celular": só existe quando o modo de telefone o gera, e a obrigatoriedade vem
+     * da opção certa — "Somente Celular" herda do contato, os demais usam
+     * "Celular Obrigatório".
+     */
+    public function test_aero_cellphone_required_follows_the_plugin_options(): void {
+        $this->enable_person_fields();
+
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+        update_option( 'woo_better_calc_enable_cellphone_field', 'no' );
+        $ids = $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ) );
+        $this->assertNotContains( 'billing_cellphone', $ids, 'Sem o "Campo de Celular" não há campo de celular.' );
+
+        update_option( 'woo_better_calc_enable_cellphone_field', 'yes' );
+        update_option( 'woo_better_calc_cellphone_required', 'yes' );
+        $this->assertTrue(
+            $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ), 'billing_cellphone' )['required'],
+            'Com "Celular Obrigatório" o campo precisa ser obrigatório.'
+        );
+
+        // "Somente Celular": o celular é o campo principal e obedece o contato.
+        update_option( 'woo_better_calc_phone_mode', 'cellphone_only' );
+        update_option( 'woo_better_calc_cellphone_required', 'no' );
+        update_option( 'woo_better_calc_contact_required', 'yes' );
+        $this->assertTrue(
+            $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ), 'billing_cellphone' )['required'],
+            'No modo "Somente Celular" o celular herda o "Telefone (Contato) Obrigatório".'
+        );
+    }
+
+    /**
+     * "Comportamento do Campo Empresa": desabilitado não gera o campo, opcional deixa
+     * sem a chave `required`, obrigatório exige — e no modo dinâmico, com pessoa
+     * física apenas, nunca é obrigatório (não há CNPJ).
+     */
+    public function test_aero_company_follows_the_behavior_option(): void {
+        $this->enable_person_fields();
+
+        $layout = $this->funnel_fieldsets();
+        array_splice(
+            $layout['single_step'][0]['fields'],
+            14,
+            0,
+            array( array( 'id' => 'billing_company', 'priority' => '21', 'type' => 'text', 'field_type' => 'billing', 'required' => 'true' ) )
+        );
+
+        update_option( 'woo_better_calc_company_field_behavior', 'disabled' );
+        $ids = $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $layout ) );
+        $this->assertNotContains( 'billing_company', $ids, 'Empresa desabilitada não é gerada.' );
+
+        update_option( 'woo_better_calc_company_field_behavior', 'optional' );
+        $this->assertArrayNotHasKey(
+            'required',
+            $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $layout ), 'billing_company' ),
+            'Empresa opcional precisa perder a chave `required` (o layout a tinha como obrigatória).'
+        );
+
+        update_option( 'woo_better_calc_company_field_behavior', 'required' );
+        $this->assertTrue(
+            $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $layout ), 'billing_company' )['required'],
+            'Empresa obrigatória precisa ser exigida.'
+        );
+
+        // Dinâmico + pessoa física apenas: nunca obrigatória.
+        update_option( 'woo_better_calc_company_field_behavior', 'dynamic' );
+        update_option( 'woo_better_calc_person_type_select', 'physical' );
+        $this->assertArrayNotHasKey(
+            'required',
+            $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $layout ), 'billing_company' ),
+            'Sem pessoa jurídica não há CNPJ, então a Empresa não pode ser exigida.'
+        );
     }
 
     /**
