@@ -6,7 +6,7 @@
 * Ajuste: títulos, subtítulos e descrições dos campos foram reposicionados para que cada opção seja mais fácil de ler.
 * Ajuste: os links da versão PRO agora apontam para a página comercial de cada plugin.
 * Observação: nenhuma configuração salva mudou de nome, então as configurações existentes continuam funcionando como antes.
-* Correção: o campo de CPF/CNPJ volta a aparecer no checkout do funil (FunnelKit Aero Checkout). Ele estava salvo no grupo de endereço de cobrança, que o funil começa escondido — o cliente preenche o endereço de entrega e não via onde digitar o documento.
+* Correção: os campos de endereço do checkout do funil (FunnelKit Aero Checkout) voltam à ordem correta — Número logo abaixo de Endereço, Bairro abaixo de Complemento e Celular no fim. O funil imprime os campos na ordem em que estão salvos no layout e não usa a prioridade do checkout do WooCommerce, então os campos registrados pelo plugin ficavam todos no fim do bloco de endereço.
 
 # 5.2.5 - 08/11/26
 * Correção: o CPF/CNPJ de clientes do plugin "Brazilian Market on WooCommerce" (ou de versões antigas deste plugin) volta a valer no pedido. O documento gravado só nos campos antigos é migrado para o campo novo na primeira visita, o pedido (inclusive no checkout em blocos) leva o CPF/CNPJ do cadastro quando o formulário não envia nenhum, e os espelhos escondidos de tipo de pessoa/CPF/CNPJ são preenchidos no servidor antes da validação — com o tipo de pessoa ligado aqui, o pedido não é mais barrado por "Tipo de Pessoa/CPF/CNPJ/Inscrição Estadual é um campo obrigatório".
