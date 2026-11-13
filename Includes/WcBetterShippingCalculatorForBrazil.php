@@ -11741,8 +11741,17 @@ class WcBetterShippingCalculatorForBrazil
                     'label'       => __('Gênero', 'woo-better-shipping-calculator-for-brazil'),
                     'class'       => array('form-row-wide'),
                     'cssready'    => array('wfacp-col-full'),
-                    'required'    => false,
+                    // Gênero é OPCIONAL: a chave `required` não é definida de propósito.
+                    // O Aero marca `wfacp_field_required` em todo campo que TEM a chave
+                    // (usa `isset`, não o valor) e o JS dele reaplica `validate-required`
+                    // ao abrir o endereço de cobrança — o campo virava "obrigatório" na
+                    // tela e o WooCommerce o marcava como inválido, mesmo opcional.
                     'type'        => 'select',
+                    // `state_select` é a classe que o WooCommerce usa para aplicar o
+                    // select2 (`country-select.js`: `select.country_select, select.state_select`).
+                    // Sem ela o `<select>` saía nativo, com aparência diferente dos
+                    // selects de País/Estado do mesmo formulário.
+                    'input_class' => array('state_select'),
                     'priority'    => 26,
                     'options'     => array(
                         ''                                                    => __('Selecione...', 'woo-better-shipping-calculator-for-brazil'),
@@ -11907,7 +11916,32 @@ class WcBetterShippingCalculatorForBrazil
                         continue;
                     }
 
-                    $field['required'] = (bool) $rules[$field_id];
+                    // Campo `select` do plugin (Gênero): o Aero imprime um `<select>`
+                    // nativo e o WooCommerce só aplica o select2 em
+                    // `select.country_select`/`select.state_select`
+                    // (assets/js/frontend/country-select.js). Sem essa classe o campo
+                    // saía com a aparência crua, diferente dos selects de País/Estado do
+                    // MESMO formulário.
+                    if (isset($field['type']) && 'select' === $field['type']) {
+                        $input_class = isset($field['input_class']) ? (array) $field['input_class'] : array();
+
+                        if (! in_array('state_select', $input_class, true)) {
+                            $input_class[] = 'state_select';
+                        }
+
+                        $field['input_class'] = array_values($input_class);
+                    }
+
+                    if ($rules[$field_id]) {
+                        $field['required'] = true;
+                    } else {
+                        // Opcional: a chave precisa SAIR, não virar `false`. O Aero
+                        // adiciona `wfacp_field_required` a todo campo que tem a chave
+                        // (`isset()`) e o JS dele reaplica `validate-required` no bloco de
+                        // cobrança — o campo opcional aparecia como obrigatório e o
+                        // WooCommerce o marcava como inválido.
+                        unset($field['required']);
+                    }
 
                     $fields[] = $field;
                 }

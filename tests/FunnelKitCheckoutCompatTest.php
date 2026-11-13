@@ -633,9 +633,10 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
         update_option( 'woo_better_calc_enable_rg_field', 'yes' );
 
         update_option( 'woo_better_calc_rg_required', 'no' );
-        $this->assertFalse(
-            $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ), 'billing_rg' )['required'],
-            'RG começa opcional.'
+        $this->assertArrayNotHasKey(
+            'required',
+            $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ), 'billing_rg' ),
+            'RG opcional: a chave `required` precisa SAIR (não virar false) — o Aero marca wfacp_field_required em todo campo que TEM a chave.'
         );
 
         update_option( 'woo_better_calc_rg_required', 'yes' );
@@ -667,6 +668,85 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
         update_option( 'woo_better_calc_person_type_select', 'both' );
         update_option( 'woo_better_calc_enable_rg_field', 'yes' );
         update_option( 'woo_better_calc_rg_required', 'no' );
+        update_option( 'woo_better_calc_enable_birthdate_field', 'yes' );
+        update_option( 'woo_better_calc_birthdate_required', 'no' );
+        update_option( 'woo_better_calc_enable_gender_field', 'yes' );
+    }
+
+    /**
+     * Campos de pessoa OPCIONAIS não podem sair do filtro com a chave `required`.
+     *
+     * O Aero adiciona `wfacp_field_required` a todo campo que TEM a chave — ele usa
+     * `isset()`, não o valor (class-wfacp-template.php) — e o JS dele reaplica
+     * `validate-required` quando o bloco de cobrança é aberto. Resultado: o Gênero
+     * (opcional por configuração) aparecia com o rótulo "(opcional)" e o campo em
+     * vermelho como obrigatório, e o WooCommerce barrava o envio.
+     */
+    public function test_aero_optional_person_fields_drop_the_required_key(): void {
+        $this->enable_person_fields();
+        update_option( 'woo_better_calc_rg_required', 'no' );
+
+        $layout = $this->funnel_fieldsets();
+
+        // Gênero e data de nascimento no bloco de cobrança, como o lojista faz no editor.
+        array_splice(
+            $layout['single_step'][0]['fields'],
+            23,
+            0,
+            array(
+                array( 'id' => 'billing_birthdate', 'priority' => '25', 'type' => 'date', 'field_type' => 'billing' ),
+                array( 'id' => 'billing_gender', 'priority' => '26', 'type' => 'select', 'field_type' => 'billing', 'options' => array( '' => 'Selecione...' ) ),
+            )
+        );
+
+        $fields = $this->plugin()->prepare_funnelkit_checkout_fields( $layout );
+
+        foreach ( array( 'billing_gender', 'billing_birthdate', 'billing_rg' ) as $field_id ) {
+            $this->assertArrayNotHasKey(
+                'required',
+                $this->field_by_id( $fields, $field_id ),
+                $field_id . ' é opcional: a chave `required` não pode existir.'
+            );
+        }
+
+        $this->assertTrue(
+            $this->field_by_id( $fields, 'billing_document' )['required'],
+            'O documento continua obrigatório.'
+        );
+    }
+
+    /**
+     * O `<select>` do plugin no funil precisa da classe que o WooCommerce usa para
+     * aplicar o select2 (`select.country_select, select.state_select`, em
+     * country-select.js). Sem ela o Gênero saía com a aparência crua, diferente dos
+     * selects de País/Estado do mesmo formulário.
+     */
+    public function test_aero_gender_select_uses_the_same_class_as_the_state_select(): void {
+        $this->enable_person_fields();
+
+        $layout = $this->funnel_fieldsets();
+
+        array_splice(
+            $layout['single_step'][0]['fields'],
+            23,
+            0,
+            array( array( 'id' => 'billing_gender', 'priority' => '26', 'type' => 'select', 'field_type' => 'billing', 'options' => array( '' => 'Selecione...' ) ) )
+        );
+
+        $gender = $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $layout ), 'billing_gender' );
+
+        $this->assertContains( 'state_select', (array) $gender['input_class'], 'Sem `state_select` o WooCommerce não aplica o select2 no campo.' );
+    }
+
+    /**
+     * Onde o campo não é `select`, nada de classe de select2 é injetada.
+     */
+    public function test_aero_text_fields_do_not_get_the_select2_class(): void {
+        $this->enable_person_fields();
+
+        $document = $this->field_by_id( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ), 'billing_document' );
+
+        $this->assertArrayNotHasKey( 'input_class', $document );
     }
 
     /**
