@@ -146,6 +146,9 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * Tweak: the PRO version links now point to each plugin's commercial page.
 * Note: no saved setting changed its name, so existing configurations keep working as before.
 
+* Fix: on the funnel checkout the optional person fields (Gender, Birthdate and the optional RG) no longer show up as required and no longer leave the form invalid — the required mark is only written to the field when it is actually required.
+* Fix: the Gender select on the funnel checkout now gets the same select2 as the Country and State fields, instead of showing up as a raw box.
+
 # 5.2.5 - 2026-11-08
 * Fix: the CPF/CNPJ of customers from the "Brazilian Market on WooCommerce" plugin (or from older versions of this plugin) counts again on the order. The document saved only in the old fields is migrated to the new field on the first visit, the order (including on the block checkout) carries the account CPF/CNPJ when the form sends none, and the hidden person type/CPF/CNPJ mirrors are filled on the server before any validation — with the person type enabled here, the order is no longer blocked by "Person type/CPF/CNPJ/State Registration is a required field".
 * Fix: the Brazilian fields now work on the FunnelKit (Aero Checkout) funnel checkout. Cellphone, RG, State Registration (IE), City Registration (IM), Birthdate and Gender now show up on the funnel editor and are registered as funnel fields (before, a legal-entity customer was blocked with no place to type the IE, and the phone typed in the "Cellphone only" mode was dropped — it is now saved and mirrored into the cellphone). A field the form does not display (such as Number) is no longer required on submit, and the plugin no longer starts a second phone mask when the checkout already applies the FunnelKit one.
