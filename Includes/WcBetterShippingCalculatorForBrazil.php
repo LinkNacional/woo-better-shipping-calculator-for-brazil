@@ -11599,11 +11599,13 @@ class WcBetterShippingCalculatorForBrazil
         // WooCommerce). Por isso um campo registrado depois que o layout existia entra
         // no FIM do bloco de endereço: o Número caía abaixo do Celular, o Bairro abaixo
         // do Estado. Este filtro reordena o bloco de endereço pela `priority` na hora de
-        // imprimir, sem tocar no layout salvo nem no banco. O mesmo filtro acerta o
-        // `required` dos campos de pessoa: a compatibilidade do FunnelKit registra o
-        // CPF/CNPJ com `required => false` fixo, e o funil obedece o layout — então o
-        // campo aparecia como "(opcional)" enquanto no checkout clássico/blocos ele é
-        // obrigatório (e a validação barrassava o pedido sem avisar na tela).
+        // imprimir, sem tocar no layout salvo nem no banco. O mesmo filtro acerta a
+        // obrigatoriedade e a existência de cada campo que o plugin controla: a
+        // compatibilidade do FunnelKit registra o CPF/CNPJ com `required => false` e o
+        // Número com `required => true` fixos no código dela, e o funil obedece o
+        // layout — então as opções do plugin não chegavam até ele (o CPF/CNPJ saía
+        // "(opcional)" e o Número era exigido mesmo desligado, casos em que a validação
+        // do plugin barrava o pedido sem avisar na tela).
         add_filter('wfacp_get_fieldsets', array($this, 'prepare_funnelkit_checkout_fields'), 20);
 
         $registered = array();
@@ -11826,7 +11828,7 @@ class WcBetterShippingCalculatorForBrazil
             return $fieldsets;
         }
 
-        $fieldsets = $this->apply_funnelkit_person_field_rules($fieldsets);
+        $fieldsets = $this->apply_funnelkit_field_rules($fieldsets);
 
         foreach ($fieldsets as $step => $sections) {
             if (! is_array($sections)) {
@@ -11846,50 +11848,135 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
-     * Campos de pessoa que ESTE plugin controla no checkout do funil.
+     * O que fazer com cada campo do funil que ESTE plugin controla.
      *
-     * @return string[]
+     * O funil imprime o layout salvo (`_wfacp_fieldsets_data`) e não
+     * `woocommerce_checkout_fields`, então NENHUMA opção da página de configuração
+     * chega até ele sozinha — nem a de obrigatoriedade, nem a de existência do campo.
+     * Quem traduz as opções para o funil é esta tabela, com a MESMA regra do checkout
+     * clássico:
+     *
+     *  - `required` → campo obrigatório;
+     *  - `optional` → campo opcional (a chave `required` precisa SAIR do array — ver
+     *    apply_funnelkit_field_rules());
+     *  - `remove`   → o plugin não gera este campo com a configuração atual.
+     *
+     * Campo fora da tabela não é tocado: nome, sobrenome, e-mail, endereço,
+     * complemento, CEP, cidade, país, estado, o checkbox de "mesmo endereço" e o slot
+     * de campos de terceiros (`*_wc_custom_field`) do Aero.
+     *
+     * @return array<string,string> id do campo => 'required' | 'optional' | 'remove'.
      */
-    private function funnelkit_person_field_ids()
+    private function funnelkit_field_actions()
     {
-        return array(
-            'billing_document',
-            'billing_rg',
-            'billing_ie',
-            'billing_im',
-            'billing_birthdate',
-            'billing_gender',
-        );
+        $number_required = ('yes' === get_option('woo_better_calc_number_required', 'no'));
+
+        $actions = array();
+
+        foreach (array('billing', 'shipping') as $type) {
+            // Número: com a opção desligada o clássico nem cria o campo (o "Campo de
+            // Número" nasce obrigatório). No funil ele existia de qualquer forma porque
+            // a compatibilidade do FunnelKit o registra com `required => true` fixo.
+            $actions[$type . '_number'] = $number_required ? 'required' : 'remove';
+
+            // Bairro: mesma expressão do clássico — o campo existe com a opção ligada e
+            // é obrigatório quando o Número é obrigatório.
+            $actions[$type . '_neighborhood'] = ('yes' === get_option('woo_better_calc_enable_neighborhood_field', 'no'))
+                ? ($number_required ? 'required' : 'optional')
+                : 'remove';
+
+            // "Celular": só existe quando o modo de telefone gera o campo. No modo
+            // "Somente Celular" ele é o campo principal e herda a obrigatoriedade do
+            // "Telefone (Contato) Obrigatório"; nos demais vale "Celular Obrigatório".
+            if (! $this->phone_mode_adds_cellphone_field()) {
+                $actions[$type . '_cellphone'] = 'remove';
+            } elseif ('cellphone_only' === $this->get_phone_mode()) {
+                $actions[$type . '_cellphone'] = $this->is_phone_required() ? 'required' : 'optional';
+            } else {
+                $actions[$type . '_cellphone'] = $this->is_cellphone_required() ? 'required' : 'optional';
+            }
+
+            // Telefone nativo do Aero. "Desabilitar o campo de telefone" tira o telefone
+            // do checkout (nada de telefone nem de celular); "Deixar a configuração
+            // nativa do WooCommerce" mantém o campo como o WooCommerce o definiu — nos
+            // modos gerenciados vale o "Telefone (Contato) Obrigatório".
+            if ('disabled' === $this->get_phone_mode()) {
+                $actions[$type . '_phone'] = 'remove';
+            } elseif ($this->phone_mode_hides_native_option()) {
+                $actions[$type . '_phone'] = $this->is_phone_required() ? 'required' : 'optional';
+            }
+        }
+
+        $person_type = get_option('woo_better_calc_person_type_select', 'none');
+        $pj_enabled  = in_array($person_type, array('legal', 'both'), true);
+
+        // "Tipo de Cliente" em "Nenhum": o plugin não gera campo de pessoa em checkout
+        // nenhum, então eles saem do funil (senão a loja pediria um dado que o plugin
+        // não valida nem salva).
+        if ('none' === $person_type) {
+            foreach (array('billing_document', 'billing_rg', 'billing_ie', 'billing_im', 'billing_birthdate', 'billing_gender') as $field_id) {
+                $actions[$field_id] = 'remove';
+            }
+        } else {
+            // Documento: sempre obrigatório com o tipo de cliente ligado (a compat do
+            // FunnelKit o registra com `required => false` fixo).
+            $actions['billing_document'] = 'required';
+
+            // RG: documento de pessoa física, obrigatório conforme a opção.
+            $actions['billing_rg'] = $this->rg_field_enabled()
+                ? ($this->rg_field_required() ? 'required' : 'optional')
+                : 'remove';
+
+            // IE/IM: só para pessoa jurídica (mesmo gate do registro no editor do funil).
+            foreach (array('billing_ie' => 'enable_ie_field', 'billing_im' => 'enable_im_field') as $field_id => $option) {
+                $enabled = ('yes' === get_option('woo_better_calc_' . $option, 'no'));
+
+                $actions[$field_id] = ($enabled && $pj_enabled) ? 'required' : 'remove';
+            }
+
+            // Nascimento e Gênero: seguem as opções deles. O Gênero é opcional SEMPRE.
+            $actions['billing_birthdate'] = ('yes' === get_option('woo_better_calc_enable_birthdate_field', 'no'))
+                ? (('yes' === get_option('woo_better_calc_birthdate_required', 'yes')) ? 'required' : 'optional')
+                : 'remove';
+
+            $actions['billing_gender'] = ('yes' === get_option('woo_better_calc_enable_gender_field', 'no'))
+                ? 'optional'
+                : 'remove';
+        }
+
+        // Empresa: "Desabilitado" não gera o campo em checkout nenhum; "Obrigatório" e
+        // "Opcional" são explícitos; "Dinâmico" só existe para PJ (com pessoa física
+        // apenas o campo nunca é obrigatório) — nos demais casos quem decide é o Aero.
+        $company_behavior = get_option('woo_better_calc_company_field_behavior', 'dynamic');
+
+        if ('disabled' === $company_behavior) {
+            $actions['billing_company'] = 'remove';
+            $actions['shipping_company'] = 'remove';
+        } elseif ('required' === $company_behavior) {
+            $actions['billing_company'] = 'required';
+            $actions['shipping_company'] = 'required';
+        } elseif ('optional' === $company_behavior) {
+            $actions['billing_company'] = 'optional';
+            $actions['shipping_company'] = 'optional';
+        } elseif ('dynamic' === $company_behavior && ! $pj_enabled) {
+            // Sem PJ não há CNPJ, e é o CNPJ que torna a Empresa obrigatória.
+            $actions['billing_company'] = 'optional';
+            $actions['shipping_company'] = 'optional';
+        }
+
+        return $actions;
     }
 
     /**
-     * Acerta o `required` dos campos de pessoa no funil — e remove os que o plugin
-     * não geraria.
-     *
-     * A compatibilidade do FunnelKit com este plugin registra o `document` com
-     * `required => false` fixo (class-brazil-field-2.0.php), e o Aero imprime o layout
-     * como está salvo. Resultado: no funil o CPF/CNPJ saía como "(opcional)" enquanto
-     * no checkout clássico e no de blocos é obrigatório — e, como
-     * validate_person_type_documents() exige o documento em
-     * `woocommerce_checkout_process`, o cliente via "(opcional)" e o pedido era
-     * barrado com "Por favor, insira seu CPF".
-     *
-     * A regra aqui é a MESMA do checkout clássico:
-     *  - documento: sempre obrigatório com o tipo de cliente ligado;
-     *  - RG: só para pessoa física, obrigatório conforme a opção do plugin;
-     *  - IE/IM: só para pessoa jurídica, obrigatórias;
-     *  - nascimento/gênero: seguem as opções deles.
-     *
-     * E, com "Tipo de Cliente" em "Nenhum", o plugin não gera campo de pessoa em
-     * lugar nenhum: os campos saem do layout do funil, para não pedir um dado que o
-     * plugin não trata (e que não seria validado nem salvo).
+     * Aplica as opções do plugin ao layout do funil: obrigatoriedade de cada campo
+     * controlado por ele e remoção dos que o plugin não geraria.
      *
      * @param  array $fieldsets Layout do funil.
-     * @return array            Layout com os campos de pessoa coerentes com o plugin.
+     * @return array            Layout coerente com a página de configuração.
      */
-    private function apply_funnelkit_person_field_rules(array $fieldsets)
+    private function apply_funnelkit_field_rules(array $fieldsets)
     {
-        $rules = $this->funnelkit_person_field_required_rules();
+        $actions = $this->funnelkit_field_actions();
 
         foreach ($fieldsets as $step => $sections) {
             if (! is_array($sections)) {
@@ -11905,42 +11992,39 @@ class WcBetterShippingCalculatorForBrazil
 
                 foreach ($section['fields'] as $field) {
                     $field_id = isset($field['id']) ? (string) $field['id'] : '';
+                    $action   = isset($actions[$field_id]) ? $actions[$field_id] : 'keep';
 
-                    if (! in_array($field_id, $this->funnelkit_person_field_ids(), true)) {
-                        $fields[] = $field;
+                    if ('remove' === $action) {
                         continue;
                     }
 
-                    // Campo que o plugin não geraria (recurso desligado): sai do funil.
-                    if (! array_key_exists($field_id, $rules)) {
-                        continue;
-                    }
+                    if ('keep' !== $action) {
+                        // Campo `select` do plugin (Gênero): o Aero imprime um `<select>`
+                        // nativo e o WooCommerce só aplica o select2 em
+                        // `select.country_select`/`select.state_select`
+                        // (assets/js/frontend/country-select.js). Sem essa classe o campo
+                        // saía com a aparência crua, diferente dos selects de País/Estado
+                        // do MESMO formulário.
+                        if (isset($field['type']) && 'select' === $field['type']) {
+                            $input_class = isset($field['input_class']) ? (array) $field['input_class'] : array();
 
-                    // Campo `select` do plugin (Gênero): o Aero imprime um `<select>`
-                    // nativo e o WooCommerce só aplica o select2 em
-                    // `select.country_select`/`select.state_select`
-                    // (assets/js/frontend/country-select.js). Sem essa classe o campo
-                    // saía com a aparência crua, diferente dos selects de País/Estado do
-                    // MESMO formulário.
-                    if (isset($field['type']) && 'select' === $field['type']) {
-                        $input_class = isset($field['input_class']) ? (array) $field['input_class'] : array();
+                            if (! in_array('state_select', $input_class, true)) {
+                                $input_class[] = 'state_select';
+                            }
 
-                        if (! in_array('state_select', $input_class, true)) {
-                            $input_class[] = 'state_select';
+                            $field['input_class'] = array_values($input_class);
                         }
 
-                        $field['input_class'] = array_values($input_class);
-                    }
-
-                    if ($rules[$field_id]) {
-                        $field['required'] = true;
-                    } else {
-                        // Opcional: a chave precisa SAIR, não virar `false`. O Aero
-                        // adiciona `wfacp_field_required` a todo campo que tem a chave
-                        // (`isset()`) e o JS dele reaplica `validate-required` no bloco de
-                        // cobrança — o campo opcional aparecia como obrigatório e o
-                        // WooCommerce o marcava como inválido.
-                        unset($field['required']);
+                        if ('required' === $action) {
+                            $field['required'] = true;
+                        } else {
+                            // Opcional: a chave precisa SAIR, não virar `false`. O Aero
+                            // adiciona `wfacp_field_required` a todo campo que tem a
+                            // chave (`isset()`) e o JS dele reaplica `validate-required`
+                            // no bloco de cobrança — o campo opcional aparecia como
+                            // obrigatório e o WooCommerce o marcava como inválido.
+                            unset($field['required']);
+                        }
                     }
 
                     $fields[] = $field;
@@ -11951,47 +12035,6 @@ class WcBetterShippingCalculatorForBrazil
         }
 
         return $fieldsets;
-    }
-
-    /**
-     * Obrigatoriedade de cada campo de pessoa, igual à do checkout clássico.
-     *
-     * Campo AUSENTE do retorno = o plugin não gera esse campo agora (recurso
-     * desligado, ou tipo de cliente que não o usa) e ele sai do layout do funil.
-     *
-     * @return array<string,bool> id do campo => obrigatório?
-     */
-    private function funnelkit_person_field_required_rules()
-    {
-        $person_type = get_option('woo_better_calc_person_type_select', 'none');
-
-        if ('none' === $person_type) {
-            return array(); // Nenhum campo de pessoa neste caso.
-        }
-
-        $rules = array( 'billing_document' => true );
-
-        if ($this->rg_field_enabled()) {
-            $rules['billing_rg'] = $this->rg_field_required();
-        }
-
-        if ('yes' === get_option('woo_better_calc_enable_ie_field', 'no')) {
-            $rules['billing_ie'] = true;
-        }
-
-        if ('yes' === get_option('woo_better_calc_enable_im_field', 'no')) {
-            $rules['billing_im'] = true;
-        }
-
-        if ('yes' === get_option('woo_better_calc_enable_birthdate_field', 'no')) {
-            $rules['billing_birthdate'] = ('yes' === get_option('woo_better_calc_birthdate_required', 'yes'));
-        }
-
-        if ('yes' === get_option('woo_better_calc_enable_gender_field', 'no')) {
-            $rules['billing_gender'] = false; // Gênero é opcional, como no clássico.
-        }
-
-        return $rules;
     }
 
     /**

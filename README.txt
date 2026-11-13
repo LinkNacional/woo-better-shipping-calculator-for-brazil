@@ -131,6 +131,8 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 * Fix: on the funnel checkout the optional person fields (Gender, Birthdate and the optional RG) no longer show up as required and no longer leave the form invalid — the required mark is only written to the field when it is actually required.
 * Fix: the Gender select on the funnel checkout now gets the same select2 as the Country and State fields, instead of showing up as a raw box.
+* Fix: on the funnel checkout the settings screen options now apply to the address and phone fields — Number and Neighborhood only show up when the option is on (and Neighborhood is required when Number is), the Phone follows "Phone (Contact) Required", and the Cellphone follows the phone mode and the "Cellphone Required" option.
+* Fix: on the funnel checkout the Company field follows the "Company Field Behavior" — disabled does not generate the field, optional and required are honored, and in the dynamic mode it is never required from a physical person.
 
 # 5.2.5 - 2026-11-08
 * Fix: the CPF/CNPJ of customers from the "Brazilian Market on WooCommerce" plugin (or from older versions of this plugin) counts again on the order. The document saved only in the old fields is migrated to the new field on the first visit, the order (including on the block checkout) carries the account CPF/CNPJ when the form sends none, and the hidden person type/CPF/CNPJ mirrors are filled on the server before any validation — with the person type enabled here, the order is no longer blocked by "Person type/CPF/CNPJ/State Registration is a required field".
