@@ -128,7 +128,6 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 
 # 5.2.6 - 2026-11-13
 * Fix: on the FunnelKit (Aero Checkout) funnel checkout the address fields are back in the right order — Number right below Street address, Neighborhood below Address 2 and Cellphone last — and CPF/CNPJ is now required, as in the other checkouts. The funnel prints the fields in the order saved in its layout and follows the required flag stored there (which the FunnelKit compatibility hardcodes as optional), instead of the priority and required flag the WooCommerce checkout uses.
-
 * Fix: on the funnel checkout the optional person fields (Gender, Birthdate and the optional RG) no longer show up as required and no longer leave the form invalid — the required mark is only written to the field when it is actually required.
 * Fix: the Gender select on the funnel checkout now gets the same select2 as the Country and State fields, instead of showing up as a raw box.
 * Fix: on the funnel checkout the settings screen options now apply to the address and phone fields — Number and Neighborhood only show up when the option is on (and Neighborhood is required when Number is), the Phone follows "Phone (Contact) Required", and the Cellphone follows the phone mode and the "Cellphone Required" option.
