@@ -560,8 +560,6 @@
               'woo_better_calc_birthdate_required': 'woo_better_calc_enable_birthdate_field',
 
               //Checkout
-              'woo_better_calc_enable_auto_address_fill': 'woo_better_calc_cep_field_position',
-              'woo_better_calc_enable_silent_address_fill': 'woo_better_calc_cep_field_position',
               'woo_better_calc_apply_phone_mask': 'woo_better_calc_phone_mode',
               'woo_better_calc_show_phone_country_code': 'woo_better_calc_phone_mode',
               'woo_better_calc_validate_ddd': 'woo_better_calc_contact_required',
@@ -659,33 +657,10 @@
       });
     }
 
-    const positionRadios = document.querySelectorAll('input[name="woo_better_calc_cep_field_position"]');
-    const autoAddressRadios = document.querySelectorAll('input[name="woo_better_calc_enable_auto_address_fill"]');
-
-    function updateAutoAddressState() {
-      // Considera habilitado se algum radio do pai estiver marcado como 'yes'
-      const enabled = Array.from(positionRadios).some(radio => radio.checked && radio.value === 'yes');
-
-      setDisabledState(autoAddressRadios, !enabled);
-
-      if (!enabled) {
-        // Se desabilitar o pai, marca 'no' no filho
-        autoAddressRadios.forEach(radio => {
-          if (radio.value === 'no') {
-            radio.checked = true;
-          } else if (radio.value === 'yes') {
-            radio.checked = false;
-          }
-        });
-      }
-    }
-    if (positionRadios.length > 0 && autoAddressRadios.length > 0) {
-      updateAutoAddressState(); // Estado inicial
-      positionRadios.forEach(radio => {
-        radio.addEventListener('change', updateAutoAddressState);
-      });
-    }
-
+    // O preenchimento por CEP (sugestão/silencioso) NÃO depende do "Destaque do Campo
+    // CEP": aquele só posiciona o campo no topo do formulário. Travar o preenchimento
+    // atrás do destaque deixava a loja com o preenchimento ligado sem o recurso no
+    // checkout (nem o JS era impresso) — ver `Public::cep_autofill_required()`.
     handleAddressFillMutualExclusion();
 
     const applyPhoneMaskRadios = document.querySelectorAll('input[name="woo_better_calc_apply_phone_mask"]');

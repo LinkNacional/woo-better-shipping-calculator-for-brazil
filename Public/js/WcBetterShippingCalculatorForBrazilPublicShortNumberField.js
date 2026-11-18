@@ -102,6 +102,10 @@ document.addEventListener("DOMContentLoaded", function () {
             'display: inline-flex !important; ' +
             'align-items: flex-end !important; ' +
             'gap: 4px !important; ' +
+            // Sem `nowrap` o rótulo encurta até caber no espaço que sobra e o "S/N"
+            // quebra/encolhe em cima do quadradinho.
+            'white-space: nowrap !important; ' +
+            'flex-wrap: nowrap !important; ' +
             'cursor: pointer !important; ' +
             'font-size: 12px !important; ' +
             'font-weight: normal !important; ' +
@@ -127,7 +131,19 @@ document.addEventListener("DOMContentLoaded", function () {
             'cursor: pointer !important; ' +
             'flex-shrink: 0 !important; ' +
             'vertical-align: middle !important;' +
-            'line-height: normal !important;'
+            'line-height: normal !important;' +
+            // O FunnelKit Aero (e vários temas de checkout) estiliza
+            // `input[type=checkbox]` como `position: absolute; left: 0` para desenhar o
+            // quadradinho por conta própria. Herdando isso, o atalho S/N saía do fluxo:
+            // o rótulo encolhia até a largura só do texto e o quadradinho ia parar em
+            // cima das letras ("espreme o checkbox pra cima do texto" — relato do
+            // cliente no checkout do Aero). Aqui o atalho volta ao fluxo do nosso flex.
+            'position: static !important; ' +
+            'top: auto !important; ' +
+            'left: auto !important; ' +
+            'right: auto !important; ' +
+            'bottom: auto !important; ' +
+            'float: none !important;'
         );
 
         label.appendChild(snText);
