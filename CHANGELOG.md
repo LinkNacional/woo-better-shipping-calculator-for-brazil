@@ -9,6 +9,8 @@
 * Correção: no checkout do funil (FunnelKit) os campos brasileiros voltam à ordem usada no checkout do WooCommerce.
 * Correção: no checkout do funil o CPF/CNPJ volta a ser obrigatório e os campos opcionais não são mais exigidos — cada campo segue a tela de configuração, inclusive os que estão desligados.
 * Correção: o select de Gênero no funil aparece como os de País e Estado.
+* Correção: o preenchimento do endereço por CEP (sugestão e silencioso) não depende mais do "Destaque do Campo CEP". Com o preenchimento ligado e o destaque desligado o recurso não era carregado no checkout — o cliente digitava o CEP e nada acontecia, sem spinner e sem mensagem de erro. O destaque agora só decide se o campo CEP vai para o topo do formulário.
+* Correção: o atalho "S/N" do campo de Número não fica mais espremido no checkout do funil (FunnelKit). O formulário do funil posiciona todo checkbox como absoluto e o quadradinho ia parar em cima do texto.
 
 # 5.2.5 - 08/11/26
 * Correção: o CPF/CNPJ de clientes do plugin "Brazilian Market on WooCommerce" (ou de versões antigas deste plugin) volta a valer no pedido. O documento gravado só nos campos antigos é migrado para o campo novo na primeira visita, o pedido (inclusive no checkout em blocos) leva o CPF/CNPJ do cadastro quando o formulário não envia nenhum, e os espelhos escondidos de tipo de pessoa/CPF/CNPJ são preenchidos no servidor antes da validação — com o tipo de pessoa ligado aqui, o pedido não é mais barrado por "Tipo de Pessoa/CPF/CNPJ/Inscrição Estadual é um campo obrigatório".

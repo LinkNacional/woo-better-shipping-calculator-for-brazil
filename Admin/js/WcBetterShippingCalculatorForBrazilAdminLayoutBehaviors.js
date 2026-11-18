@@ -178,8 +178,6 @@
 
 	// ── 3. Estados de dependência ──────────────────────────────────────────
 	function initDependencies() {
-		var positionRadios = document.querySelectorAll('input[name="woo_better_calc_cep_field_position"]');
-		var autoAddressRadios = document.querySelectorAll('input[name="woo_better_calc_enable_auto_address_fill"]');
 		var applyPhoneMaskRadios = document.querySelectorAll('input[name="woo_better_calc_apply_phone_mask"]');
 		var showCountryCodeRadios = document.querySelectorAll('input[name="woo_better_calc_show_phone_country_code"]');
 		var validateDddRadios = document.querySelectorAll('input[name="woo_better_calc_validate_ddd"]');
@@ -204,28 +202,11 @@
 				&& (phoneModeSelect.value === 'disabled' || phoneModeSelect.value === 'disabled_native');
 		}
 
-		function updateAutoAddressState() {
-			var enabled = isYes(positionRadios);
-
-			setDisabledState(autoAddressRadios, !enabled);
-
-			if (!enabled) {
-				autoAddressRadios.forEach(function (radio) {
-					if (radio.value === 'no') {
-						radio.checked = true;
-					} else if (radio.value === 'yes') {
-						radio.checked = false;
-					}
-				});
-			}
-		}
-
-		if (positionRadios.length > 0 && autoAddressRadios.length > 0) {
-			updateAutoAddressState();
-			positionRadios.forEach(function (radio) {
-				radio.addEventListener('change', updateAutoAddressState);
-			});
-		}
+		// O preenchimento por CEP (sugestão/silencioso) NÃO depende do "Destaque do
+		// Campo CEP": aquele só posiciona o campo no topo do formulário. Travar o
+		// preenchimento atrás do destaque deixava a loja com o preenchimento ligado sem
+		// o recurso no checkout (nem o JS era impresso) — ver
+		// `Public::cep_autofill_required()`.
 
 		// show_phone_country_code: desabilita e força 'no' quando a máscara está off.
 		function updatePhoneChildState() {

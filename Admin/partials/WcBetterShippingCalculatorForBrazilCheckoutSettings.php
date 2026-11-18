@@ -48,7 +48,6 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                 'enable_auto_address_fill' => array(
                     'title'    => __('Sugestão de Endereço por CEP', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_enable_auto_address_fill',
-                    'join' => 'woo_better_calc_cep_field_position',
                     'desc_tip' => false,
                     'default'  => 'no',
                     'type'     => 'radio',
@@ -65,7 +64,6 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                 'enable_silent_address_fill' => array(
                     'title'    => __('Preenchimento Automático Silencioso por CEP', 'woo-better-shipping-calculator-for-brazil'),
                     'id'       => 'woo_better_calc_enable_silent_address_fill',
-                    'join' => 'woo_better_calc_cep_field_position',
                     'desc_tip' => false,
                     'default'  => 'no',
                     'type'     => 'radio',

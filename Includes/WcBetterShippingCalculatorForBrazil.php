@@ -7655,12 +7655,11 @@ class WcBetterShippingCalculatorForBrazil
             }
         }
 
-        // Adiciona o checkbox apenas se ambas as condições permitirem
-        // Só adiciona o checkbox quando as DUAS opções estão explicitamente ligadas.
-        // REASON: a comparação negativa (`=== 'no'`) deixava qualquer valor fora do
-        // par yes/no — option vazia de um salvamento antigo, por exemplo — cair no
-        // ramo do "adiciona", e o checkbox aparecia no checkout com a opção desligada.
-        if ($fill_checkout_address !== 'yes' || $cep_position !== 'yes') {
+        // Adiciona o checkbox da sugestão de endereço. Depende SÓ da opção de
+        // sugestão: o "Destaque do Campo CEP" reposiciona o campo, não liga nem
+        // desliga o preenchimento (senão o lojista fica preso — ver
+        // WcBetterShippingCalculatorForBrazilPublic::cep_autofill_required()).
+        if ($fill_checkout_address !== 'yes') {
             return $fields;
         }
 
@@ -10886,7 +10885,7 @@ class WcBetterShippingCalculatorForBrazil
             $fields['billing_postcode']['priority'] = 34;
         }
 
-        if ($cep_position === 'yes' && $fill_checkout_address === 'yes') {
+        if ($fill_checkout_address === 'yes') {
             // Adicionar checkbox para auto-preenchimento de CEP
             $fields['wc_better_calc_checkbox_billing'] = array(
                 'type'        => 'checkbox',
@@ -11141,7 +11140,7 @@ class WcBetterShippingCalculatorForBrazil
             $fields['shipping_postcode']['priority'] = 34;
         }
 
-        if ($cep_position === 'yes' && $fill_checkout_address === 'yes') {
+        if ($fill_checkout_address === 'yes') {
             // Adicionar checkbox para auto-preenchimento de CEP
             $fields['wc_better_calc_checkbox_shipping'] = array(
                 'type'        => 'checkbox',
