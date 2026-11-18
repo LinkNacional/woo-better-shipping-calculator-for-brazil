@@ -5,7 +5,7 @@ Tags: cep, checkout, cpf, cnpj, brasil
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 5.2.5
+Stable tag: 5.2.6
 License: GPLv2 or later
 License URI: [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html)
 
@@ -125,6 +125,15 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * [International Telephone Input](https://intl-tel-input.com/) - Phone number field with country code.
 
 == Changelog ==
+
+# 5.2.6 - 2026-11-13
+* Fix: on the funnel checkout (FunnelKit) the Brazilian fields are back in the order used by the WooCommerce checkout.
+* Fix: on the funnel checkout CPF/CNPJ is required again and the optional fields are no longer enforced — every field follows the settings screen, including the disabled ones.
+* Fix: the Gender select on the funnel shows up like the Country and State ones.
+* Fix: the postcode address autofill (suggestion and silent) no longer depends on the "CEP field highlight". With the autofill on and the highlight off the feature was not loaded on the checkout at all — the customer typed the postcode and nothing happened, with no spinner and no error message. The highlight now only decides whether the postcode field moves to the top of the form.
+* Fix: the "S/N" shortcut of the Number field is no longer squeezed on the funnel checkout (FunnelKit). The funnel form styles every checkbox as absolute, so the little box ended up on top of the text.
+* Fix: with the "CEP field highlight" off the postcode no longer stays at the top of the funnel checkout (FunnelKit). The saved funnel layout keeps the position the field had when the funnel was built, so turning the option off changed nothing; the option is now authoritative — on, the postcode comes right after the Country, off it goes back to the end of the address block, like on the WooCommerce checkout.
+* Fix: the "Enter the postcode (CEP) above." checkbox now always sits right below the postcode field. It used to have a fixed position, so without the highlight it showed up alone at the top of the form; on the block checkout the script also no longer pulls the postcode up when the option is off.
 
 # 5.2.5 - 2026-11-08
 * Fix: the CPF/CNPJ of customers from the "Brazilian Market on WooCommerce" plugin (or from older versions of this plugin) counts again on the order. The document saved only in the old fields is migrated to the new field on the first visit, the order (including on the block checkout) carries the account CPF/CNPJ when the form sends none, and the hidden person type/CPF/CNPJ mirrors are filled on the server before any validation — with the person type enabled here, the order is no longer blocked by "Person type/CPF/CNPJ/State Registration is a required field".

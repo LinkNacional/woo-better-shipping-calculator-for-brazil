@@ -25,6 +25,14 @@ jQuery(function ($) {
 
     var silentMode = typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.silent_address_fill === 'yes';
 
+    // O "Destaque do Campo CEP" é o ÚNICO interruptor do reposicionamento visual
+    // (campo em largura cheia + logo acima do endereço). Ele é independente do
+    // preenchimento automático: o recurso de consulta pode estar ligado com o campo
+    // na posição padrão do formulário. Sem este flag, o script (que agora carrega
+    // sempre que o preenchimento está ligado) movia o CEP para o topo mesmo com a
+    // opção desligada.
+    var cepHighlight = !(typeof wc_better_checkout_vars !== 'undefined' && wc_better_checkout_vars.cep_highlight === 'no');
+
     function injectSpinnerCss() {
         // SVG stroke-dashoffset approach: no global CSS needed
         if (document.getElementById('wc-better-spinner-css')) return;
@@ -1340,7 +1348,9 @@ jQuery(function ($) {
         var $postcodeDivs = $('.wc-block-components-address-form__postcode');
         $postcodeDivs.each(function () {
             var $divComponent = $(this);
-            $divComponent.css('flex', '1 0 calc(100%)');
+            if (cepHighlight) {
+                $divComponent.css('flex', '1 0 calc(100%)');
+            }
             var $input = $divComponent.find('input');
             if ($input.length === 0) return;
             var baseId = $input.attr('id').replace('-postcode', '');
@@ -1348,7 +1358,7 @@ jQuery(function ($) {
             if ($divComponent.hasClass(priorityClass)) return;
             $divComponent.addClass(priorityClass);
 
-            // Lógica de posicionamento do CEP
+            // Lógica de posicionamento do CEP (só com o destaque ligado)
             var checkboxId = 'wc-better-checkbox-' + baseId;
             var $checkboxLabel = $('label[for="' + checkboxId + '"]');
             var $addressInput = $('#' + baseId + '-address_1, #lkn-pro-' + baseId + '-address_1');
@@ -1356,10 +1366,12 @@ jQuery(function ($) {
             if ($checkboxLabel.length) {
                 // Se o checkbox existe, posiciona o CEP acima do checkbox
                 var $checkboxDiv = $checkboxLabel.closest('.wc-block-components-checkbox');
-                if ($checkboxDiv.length && $checkboxDiv.prev()[0] !== $divComponent[0]) {
+                if (!$checkboxDiv.length) {
+                    // Sem a caixa do checkbox não há o que ancorar.
+                } else if (cepHighlight && $checkboxDiv.prev()[0] !== $divComponent[0]) {
                     $divComponent.insertBefore($checkboxDiv);
                 }
-            } else if ($addressParentDiv) {
+            } else if ($addressParentDiv && cepHighlight) {
                 // Se não existe checkbox, posiciona o CEP acima do endereço
                 if ($addressParentDiv.prev()[0] !== $divComponent[0]) {
                     $divComponent.insertBefore($addressParentDiv);

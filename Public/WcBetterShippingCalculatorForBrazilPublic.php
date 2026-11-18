@@ -289,6 +289,41 @@ class WcBetterShippingCalculatorForBrazilPublic
     }
 
     /**
+     * O cliente pediu o preenchimento do endereço por CEP? (sugestão OU silencioso)
+     *
+     * É ESTE o interruptor do recurso de CEP — não o "Destaque do Campo CEP"
+     * (`woo_better_calc_cep_field_position`), que só decide onde o campo é impresso
+     * (topo do formulário). Enquanto o gate era só o "Destaque", uma loja com o
+     * preenchimento LIGADO e o destaque DESLIGADO não recebia nem o JS nem o CSS do
+     * CEP: digitar o CEP não fazia nada — sem spinner, sem checkbox e sem mensagem
+     * de erro, porque o código simplesmente não era impresso (o relato do checkout
+     * do FunnelKit Aero).
+     *
+     * Método PURO (sem estado) para ser testável isoladamente.
+     *
+     * @param  string $auto_fill   Valor de `woo_better_calc_enable_auto_address_fill`.
+     * @param  string $silent_fill Valor de `woo_better_calc_enable_silent_address_fill`.
+     * @return bool
+     */
+    public static function cep_autofill_required($auto_fill, $silent_fill)
+    {
+        return 'yes' === $auto_fill || 'yes' === $silent_fill;
+    }
+
+    /**
+     * Atalho de `cep_autofill_required()` lendo as options.
+     *
+     * @return bool
+     */
+    public static function cep_autofill_enabled()
+    {
+        return self::cep_autofill_required(
+            get_option('woo_better_calc_enable_auto_address_fill', 'no'),
+            get_option('woo_better_calc_enable_silent_address_fill', 'no')
+        );
+    }
+
+    /**
      * O plugin GERENCIA o telefone nesse modo?
      *
      * Espelha `WcBetterShippingCalculatorForBrazil::phone_mode_hides_native_option()`
@@ -483,8 +518,10 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
+            // O CSS do CEP acompanha o RECURSO (sugestão/silencioso), não o
+            // "Destaque do Campo CEP": este último só reposiciona o campo.
             $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
-            if($cep_position === 'yes')
+            if($cep_position === 'yes' || self::cep_autofill_enabled())
             {
                 wp_enqueue_style(
                     $this->plugin_name . '-checkout-postcode',
@@ -592,7 +629,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
 
             $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
-            if ($cep_position === 'yes') {
+            if ($cep_position === 'yes' || self::cep_autofill_enabled()) {
                 wp_enqueue_style(
                     $this->plugin_name . '-edit-address-postcode',
                     plugin_dir_url(__FILE__) . 'cssCompiled/WcBetterShippingCalculatorForBrazilCheckoutPostcode.COMPILED.css',
@@ -1484,7 +1521,9 @@ class WcBetterShippingCalculatorForBrazilPublic
             }
 
             // Usando variável já definida no topo da função
-            if($cep_position === 'yes' && !$is_checkout_classic)
+            // Gate do RECURSO (não do destaque do campo): com o preenchimento ligado, o
+            // script precisa existir no checkout mesmo com o CEP fora do topo.
+            if(($cep_position === 'yes' || self::cep_autofill_enabled()) && !$is_checkout_classic)
             {
                 wp_enqueue_script(
                     $this->plugin_name . '-checkout-postcode',
@@ -1501,6 +1540,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'ajax_url'             => $this->get_admin_ajax_url(),
                         'fill_checkout_address' => $fill_checkout_address,
                         'silent_address_fill'  => get_option('woo_better_calc_enable_silent_address_fill', 'no'),
+                        // Só o "Destaque do Campo CEP" move o campo/bloco para o topo.
+                        'cep_highlight'        => $cep_position,
                         'billing_number'       => $billing_number,
                         'shipping_number'      => $shipping_number,
                         'nonce'                => wp_create_nonce('wc_better_insert_address')
@@ -1508,7 +1549,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                 );
             }
 
-            if($cep_position === 'yes' && $is_checkout_classic)
+            if(($cep_position === 'yes' || self::cep_autofill_enabled()) && $is_checkout_classic)
             {
                 wp_enqueue_script(
                     $this->plugin_name . '-checkout-postcode-shortcode',
@@ -1525,6 +1566,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'ajax_url'             => $this->get_admin_ajax_url(),
                         'fill_checkout_address' => $fill_checkout_address,
                         'silent_address_fill'   => get_option('woo_better_calc_enable_silent_address_fill', 'no'),
+                        // Reaproveitado pelo script do checkout em blocos.
+                        'cep_highlight'        => $cep_position,
                         'billing_number'       => $billing_number,
                         'shipping_number'      => $shipping_number,
                         'nonce'                => wp_create_nonce('wc_better_insert_address')
@@ -2048,7 +2091,7 @@ class WcBetterShippingCalculatorForBrazilPublic
             // Scripts para auto-preenchimento de CEP
             $cep_position = get_option('woo_better_calc_cep_field_position', 'no');
             
-            if ($cep_position === 'yes') {
+            if ($cep_position === 'yes' || self::cep_autofill_enabled()) {
                 // Obter dados do usuário
                 $billing_number = '';
                 $shipping_number = '';
@@ -2074,6 +2117,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'ajax_url'             => $this->get_admin_ajax_url(),
                         'fill_checkout_address' => 'yes', // Always enable for edit-address pages
                         'silent_address_fill'   => get_option('woo_better_calc_enable_silent_address_fill', 'no'),
+                        'cep_highlight'        => 'no', // Edição de endereço não tem "destaque".
                         'billing_number'       => $billing_number,
                         'shipping_number'      => $shipping_number,
                         'nonce'                => wp_create_nonce('wc_better_insert_address')
