@@ -7672,7 +7672,9 @@ class WcBetterShippingCalculatorForBrazil
             'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
             'required'    => false,
             'class'       => array('form-row-wide'),
-            'priority'    => 35,
+            // A sugestão pertence ao CEP: fica SEMPRE logo abaixo dele, seja qual for
+            // a posição do campo (o "Destaque" sobe o CEP para o topo do formulário).
+            'priority'    => self::cep_suggestion_priority($fields['billing']['billing_postcode'] ?? array()),
             'id'          => 'wc_better_calc_checkbox_billing',
         );
         $shipping_checkbox_field = array(
@@ -7680,7 +7682,7 @@ class WcBetterShippingCalculatorForBrazil
             'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
             'required'    => false,
             'class'       => array('form-row-wide'),
-            'priority'    => 35,
+            'priority'    => self::cep_suggestion_priority($fields['shipping']['shipping_postcode'] ?? array()),
             'id'          => 'wc_better_calc_checkbox_shipping',
         );
 
@@ -10892,7 +10894,9 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => false,
                 'class'       => array('form-row-wide'),
-                'priority'    => 35,
+                // A sugestão pertence ao CEP: fica SEMPRE logo abaixo dele, seja qual
+                // for a posição do campo (com o "Destaque" o CEP sobe para o topo).
+                'priority'    => self::cep_suggestion_priority($fields['billing_postcode'] ?? array()),
                 'id'          => 'wc_better_calc_checkbox_billing'
             );
         }
@@ -11147,7 +11151,8 @@ class WcBetterShippingCalculatorForBrazil
                 'label'       => __('Informe acima o código postal (CEP).', 'woo-better-shipping-calculator-for-brazil'),
                 'required'    => false,
                 'class'       => array('form-row-wide'),
-                'priority'    => 35,
+                // Ver o gêmeo de cobrança: a sugestão fica logo abaixo do CEP.
+                'priority'    => self::cep_suggestion_priority($fields['shipping_postcode'] ?? array()),
                 'id'          => 'wc_better_calc_checkbox_shipping'
             );
         }
@@ -11846,11 +11851,71 @@ class WcBetterShippingCalculatorForBrazil
                     continue;
                 }
 
-                $fieldsets[$step][$section_index]['fields'] = $this->sort_funnelkit_address_block($section['fields']);
+                $fields = $this->apply_funnelkit_postcode_position($section['fields']);
+
+                $fieldsets[$step][$section_index]['fields'] = $this->sort_funnelkit_address_block($fields);
             }
         }
 
         return $fieldsets;
+    }
+
+    /**
+     * Posição do CEP no funil conforme o "Destaque do Campo CEP".
+     *
+     * O Aero imprime o layout SALVO do funil e cada campo carrega a `priority` que o
+     * WooCommerce tinha no momento em que o layout foi montado — um retrato, não uma
+     * leitura ao vivo. Por isso desligar o "Destaque" na tela de configuração não
+     * mudava nada no funil: a prioridade antiga (34/45, "logo abaixo do País") ficava
+     * gravada no layout e o CEP continuava no topo.
+     *
+     * Aqui a opção volta a mandar:
+     *  - LIGADO  → 34, imediatamente depois do País (o texto da própria opção);
+     *  - DESLIGADO → 90, a prioridade padrão do WooCommerce (fim do bloco de endereço,
+     *    depois de Cidade/Estado), igual ao checkout clássico sem outros plugins.
+     *
+     * @param  array $fields Campos de um bloco de endereço do funil.
+     * @return array         Campos com a prioridade do CEP ajustada.
+     */
+    private function apply_funnelkit_postcode_position(array $fields)
+    {
+        $highlighted = ('yes' === get_option('woo_better_calc_cep_field_position', 'no'));
+        $priority    = $highlighted ? 34 : 90;
+
+        foreach ($fields as $key => $field) {
+            if (! is_array($field) || ! isset($field['id'])) {
+                continue;
+            }
+
+            if (! in_array($field['id'], array('billing_postcode', 'shipping_postcode'), true)) {
+                continue;
+            }
+
+            $fields[$key]['priority'] = $priority;
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Prioridade do checkbox de SUGESTÃO de endereço, logo abaixo do CEP.
+     *
+     * O texto do checkbox é "Informe acima o código postal (CEP)." — ele pertence ao
+     * CEP. Enquanto era fixo em 35, funcionava apenas com o "Destaque do Campo CEP"
+     * ligado (que fixa o CEP em 34); com o destaque desligado o CEP voltava para a
+     * posição padrão do formulário (~90) e o checkbox ficava LÁ EM CIMA, sozinho,
+     * sem o campo que ele descreve.
+     *
+     * @param  array $postcode_field Definição do campo de CEP (`billing_postcode`/`shipping_postcode`).
+     * @return int                  Prioridade do checkbox (padrão 35 sem o campo).
+     */
+    private static function cep_suggestion_priority($postcode_field)
+    {
+        if (! is_array($postcode_field) || ! isset($postcode_field['priority']) || ! is_numeric($postcode_field['priority'])) {
+            return 35;
+        }
+
+        return (int) $postcode_field['priority'] + 1;
     }
 
     /**

@@ -1540,6 +1540,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'ajax_url'             => $this->get_admin_ajax_url(),
                         'fill_checkout_address' => $fill_checkout_address,
                         'silent_address_fill'  => get_option('woo_better_calc_enable_silent_address_fill', 'no'),
+                        // Só o "Destaque do Campo CEP" move o campo/bloco para o topo.
+                        'cep_highlight'        => $cep_position,
                         'billing_number'       => $billing_number,
                         'shipping_number'      => $shipping_number,
                         'nonce'                => wp_create_nonce('wc_better_insert_address')
@@ -1564,6 +1566,8 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'ajax_url'             => $this->get_admin_ajax_url(),
                         'fill_checkout_address' => $fill_checkout_address,
                         'silent_address_fill'   => get_option('woo_better_calc_enable_silent_address_fill', 'no'),
+                        // Reaproveitado pelo script do checkout em blocos.
+                        'cep_highlight'        => $cep_position,
                         'billing_number'       => $billing_number,
                         'shipping_number'      => $shipping_number,
                         'nonce'                => wp_create_nonce('wc_better_insert_address')
@@ -2113,6 +2117,7 @@ class WcBetterShippingCalculatorForBrazilPublic
                         'ajax_url'             => $this->get_admin_ajax_url(),
                         'fill_checkout_address' => 'yes', // Always enable for edit-address pages
                         'silent_address_fill'   => get_option('woo_better_calc_enable_silent_address_fill', 'no'),
+                        'cep_highlight'        => 'no', // Edição de endereço não tem "destaque".
                         'billing_number'       => $billing_number,
                         'shipping_number'      => $shipping_number,
                         'nonce'                => wp_create_nonce('wc_better_insert_address')

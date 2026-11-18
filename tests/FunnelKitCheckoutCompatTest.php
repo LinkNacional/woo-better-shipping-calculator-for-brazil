@@ -398,6 +398,8 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
      */
     public function test_aero_address_block_is_sorted_by_priority(): void {
         $this->enable_person_fields();
+        // O "Destaque do Campo CEP" manda na posição do CEP (34 = logo após o País).
+        update_option( 'woo_better_calc_cep_field_position', 'yes' );
 
         $fieldsets = $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() );
         $ids       = $this->section_ids( $fieldsets );
@@ -417,6 +419,38 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
             ),
             $this->block_ids( $ids, 'shipping' ),
             'País, CEP, Endereço, Número, Complemento, Bairro, Cidade, Estado, Celular.'
+        );
+    }
+
+    /**
+     * A posição do CEP no funil segue o "Destaque do Campo CEP" — nos DOIS estados.
+     *
+     * O layout salvo do funil carrega a `priority` que o WooCommerce tinha quando o
+     * funil foi montado (era 45 no funil de teste), então desligar a opção não mudava
+     * nada: o CEP continuava no topo. Agora a opção é autoritativa:
+     *  - ligada  → 34 (logo depois do País);
+     *  - desligada → 90 (padrão do WooCommerce, fim do bloco de endereço).
+     */
+    public function test_aero_postcode_position_follows_the_cep_highlight_option(): void {
+        $this->enable_person_fields();
+
+        update_option( 'woo_better_calc_cep_field_position', 'yes' );
+        $on = $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ) );
+
+        update_option( 'woo_better_calc_cep_field_position', 'no' );
+        $off = $this->section_ids( $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() ) );
+
+        $this->assertSame(
+            'shipping_postcode',
+            $on[ array_search( 'shipping_country', $on, true ) + 1 ],
+            'Com o destaque ligado o CEP vem logo depois do País.'
+        );
+
+        $block = $this->block_ids( $off, 'shipping' );
+        $this->assertSame(
+            array( 'shipping_city', 'shipping_state', 'shipping_postcode' ),
+            array_slice( $block, (int) array_search( 'shipping_city', $block, true ), 3 ),
+            'Sem o destaque o CEP desce para depois de Cidade/Estado (prioridade padrão do WooCommerce).'
         );
     }
 
@@ -441,6 +475,7 @@ class FunnelKitCheckoutCompatTest extends WP_UnitTestCase {
      */
     public function test_aero_billing_block_is_sorted_and_keeps_the_same_address_checkbox_first(): void {
         $this->enable_person_fields();
+        update_option( 'woo_better_calc_cep_field_position', 'yes' );
 
         $fieldsets = $this->plugin()->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() );
         $ids       = $this->section_ids( $fieldsets );
