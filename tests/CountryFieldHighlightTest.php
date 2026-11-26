@@ -119,6 +119,27 @@ class CountryFieldHighlightTest extends WP_UnitTestCase {
         $this->assertSame( 3, $this->funnel_priority( $on, 'billing_country' ), 'Com o destaque ligado o layout salvo (3) continua valendo.' );
     }
 
+    /**
+     * O filtro do telefone não pode deixar o país com uma entrada SÓ de `phone`.
+     *
+     * No checkout em blocos a ordem vem de `countryData[CC].locale`: quando o país
+     * tem qualquer entrada, o WooCommerce para de herdar o locale `default` (que
+     * traz first_name 10, last_name 20, country 40...). Semear só `phone` fazia o
+     * País cair para o índice 1 (topo) do bloco, independente desta opção.
+     */
+    public function test_phone_locale_does_not_strip_the_country_field_order(): void {
+        delete_option( 'woo_better_calc_country_field_position' );
+        update_option( 'woo_better_calc_phone_mode', 'phone_and_cellphone' );
+
+        $plugin = new WcBetterShippingCalculatorForBrazil();
+        $locale = $plugin->wc_better_calc_phone_number( array( 'BR' => array() ) );
+
+        $this->assertArrayHasKey( 'country', $locale['BR'], 'A entrada do país precisa manter os campos padrão (e a prioridade do País).' );
+        $this->assertArrayHasKey( 'first_name', $locale['BR'] );
+        $this->assertSame( 40, $locale['BR']['country']['priority'], 'Sem o destaque, o País fica na prioridade padrão do WooCommerce.' );
+        $this->assertArrayHasKey( 'phone', $locale['BR'] );
+    }
+
     private function funnel_fieldsets(): array {
         return array(
             'single_step' => array(

@@ -5441,6 +5441,24 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Campos padrão de endereço usados para semear a entrada de um país criada
+     * pelo filtro do telefone (ver wc_better_calc_phone_number).
+     *
+     * @return array
+     */
+    private function default_address_fields_for_locale() {
+        if (function_exists('WC') && WC()->countries) {
+            return WC()->countries->get_default_address_fields();
+        }
+
+        if (class_exists('WC_Countries')) {
+            return (new \WC_Countries())->get_default_address_fields();
+        }
+
+        return array();
+    }
+
+    /**
      * Indica se a máscara/DDI do telefone está ativa E faz sentido no modo atual.
      *
      * A opção "Aplicar Máscara + Captura de DDI" é dependente do "Comportamento do
@@ -7273,9 +7291,17 @@ class WcBetterShippingCalculatorForBrazil
 
         // Aplica as configurações para todos os países da lista
         foreach ($country_codes as $country_code) {
-            // Garante que a chave 'phone' exista no array do país para evitar warnings do PHP
+            // O checkout em blocos monta os campos a partir de
+            // `countryData[CC].locale` e, quando o país tem QUALQUER entrada, para
+            // de herdar o locale `default` do WooCommerce (que traz first_name 10,
+            // last_name 20, country 40...). Criar aqui uma entrada só com `phone`
+            // apagava essa herança e o País caía para o índice 1 (topo) no bloco.
+            // Por isso, ao criar a entrada do país, semeamos os campos padrão.
+            if (empty($locale[$country_code]) || !is_array($locale[$country_code])) {
+                $locale[$country_code] = $this->default_address_fields_for_locale();
+            }
             if (!isset($locale[$country_code]['phone'])) {
-                $locale[$country_code]['phone'] = [];
+                $locale[$country_code]['phone'] = array();
             }
 
             if ($hides_native_phone && $phone_handled_outside_locale) {
