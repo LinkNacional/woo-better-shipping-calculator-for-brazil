@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Campos Checkout Brasileiro para WooCommerce 5.2.0\n"
+"Project-Id-Version: Campos Checkout Brasileiro para WooCommerce 5.2.7\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/woo-better-"
 "shipping-calculator-for-brazil\n"
 "Last-Translator: Link Nacional\n"

@@ -293,6 +293,106 @@ msgstr ""
 
 #. Found in changelog header.
 #, gp-priority: low
+msgid "5.2.7 - 2026-11-26"
+msgstr "5.2.7 - 2026-11-26"
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "New: \"Country field highlight\" option, enabled by default. With it turned off the Country field no longer jumps to the first position of the checkout — it follows the default WooCommerce order, which helps stores where the theme or FunnelKit already define the field order."
+msgstr "Novo: opção \"Destaque do Campo País\", habilitada por padrão. Com ela desligada o campo País não sobe mais para a primeira posição do checkout — ele segue a ordem padrão do WooCommerce, o que ajuda lojas onde o tema ou o FunnelKit já definem a ordem dos campos."
+
+#. Found in changelog header.
+#, gp-priority: low
+msgid "5.2.6 - 2026-11-13"
+msgstr "5.2.6 - 2026-11-13"
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: on the funnel checkout (FunnelKit) the Brazilian fields are back in the order used by the WooCommerce checkout."
+msgstr "Correção: no checkout do funil (FunnelKit) os campos brasileiros voltaram para a ordem usada pelo checkout do WooCommerce."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: on the funnel checkout CPF/CNPJ is required again and the optional fields are no longer enforced — every field follows the settings screen, including the disabled ones."
+msgstr "Correção: no checkout do funil o CPF/CNPJ voltou a ser obrigatório e os campos opcionais não são mais exigidos — cada campo segue a tela de configurações, inclusive os desabilitados."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: the Gender select on the funnel shows up like the Country and State ones."
+msgstr "Correção: o select de Gênero no funil aparece como os de País e Estado."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: the postcode address autofill (suggestion and silent) no longer depends on the \"CEP field highlight\". With the autofill on and the highlight off the feature was not loaded on the checkout at all — the customer typed the postcode and nothing happened, with no spinner and no error message. The highlight now only decides whether the postcode field moves to the top of the form."
+msgstr "Correção: o preenchimento automático de endereço pelo CEP (sugestão e silencioso) não depende mais do \"Destaque do Campo CEP\". Com o preenchimento ligado e o destaque desligado o recurso nem era carregado no checkout — o cliente digitava o CEP e nada acontecia, sem spinner e sem mensagem de erro. O destaque agora só decide se o campo CEP sobe para o topo do formulário."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: the \"S/N\" shortcut of the Number field is no longer squeezed on the funnel checkout (FunnelKit). The funnel form styles every checkbox as absolute, so the little box ended up on top of the text."
+msgstr "Correção: o atalho \"S/N\" do campo Número não fica mais espremido no checkout do funil (FunnelKit). O formulário do funil estiliza todo checkbox como absoluto, então a caixinha ficava em cima do texto."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: with the \"CEP field highlight\" off the postcode no longer stays at the top of the funnel checkout (FunnelKit). The saved funnel layout keeps the position the field had when the funnel was built, so turning the option off changed nothing; the option is now authoritative — on, the postcode comes right after the Country, off it goes back to the end of the address block, like on the WooCommerce checkout."
+msgstr "Correção: com o \"Destaque do Campo CEP\" desligado o CEP não fica mais no topo do checkout do funil (FunnelKit). O layout salvo do funil mantém a posição que o campo tinha quando o funil foi criado, então desligar a opção não mudava nada; agora a opção manda — ligada, o CEP vem logo depois do País; desligada, ele volta para o fim do bloco de endereço, como no checkout do WooCommerce."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: the \"Enter the postcode (CEP) above.\" checkbox now always sits right below the postcode field. It used to have a fixed position, so without the highlight it showed up alone at the top of the form; on the block checkout the script also no longer pulls the postcode up when the option is off."
+msgstr "Correção: o checkbox \"Informe acima o código postal (CEP).\" fica sempre logo abaixo do campo de CEP. Ele tinha posição fixa, então sem o destaque aparecia sozinho no topo do formulário; no checkout em blocos o script também não puxa mais o CEP para cima quando a opção está desligada."
+
+#. Found in changelog header.
+#, gp-priority: low
+msgid "5.2.5 - 2026-11-08"
+msgstr "5.2.5 - 2026-11-08"
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: the CPF/CNPJ of customers from the \"Brazilian Market on WooCommerce\" plugin (or from older versions of this plugin) counts again on the order. The document saved only in the old fields is migrated to the new field on the first visit, the order (including on the block checkout) carries the account CPF/CNPJ when the form sends none, and the hidden person type/CPF/CNPJ mirrors are filled on the server before any validation — with the person type enabled here, the order is no longer blocked by \"Person type/CPF/CNPJ/State Registration is a required field\"."
+msgstr "Correção: o CPF/CNPJ de clientes do plugin \"Brazilian Market on WooCommerce\" (ou de versões antigas deste plugin) volta a contar no pedido. O documento salvo só nos campos antigos é migrado para o campo novo na primeira visita, o pedido (inclusive no checkout em blocos) leva o CPF/CNPJ da conta quando o formulário não envia nenhum, e os espelhos ocultos de tipo de pessoa/CPF/CNPJ são preenchidos no servidor antes de qualquer validação — com o tipo de pessoa habilitado aqui, o pedido não é mais bloqueado por \"Tipo de pessoa/CPF/CNPJ/Inscrição Estadual é um campo obrigatório\"."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: the Brazilian fields now work on the FunnelKit (Aero Checkout) funnel checkout. Cellphone, RG, State Registration (IE), City Registration (IM), Birthdate and Gender now show up on the funnel editor and are registered as funnel fields (before, a legal-entity customer was blocked with no place to type the IE, and the phone typed in the \"Cellphone only\" mode was dropped — it is now saved and mirrored into the cellphone). A field the form does not display (such as Number) is no longer required on submit, and the plugin no longer starts a second phone mask when the checkout already applies the FunnelKit one."
+msgstr "Correção: os campos brasileiros agora funcionam no checkout do funil do FunnelKit (Aero Checkout). Celular, RG, Inscrição Estadual (IE), Inscrição Municipal (IM), Data de nascimento e Gênero aparecem no editor do funil e são registrados como campos do funil (antes, o cliente pessoa jurídica era bloqueado sem lugar para digitar a IE, e o telefone digitado no modo \"Somente Celular\" era descartado — agora ele é salvo e espelhado no celular). Um campo que o formulário não exibe (como o Número) não é mais exigido no envio, e o plugin não inicia uma segunda máscara de telefone quando o checkout já aplica a do FunnelKit."
+
+#. Found in changelog header.
+#, gp-priority: low
+msgid "5.2.4 - 2026-11-05"
+msgstr "5.2.4 - 2026-11-05"
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: the order and customer phone and cellphone are now saved with the number only, without the country code (DDI) — the format Bling accepts. If the customer types the +55 (or just 55), it is removed from the beginning of the number."
+msgstr "Correção: o telefone e o celular do pedido e do cliente agora são salvos só com o número, sem o código do país (DDI) — o formato que o Bling aceita. Se o cliente digitar o +55 (ou só 55), ele é removido do início do número."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "New: a dedicated country code field above the phone and cellphone on the order edit screen, on the user profile and on the account address edit screen. The country code still shows on the order receipt, on \"My account > Orders\" and on the admin customer details."
+msgstr "Novo: um campo dedicado de código do país acima do telefone e do celular na edição do pedido, no perfil do usuário e na edição de endereço da conta. O código do país continua aparecendo no recibo do pedido, em \"Minha conta > Pedidos\" e nos detalhes do cliente no painel."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Tweak: on the checkout and on the account address edit screen the phone field opens with the number only and no longer rewrites what the customer types (the +55 is split off on save). With the country code mask enabled the code lives on the flag alone."
+msgstr "Ajuste: no checkout e na edição de endereço da conta o campo de telefone abre só com o número e não reescreve mais o que o cliente digita (o +55 é separado no salvamento). Com a máscara de código do país habilitada o código fica só na bandeira."
+
+#. Found in changelog header.
+#, gp-priority: low
+msgid "5.2.3 - 2026-10-27"
+msgstr "5.2.3 - 2026-10-27"
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Tweak: the phone field placeholder now follows the \"Phone Field Behavior\" — the landline format for \"Landline Only\", the mobile format for \"Cellphone Only\" and for the Cellphone field, and an area-code hint (\"DDD + number\") in the mode that accepts both formats. The \"+55\" was removed from the text: it is added automatically when the order is saved, and the customer never types it."
+msgstr "Ajuste: o placeholder do campo de telefone agora segue o \"Comportamento do Campo de Telefone\" — o formato de fixo para \"Somente Fixo\", o de celular para \"Somente Celular\" e para o campo Celular, e uma dica de DDD (\"DDD + número\") no modo que aceita os dois formatos. O \"+55\" saiu do texto: ele é incluído automaticamente quando o pedido é salvo, e o cliente nunca o digita."
+
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Tweak: the phone field keyboard on mobile is the phone keyboard again (with the \"+\" key), instead of the digits-only one — so the customer can type a foreign country code. The digits are still the only input accepted by the mask."
+msgstr "Ajuste: o teclado do campo de telefone no celular voltou a ser o teclado de telefone (com a tecla \"+\"), em vez do só de dígitos — assim o cliente pode digitar o código de outro país. Os dígitos continuam sendo a única entrada aceita pela máscara."
+
+#. Found in changelog header.
+#, gp-priority: low
 msgid "5.2.2 - 2026-10-26"
 msgstr "5.2.2 - 2026-10-26"
 

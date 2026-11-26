@@ -127,7 +127,7 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 == Changelog ==
 
 # 5.2.7 - 2026-11-26
-* New: "Country field highlight" option, enabled by default. With it turned off the Country field no longer jumps to the first position of the checkout when the "Customer type" is enabled — it follows the default WooCommerce order, which helps stores where the theme or FunnelKit already define the field order.
+* New: "Country field highlight" option, enabled by default. With it turned off the Country field no longer jumps to the first position of the checkout — it follows the default WooCommerce order, which helps stores where the theme or FunnelKit already define the field order.
 
 # 5.2.6 - 2026-11-13
 * Fix: on the funnel checkout (FunnelKit) the Brazilian fields are back in the order used by the WooCommerce checkout.
