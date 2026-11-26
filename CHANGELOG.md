@@ -6,6 +6,8 @@
 * Ajuste: títulos, subtítulos e descrições dos campos foram reposicionados para que cada opção seja mais fácil de ler.
 * Ajuste: os links da versão PRO agora apontam para a página comercial de cada plugin.
 * Observação: nenhuma configuração salva mudou de nome, então as configurações existentes continuam funcionando como antes.
+
+# 5.2.6 - 13/11/26
 * Correção: no checkout do funil (FunnelKit) os campos brasileiros voltam à ordem usada no checkout do WooCommerce.
 * Correção: no checkout do funil o CPF/CNPJ volta a ser obrigatório e os campos opcionais não são mais exigidos — cada campo segue a tela de configuração, inclusive os que estão desligados.
 * Correção: o select de Gênero no funil aparece como os de País e Estado.

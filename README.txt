@@ -145,6 +145,8 @@ If you find any errors or have suggestions, please open an issue in our [GitHub 
 * Tweak: field titles, subtitles and descriptions were repositioned so each option is easier to scan.
 * Tweak: the PRO version links now point to each plugin's commercial page.
 * Note: no saved setting changed its name, so existing configurations keep working as before.
+
+# 5.2.6 - 2026-11-13
 * Fix: on the funnel checkout (FunnelKit) the Brazilian fields are back in the order used by the WooCommerce checkout.
 * Fix: on the funnel checkout CPF/CNPJ is required again and the optional fields are no longer enforced — every field follows the settings screen, including the disabled ones.
 * Fix: the Gender select on the funnel shows up like the Country and State ones.
