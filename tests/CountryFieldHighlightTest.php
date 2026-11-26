@@ -59,8 +59,18 @@ class CountryFieldHighlightTest extends WP_UnitTestCase {
         $this->assertSame( 40, $fields['shipping']['shipping_country']['priority'] );
     }
 
-    public function test_country_is_untouched_when_person_type_is_none(): void {
+    /**
+     * O destaque é INDEPENDENTE do "Tipo de Cliente": a opção sozinha manda.
+     */
+    public function test_country_is_highlighted_even_without_person_type(): void {
         $fields = $this->apply( 'none', 'yes' );
+
+        $this->assertSame( 3, $fields['billing']['billing_country']['priority'], 'Destaque ligado sobe o País mesmo sem "Tipo de Cliente".' );
+        $this->assertSame( 3, $fields['shipping']['shipping_country']['priority'] );
+    }
+
+    public function test_country_keeps_woocommerce_order_without_person_type_when_off(): void {
+        $fields = $this->apply( 'none', 'no' );
 
         $this->assertSame( 40, $fields['billing']['billing_country']['priority'] );
         $this->assertSame( 40, $fields['shipping']['shipping_country']['priority'] );
@@ -80,6 +90,13 @@ class CountryFieldHighlightTest extends WP_UnitTestCase {
             ->lkn_checkout_fields_locale_priority( array( 'BR' => array() ) );
 
         $this->assertSame( 3, $locale['BR']['country']['priority'] );
+
+        // Independe do "Tipo de Cliente": com ele desligado o destaque continua.
+        update_option( 'woo_better_calc_person_type_select', 'none' );
+        $locale = ( new WcBetterShippingCalculatorForBrazil() )
+            ->lkn_checkout_fields_locale_priority( array( 'BR' => array() ) );
+
+        $this->assertSame( 3, $locale['BR']['country']['priority'], 'O destaque não depende do Tipo de Cliente.' );
     }
 
     /**
