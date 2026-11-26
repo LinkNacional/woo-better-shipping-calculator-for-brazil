@@ -5422,8 +5422,8 @@ class WcBetterShippingCalculatorForBrazil
     /**
      * Verifica se o "Destaque do Campo País" está ativo.
      *
-     * Ligado (padrão): o campo País sobe para a prioridade 3 quando o "Tipo de
-     * Cliente" está habilitado — comportamento das versões anteriores. Desligado:
+     * A opção é independente do "Tipo de Cliente". Ligada (padrão): o campo País
+     * sobe para a prioridade 3 — comportamento das versões anteriores. Desligada:
      * o plugin não toca no campo e ele segue a ordem padrão do WooCommerce
      * (priority 40), sem ser puxado para o topo do formulário.
      *
@@ -7168,7 +7168,7 @@ class WcBetterShippingCalculatorForBrazil
         $country_highlight  = $this->is_country_highlight();
 
         // Nenhuma das opções ativa, sem alterações
-        if ( $email_highlight !== 'yes' && $phone_highlight !== 'yes' && $person_type === 'none' ) {
+        if ( $email_highlight !== 'yes' && $phone_highlight !== 'yes' && $person_type === 'none' && ! $country_highlight ) {
             return $locale;
         }
 
@@ -7190,9 +7190,9 @@ class WcBetterShippingCalculatorForBrazil
                 $locale[ $country_code ]['phone']['priority'] = 2;
             }
 
-            // country → priority 3 quando person_type e o "Destaque do Campo País"
-            // estiverem ativos. Sem o destaque, o País fica na ordem do WooCommerce.
-            if ( $person_type !== 'none' && $country_highlight ) {
+            // country → priority 3 enquanto o "Destaque do Campo País" estiver
+            // ligado — independente do "Tipo de Cliente".
+            if ( $country_highlight ) {
                 if ( ! isset( $locale[ $country_code ]['country'] ) ) {
                     $locale[ $country_code ]['country'] = [];
                 }
@@ -7334,19 +7334,18 @@ class WcBetterShippingCalculatorForBrazil
             }
         } 
 
+        // Destaque do Campo País - independente do "Tipo de Cliente".
+        if ($country_highlight) {
+            if (isset($fields['billing']['billing_country'])) {
+                $fields['billing']['billing_country']['priority'] = 3;
+            }
+            if (isset($fields['shipping']['shipping_country'])) {
+                $fields['shipping']['shipping_country']['priority'] = 3;
+            }
+        }
+
         // Campos de pessoa física e jurídica - PRIMEIRO para evitar conflitos
         if ($person_type !== 'none') {
-            // Destaque do Campo País: só reposiciona com a opção ligada (padrão).
-            // Desligada, o País segue a ordem padrão do WooCommerce.
-            if ($country_highlight) {
-                if (isset($fields['billing']['billing_country'])) {
-                    $fields['billing']['billing_country']['priority'] = 3;
-                }
-                if (isset($fields['shipping']['shipping_country'])) {
-                    $fields['shipping']['shipping_country']['priority'] = 3;
-                }
-            }
-            
             // Campo unificado CPF/CNPJ (billing)
             $label_text = __('CPF/CNPJ', 'woo-better-shipping-calculator-for-brazil');
             $placeholder_text = __('Digite seu CPF ou CNPJ', 'woo-better-shipping-calculator-for-brazil');
@@ -10607,14 +10606,11 @@ class WcBetterShippingCalculatorForBrazil
             }
         } 
 
-        // Campos de pessoa física e jurídica - PRIMEIRO para evitar conflitos
-        if ($person_type !== 'none') {
-            // Destaque do Campo País: só reposiciona com a opção ligada (padrão).
-            if ($country_highlight && isset($fields['billing_country'])) {
-                $fields['billing_country']['priority'] = 3;
-            }
+        // Destaque do Campo País - independente do "Tipo de Cliente".
+        if ($country_highlight && isset($fields['billing_country'])) {
+            $fields['billing_country']['priority'] = 3;
         }
-        
+
         // Contato (telefone/celular) — espelha o checkout clássico.
         $phone_priority = ($phone_highlight === 'yes') ? 2 : 90;
 
@@ -11017,14 +11013,11 @@ class WcBetterShippingCalculatorForBrazil
             }
         } 
 
-        // Campos de pessoa física e jurídica - PRIMEIRO para evitar conflitos
-        if ($person_type !== 'none') {
-            // Destaque do Campo País: só reposiciona com a opção ligada (padrão).
-            if ($country_highlight && isset($fields['shipping_country'])) {
-                $fields['shipping_country']['priority'] = 3;
-            }
+        // Destaque do Campo País - independente do "Tipo de Cliente".
+        if ($country_highlight && isset($fields['shipping_country'])) {
+            $fields['shipping_country']['priority'] = 3;
         }
-        
+
         // Campo empresa para pessoa jurídica (se configuração permitir).
         // No modo "disabled" o campo não é criado: se outro plugin já o tiver
         // adicionado, fica opcional (nunca obrigatório).
@@ -11895,9 +11888,7 @@ class WcBetterShippingCalculatorForBrazil
      */
     private function apply_funnelkit_country_position(array $fields)
     {
-        if ($this->is_country_highlight()) {
-            return $fields;
-        }
+        $priority = $this->is_country_highlight() ? 3 : 40;
 
         foreach ($fields as $key => $field) {
             if (! is_array($field) || ! isset($field['id'])) {
@@ -11908,7 +11899,7 @@ class WcBetterShippingCalculatorForBrazil
                 continue;
             }
 
-            $fields[$key]['priority'] = 40;
+            $fields[$key]['priority'] = $priority;
         }
 
         return $fields;

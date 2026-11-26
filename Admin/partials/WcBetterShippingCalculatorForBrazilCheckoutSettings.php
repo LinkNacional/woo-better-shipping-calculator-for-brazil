@@ -36,8 +36,8 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                         'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
                     ),
                     'custom_attributes' => array(
-                        'data-desc-tip' => __('Define se o campo País deve subir para o topo do formulário quando o "Tipo de Cliente" estiver habilitado.', 'woo-better-shipping-calculator-for-brazil'),
-                        'data-description' => __('Com esta opção habilitada, o campo País sobe para a primeira posição do formulário de endereço quando o "Tipo de Cliente" (CPF/CNPJ) estiver ativo. Desabilite para manter o País na posição padrão do WooCommerce — útil quando o tema ou o FunnelKit já define a ordem dos campos.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-desc-tip' => __('Define se o campo País deve ser exibido no topo do formulário de checkout.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Com esta opção habilitada, o campo País sobe para a primeira posição do formulário de endereço, independente do "Tipo de Cliente". Desabilite para manter o País na posição padrão do WooCommerce (logo abaixo do nome) — útil quando o tema ou o FunnelKit já define a ordem dos campos.', 'woo-better-shipping-calculator-for-brazil'),
                         'data-title-description' => __('Escolha se o campo País deve ser destacado no topo do checkout.', 'woo-better-shipping-calculator-for-brazil')
                     )
                 ),

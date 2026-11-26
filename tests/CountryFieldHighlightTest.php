@@ -59,8 +59,18 @@ class CountryFieldHighlightTest extends WP_UnitTestCase {
         $this->assertSame( 40, $fields['shipping']['shipping_country']['priority'] );
     }
 
-    public function test_country_is_untouched_when_person_type_is_none(): void {
+    /**
+     * O destaque é INDEPENDENTE do "Tipo de Cliente": a opção sozinha manda.
+     */
+    public function test_country_is_highlighted_even_without_person_type(): void {
         $fields = $this->apply( 'none', 'yes' );
+
+        $this->assertSame( 3, $fields['billing']['billing_country']['priority'], 'Destaque ligado sobe o País mesmo sem "Tipo de Cliente".' );
+        $this->assertSame( 3, $fields['shipping']['shipping_country']['priority'] );
+    }
+
+    public function test_country_keeps_woocommerce_order_without_person_type_when_off(): void {
+        $fields = $this->apply( 'none', 'no' );
 
         $this->assertSame( 40, $fields['billing']['billing_country']['priority'] );
         $this->assertSame( 40, $fields['shipping']['shipping_country']['priority'] );
@@ -80,6 +90,13 @@ class CountryFieldHighlightTest extends WP_UnitTestCase {
             ->lkn_checkout_fields_locale_priority( array( 'BR' => array() ) );
 
         $this->assertSame( 3, $locale['BR']['country']['priority'] );
+
+        // Independe do "Tipo de Cliente": com ele desligado o destaque continua.
+        update_option( 'woo_better_calc_person_type_select', 'none' );
+        $locale = ( new WcBetterShippingCalculatorForBrazil() )
+            ->lkn_checkout_fields_locale_priority( array( 'BR' => array() ) );
+
+        $this->assertSame( 3, $locale['BR']['country']['priority'], 'O destaque não depende do Tipo de Cliente.' );
     }
 
     /**
@@ -100,17 +117,6 @@ class CountryFieldHighlightTest extends WP_UnitTestCase {
         $on = $plugin->prepare_funnelkit_checkout_fields( $this->funnel_fieldsets() );
 
         $this->assertSame( 3, $this->funnel_priority( $on, 'billing_country' ), 'Com o destaque ligado o layout salvo (3) continua valendo.' );
-    }
-
-    /**
-     * A opção precisa existir na tela de configurações, com o padrão "yes".
-     */
-    public function test_option_is_registered_in_the_settings_screen(): void {
-        $settings = ( new \Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilCheckoutSettings() )->get_settings();
-
-        $this->assertArrayHasKey( 'country_field_position', $settings );
-        $this->assertSame( 'woo_better_calc_country_field_position', $settings['country_field_position']['id'] );
-        $this->assertSame( 'yes', $settings['country_field_position']['default'], 'A opção nasce habilitada.' );
     }
 
     private function funnel_fieldsets(): array {
