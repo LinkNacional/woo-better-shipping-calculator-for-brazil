@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilCheckoutSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilShippingCalculatorSettings;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdmin;
+use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilAdminDeliveryFields;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilShippingMigration;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilShippingCalculatorInstaller;
 use Lkn\WcBetterShippingCalculatorForBrazil\Admin\WcBetterShippingCalculatorForBrazilMigrationEmail;
@@ -140,11 +141,16 @@ class WcBetterShippingCalculatorForBrazil
         if (defined('WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION')) {
             $this->version = WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION;
         } else {
-            $this->version = '5.2.5';
+            $this->version = '5.3.0';
         }
         $this->plugin_name = 'wc-better-shipping-calculator-for-brazil';
 
         $this->load_dependencies();
+
+        // Fluxo de compra da licença PRO (pop-up + rotas REST de instalar e
+        // ativar). Autoload PSR-4: `Includes/Billing/`.
+        \Lkn\WcBetterShippingCalculatorForBrazil\Includes\Billing\Billing::boot();
+
         $this->define_admin_hooks();
         $this->define_public_hooks();
     }
@@ -226,6 +232,11 @@ class WcBetterShippingCalculatorForBrazil
         $migration_email = new WcBetterShippingCalculatorForBrazilMigrationEmail();
         $this->loader->add_action('init', $migration_email, 'maybe_schedule_email');
         $this->loader->add_action(WcBetterShippingCalculatorForBrazilMigrationEmail::CRON_HOOK, $migration_email, 'send_migration_email');
+
+        // Widgets com tipo customizado da aba "Campos Brasileiros" (blocos PRO
+        // "Prazo de Entrega" e "Pedidos com Prazo de Entrega", cuja interface é
+        // compartilhada com o plugin gratuito).
+        new WcBetterShippingCalculatorForBrazilAdminDeliveryFields();
 
         // detect state from postcode
         $this->loader->add_filter('woocommerce_checkout_fields', $this, 'lkn_add_custom_checkout_field', 100, 1);
@@ -391,7 +402,7 @@ class WcBetterShippingCalculatorForBrazil
             $is_new_install = false;
         } else {
             // Prioridade 2: verifica se dispensou notice de alguma das últimas versões
-            $old_versions   = array( '5.2.5', '5.2.4', '5.2.3', '5.2.2', '5.2.1', '5.1.1', '5.1.0', '5.0.4', '5.0.3', '5.0.2', '5.0.1', '5.0.0', '4.17.4', '4.17.3', '4.17.2' );
+            $old_versions   = array( '5.2.7', '5.2.6', '5.2.5', '5.2.4', '5.2.3', '5.2.2', '5.2.1', '5.1.1', '5.1.0', '5.0.4', '5.0.3', '5.0.2', '5.0.1', '5.0.0' );
             $is_new_install = true;
             foreach ( $old_versions as $old_version ) {
                 if ( get_user_meta( get_current_user_id(), 'woo_better_calc_notice_dismissed_' . $old_version, true ) ) {
@@ -552,7 +563,7 @@ class WcBetterShippingCalculatorForBrazil
 
     public function lkn_woo_better_footer_page()
     {
-        // Verifica se estamos na página da aba de checkout
+        // Assets da aba de checkout ("Campos Brasileiros").
         if (
             isset($_GET['page'], $_GET['tab']) &&
             sanitize_text_field(wp_unslash($_GET['page'])) === 'wc-settings' &&
@@ -583,21 +594,20 @@ class WcBetterShippingCalculatorForBrazil
             );
 
             wp_enqueue_script(
-                'wc-better-calc-settings-layout',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js',
-                array('wc-better-calc-settings-fake-disabled'),
-                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayout.COMPILED.js'),
+                'wc-better-calc-settings-layout-tabs',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutTabs.COMPILED.js',
+                array('jquery'),
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutTabs.COMPILED.js'),
                 true
             );
 
-            $plugin_path = 'invoice-payment-for-woocommerce/wc-invoice-payment.php';
-            $invoice_plugin_installed = file_exists(WP_PLUGIN_DIR . '/' . $plugin_path);
-
-            wp_localize_script('wc-better-calc-settings-layout', 'wcBetterCalcAjax', array(
-                'install_nonce' => wp_create_nonce('install-plugin_invoice-payment-for-woocommerce'),
-                'plugin_slug' => 'invoice-payment-for-woocommerce',
-                'invoice_plugin_installed' => $invoice_plugin_installed,
-            ));
+            wp_enqueue_script(
+                'wc-better-calc-settings-layout-behaviors',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.COMPILED.js',
+                array('wc-better-calc-settings-fake-disabled'),
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutBehaviors.COMPILED.js'),
+                true
+            );
 
             wp_enqueue_script(
                 'wc-better-calc-footer-message',
@@ -607,45 +617,42 @@ class WcBetterShippingCalculatorForBrazil
                 true
             );
 
+            // Widgets "Prazo de Entrega" / "Pedidos Pendentes" (blocos PRO, cuja
+            // interface é compartilhada com a versão gratuita).
+            wp_enqueue_script(
+                'wc-better-calc-settings-delivery-fields',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminDeliveryFields.COMPILED.js',
+                array('wc-better-calc-settings-fake-disabled'),
+                $asset_version('Admin/jsCompiled/WcBetterShippingCalculatorForBrazilAdminDeliveryFields.COMPILED.js'),
+                true
+            );
+
+            wp_enqueue_style(
+                'wc-better-calc-style-settings-layout',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutSettings.COMPILED.css',
+                array(),
+                $asset_version('Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutSettings.COMPILED.css'),
+                'all'
+            );
+
+            wp_enqueue_style(
+                'wc-better-calc-style-settings-layout-link-card',
+                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutLinkCard.COMPILED.css',
+                array(),
+                $asset_version('Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminLayoutLinkCard.COMPILED.css'),
+                'all'
+            );
+
             wp_enqueue_style(
                 'wc-better-calc-style-settings',
                 WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.css',
                 array(),
-                // mtime: a classe `.woo-better-fake-disabled` (ver AGENTS.md § 7) foi
-                // adicionada dentro da MESMA versão — com a constante o navegador
-                // seguiria com o CSS antigo e o "desabilitado" ficaria sem estilo.
                 $asset_version('Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminSettings.COMPILED.css'),
                 'all'
             );
 
-            wp_enqueue_style(
-                'wc-better-calc-style-admin-card-settings',
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_URL . 'Admin/cssCompiled/WcBetterShippingCalculatorForBrazilAdminCard.COMPILED.css',
-                array(),
-                WC_BETTER_SHIPPING_CALCULATOR_FOR_BRAZIL_VERSION,
-                'all'
-            );
-
-            $versions = 'Woo Better v' . $this->version . ' | WooCommerce v' . WC()->version;
-            ;
-
-            wc_get_template(
-                'WcBetterShippingCalculatorForBrazilAdminSettingsCard.php',
-                array(
-                        'backgrounds' => array(
-                            'right' => plugin_dir_url(__FILE__) . 'assets/icons/backgroundCardRight.svg',
-                            'left' => plugin_dir_url(__FILE__) . 'assets/icons/backgroundCardLeft.svg'
-                        ),
-                        'logo' => plugin_dir_url(__FILE__) . 'assets/icons/linkNacionalLogo.webp',
-                        'whatsapp' => plugin_dir_url(__FILE__) . 'assets/icons/whatsapp.svg',
-                        'telegram' => plugin_dir_url(__FILE__) . 'assets/icons/telegram.svg',
-                        'stars' => plugin_dir_url(__FILE__) . 'assets/icons/stars.svg',
-                        'versions' => $versions
-
-                    ),
-                'woocommerce/WcBetterShippingCalculatorForBrazilAdminSettingsCard/',
-                plugin_dir_path(__FILE__) . 'assets/templates/'
-            );
+            // Pop-up de compra da licença PRO (card "Adquirir a licença").
+            \Lkn\WcBetterShippingCalculatorForBrazil\Includes\Billing\Billing::enqueue();
         }
     }
 
@@ -5420,6 +5427,38 @@ class WcBetterShippingCalculatorForBrazil
     }
 
     /**
+     * Verifica se o "Destaque do Campo País" está ativo.
+     *
+     * Ligado (padrão): o campo País sobe para a prioridade 3 quando o "Tipo de
+     * Cliente" está habilitado — comportamento das versões anteriores. Desligado:
+     * o plugin não toca no campo e ele segue a ordem padrão do WooCommerce
+     * (priority 40), sem ser puxado para o topo do formulário.
+     *
+     * @return bool
+     */
+    private function is_country_highlight() {
+        return get_option('woo_better_calc_country_field_position', 'yes') === 'yes';
+    }
+
+    /**
+     * Campos padrão de endereço usados para semear a entrada de um país criada
+     * pelo filtro do telefone (ver wc_better_calc_phone_number).
+     *
+     * @return array
+     */
+    private function default_address_fields_for_locale() {
+        if (function_exists('WC') && WC()->countries) {
+            return WC()->countries->get_default_address_fields();
+        }
+
+        if (class_exists('WC_Countries')) {
+            return (new \WC_Countries())->get_default_address_fields();
+        }
+
+        return array();
+    }
+
+    /**
      * Indica se a máscara/DDI do telefone está ativa E faz sentido no modo atual.
      *
      * A opção "Aplicar Máscara + Captura de DDI" é dependente do "Comportamento do
@@ -7151,9 +7190,10 @@ class WcBetterShippingCalculatorForBrazil
         $email_highlight    = get_option( 'woo_better_calc_email_field_position_shortcode', 'no' );
         $phone_highlight    = $this->is_phone_highlight() ? 'yes' : 'no';
         $person_type        = get_option( 'woo_better_calc_person_type_select', 'none' );
+        $country_highlight  = $this->is_country_highlight();
 
         // Nenhuma das opções ativa, sem alterações
-        if ( $email_highlight !== 'yes' && $phone_highlight !== 'yes' && $person_type === 'none' ) {
+        if ( $email_highlight !== 'yes' && $phone_highlight !== 'yes' && $person_type === 'none' && ! $country_highlight ) {
             return $locale;
         }
 
@@ -7175,8 +7215,9 @@ class WcBetterShippingCalculatorForBrazil
                 $locale[ $country_code ]['phone']['priority'] = 2;
             }
 
-            // country → priority 3 quando person_type estiver ativo
-            if ( $person_type !== 'none' ) {
+            // country → priority 3 enquanto o "Destaque do Campo País" estiver
+            // ligado — independente do "Tipo de Cliente".
+            if ( $country_highlight ) {
                 if ( ! isset( $locale[ $country_code ]['country'] ) ) {
                     $locale[ $country_code ]['country'] = [];
                 }
@@ -7250,9 +7291,17 @@ class WcBetterShippingCalculatorForBrazil
 
         // Aplica as configurações para todos os países da lista
         foreach ($country_codes as $country_code) {
-            // Garante que a chave 'phone' exista no array do país para evitar warnings do PHP
+            // O checkout em blocos monta os campos a partir de
+            // `countryData[CC].locale` e, quando o país tem QUALQUER entrada, para
+            // de herdar o locale `default` do WooCommerce (que traz first_name 10,
+            // last_name 20, country 40...). Criar aqui uma entrada só com `phone`
+            // apagava essa herança e o País caía para o índice 1 (topo) no bloco.
+            // Por isso, ao criar a entrada do país, semeamos os campos padrão.
+            if (empty($locale[$country_code]) || !is_array($locale[$country_code])) {
+                $locale[$country_code] = $this->default_address_fields_for_locale();
+            }
             if (!isset($locale[$country_code]['phone'])) {
-                $locale[$country_code]['phone'] = [];
+                $locale[$country_code]['phone'] = array();
             }
 
             if ($hides_native_phone && $phone_handled_outside_locale) {
@@ -7292,6 +7341,7 @@ class WcBetterShippingCalculatorForBrazil
         $email_highlight_shortcode = get_option('woo_better_calc_email_field_position_shortcode', 'no');
         $phone_highlight = $this->is_phone_highlight() ? 'yes' : 'no';
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
+        $country_highlight = $this->is_country_highlight();
 
         // Forçar limpeza do cache se necessário  
         if (false === $person_type || empty($person_type)) {
@@ -7317,16 +7367,18 @@ class WcBetterShippingCalculatorForBrazil
             }
         } 
 
-        // Campos de pessoa física e jurídica - PRIMEIRO para evitar conflitos
-        if ($person_type !== 'none') {
-            // Dar prioridade máxima ao campo de país quando person_type está habilitado
+        // Destaque do Campo País - independente do "Tipo de Cliente".
+        if ($country_highlight) {
             if (isset($fields['billing']['billing_country'])) {
                 $fields['billing']['billing_country']['priority'] = 3;
             }
             if (isset($fields['shipping']['shipping_country'])) {
                 $fields['shipping']['shipping_country']['priority'] = 3;
             }
-            
+        }
+
+        // Campos de pessoa física e jurídica - PRIMEIRO para evitar conflitos
+        if ($person_type !== 'none') {
             // Campo unificado CPF/CNPJ (billing)
             $label_text = __('CPF/CNPJ', 'woo-better-shipping-calculator-for-brazil');
             $placeholder_text = __('Digite seu CPF ou CNPJ', 'woo-better-shipping-calculator-for-brazil');
@@ -10570,6 +10622,7 @@ class WcBetterShippingCalculatorForBrazil
         $phone_required = get_option('woo_better_calc_contact_required', 'no');
         $email_highlight_shortcode = get_option('woo_better_calc_email_field_position_shortcode', 'no');
         $phone_highlight = $this->is_phone_highlight() ? 'yes' : 'no';
+        $country_highlight = $this->is_country_highlight();
         $birthdate_enabled = get_option('woo_better_calc_enable_birthdate_field', 'no');
         $gender_enabled = get_option('woo_better_calc_enable_gender_field', 'no');
         
@@ -10586,14 +10639,11 @@ class WcBetterShippingCalculatorForBrazil
             }
         } 
 
-        // Campos de pessoa física e jurídica - PRIMEIRO para evitar conflitos
-        if ($person_type !== 'none') {
-            // Dar prioridade máxima ao campo de país quando person_type está habilitado
-            if (isset($fields['billing_country'])) {
-                $fields['billing_country']['priority'] = 3;
-            }
+        // Destaque do Campo País - independente do "Tipo de Cliente".
+        if ($country_highlight && isset($fields['billing_country'])) {
+            $fields['billing_country']['priority'] = 3;
         }
-        
+
         // Contato (telefone/celular) — espelha o checkout clássico.
         $phone_priority = ($phone_highlight === 'yes') ? 2 : 90;
 
@@ -10981,6 +11031,7 @@ class WcBetterShippingCalculatorForBrazil
         $person_type = get_option('woo_better_calc_person_type_select', 'none');
         $email_highlight_shortcode = get_option('woo_better_calc_email_field_position_shortcode', 'no');
         $phone_highlight = $this->is_phone_highlight() ? 'yes' : 'no';
+        $country_highlight = $this->is_country_highlight();
         
         // Aplicar prioridades de campos conforme configurações
         if($email_highlight_shortcode === 'yes') {
@@ -10995,14 +11046,11 @@ class WcBetterShippingCalculatorForBrazil
             }
         } 
 
-        // Campos de pessoa física e jurídica - PRIMEIRO para evitar conflitos
-        if ($person_type !== 'none') {
-            // Dar prioridade máxima ao campo de país quando person_type está habilitado
-            if (isset($fields['shipping_country'])) {
-                $fields['shipping_country']['priority'] = 3;
-            }
+        // Destaque do Campo País - independente do "Tipo de Cliente".
+        if ($country_highlight && isset($fields['shipping_country'])) {
+            $fields['shipping_country']['priority'] = 3;
         }
-        
+
         // Campo empresa para pessoa jurídica (se configuração permitir).
         // No modo "disabled" o campo não é criado: se outro plugin já o tiver
         // adicionado, fica opcional (nunca obrigatório).
@@ -11844,7 +11892,8 @@ class WcBetterShippingCalculatorForBrazil
                     continue;
                 }
 
-                $fields = $this->apply_funnelkit_postcode_position($section['fields']);
+                $fields = $this->apply_funnelkit_country_position($section['fields']);
+                $fields = $this->apply_funnelkit_postcode_position($fields);
 
                 $fieldsets[$step][$section_index]['fields'] = $this->sort_funnelkit_address_block($fields);
             }
@@ -11870,6 +11919,27 @@ class WcBetterShippingCalculatorForBrazil
      * @param  array $fields Campos de um bloco de endereço do funil.
      * @return array         Campos com a prioridade do CEP ajustada.
      */
+    private function apply_funnelkit_country_position(array $fields)
+    {
+        if ($this->is_country_highlight()) {
+            return $fields;
+        }
+
+        foreach ($fields as $key => $field) {
+            if (! is_array($field) || ! isset($field['id'])) {
+                continue;
+            }
+
+            if (! in_array($field['id'], array('billing_country', 'shipping_country'), true)) {
+                continue;
+            }
+
+            $fields[$key]['priority'] = 40;
+        }
+
+        return $fields;
+    }
+
     private function apply_funnelkit_postcode_position(array $fields)
     {
         $highlighted = ('yes' === get_option('woo_better_calc_cep_field_position', 'no'));

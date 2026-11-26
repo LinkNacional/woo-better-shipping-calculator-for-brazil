@@ -1,3 +1,12 @@
+# 5.3.0 - 21/10/26
+* Novo: a tela de configurações da finalização de compra agora é dividida em quatro abas (Endereço e CEP, Documentos e Pessoa, Telefone e Celular, Dados Pessoais) com cards, em vez de uma única página longa.
+* Novo: um card lateral reúne os canais de suporte (WhatsApp e Telegram) e apresenta os destaques da versão PRO.
+* Novo: os blocos exclusivos da versão PRO (Retirada no Local e Prazo de Entrega) agora aparecem na tela de configurações junto com os campos brasileiros, e ficam editáveis quando o plugin PRO está ativo.
+* Ajuste: as opções que dependem de outra opção agora ficam aninhadas logo abaixo dela.
+* Ajuste: títulos, subtítulos e descrições dos campos foram reposicionados para que cada opção seja mais fácil de ler.
+* Ajuste: os links da versão PRO agora apontam para a página comercial de cada plugin.
+* Observação: nenhuma configuração salva mudou de nome, então as configurações existentes continuam funcionando como antes.
+
 # 5.2.6 - 13/11/26
 * Correção: no checkout do funil (FunnelKit) os campos brasileiros voltam à ordem usada no checkout do WooCommerce.
 * Correção: no checkout do funil o CPF/CNPJ volta a ser obrigatório e os campos opcionais não são mais exigidos — cada campo segue a tela de configuração, inclusive os que estão desligados.
