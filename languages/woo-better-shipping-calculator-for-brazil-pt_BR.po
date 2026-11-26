@@ -63,6 +63,10 @@ msgid "Endereço e CEP"
 msgstr "Endereço e CEP"
 
 #: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:33
+msgid "Destaque do Campo País"
+msgstr "Destaque do Campo País"
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:33
 msgid "Destaque do Campo CEP"
 msgstr "Destaque do Campo CEP"
 
@@ -135,6 +139,18 @@ msgstr "Ao habilitar, o campo CEP será exibido no topo do formulário de checko
 #: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:45
 msgid "Escolha se o campo de CEP deve ser destacado no checkout."
 msgstr "Escolha se o campo de CEP deve ser destacado no checkout."
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:43
+msgid "Define se o campo País deve subir para o topo do formulário quando o \"Tipo de Cliente\" estiver habilitado."
+msgstr "Define se o campo País deve subir para o topo do formulário quando o \"Tipo de Cliente\" estiver habilitado."
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:44
+msgid "Com esta opção habilitada, o campo País sobe para a primeira posição do formulário de endereço quando o \"Tipo de Cliente\" (CPF/CNPJ) estiver ativo. Desabilite para manter o País na posição padrão do WooCommerce — útil quando o tema ou o FunnelKit já define a ordem dos campos."
+msgstr "Com esta opção habilitada, o campo País sobe para a primeira posição do formulário de endereço quando o \"Tipo de Cliente\" (CPF/CNPJ) estiver ativo. Desabilite para manter o País na posição padrão do WooCommerce — útil quando o tema ou o FunnelKit já define a ordem dos campos."
+
+#: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:45
+msgid "Escolha se o campo País deve ser destacado no topo do checkout."
+msgstr "Escolha se o campo País deve ser destacado no topo do checkout."
 
 #: Admin/partials/WcBetterShippingCalculatorForBrazilCheckoutSettings.php:49
 msgid "Sugestão de Endereço por CEP"
