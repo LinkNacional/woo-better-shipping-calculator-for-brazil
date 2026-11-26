@@ -1,3 +1,7 @@
+# 5.2.7 - 26/11/26
+* Novo: opção "Destaque do Campo País", habilitada por padrão. Com ela desligada o campo País não sobe mais para a primeira posição do checkout — ele segue a ordem padrão do WooCommerce, útil para lojas em que o tema ou o FunnelKit já definem a ordem dos campos.
+* Correção: no checkout em blocos o campo País respeita a opção. O filtro do telefone criava uma entrada do país só com o campo telefone, e o WooCommerce parava de herdar a ordem padrão — o País ia para o topo mesmo com o destaque desligado.
+
 # 5.2.6 - 13/11/26
 * Correção: no checkout do funil (FunnelKit) os campos brasileiros voltam à ordem usada no checkout do WooCommerce.
 * Correção: no checkout do funil o CPF/CNPJ volta a ser obrigatório e os campos opcionais não são mais exigidos — cada campo segue a tela de configuração, inclusive os que estão desligados.
