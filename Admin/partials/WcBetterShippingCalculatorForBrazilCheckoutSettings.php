@@ -25,6 +25,22 @@ class WcBetterShippingCalculatorForBrazilCheckoutSettings extends \WC_Settings_P
                     'type'  => 'title',
                     'id'    => 'woo_better_calc_title_checkout'
                 ),
+                'country_field_position' => array(
+                    'title'    => __('Destaque do Campo País', 'woo-better-shipping-calculator-for-brazil'),
+                    'desc_tip' => false,
+                    'id'       => 'woo_better_calc_country_field_position',
+                    'default'  => 'yes',
+                    'type'     => 'radio',
+                    'options'  => array(
+                        'yes' => __('Habilitar', 'woo-better-shipping-calculator-for-brazil'),
+                        'no'  => __('Desabilitar', 'woo-better-shipping-calculator-for-brazil')
+                    ),
+                    'custom_attributes' => array(
+                        'data-desc-tip' => __('Define se o campo País deve subir para o topo do formulário quando o "Tipo de Cliente" estiver habilitado.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-description' => __('Com esta opção habilitada, o campo País sobe para a primeira posição do formulário de endereço quando o "Tipo de Cliente" (CPF/CNPJ) estiver ativo. Desabilite para manter o País na posição padrão do WooCommerce — útil quando o tema ou o FunnelKit já define a ordem dos campos.', 'woo-better-shipping-calculator-for-brazil'),
+                        'data-title-description' => __('Escolha se o campo País deve ser destacado no topo do checkout.', 'woo-better-shipping-calculator-for-brazil')
+                    )
+                ),
                 'cep_field_position' => array(
                     'title'    => __('Destaque do Campo CEP', 'woo-better-shipping-calculator-for-brazil'),
                     'desc_tip' => false,
