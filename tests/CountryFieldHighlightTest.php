@@ -102,6 +102,17 @@ class CountryFieldHighlightTest extends WP_UnitTestCase {
         $this->assertSame( 3, $this->funnel_priority( $on, 'billing_country' ), 'Com o destaque ligado o layout salvo (3) continua valendo.' );
     }
 
+    /**
+     * A opção precisa existir na tela de configurações, com o padrão "yes".
+     */
+    public function test_option_is_registered_in_the_settings_screen(): void {
+        $settings = ( new \Lkn\WcBetterShippingCalculatorForBrazil\Admin\partials\WcBetterShippingCalculatorForBrazilCheckoutSettings() )->get_settings();
+
+        $this->assertArrayHasKey( 'country_field_position', $settings );
+        $this->assertSame( 'woo_better_calc_country_field_position', $settings['country_field_position']['id'] );
+        $this->assertSame( 'yes', $settings['country_field_position']['default'], 'A opção nasce habilitada.' );
+    }
+
     private function funnel_fieldsets(): array {
         return array(
             'single_step' => array(
