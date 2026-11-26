@@ -301,6 +301,11 @@ msgstr "5.2.7 - 2026-11-26"
 msgid "New: \"Country field highlight\" option, enabled by default. With it turned off the Country field no longer jumps to the first position of the checkout — it follows the default WooCommerce order, which helps stores where the theme or FunnelKit already define the field order."
 msgstr "Novo: opção \"Destaque do Campo País\", habilitada por padrão. Com ela desligada o campo País não sobe mais para a primeira posição do checkout — ele segue a ordem padrão do WooCommerce, o que ajuda lojas onde o tema ou o FunnelKit já definem a ordem dos campos."
 
+#. Found in changelog list item.
+#, gp-priority: low
+msgid "Fix: on the block checkout the Country field follows the option. The phone filter created a country entry holding only the phone field, so WooCommerce stopped inheriting the default order — the Country went to the top even with the highlight off."
+msgstr "Correção: no checkout em blocos o campo País respeita a opção. O filtro do telefone criava uma entrada do país só com o campo telefone, e o WooCommerce parava de herdar a ordem padrão — o País ia para o topo mesmo com o destaque desligado."
+
 #. Found in changelog header.
 #, gp-priority: low
 msgid "5.2.6 - 2026-11-13"
